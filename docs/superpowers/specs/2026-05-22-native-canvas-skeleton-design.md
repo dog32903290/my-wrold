@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof dump implemented; A0 taxonomy/ImGui smoke proof planned before A1; A1/C1 not yet built
+Status: V1 shader preview proof dump implemented; S0 storage proof planned before A0/A1; A0/A1/C1 not yet built
 
 ## Purpose
 
@@ -20,6 +20,32 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Old Web canvas works are migration fixtures, not the native graph law.
 
 ## First Stage Proofs
+
+### S0 Storage Proof
+
+Goal:
+
+```text
+work project -> atomic save -> local git commit -> module/work library export
+```
+
+Contract:
+
+- Planned: a work is a project folder with a manifest, one or more patch documents, assets, debug/proof outputs, and a local git history.
+- Planned: a patch can be a mother patch containing smaller nodes, compound patchers, and references to saved modules.
+- Planned: a selected patch or compound can be published into a module repository as a reusable module package.
+- Planned: large works can be stored in a work repository/library separately from the module repository.
+- Planned: `Command+S` performs an atomic save of the active work project and then creates a local git commit when files changed.
+- Planned: `Command+S` commits the artwork/project repository only; it must never commit this app source repository unless the user is editing this repo directly.
+- Planned: auto commit is local-only. Push/sync to a remote repository must be an explicit later command.
+- Planned: if save succeeds but commit fails, the UI reports `save-ok commit-failed` and leaves evidence; it must not silently claim a full save.
+- Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
+
+Current storage execution plan:
+
+```text
+docs/superpowers/plans/2026-05-22-s0-storage-proof.md
+```
 
 ### A0 UI / Node Contract Guard
 
@@ -117,6 +143,18 @@ runtimeGraph       executable graph for render/audio/control runtime
 commandGraph       formal mutation operations used by UI, AI, importers, and scripts
 collaborationLog   AI tasks, commands, diagnostics, repair attempts, and proof evidence
 ```
+
+Add storage truths before the editor grows:
+
+```text
+workManifest       project identity, main patch, library refs, save policy
+patchDocuments     serializable graph documents that can be reloaded headlessly
+modulePackages     reusable saved mother patches / compounds with public ports
+libraryIndexes     known work repositories and module repositories
+saveLog            save attempts, commit ids, failures, validation evidence
+```
+
+Storage is not an export layer. It is the graph source-of-truth boundary that lets UI, runtime, AI worker, and future module libraries read the same work back.
 
 ### C++ Boundary
 

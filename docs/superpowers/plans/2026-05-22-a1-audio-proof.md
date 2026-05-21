@@ -12,6 +12,7 @@
 
 ## Overnight Gates
 
+- Do not execute A0/A1 until `docs/superpowers/plans/2026-05-22-s0-storage-proof.md` is complete or explicitly deferred by the user. Storage decides where graph truth lives.
 - Safe to run unattended: pure analyzer tests, CMake wiring, UI build, static proof dump shape.
 - May require user presence: first live microphone access. macOS can show a Microphone permission prompt for `我的世界`; an agent cannot safely click or pre-approve this without the user.
 - If microphone permission blocks live input, commit code and plan updates with A1 marked as "implemented but live proof pending permission"; do not mark live A1 as proven.
