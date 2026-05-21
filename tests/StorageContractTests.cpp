@@ -1,6 +1,7 @@
 #include "StorageContract.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -50,6 +51,9 @@ int main()
     expect (myworld::isKnownSaveStatus ("save-ok commit-pending"), "commit-pending status");
     expect (myworld::isKnownSaveStatus ("save-ok commit-failed"), "commit-failed status");
     expect (! myworld::isKnownSaveStatus ("probably-saved"), "unknown status rejected");
+
+    expect (std::filesystem::exists ("fixtures/storage/minimal-work/myworld.work.json"), "minimal work fixture");
+    expect (std::filesystem::exists ("fixtures/storage/minimal-work/patches/main.patch.json"), "minimal patch fixture");
 
     std::cout << "storage contract ok\n";
     return 0;

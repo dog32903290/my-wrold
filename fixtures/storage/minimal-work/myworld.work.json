@@ -1,0 +1,9 @@
+{
+  "kind": "workProject",
+  "id": "work.minimal",
+  "title": "Minimal Work",
+  "mainPatchPath": "patches/main.patch.json",
+  "savePolicy": "commandS.localCommit",
+  "moduleLibraries": ["modules"],
+  "workLibraries": ["works"]
+}

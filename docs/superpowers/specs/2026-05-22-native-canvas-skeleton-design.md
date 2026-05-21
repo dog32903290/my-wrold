@@ -45,6 +45,7 @@ Contract:
 - Planned: if save succeeds but commit fails, the UI reports `save-ok commit-failed` and leaves evidence; it must not silently claim a full save.
 - Proven: minimal storage contract names WorkProject, PatchDocument, ModulePackage, WorkLibrary, and ModuleLibrary.
 - Proven: Command+S save statuses are explicit: clean, save-ok commit-pending, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
+- Proven: minimal work fixture stores a main patch with `shader1 -> out1` as reloadable project data.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:

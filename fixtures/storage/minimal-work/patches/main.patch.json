@@ -1,0 +1,30 @@
+{
+  "kind": "patchDocument",
+  "id": "patch.main",
+  "title": "Main Patch",
+  "editorGraph": {
+    "nodes": [
+      { "id": "shader1", "type": "shader.fragment" },
+      { "id": "out1", "type": "output.preview" }
+    ]
+  },
+  "runtimeGraph": {
+    "nodes": [
+      { "id": "shader1", "type": "shader.fragment" },
+      { "id": "out1", "type": "output.preview" }
+    ],
+    "edges": [
+      { "from": "shader1.output", "to": "out1.input" }
+    ]
+  },
+  "portBindings": {
+    "items": [
+      {
+        "id": "shader1.brightness",
+        "dataType": "signal.float",
+        "bindingMode": "manual",
+        "storedValue": 1.0
+      }
+    ]
+  }
+}

@@ -50,6 +50,9 @@ target_link_libraries(my_world_storage_tests
 )
 
 add_test(NAME storage_contract COMMAND my_world_storage_tests)
+set_tests_properties(storage_contract PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
