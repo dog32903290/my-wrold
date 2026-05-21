@@ -38,6 +38,8 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRODUCT_NAME "${MY_WORLD_DISPLAY_NAME}"
         COMPANY_NAME "Chen Po-Wei"
         BUNDLE_ID "com.chenpowei.myworld"
+        MICROPHONE_PERMISSION_ENABLED TRUE
+        MICROPHONE_PERMISSION_TEXT "Allow My World to analyze live audio for shader and node patches."
     )
 
     target_sources(my-world

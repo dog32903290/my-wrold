@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prove that a work can be saved as reloadable patch documents, published into module/work libraries, and committed locally by `Command+S`.
+**Goal:** Prove that a work can be saved as reloadable patch documents, published into module/work libraries, and committed locally by a background `Command+S` git worker.
 
-**Architecture:** Storage is the graph source-of-truth boundary, not a late export feature. A work project owns patch documents and proof outputs; module packages are reusable saved mother patches or compounds; library indexes list available works and modules. `Command+S` writes an atomic project snapshot, validates it can be read back, then makes a local git commit in the artwork project repository only.
+**Architecture:** Storage is the graph source-of-truth boundary, not a late export feature. A work project owns patch documents and proof outputs; module packages are reusable saved mother patches or compounds; library indexes list available works and modules. `Command+S` writes an atomic project snapshot, validates it can be read back, then schedules a local git commit in the artwork project repository only. The save path may block briefly for atomic file replacement and reload validation; git work runs on a background worker so saving does not freeze the creative UI.
 
 **Tech Stack:** C++20, standard filesystem, JUCE app shell for keyboard command later, git CLI for local commit proof, existing graph contract.
 
@@ -72,12 +72,13 @@ input:
 success:
   write files atomically
   reload/validate saved files
-  git add only project files
-  git commit if there are changes
-  append save_log.jsonl with commit id
+  schedule background git add/commit for project files only
+  report save-ok commit-pending until commit finishes
+  append save_log.jsonl with commit id or commit failure
 
 failure:
   validation failure -> do not replace existing project files
+  background commit pending -> keep saved files, report save-ok commit-pending
   save ok but git commit failed -> keep saved files, report save-ok commit-failed
   no changes -> no commit, report clean
 
@@ -177,6 +178,7 @@ int main()
     expectContains (moduleJson, "\"humanDocPath\"", "module json");
 
     expect (myworld::isKnownSaveStatus ("saved-and-committed"), "saved-and-committed status");
+    expect (myworld::isKnownSaveStatus ("save-ok commit-pending"), "commit-pending status");
     expect (myworld::isKnownSaveStatus ("save-ok commit-failed"), "commit-failed status");
     expect (! myworld::isKnownSaveStatus ("probably-saved"), "unknown status rejected");
 
@@ -395,9 +397,10 @@ std::string toJson (const ModulePackageManifest& manifest)
 
 bool isKnownSaveStatus (const std::string& status)
 {
-    static constexpr std::array<const char*, 5> statuses {
+    static constexpr std::array<const char*, 6> statuses {
         "clean",
         "saved-and-committed",
+        "save-ok commit-pending",
         "save-ok commit-failed",
         "validation-failed",
         "write-failed"
@@ -425,7 +428,7 @@ Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
 ```text
 - Proven: minimal storage contract names WorkProject, PatchDocument, ModulePackage, WorkLibrary, and ModuleLibrary.
-- Proven: Command+S save statuses are explicit: clean, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
+- Proven: Command+S save statuses are explicit: clean, save-ok commit-pending, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
 ```
 
 Run:
@@ -562,13 +565,17 @@ if no active work project:
 if active work project is dirty:
   write atomic files
   reload/validate
-  git add project files only
-  git commit -m "Save <work title>"
+  enqueue background git add for project files only
+  enqueue background git commit -m "Save <work title>"
+  report save-ok commit-pending
 
 if active work project has no changes:
   report clean
 
-if write succeeds and git commit fails:
+if background git commit succeeds:
+  report saved-and-committed
+
+if background git commit fails:
   report save-ok commit-failed
 ```
 
@@ -578,6 +585,7 @@ Add this to S0:
 
 ```text
 - Locked: `Command+S` creates at most one local commit per explicit save gesture.
+- Locked: `Command+S` never runs git add/commit on the UI thread.
 - Locked: no remote push happens on save.
 - Locked: no commit happens when there are no file changes.
 - Locked: save log records both save result and commit result.
@@ -599,6 +607,7 @@ git commit -m "Clarify command save commit contract"
 
 - Stop before A0/A1 if S0 has no committed storage contract or is not explicitly deferred.
 - Stop before implementing `Command+S` if it is unclear which repository is the active work project.
+- Stop before implementing `Command+S` if git add/commit would run on the UI thread.
 - Stop if save/commit code could stage files outside the active work root.
 - Stop if `Command+S` would push to remote or require credentials.
 - Stop if a module package cannot name its public ports and source patch.

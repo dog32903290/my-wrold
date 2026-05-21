@@ -131,10 +131,19 @@ ImGui draw lists
 custom connection drawing
 zoom / pan canvas transform
 hit testing in canvas coordinates
-minimal node surface
+compact Tooll3-like node surface
+inline preview affordances for visual/signal nodes
 ```
 
 Do not let ImGui ids become saved graph ids. UI ids are disposable; graph ids are law.
+
+Style decision:
+
+```text
+Borrow Tooll3's compact technical instrument feel.
+Do not keep vvvv as the primary visual style reference.
+Do not clone Tooll3's exact icons, brand marks, color values, or window identity.
+```
 
 ### Interaction Grammar
 
@@ -257,4 +266,5 @@ Do not make this taxonomy decide execution. Execution still belongs to `runtimeD
 - G0/A0 must use Tooll3-seeded `category` / `subcategory` as browser metadata, while `type`, `dataType`, and `runtimeDomain` remain separate.
 - S0 patch documents must save parameter binding state, not just slider values.
 - A0 ImGui work should prove canvas adapter mechanics and the first Tooll3-inspired patch gestures while graph truth stays serialized and command-driven.
+- A0 node surfaces should follow Tooll3-like compact ImGui style with cached preview affordances, not vvvv as the main visual reference.
 - Future C# tools may inspect or generate `commandGraph` / `graphIR`, but they must stay outside realtime audio/render and native app lifecycle.

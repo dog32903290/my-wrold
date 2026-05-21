@@ -15,10 +15,11 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Use JUCE + CMake for the first native app skeleton.
 - Build a standalone app first, not a plugin.
 - Use display name `我的世界`; keep internal target names ASCII, starting with `my-world`.
-- Use OpenGL/GLSL for the first shader backend to preserve GLSL vibe-coding speed.
-- Do not hardwire the app to OpenGL. Create a `RenderBackend` boundary so Metal can replace or sit beside it later.
+- Use OpenGL/GLSL only as the first proof backend to preserve GLSL vibe-coding speed.
+- Do not treat OpenGL as the production GPU strategy on Apple Silicon. Extract the current preview behind `RenderBackend` before building high-resolution node previews, compute-heavy shader graphs, or performance claims.
+- Park the exact production backend choice until after the boundary is real; candidates are Metal, WGPU, or bgfx. DirectX/HLSL remains out of scope for this app body.
 - Old Web canvas works are migration fixtures, not the native graph law.
-- Tooll3 / TiXL is a reference system for ImGui canvas, Symbol/Instance separation, JSON graph shape, and parameter override behavior. It is not a codebase to fork into this repo.
+- Tooll3 / TiXL is the primary reference for ImGui canvas style, Symbol/Instance separation, JSON graph shape, parameter override behavior, and panel rhythm. It is not a codebase to fork into this repo.
 
 ## First Stage Proofs
 
@@ -27,7 +28,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 Goal:
 
 ```text
-work project -> atomic save -> local git commit -> module/work library export
+work project -> atomic save -> background local git commit -> module/work library export
 ```
 
 Contract:
@@ -37,9 +38,10 @@ Contract:
 - Planned: patch documents store parameter binding state so manual values survive connected or animated overrides.
 - Planned: a selected patch or compound can be published into a module repository as a reusable module package.
 - Planned: large works can be stored in a work repository/library separately from the module repository.
-- Planned: `Command+S` performs an atomic save of the active work project and then creates a local git commit when files changed.
+- Planned: `Command+S` performs an atomic save of the active work project on the UI path, then schedules the local git commit on a background worker when files changed.
 - Planned: `Command+S` commits the artwork/project repository only; it must never commit this app source repository unless the user is editing this repo directly.
 - Planned: auto commit is local-only. Push/sync to a remote repository must be an explicit later command.
+- Planned: after the synchronous save returns, the UI can report `save-ok commit-pending`; the background worker later records `saved-and-committed` or `save-ok commit-failed`.
 - Planned: if save succeeds but commit fails, the UI reports `save-ok commit-failed` and leaves evidence; it must not silently claim a full save.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
@@ -67,6 +69,7 @@ Contract:
 - Planned: graph validation produces a typed graph IR / AST before runtime execution or code generation.
 - Planned: AI worker mutates graph state only through typed commands such as `create_node`, `create_region`, `connect`, `set_param`, `publish_module`, and `save_work`.
 - Planned: future compiler workers may consume graph IR and generate GLSL, C++, validation reports, migration output, or documentation.
+- Planned: file-based `graphIR.json` / `validation_report.json` exchange is only for batch fixtures, CI, and proof dumps. A live C# compiler worker needs an explicit interactive bridge such as named pipes, gRPC, ZeroMQ, or shared memory before it can support drag-time feedback.
 - Forbidden: direct AI JSON surgery.
 - Forbidden: C# / .NET code in realtime audio callbacks, render hot paths, or native app lifecycle for the first stage.
 
@@ -94,7 +97,7 @@ Contract:
 - Planned: each node spec points to a human manual; machine-readable behavior lives in `NodeSpec`, not prose.
 - Planned: Dear ImGui mounts in the OpenGL render loop before any production node editor work.
 - Planned: A0 proves Tooll3-inspired patch gestures: zoom, pan, selection, framing, drag from pin to empty canvas, compatible node search, connect, parameter override, compound enter/exit, and undo/redo.
-- Planned: production node surfaces follow vvvv-like minimal patching: compact name, pins, tiny status, doc/patch icons; values live in IOBox / Pad / Meter / Scope nodes or inspector.
+- Planned: production node surfaces follow Tooll3-like compact ImGui patching: compact name, pins, tiny status, doc/patch icons, optional inline preview affordance, and inspector/parameter panels for depth.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.
 - Forbidden: copying Tooll3's exact appearance, icons, branding, C# ownership model, DirectX/HLSL backend, or `SymbolPackage` compilation system.
@@ -147,6 +150,8 @@ Contract:
 - Not started: UI reads analyzer values outside the realtime callback.
 - Not started: first values include at least `rms`, `peak`, and `loudness`.
 - Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
+- Planned: the macOS app bundle includes `NSMicrophoneUsageDescription` before any live audio proof asks for input.
+- Forbidden: mutating or rebuilding the audio runtime graph directly inside the audio callback. Live audio graph changes must be compiled/prepared off-thread and swapped through a realtime-safe snapshot or command queue.
 
 ### C1 Compound Proof
 
@@ -366,7 +371,7 @@ New categories can be added later through the registry. Existing saved graph ide
 
 ### Node Surface
 
-The patch surface should lean closer to vvvv than to card-heavy dashboard UI.
+The patch surface should lean directly into a Tooll3-like ImGui instrument feel: compact, dark, technical, fast to scan, and built around graph writing. Borrow the operating feel, spacing logic, and panel relationship; do not clone exact icons, branding, or pixel identity.
 
 Default visible node:
 
@@ -391,6 +396,17 @@ previews
 full parameter explanations
 ```
 
+Preview policy:
+
+```text
+no preview       utility/control nodes
+tiny preview     texture/material/shader nodes when a cached output exists
+meter/scope      audio/analyzer/control signals
+selected preview larger inspector or preview panel
+```
+
+Node previews are required for visual debugging, but they must be cached outputs owned by runtime/debug state. The node surface can display them; it must not cook expensive render work just because ImGui is drawing a node.
+
 Values should be exposed through explicit nodes:
 
 ```text
@@ -411,6 +427,17 @@ animated value    timeline / event override
 ```
 
 Connecting a cable to a parameter does not erase the manual value. It changes the live binding mode, and disconnecting can reveal the stored manual value again.
+
+The UI must expose binding mode clearly:
+
+```text
+default     neutral control, inherited default value
+manual      editable control, saved user value
+connected   control is visibly overridden and shows source
+animated    control is visibly timeline-owned and shows clip/key source
+```
+
+When a parameter is connected or animated, dragging the slider may edit the stored manual fallback only if the UI labels that action clearly. It must not pretend the live value changed when the graph is overriding it.
 
 Human documentation and machine documentation are separate:
 
@@ -476,6 +503,14 @@ RenderBackend interface
 OpenGLShaderPreview direct implementation
 ```
 
+Risk stance:
+
+```text
+OpenGL    proof backend only
+Metal     likely Apple production backend candidate
+WGPU/bgfx portable backend candidates
+```
+
 Minimum backend methods:
 
 ```text
@@ -487,7 +522,7 @@ resize
 destroy
 ```
 
-Metal is parked, not rejected. `RenderBackend` exists as an interface, but `OpenGLShaderPreview` still owns compile/render/readback directly. Extracting the OpenGL implementation behind `RenderBackend` remains pending.
+Metal is parked, not rejected. `RenderBackend` exists as an interface, but `OpenGLShaderPreview` still owns compile/render/readback directly. Extracting the OpenGL implementation behind `RenderBackend` remains pending and blocks production node previews, high-resolution render claims, and compute-heavy visual graph work.
 
 ## Audio Analyzer Migration
 
@@ -542,13 +577,13 @@ natural language task
 -> final state + evidence
 ```
 
-The first skeleton does not need full AI UI, but it must not design graph mutation paths that AI cannot use later.
+The first skeleton does not need full AI UI, but it must not design graph mutation paths that AI cannot use later. Batch file exchange is acceptable for proof dumps; live editor feedback cannot depend on filesystem polling once compiler workers become interactive.
 
 ## Non-Goals For First Skeleton
 
 - No full old Web project importer.
 - No black velvet material demo as the first proof.
-- No Metal backend implementation yet.
+- No Metal backend implementation yet, but no production performance promise may depend on OpenGL until `RenderBackend` is actually extracted.
 - No plugin build target yet.
 - No complete 13-patch analyzer UI yet.
 - No full AI worker UI yet.
@@ -559,6 +594,7 @@ The first skeleton does not need full AI UI, but it must not design graph mutati
 
 - Exact JUCE version / dependency acquisition method for portable builds. Current local proof references `/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer-plugin/JUCE`.
 - Whether to vendor JUCE, use CPM/FetchContent, or keep a local checkout path for early work.
+- Whether production render backend becomes Metal, WGPU, or bgfx after the OpenGL proof backend is extracted behind `RenderBackend`.
 - Exact first graph serialization format once `NodeSpec` is drafted.
 - Exact Dear ImGui node editor library choice (`imnodes`, `imgui-node-editor`, or custom layer) after the command graph contract is less soft.
 

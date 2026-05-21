@@ -4,9 +4,9 @@
 
 **Goal:** Add the first graph-language contract for nodes, regions, typed ports, port binding modes, stream kinds, and AI-safe commands before building production node UI or audio graphs.
 
-**Architecture:** Treat the patch as a typed IR / AST that can later compile to runtime graphs, GLSL, C++, validation reports, or migration output. Borrow Tooll3's Symbol/Instance and parameter override lessons as vocabulary, but keep the first implementation pure C++ and testable; park future C# compiler workers behind file/process boundaries so they never enter realtime audio/render paths.
+**Architecture:** Treat the patch as a typed IR / AST that can later compile to runtime graphs, GLSL, C++, validation reports, or migration output. Borrow Tooll3's Symbol/Instance and parameter override lessons as vocabulary, but keep the first implementation pure C++ and testable. Batch C# compiler workers may read/write files for fixtures and CI; live editor feedback must use an explicit interactive bridge and still never enter realtime audio/render paths.
 
-**Tech Stack:** C++20, existing graph contract, deterministic JSON strings for proof, future external workers via files/processes.
+**Tech Stack:** C++20, existing graph contract, deterministic JSON strings for proof, batch external workers via files/processes, future interactive workers via named pipes, gRPC, ZeroMQ, or shared memory.
 
 ---
 
@@ -94,9 +94,13 @@ redo
 Allowed later:
 
 ```text
-C# external compiler worker
+C# batch compiler worker
   reads graphIR.json
   writes validation_report.json / generated artifacts
+
+C# interactive compiler worker
+  talks through named pipe / gRPC / ZeroMQ / shared memory
+  used for drag-time validation only after latency is measured
 ```
 
 Forbidden in first stage:
@@ -106,6 +110,7 @@ C# inside audio callback
 C# inside render loop
 C# embedded in native app lifecycle
 C# nodes inside runtimeGraph hot path
+filesystem polling as live editor IPC
 ```
 
 ---
@@ -505,6 +510,10 @@ Create `fixtures/graph-language/compiler-worker.manifest.json`:
   "version": 1,
   "allowedLanguages": ["c++", "c#"],
   "forbiddenRuntimeTargets": ["audioCallback", "renderLoop", "appLifecycle"],
+  "bridgeModes": {
+    "batchProof": "files",
+    "interactiveEditor": "namedPipe|grpc|zeromq|sharedMemory"
+  },
   "inputs": ["graphIR.json", "commandGraph.json"],
   "outputs": ["validation_report.json", "generated_artifacts"]
 }
@@ -546,6 +555,7 @@ git commit -m "Add graph IR compiler worker fixtures"
 - Stop before production parameter UI if `PortBinding` cannot represent default, manual, connected, and animated ownership without erasing stored manual values.
 - Stop before AI worker graph edits if commands can bypass validation or mutate JSON directly.
 - Stop before using C# if it would run in the realtime audio callback, render loop, or native app lifecycle.
+- Stop before live C# compiler feedback if the bridge is only `graphIR.json` / `validation_report.json` file IO or filesystem polling.
 - Stop before type inference work if the first `TypeSpec` and `StreamKind` registries are not committed.
 
 ## Final Verification

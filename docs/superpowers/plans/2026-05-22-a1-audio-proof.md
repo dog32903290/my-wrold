@@ -4,9 +4,9 @@
 
 **Goal:** Prevent the JUCE `Component` NodeView trap, define the first Tooll3-seeded node taxonomy and patch interaction contracts, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
 
-**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Tooll3 supplies the seed browser taxonomy and patch interaction grammar, but `type`, `category`, `subcategory`, `dataType`, and `runtimeDomain` remain separate. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Node surfaces follow a vvvv-like minimal patch style: compact names, pins, tiny state marks, and doc/patch icons instead of card-heavy explanations. Parameter controls follow the Tooll3-inspired rule that manual values remain stored while connected or animated values can override live output; this is graph `PortBinding` state, not ImGui widget state. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
+**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Tooll3 supplies the seed browser taxonomy, patch interaction grammar, compact ImGui node surface, node preview expectation, and panel rhythm, but `type`, `category`, `subcategory`, `dataType`, and `runtimeDomain` remain separate. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Parameter controls follow the Tooll3-inspired rule that manual values remain stored while connected or animated values can override live output; this is graph `PortBinding` state, not ImGui widget state, and the UI must visibly distinguish default/manual/connected/animated. The audio callback writes bounded atomic analyzer state only; dynamic audio graph mutation is parked until prepared graph snapshots or realtime-safe queues exist. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
 
-**Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, JUCE OpenGL, Dear ImGui `v1.92.8`, CMake, existing native app shell.
+**Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, JUCE OpenGL proof backend, Dear ImGui `v1.92.8`, CMake, existing native app shell, macOS app bundle microphone permission text.
 
 ---
 
@@ -15,6 +15,7 @@
 - Do not execute A0/A1 until `docs/superpowers/plans/2026-05-22-s0-storage-proof.md` and `docs/superpowers/plans/2026-05-22-g0-graph-language-contract.md` are complete or explicitly deferred by the user. Storage decides where graph truth lives; G0 decides what graph truth means.
 - Safe to run unattended: pure analyzer tests, CMake wiring, UI build, static proof dump shape.
 - May require user presence: first live microphone access. macOS can show a Microphone permission prompt for `我的世界`; an agent cannot safely click or pre-approve this without the user.
+- Hard requirement before live audio: the app bundle must include `NSMicrophoneUsageDescription` through JUCE CMake `MICROPHONE_PERMISSION_ENABLED` and `MICROPHONE_PERMISSION_TEXT`.
 - If microphone permission blocks live input, commit code and plan updates with A1 marked as "implemented but live proof pending permission"; do not mark live A1 as proven.
 - Use `caffeinate` during execution if the user explicitly starts an overnight run so the machine does not sleep mid-build.
 - Do not ask for or store the user's password. If a specific `sudo` command becomes necessary, pause and explain the exact command and reason.
@@ -28,6 +29,8 @@ canvas zoom / pan / selection / framing
 drag from pin to empty canvas -> compatible node search
 drag from pin to pin -> connect
 parameter slider -> connected/animated override state
+parameter controls visibly show default/manual/connected/animated ownership
+node previews for visual nodes and meter/scope previews for signal nodes
 Symbol / Instance style definition vs placement split
 compound/module enter, collapse, and public ports
 undo / redo operation rhythm
@@ -56,15 +59,16 @@ Every borrowed interaction must lower into `commandGraph`; every category remain
   - Add `my_world_audio`.
   - Add `my_world_audio_analyzer_tests`.
   - Link `my-world` with `my_world_audio`, `my_world_imgui`, and `juce::juce_audio_devices`.
+  - Keep `MICROPHONE_PERMISSION_ENABLED TRUE` and a useful `MICROPHONE_PERMISSION_TEXT` on the app target before any live input proof.
 
 - Create: `source/core/NodeSpec.h`
-  - Stable node taxonomy, subcategory, port, param, human manual path, and runtime domain structs.
+  - Stable node taxonomy, subcategory, port, param, preview policy, human manual path, and runtime domain structs.
 
 - Create: `source/core/NodeSpec.cpp`
   - First seed node specs and lookup helpers.
 
 - Create: `tests/NodeSpecTests.cpp`
-  - Tests Tooll3-seeded category/subcategory/runtime/data-type contracts and alias behavior.
+  - Tests Tooll3-seeded category/subcategory/runtime/data-type contracts, preview policies, and alias behavior.
 
 - Create: `docs/nodes/analyzer.loudness.md`
   - First human-readable node manual.
@@ -163,6 +167,7 @@ int main()
     expect (shader->category == "shader", "shader category");
     expect (shader->subcategory == "use", "shader subcategory");
     expect (shader->runtimeDomain == "render", "shader runtime domain");
+    expect (shader->previewPolicy == "tiny_preview", "shader preview policy");
     expect (shader->outputs.size() == 1, "shader output count");
     expect (shader->outputs[0].dataType == "texture.rgba", "shader output data type");
 
@@ -171,6 +176,7 @@ int main()
     expect (loudness->category == "analyzer", "loudness category");
     expect (loudness->subcategory == "feature", "loudness subcategory");
     expect (loudness->runtimeDomain == "audioAnalysis", "loudness runtime domain");
+    expect (loudness->previewPolicy == "meter_scope", "loudness preview policy");
     expect (loudness->inputs[0].dataType == "audio.mono", "loudness input data type");
     expect (loudness->outputs[0].dataType == "signal.float", "loudness output data type");
     expect (loudness->humanDocPath == "docs/nodes/analyzer.loudness.md", "loudness human manual path");
@@ -199,6 +205,9 @@ int main()
     expect (myworld::isKnownNodeSubcategory ("midi"), "midi subcategory is known");
     expect (myworld::isKnownNodeSubcategory ("use"), "use subcategory is known");
     expect (myworld::isKnownNodeSubcategory ("measurement"), "measurement subcategory is known");
+    expect (myworld::isKnownPreviewPolicy ("none"), "none preview policy is known");
+    expect (myworld::isKnownPreviewPolicy ("tiny_preview"), "tiny preview policy is known");
+    expect (myworld::isKnownPreviewPolicy ("meter_scope"), "meter scope preview policy is known");
     expect (myworld::isKnownNodeCategoryAlias ("top"), "top is accepted as a browser alias");
     expect (! myworld::isKnownNodeCategory ("top"), "top is not first-level category law");
     expect (! myworld::isKnownNodeCategory ("weather"), "unknown category stays unknown until registry extension");
@@ -278,6 +287,7 @@ struct NodeSpec
     std::string category;
     std::string subcategory;
     std::string runtimeDomain;
+    std::string previewPolicy;
     std::string humanDocPath;
     int machineSpecVersion = 1;
     std::vector<PortSpec> inputs;
@@ -290,6 +300,7 @@ const NodeSpec* findNodeSpec (const std::vector<NodeSpec>& specs, const std::str
 bool isKnownNodeCategory (const std::string& category);
 bool isKnownNodeSubcategory (const std::string& subcategory);
 bool isKnownNodeCategoryAlias (const std::string& alias);
+bool isKnownPreviewPolicy (const std::string& policy);
 }
 ```
 
@@ -312,6 +323,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "shader",
             "use",
             "render",
+            "tiny_preview",
             "docs/nodes/shader.fragment.md",
             1,
             {},
@@ -326,6 +338,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "output",
             "output",
             "render",
+            "selected_preview",
             "docs/nodes/output.preview.md",
             1,
             { { "input", "Input", "texture.rgba", "in" } },
@@ -338,6 +351,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "audio",
             "input",
             "audio",
+            "meter_scope",
             "docs/nodes/audio.input.md",
             1,
             {},
@@ -352,6 +366,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "analyzer",
             "measurement",
             "audioAnalysis",
+            "meter_scope",
             "docs/nodes/analyzer.rms.md",
             1,
             { { "input", "Input", "audio.mono", "in" } },
@@ -364,6 +379,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "analyzer",
             "feature",
             "audioAnalysis",
+            "meter_scope",
             "docs/nodes/analyzer.loudness.md",
             1,
             { { "input", "Input", "audio.mono", "in" } },
@@ -379,6 +395,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "io",
             "midi",
             "control",
+            "none",
             "docs/nodes/io.midi.cc_out.md",
             1,
             { { "value", "Value", "signal.float", "in" } },
@@ -394,6 +411,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "image",
             "use",
             "render",
+            "tiny_preview",
             "docs/nodes/image.texture.md",
             1,
             {},
@@ -406,6 +424,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "mesh",
             "generate",
             "geometry",
+            "selected_preview",
             "docs/nodes/mesh.plane.md",
             1,
             {},
@@ -418,6 +437,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "material",
             "shading",
             "render",
+            "tiny_preview",
             "docs/nodes/material.shader.md",
             1,
             { { "shader", "Shader", "texture.rgba", "in" } },
@@ -468,6 +488,15 @@ bool isKnownNodeCategoryAlias (const std::string& alias)
 
     return std::find (aliases.begin(), aliases.end(), alias) != aliases.end();
 }
+
+bool isKnownPreviewPolicy (const std::string& policy)
+{
+    static constexpr std::array<const char*, 4> policies {
+        "none", "tiny_preview", "meter_scope", "selected_preview"
+    };
+
+    return std::find (policies.begin(), policies.end(), policy) != policies.end();
+}
 }
 ```
 
@@ -481,7 +510,7 @@ Create `docs/nodes/README.md`:
 Human manuals and machine specs are separate.
 
 - Human manuals live here as Markdown and explain use, examples, and common failure modes.
-- Machine specs live in `NodeSpec` and define type, category, subcategory, runtime domain, ports, params, and doc paths.
+- Machine specs live in `NodeSpec` and define type, category, subcategory, runtime domain, preview policy, ports, params, and doc paths.
 - Node surfaces should show a doc icon that opens the human manual; the patch surface should not print long explanations directly on nodes.
 ```
 
@@ -534,7 +563,7 @@ Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 ```text
 - Proven: first node taxonomy registry exists with Tooll3-seeded categories `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`, plus project categories `shader`, `material`, `audio`, `analyzer`, `output`, and `compound`.
 - Proven: node `type` is stable identity; `category` and `subcategory` are browser metadata and can move through aliases without changing saved graph identity.
-- Proven: node specs point to human Markdown manuals while machine-readable behavior stays in `NodeSpec`.
+- Proven: node specs point to human Markdown manuals and preview policies while machine-readable behavior stays in `NodeSpec`.
 ```
 
 Run:
@@ -1824,12 +1853,14 @@ git commit -m "Wire loudness to shader uniform"
 - Stop before A1 if A0 is not committed. Audio meters may use JUCE labels during the proof, but graph/node UI must not grow a JUCE `Component` NodeView.
 - Stop before implementing node browser UI if Tooll3-seeded `category` / `subcategory` are being treated as runtime execution rules instead of browser metadata.
 - Stop before implementing pin-drag node search if the gesture cannot lower into `create_node` plus `connect` commands.
-- Stop before implementing parameter override UI if connected or animated values would erase stored manual values.
+- Stop before implementing parameter override UI if connected or animated values would erase stored manual values or fail to show the override source clearly.
 - Stop before adding any node editor UI if it would store graph state inside ImGui ids or JUCE components instead of `NodeSpec` / `NodeInstance` / commands.
-- Stop before adding card-heavy node surfaces. Production nodes should stay vvvv-like: name, pins, tiny status, doc/patch icons. Long descriptions belong in human manuals or inspector.
+- Stop before adding card-heavy node surfaces. Production nodes should stay Tooll3-like: name, pins, tiny status, doc/patch icons, and cached preview affordances. Long descriptions belong in human manuals or inspector.
 - Stop before putting usage prose directly on node surfaces; use `humanDocPath` and a doc icon instead.
+- Stop before requesting live microphone input if the built app bundle lacks `NSMicrophoneUsageDescription`.
 - Stop before claiming live A1 proof if `audio_stats.json` shows `sampleRate: 0` or `sampleCounter: 0`.
 - Stop before claiming realtime safety if any callback code allocates, locks, logs, opens files, parses JSON, or calls UI.
+- Stop before allowing live audio node connect/disconnect if runtime graph mutation is not prepared off the audio thread and swapped through a realtime-safe snapshot or queue.
 - Stop before C1 compound work if A1 has no committed analyzer state and no updated spec.
 - Stop before production node editor work; A0 only proves ImGui loop/input viability, not imnodes or a full graph editor.
 
@@ -1841,6 +1872,7 @@ Run:
 git diff --check
 cmake --build build
 ctest --test-dir build --output-on-failure
+plutil -extract NSMicrophoneUsageDescription raw -o - build/my-world_artefacts/我的世界.app/Contents/Info.plist
 rm -rf debug/v1-shader-proof debug/a1-audio-proof
 perl -e 'alarm 12; exec @ARGV' ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 test -s debug/v1-shader-proof/frame.png
@@ -1853,6 +1885,7 @@ test -s debug/a1-audio-proof/audio_stats.json
 Expected:
 - Build passes.
 - All CTest tests pass.
+- The app bundle Info.plist contains `NSMicrophoneUsageDescription`.
 - V1 shader proof still dumps.
 - A0 ImGui smoke overlay remains visible in `debug/v1-shader-proof/frame.png`.
 - A1 audio proof dumps. If live microphone permission is missing, plan/spec states that live proof is blocked rather than complete.
