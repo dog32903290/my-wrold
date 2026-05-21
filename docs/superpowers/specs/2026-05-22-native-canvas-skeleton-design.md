@@ -164,10 +164,9 @@ Contract:
 - Not started: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
 - Proven: JUCE audio callback bridge exists and only writes bounded analyzer state plus output silence.
+- Proven: UI reads analyzer snapshots outside the realtime callback and displays `rms`, `peak`, and `loudness` meter rows.
 - Not proven: live microphone input on this Mac until permission is granted and meter values move.
-- Not started: the realtime audio path only measures or writes bounded realtime-safe state.
-- Not started: UI reads analyzer values outside the realtime callback.
-- Not started: first values include at least `rms`, `peak`, and `loudness`.
+- Proven: the realtime audio path currently only measures or writes bounded realtime-safe state; it does not mutate graph structure.
 - Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
 - Planned: the macOS app bundle includes `NSMicrophoneUsageDescription` before any live audio proof asks for input.
 - Forbidden: mutating or rebuilding the audio runtime graph directly inside the audio callback. Live audio graph changes must be compiled/prepared off-thread and swapped through a realtime-safe snapshot or command queue.

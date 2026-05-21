@@ -135,7 +135,7 @@ Every borrowed interaction must lower into `commandGraph`; every category remain
 - Modify: `CMakeLists.txt`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Write failing node spec tests**
+- [x] **Step 1: Write failing node spec tests**
 
 Add `tests/NodeSpecTests.cpp`:
 
@@ -217,7 +217,7 @@ int main()
 }
 ```
 
-- [ ] **Step 2: Wire the test target and verify RED**
+- [x] **Step 2: Wire the test target and verify RED**
 
 Modify `CMakeLists.txt` near `my_world_core`:
 
@@ -251,7 +251,7 @@ cmake --build build --target my_world_node_spec_tests
 
 Expected: FAIL because `NodeSpec.h` does not exist yet.
 
-- [ ] **Step 3: Implement minimal node taxonomy**
+- [x] **Step 3: Implement minimal node taxonomy**
 
 Create `source/core/NodeSpec.h`:
 
@@ -500,7 +500,7 @@ bool isKnownPreviewPolicy (const std::string& policy)
 }
 ```
 
-- [ ] **Step 4: Add first human node manuals**
+- [x] **Step 4: Add first human node manuals**
 
 Create `docs/nodes/README.md`:
 
@@ -545,7 +545,7 @@ Use `analyzer.loudness` when you need a stable 0..1-ish signal representing trus
 - Treating loudness as a semantic emotion signal will overclaim what the analyzer knows.
 ```
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run:
 
@@ -556,7 +556,7 @@ ctest --test-dir build --output-on-failure
 
 Expected: `node_specs` and existing tests pass.
 
-- [ ] **Step 6: Update spec and commit**
+- [x] **Step 6: Update spec and commit**
 
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
@@ -587,7 +587,7 @@ git commit -m "Add node taxonomy contract"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Write failing interaction grammar tests**
+- [x] **Step 1: Write failing interaction grammar tests**
 
 Add `tests/PatchInteractionTests.cpp`:
 
@@ -642,7 +642,7 @@ int main()
 }
 ```
 
-- [ ] **Step 2: Wire the test target and verify RED**
+- [x] **Step 2: Wire the test target and verify RED**
 
 Modify `CMakeLists.txt`:
 
@@ -676,7 +676,7 @@ cmake --build build --target my_world_patch_interaction_tests
 
 Expected: FAIL because `PatchInteraction.h` does not exist yet.
 
-- [ ] **Step 3: Implement minimal interaction grammar**
+- [x] **Step 3: Implement minimal interaction grammar**
 
 Create `source/core/PatchInteraction.h`:
 
@@ -741,7 +741,7 @@ std::string commandForGesture (const std::string& gesture)
 }
 ```
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 Run:
 
@@ -767,7 +767,7 @@ Expected: patch interaction tests pass and the spec says Tooll3-inspired gesture
 - Modify: `source/render/OpenGLShaderPreview.cpp`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Fetch and build Dear ImGui**
+- [x] **Step 1: Fetch and build Dear ImGui**
 
 Modify the top of `CMakeLists.txt`:
 
@@ -824,7 +824,7 @@ cmake --build build --target my-world
 
 Expected: FAIL because `source/ui/ImGuiSmokeOverlay.cpp` does not exist yet.
 
-- [ ] **Step 2: Add ImGui smoke overlay wrapper**
+- [x] **Step 2: Add ImGui smoke overlay wrapper**
 
 Create `source/ui/ImGuiSmokeOverlay.h`:
 
@@ -957,7 +957,7 @@ void ImGuiSmokeOverlay::addMouseWheel (float deltaY)
 }
 ```
 
-- [ ] **Step 3: Integrate ImGui into the OpenGL render loop**
+- [x] **Step 3: Integrate ImGui into the OpenGL render loop**
 
 In `source/render/OpenGLShaderPreview.h`, include:
 
@@ -1044,7 +1044,7 @@ void OpenGLShaderPreview::mouseWheelMove (const juce::MouseEvent& event, const j
 }
 ```
 
-- [ ] **Step 4: Verify ImGui smoke proof**
+- [x] **Step 4: Verify ImGui smoke proof**
 
 Run:
 
@@ -1062,7 +1062,7 @@ Expected:
 - The `smoke value` slider can be dragged when running the app interactively.
 - This smoke window is not the production node surface; it only proves ImGui frame/input/render viability.
 
-- [ ] **Step 5: Update spec and commit**
+- [x] **Step 5: Update spec and commit**
 
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
@@ -1090,7 +1090,7 @@ git commit -m "Add ImGui smoke overlay"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Write failing analyzer tests**
+- [x] **Step 1: Write failing analyzer tests**
 
 Add `tests/AudioAnalyzerStateTests.cpp`:
 
@@ -1158,7 +1158,7 @@ int main()
 }
 ```
 
-- [ ] **Step 2: Wire the test target and verify RED**
+- [x] **Step 2: Wire the test target and verify RED**
 
 Modify `CMakeLists.txt`:
 
@@ -1192,7 +1192,7 @@ cmake --build build --target my_world_audio_analyzer_tests
 
 Expected: FAIL because `AudioAnalyzerState.h` does not exist yet.
 
-- [ ] **Step 3: Implement minimal analyzer state**
+- [x] **Step 3: Implement minimal analyzer state**
 
 Create `source/audio/AudioAnalyzerState.h`:
 
@@ -1302,7 +1302,7 @@ AudioAnalyzerSnapshot AudioAnalyzerState::getSnapshot() const noexcept
 }
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [x] **Step 4: Verify GREEN**
 
 Run:
 
@@ -1313,7 +1313,7 @@ ctest --test-dir build --output-on-failure
 
 Expected: `audio_analyzer_state` and `graph_contract` both pass.
 
-- [ ] **Step 5: Update spec and commit**
+- [x] **Step 5: Update spec and commit**
 
 Update A1 in `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
@@ -1342,7 +1342,7 @@ git commit -m "Add realtime audio analyzer state"
 - Modify: `CMakeLists.txt`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Add callback bridge header**
+- [x] **Step 1: Add callback bridge header**
 
 Create `source/audio/AudioInputAnalyzer.h`:
 
@@ -1383,7 +1383,7 @@ private:
 }
 ```
 
-- [ ] **Step 2: Add callback bridge implementation**
+- [x] **Step 2: Add callback bridge implementation**
 
 Create `source/audio/AudioInputAnalyzer.cpp`:
 
@@ -1448,7 +1448,7 @@ void AudioInputAnalyzer::setAnalysisGain (float newGain) noexcept
 }
 ```
 
-- [ ] **Step 3: Link JUCE audio devices**
+- [x] **Step 3: Link JUCE audio devices**
 
 Modify `CMakeLists.txt`:
 
@@ -1475,7 +1475,7 @@ endif()
 
 Keep `my_world_audio_analyzer_tests` linked only to the pure `AudioAnalyzerState.cpp` path. It must keep running even if the JUCE checkout is missing and only core tests are configured.
 
-- [ ] **Step 4: Verify build**
+- [x] **Step 4: Verify build**
 
 Run:
 
@@ -1486,7 +1486,7 @@ ctest --test-dir build --output-on-failure
 
 Expected: full build and tests pass.
 
-- [ ] **Step 5: Update spec and commit**
+- [x] **Step 5: Update spec and commit**
 
 Update A1 in `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
@@ -1514,7 +1514,7 @@ git commit -m "Add native audio input bridge"
 - Modify: `source/app/MainComponent.cpp`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Add UI ownership**
+- [x] **Step 1: Add UI ownership**
 
 Modify `source/app/MainComponent.h`:
 
@@ -1537,7 +1537,7 @@ juce::Label peakLabel;
 juce::Label loudnessLabel;
 ```
 
-- [ ] **Step 2: Start audio input**
+- [x] **Step 2: Start audio input**
 
 In `source/app/MainComponent.cpp`, add:
 
@@ -1576,7 +1576,7 @@ stopTimer();
 audioDeviceManager.removeAudioCallback (&audioInputAnalyzer);
 ```
 
-- [ ] **Step 3: Update meter rows**
+- [x] **Step 3: Update meter rows**
 
 Add:
 
@@ -1605,7 +1605,7 @@ void MainComponent::updateAudioMeters()
 
 Place the labels in `resized()` above or below the shader editor without covering the preview.
 
-- [ ] **Step 4: Verify UI build**
+- [x] **Step 4: Verify UI build**
 
 Run:
 
@@ -1625,7 +1625,7 @@ Expected:
 - If macOS asks for Microphone permission, stop and ask the user to click Allow.
 - If permission is already granted, meter rows appear and build remains stable.
 
-- [ ] **Step 5: Update spec and commit**
+- [x] **Step 5: Update spec and commit**
 
 Update A1:
 

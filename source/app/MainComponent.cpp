@@ -11,6 +11,13 @@ juce::Font monoFont (float height)
     return juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), height, juce::Font::plain));
 }
 
+void configureMeterLabel (juce::Label& label, juce::String text)
+{
+    label.setText (std::move (text), juce::dontSendNotification);
+    label.setColour (juce::Label::textColourId, juce::Colour::fromRGB (202, 211, 226));
+    label.setFont (monoFont (13.0f));
+}
+
 juce::File projectDirectory()
 {
     const auto environmentPath = juce::SystemStats::getEnvironmentVariable ("MY_WORLD_PROJECT_DIR", {});
@@ -43,6 +50,18 @@ MainComponent::MainComponent (bool dumpProofOnStart, bool quitAfterProofDump)
     statusLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
     addAndMakeVisible (statusLabel);
 
+    audioStatusLabel.setText ("audio input starting", juce::dontSendNotification);
+    audioStatusLabel.setColour (juce::Label::textColourId, juce::Colour::fromRGB (157, 198, 218));
+    audioStatusLabel.setFont (monoFont (13.0f));
+    addAndMakeVisible (audioStatusLabel);
+
+    configureMeterLabel (rmsLabel, "rms 0.0000");
+    configureMeterLabel (peakLabel, "peak 0.0000");
+    configureMeterLabel (loudnessLabel, "loudness 0.0000");
+    addAndMakeVisible (rmsLabel);
+    addAndMakeVisible (peakLabel);
+    addAndMakeVisible (loudnessLabel);
+
     dumpProofButton.setButtonText ("Dump Proof");
     dumpProofButton.onClick = [this] { dumpProof(); };
     addAndMakeVisible (dumpProofButton);
@@ -69,6 +88,9 @@ MainComponent::MainComponent (bool dumpProofOnStart, bool quitAfterProofDump)
     };
     addAndMakeVisible (preview);
 
+    startAudioInput();
+    startTimerHz (30);
+
     if (dumpProofOnStart)
     {
         juce::Timer::callAfterDelay (750, [safe = juce::Component::SafePointer<MainComponent> (this)]
@@ -83,6 +105,8 @@ MainComponent::MainComponent (bool dumpProofOnStart, bool quitAfterProofDump)
 
 MainComponent::~MainComponent()
 {
+    stopTimer();
+    audioDeviceManager.removeAudioCallback (&audioInputAnalyzer);
     preview.onStatusMessage = nullptr;
 }
 
@@ -101,6 +125,14 @@ void MainComponent::resized()
     header.removeFromRight (10);
     statusLabel.setBounds (header);
 
+    area.removeFromTop (8);
+
+    auto audioRow = area.removeFromTop (24);
+    audioStatusLabel.setBounds (audioRow.removeFromLeft (270));
+    rmsLabel.setBounds (audioRow.removeFromLeft (118));
+    peakLabel.setBounds (audioRow.removeFromLeft (118));
+    loudnessLabel.setBounds (audioRow.removeFromLeft (160));
+
     area.removeFromTop (10);
 
     auto left = area.removeFromLeft (juce::jmax (360, area.getWidth() / 2));
@@ -117,6 +149,11 @@ void MainComponent::dumpProof()
     preview.requestProofDump (directory, graph);
 }
 
+void MainComponent::timerCallback()
+{
+    updateAudioMeters();
+}
+
 void MainComponent::setShaderStatus (juce::String message)
 {
     const auto shouldQuit = shouldQuitAfterProofDump && message.startsWith ("proof dumped:");
@@ -129,6 +166,41 @@ void MainComponent::setShaderStatus (juce::String message)
             if (auto* app = juce::JUCEApplicationBase::getInstance())
                 app->systemRequestedQuit();
         });
+    }
+}
+
+void MainComponent::startAudioInput()
+{
+    const auto error = audioDeviceManager.initialiseWithDefaultDevices (1, 0);
+
+    if (error.isNotEmpty())
+    {
+        audioStatusLabel.setText ("audio input error: " + error, juce::dontSendNotification);
+        return;
+    }
+
+    audioDeviceManager.addAudioCallback (&audioInputAnalyzer);
+    audioStatusLabel.setText ("audio input ready", juce::dontSendNotification);
+}
+
+void MainComponent::updateAudioMeters()
+{
+    const auto snapshot = audioInputAnalyzer.getSnapshot();
+
+    rmsLabel.setText ("rms " + juce::String (snapshot.rms, 4), juce::dontSendNotification);
+    peakLabel.setText ("peak " + juce::String (snapshot.peak, 4), juce::dontSendNotification);
+    loudnessLabel.setText ("loudness " + juce::String (snapshot.loudness, 4), juce::dontSendNotification);
+
+    const auto sampleRate = audioInputAnalyzer.getSampleRate();
+
+    if (sampleRate > 0.0)
+    {
+        audioStatusLabel.setText ("audio input "
+                                      + juce::String (sampleRate, 0)
+                                      + "Hz / "
+                                      + juce::String (audioInputAnalyzer.getBufferSize())
+                                      + " samples",
+                                  juce::dontSendNotification);
     }
 }
 }
