@@ -74,6 +74,26 @@ target_link_libraries(my_world_node_spec_tests
 
 add_test(NAME node_specs COMMAND my_world_node_spec_tests)
 
+add_library(my_world_patch_interaction
+    source/core/PatchInteraction.cpp
+)
+
+target_include_directories(my_world_patch_interaction
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_patch_interaction_tests
+    tests/PatchInteractionTests.cpp
+)
+
+target_link_libraries(my_world_patch_interaction_tests
+    PRIVATE
+        my_world_patch_interaction
+)
+
+add_test(NAME patch_interaction COMMAND my_world_patch_interaction_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
 )
