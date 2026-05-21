@@ -162,6 +162,8 @@ native preferences -> audio input -> native analyzer meter rows
 Contract:
 
 - Not started: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
+- Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
+- Not started: native audio device input bridge.
 - Not started: the realtime audio path only measures or writes bounded realtime-safe state.
 - Not started: UI reads analyzer values outside the realtime callback.
 - Not started: first values include at least `rms`, `peak`, and `loudness`.

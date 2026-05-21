@@ -96,6 +96,26 @@ target_link_libraries(my_world_patch_interaction_tests
 
 add_test(NAME patch_interaction COMMAND my_world_patch_interaction_tests)
 
+add_library(my_world_audio
+    source/audio/AudioAnalyzerState.cpp
+)
+
+target_include_directories(my_world_audio
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
+)
+
+add_executable(my_world_audio_analyzer_tests
+    tests/AudioAnalyzerStateTests.cpp
+)
+
+target_link_libraries(my_world_audio_analyzer_tests
+    PRIVATE
+        my_world_audio
+)
+
+add_test(NAME audio_analyzer_state COMMAND my_world_audio_analyzer_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
 )
