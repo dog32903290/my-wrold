@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: Initial design for repo scaffold
+Status: V1 shader preview proof dump implemented; A1/C1 not yet built
 
 ## Purpose
 
@@ -31,12 +31,28 @@ native app -> hand-written Shader node -> Output preview
 
 Contract:
 
-- The app opens as a native desktop app.
-- A default graph contains one Shader node connected to Output.
-- The user can edit fragment shader text.
-- Compile success updates the preview.
-- Compile failure keeps the last valid frame and shows an error.
-- The runtime can dump `frame.png`, `cook_order.json`, and `node_stats.json` for proof.
+- Proven: the app opens as a native desktop app.
+- Proven: a default graph contains one Shader node connected to Output.
+- Proven: the user can edit fragment shader text with the current JUCE `TextEditor` proof UI.
+- Proven: compile success updates the preview.
+- Proven: compile failure keeps the last valid frame and shows an error.
+- Proven: the runtime can dump `frame.png`, `cook_order.json`, and `node_stats.json` for proof.
+
+Current proof command:
+
+```bash
+./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
+```
+
+Current proof output:
+
+```text
+debug/v1-shader-proof/frame.png
+debug/v1-shader-proof/cook_order.json
+debug/v1-shader-proof/node_stats.json
+```
+
+The V1 dump currently reads back the OpenGL framebuffer from `OpenGLShaderPreview`. This proves native render evidence, but the render backend boundary is not fully extracted yet.
 
 ### A1 Audio Proof
 
@@ -48,11 +64,11 @@ native preferences -> audio input -> native analyzer meter rows
 
 Contract:
 
-- Preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
-- The realtime audio path only measures or writes bounded realtime-safe state.
-- UI reads analyzer values outside the realtime callback.
-- First values include at least `rms`, `peak`, and `loudness`.
-- MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
+- Not started: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
+- Not started: the realtime audio path only measures or writes bounded realtime-safe state.
+- Not started: UI reads analyzer values outside the realtime callback.
+- Not started: first values include at least `rms`, `peak`, and `loudness`.
+- Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
 
 ### C1 Compound Proof
 
@@ -64,10 +80,10 @@ loudness compound patcher -> expanded child patchers -> collapsed public ports
 
 Contract:
 
-- `loudness` can appear as one collapsed node.
-- It can expand to show child patchers such as `AudioIn`, `MonoMix`, `RMS`, `AnalysisGain`, `PreGate`, `OutputSmoother`, and `LoudnessOut`.
-- The compound exposes public ports such as `loudness.out`.
-- It can also expose selected inner ports such as `loudness.rms`, `loudness.peak`, `loudness.gate`, and `loudness.confidence`.
+- Not started: `loudness` can appear as one collapsed node.
+- Not started: it can expand to show child patchers such as `AudioIn`, `MonoMix`, `RMS`, `AnalysisGain`, `PreGate`, `OutputSmoother`, and `LoudnessOut`.
+- Not started: the compound exposes public ports such as `loudness.out`.
+- Not started: it can also expose selected inner ports such as `loudness.rms`, `loudness.peak`, `loudness.gate`, and `loudness.confidence`.
 
 ## Architecture
 
@@ -100,7 +116,7 @@ Initial implementation:
 
 ```text
 RenderBackend interface
-OpenGLBackend implementation
+OpenGLShaderPreview direct implementation
 ```
 
 Minimum backend methods:
@@ -114,7 +130,7 @@ resize
 destroy
 ```
 
-Metal is parked, not rejected. The backend boundary exists so the first app is not trapped by OpenGL.
+Metal is parked, not rejected. `RenderBackend` exists as an interface, but `OpenGLShaderPreview` still owns compile/render/readback directly. Extracting the OpenGL implementation behind `RenderBackend` remains pending.
 
 ## Audio Analyzer Migration
 
@@ -173,13 +189,13 @@ The first skeleton does not need full AI UI, but it must not design graph mutati
 - No plugin build target yet.
 - No complete 13-patch analyzer UI yet.
 - No full AI worker UI yet.
+- No production node editor UI yet; Dear ImGui / node editor integration remains a later proof after graph evidence is stable.
 
 ## Open Questions
 
-- Exact JUCE version / dependency acquisition method.
-- Whether to vendor JUCE, use CPM/FetchContent, or reference an existing local JUCE checkout.
-- Exact first shader editor component choice.
+- Exact JUCE version / dependency acquisition method for portable builds. Current local proof references `/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer-plugin/JUCE`.
+- Whether to vendor JUCE, use CPM/FetchContent, or keep a local checkout path for early work.
 - Exact first graph serialization format once `NodeSpec` is drafted.
+- Exact Dear ImGui node editor library choice (`imnodes`, `imgui-node-editor`, or custom layer) after the command graph contract is less soft.
 
 These are implementation questions, not design blockers.
-

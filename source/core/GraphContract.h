@@ -39,4 +39,12 @@ struct GraphContract
 GraphContract makeDefaultShaderOutputGraph();
 bool usesSystemUniform (const GraphNode& node, const std::string& uniformName);
 std::string defaultFragmentShader();
+std::string makeCookOrderJson (const GraphContract& graph);
+std::string makeNodeStatsJson (const GraphContract& graph,
+                               int viewportWidth,
+                               int viewportHeight,
+                               unsigned int frameIndex,
+                               double timeSeconds,
+                               const std::string& renderer,
+                               const std::string& shaderStatus);
 }

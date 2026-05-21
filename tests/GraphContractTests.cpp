@@ -14,6 +14,11 @@ void expect (bool condition, const std::string& message)
         std::exit (1);
     }
 }
+
+void expectContains (const std::string& text, const std::string& expected, const std::string& message)
+{
+    expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
+}
 }
 
 int main()
@@ -40,7 +45,30 @@ int main()
     expect (myworld::usesSystemUniform (shader, "u_resolution"), "default shader declares u_resolution");
     expect (myworld::usesSystemUniform (shader, "u_frame"), "default shader declares u_frame");
 
+    const auto cookOrderJson = myworld::makeCookOrderJson (graph);
+    expectContains (cookOrderJson, "\"version\": 1", "cook order json");
+    expectContains (cookOrderJson, "\"cookOrder\"", "cook order json");
+    expectContains (cookOrderJson, "\"shader1\"", "cook order json");
+    expectContains (cookOrderJson, "\"out1\"", "cook order json");
+    expect (cookOrderJson.find ("\"shader1\"") < cookOrderJson.find ("\"out1\""),
+            "shader should cook before output");
+
+    const auto nodeStatsJson = myworld::makeNodeStatsJson (graph,
+                                                           640,
+                                                           360,
+                                                           12,
+                                                           0.5,
+                                                           "OpenGL",
+                                                           "compiled: GLSL v4.10");
+    expectContains (nodeStatsJson, "\"viewport\"", "node stats json");
+    expectContains (nodeStatsJson, "\"width\": 640", "node stats json");
+    expectContains (nodeStatsJson, "\"height\": 360", "node stats json");
+    expectContains (nodeStatsJson, "\"frameIndex\": 12", "node stats json");
+    expectContains (nodeStatsJson, "\"renderer\": \"OpenGL\"", "node stats json");
+    expectContains (nodeStatsJson, "\"shaderStatus\": \"compiled: GLSL v4.10\"", "node stats json");
+    expectContains (nodeStatsJson, "\"type\": \"shader.fragment\"", "node stats json");
+    expectContains (nodeStatsJson, "\"systemUniforms\"", "node stats json");
+
     std::cout << "graph contract ok\n";
     return 0;
 }
-

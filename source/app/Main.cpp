@@ -19,9 +19,10 @@ public:
     const juce::String getApplicationVersion() override { return "0.1.0"; }
     bool moreThanOneInstanceAllowed() override { return true; }
 
-    void initialise (const juce::String&) override
+    void initialise (const juce::String& commandLine) override
     {
-        mainWindow = std::make_unique<MainWindow> (getApplicationName());
+        const auto dumpProofAndExit = commandLine.contains ("--dump-proof-and-exit");
+        mainWindow = std::make_unique<MainWindow> (getApplicationName(), dumpProofAndExit);
     }
 
     void shutdown() override
@@ -38,13 +39,13 @@ private:
     class MainWindow final : public juce::DocumentWindow
     {
     public:
-        explicit MainWindow (juce::String name)
+        MainWindow (juce::String name, bool dumpProofAndExit)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setContentOwned (new MainComponent (dumpProofAndExit, dumpProofAndExit), true);
             centreWithSize (getWidth(), getHeight());
             setResizable (true, true);
             setVisible (true);

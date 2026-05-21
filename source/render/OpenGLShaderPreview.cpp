@@ -1,5 +1,7 @@
 #include "OpenGLShaderPreview.h"
 
+#include <vector>
+
 namespace myworld
 {
 namespace
@@ -24,6 +26,25 @@ std::unique_ptr<juce::OpenGLShaderProgram::Attribute> makeAttribute (juce::OpenG
         return {};
 
     return std::make_unique<juce::OpenGLShaderProgram::Attribute> (program, name);
+}
+
+bool writeTextFile (const juce::File& file, const std::string& text)
+{
+    return file.replaceWithText (juce::String::fromUTF8 (text.data(), static_cast<int> (text.size())),
+                                 false,
+                                 false,
+                                 "\n");
+}
+
+bool writePngFile (const juce::File& file, const juce::Image& image)
+{
+    auto output = file.createOutputStream();
+
+    if (output == nullptr)
+        return false;
+
+    juce::PNGImageFormat pngFormat;
+    return pngFormat.writeImageToStream (image, *output);
 }
 }
 
@@ -50,6 +71,17 @@ void OpenGLShaderPreview::setFragmentShader (std::string source)
     const juce::ScopedLock lock (shaderLock);
     pendingFragmentShader = std::move (source);
     compileRequested = true;
+    openGLContext.triggerRepaint();
+}
+
+void OpenGLShaderPreview::requestProofDump (juce::File outputDirectory, GraphContract graph)
+{
+    {
+        const juce::ScopedLock lock (proofDumpLock);
+        pendingProofDump = std::make_unique<PendingProofDump> (PendingProofDump { std::move (outputDirectory),
+                                                                                  std::move (graph) });
+    }
+
     openGLContext.triggerRepaint();
 }
 
@@ -94,41 +126,42 @@ void OpenGLShaderPreview::renderOpenGL()
     glViewport (0, 0, juce::jmax (1, width), juce::jmax (1, height));
     juce::OpenGLHelpers::clear (juce::Colour::fromRGB (8, 9, 12));
 
-    if (shaderProgram == nullptr)
-        return;
-
-    shaderProgram->use();
-
     const auto nowSeconds = juce::Time::getMillisecondCounterHiRes() * 0.001;
     const auto elapsed = static_cast<float> (nowSeconds - startTimeSeconds);
 
-    if (timeUniform != nullptr)
-        timeUniform->set (elapsed);
-
-    if (resolutionUniform != nullptr)
-        resolutionUniform->set (static_cast<float> (juce::jmax (1, width)),
-                                static_cast<float> (juce::jmax (1, height)));
-
-    if (frameUniform != nullptr)
-        frameUniform->set (static_cast<float> (frameIndex));
-
-    glBindVertexArray (vertexArray);
-    glBindBuffer (GL_ARRAY_BUFFER, vertexBuffer);
-
-    if (positionAttribute != nullptr)
+    if (shaderProgram != nullptr)
     {
-        glVertexAttribPointer (positionAttribute->attributeID, 2, GL_FLOAT, GL_FALSE, 2 * sizeof (GLfloat), nullptr);
-        glEnableVertexAttribArray (positionAttribute->attributeID);
+        shaderProgram->use();
+
+        if (timeUniform != nullptr)
+            timeUniform->set (elapsed);
+
+        if (resolutionUniform != nullptr)
+            resolutionUniform->set (static_cast<float> (juce::jmax (1, width)),
+                                    static_cast<float> (juce::jmax (1, height)));
+
+        if (frameUniform != nullptr)
+            frameUniform->set (static_cast<float> (frameIndex));
+
+        glBindVertexArray (vertexArray);
+        glBindBuffer (GL_ARRAY_BUFFER, vertexBuffer);
+
+        if (positionAttribute != nullptr)
+        {
+            glVertexAttribPointer (positionAttribute->attributeID, 2, GL_FLOAT, GL_FALSE, 2 * sizeof (GLfloat), nullptr);
+            glEnableVertexAttribArray (positionAttribute->attributeID);
+        }
+
+        glDrawArrays (GL_TRIANGLE_STRIP, 0, 4);
+
+        if (positionAttribute != nullptr)
+            glDisableVertexAttribArray (positionAttribute->attributeID);
+
+        glBindBuffer (GL_ARRAY_BUFFER, 0);
+        glBindVertexArray (0);
     }
 
-    glDrawArrays (GL_TRIANGLE_STRIP, 0, 4);
-
-    if (positionAttribute != nullptr)
-        glDisableVertexAttribArray (positionAttribute->attributeID);
-
-    glBindBuffer (GL_ARRAY_BUFFER, 0);
-    glBindVertexArray (0);
-
+    handlePendingProofDump (juce::jmax (1, width), juce::jmax (1, height), elapsed, frameIndex);
     ++frameIndex;
 }
 
@@ -177,6 +210,89 @@ void OpenGLShaderPreview::compilePendingShader()
     reportStatus ("compile failed; keeping last valid frame\n" + nextProgram->getLastError());
 }
 
+void OpenGLShaderPreview::handlePendingProofDump (int width,
+                                                  int height,
+                                                  double timeSeconds,
+                                                  juce::uint32 currentFrameIndex)
+{
+    std::unique_ptr<PendingProofDump> dump;
+
+    {
+        const juce::ScopedLock lock (proofDumpLock);
+        dump = std::move (pendingProofDump);
+        pendingProofDump.reset();
+    }
+
+    if (dump == nullptr)
+        return;
+
+    if (! dump->outputDirectory.createDirectory())
+    {
+        reportStatus ("proof dump failed: could not create " + dump->outputDirectory.getFullPathName());
+        return;
+    }
+
+    const auto frameImage = readCurrentFrameBuffer (width, height);
+    const auto frameFile = dump->outputDirectory.getChildFile ("frame.png");
+    const auto cookOrderFile = dump->outputDirectory.getChildFile ("cook_order.json");
+    const auto nodeStatsFile = dump->outputDirectory.getChildFile ("node_stats.json");
+
+    const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
+    const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
+                                                 makeNodeStatsJson (dump->graph,
+                                                                    width,
+                                                                    height,
+                                                                    currentFrameIndex,
+                                                                    timeSeconds,
+                                                                    "OpenGL",
+                                                                    lastStatus.toStdString()));
+    const auto frameWritten = writePngFile (frameFile, frameImage);
+
+    if (cookOrderWritten && nodeStatsWritten && frameWritten)
+    {
+        reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
+        return;
+    }
+
+    reportStatus ("proof dump failed: "
+                  + juce::String (cookOrderWritten ? "" : "cook_order.json ")
+                  + juce::String (nodeStatsWritten ? "" : "node_stats.json ")
+                  + juce::String (frameWritten ? "" : "frame.png"));
+}
+
+juce::Image OpenGLShaderPreview::readCurrentFrameBuffer (int width, int height) const
+{
+    using namespace ::juce::gl;
+
+    std::vector<unsigned char> pixels (static_cast<size_t> (width) * static_cast<size_t> (height) * 4u);
+
+    glPixelStorei (GL_PACK_ALIGNMENT, 1);
+    glReadPixels (0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+    juce::Image image (juce::Image::ARGB, width, height, true);
+    juce::Image::BitmapData bitmap (image, juce::Image::BitmapData::writeOnly);
+
+    for (int y = 0; y < height; ++y)
+    {
+        const auto sourceY = height - 1 - y;
+
+        for (int x = 0; x < width; ++x)
+        {
+            const auto sourceIndex = (static_cast<size_t> (sourceY) * static_cast<size_t> (width)
+                                      + static_cast<size_t> (x)) * 4u;
+
+            bitmap.setPixelColour (x,
+                                   y,
+                                   juce::Colour::fromRGBA (pixels[sourceIndex],
+                                                           pixels[sourceIndex + 1],
+                                                           pixels[sourceIndex + 2],
+                                                           pixels[sourceIndex + 3]));
+        }
+    }
+
+    return image;
+}
+
 void OpenGLShaderPreview::releaseGLObjects()
 {
     using namespace ::juce::gl;
@@ -202,6 +318,8 @@ void OpenGLShaderPreview::releaseGLObjects()
 
 void OpenGLShaderPreview::reportStatus (juce::String message)
 {
+    lastStatus = message;
+
     if (onStatusMessage != nullptr)
         onStatusMessage (std::move (message));
 }

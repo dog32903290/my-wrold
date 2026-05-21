@@ -33,6 +33,12 @@ loudness compound patcher -> expanded child patchers -> collapsed public ports
 - First app type：standalone native app，不先做 plugin。
 - Repo policy：小步 commit；每根 proof 都要有可回讀證據。
 
+## 計劃同步規則
+
+- 每次改 code 後，commit 前都要回頭檢查最新的 plan / spec 文件。
+- 計劃不能只新增不刪減：已證明的要標成已證明，錯的假設要拆掉或改寫，停車問題要保留但不要混在當前承重線裡。
+- commit 必須包含對應的 plan 更新，除非這次改動純屬格式化或修 typo，且不改變任何工程狀態。
+
 ## 結構規則
 
 - C++ UI 要 data-driven。不要把 UI、runtime、serialization、ports 全寫進巨大 node class。
@@ -54,4 +60,3 @@ hand-written GLSL
 - Compile 失敗：保留上一個成功畫面。
 - 錯誤訊息要可見。
 - Proof 可 dump `frame.png`、`cook_order.json`、`node_stats.json`。
-
