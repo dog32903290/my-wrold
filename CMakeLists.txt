@@ -31,6 +31,26 @@ target_link_libraries(my_world_graph_contract_tests
 
 add_test(NAME graph_contract COMMAND my_world_graph_contract_tests)
 
+add_library(my_world_graph_language
+    source/core/GraphLanguage.cpp
+)
+
+target_include_directories(my_world_graph_language
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_graph_language_tests
+    tests/GraphLanguageTests.cpp
+)
+
+target_link_libraries(my_world_graph_language_tests
+    PRIVATE
+        my_world_graph_language
+)
+
+add_test(NAME graph_language COMMAND my_world_graph_language_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
 )
