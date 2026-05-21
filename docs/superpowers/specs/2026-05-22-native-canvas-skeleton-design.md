@@ -34,9 +34,12 @@ Contract:
 - Planned: first node taxonomy registry separates `type`, `category`, `runtimeDomain`, and port `dataType`.
 - Planned: seed categories include `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
 - Planned: `type` remains stable saved graph identity; `category` is registry metadata and can be extended or migrated later.
+- Planned: each node spec points to a human manual; machine-readable behavior lives in `NodeSpec`, not prose.
 - Planned: Dear ImGui mounts in the OpenGL render loop before any production node editor work.
 - Planned: A0 may show a simple ImGui smoke panel / slider, but it must not own graph truth or graph mutation.
+- Planned: production node surfaces follow vvvv-like minimal patching: compact name, pins, tiny status, doc/patch icons; values live in IOBox / Pad / Meter / Scope nodes or inspector.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
+- Forbidden: writing long explanatory sentences directly on node surfaces.
 
 ### V1 Visual Proof
 
@@ -156,6 +159,52 @@ compound
 ```
 
 New categories can be added later through the registry. Existing saved graph identity should move through aliases or migration, not by casually renaming `type`.
+
+### Node Surface
+
+The patch surface should lean closer to vvvv than to card-heavy dashboard UI.
+
+Default visible node:
+
+```text
+name
+input pins
+output pins
+tiny status mark
+doc icon
+patch-behind / expand icon when available
+```
+
+Hidden until hover, selection, inspector, or a dedicated display node:
+
+```text
+long description
+usage examples
+failure modes
+large values
+meters
+previews
+full parameter explanations
+```
+
+Values should be exposed through explicit nodes:
+
+```text
+IOBox
+Pad
+Meter
+Scope
+Preview
+```
+
+Human documentation and machine documentation are separate:
+
+```text
+human manual   docs/nodes/<node-type>.md
+machine spec   NodeSpec registry / serialized graph schema
+```
+
+The node surface may show a `?` or small book icon that opens the human manual in an inspector. The machine spec is used by validation, node browser filtering, graph migration, AI worker commands, and runtime dispatch.
 
 ### Render Backend
 

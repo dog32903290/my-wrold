@@ -4,7 +4,7 @@
 
 **Goal:** Prevent the JUCE `Component` NodeView trap, define the first node taxonomy contract, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
 
-**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
+**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Node surfaces follow a vvvv-like minimal patch style: compact names, pins, tiny state marks, and doc/patch icons instead of card-heavy explanations. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
 
 **Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, JUCE OpenGL, Dear ImGui `v1.92.8`, CMake, existing native app shell.
 
@@ -30,13 +30,19 @@
   - Link `my-world` with `my_world_audio`, `my_world_imgui`, and `juce::juce_audio_devices`.
 
 - Create: `source/core/NodeSpec.h`
-  - Stable node taxonomy, port, param, and runtime domain structs.
+  - Stable node taxonomy, port, param, human manual path, and runtime domain structs.
 
 - Create: `source/core/NodeSpec.cpp`
   - First seed node specs and lookup helpers.
 
 - Create: `tests/NodeSpecTests.cpp`
   - Tests category/runtime/data-type contracts and extension behavior.
+
+- Create: `docs/nodes/analyzer.loudness.md`
+  - First human-readable node manual.
+
+- Create: `docs/nodes/README.md`
+  - Node manual convention: human Markdown vs machine `NodeSpec`.
 
 - Create: `source/ui/ImGuiSmokeOverlay.h`
   - Small Dear ImGui overlay wrapper.
@@ -92,6 +98,8 @@
 - Create: `source/core/NodeSpec.h`
 - Create: `source/core/NodeSpec.cpp`
 - Create: `tests/NodeSpecTests.cpp`
+- Create: `docs/nodes/README.md`
+- Create: `docs/nodes/analyzer.loudness.md`
 - Modify: `CMakeLists.txt`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
@@ -135,6 +143,8 @@ int main()
     expect (loudness->runtimeDomain == "audioAnalysis", "loudness runtime domain");
     expect (loudness->inputs[0].dataType == "audio.mono", "loudness input data type");
     expect (loudness->outputs[0].dataType == "signal.float", "loudness output data type");
+    expect (loudness->humanDocPath == "docs/nodes/analyzer.loudness.md", "loudness human manual path");
+    expect (loudness->machineSpecVersion == 1, "machine spec version");
 
     const auto* midi = myworld::findNodeSpec (specs, "midi.ccOut");
     expect (midi != nullptr, "midi.ccOut seed spec exists");
@@ -219,6 +229,8 @@ struct NodeSpec
     std::string displayName;
     std::string category;
     std::string runtimeDomain;
+    std::string humanDocPath;
+    int machineSpecVersion = 1;
     std::vector<PortSpec> inputs;
     std::vector<PortSpec> outputs;
     std::vector<ParamSpec> params;
@@ -248,6 +260,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Fragment Shader",
             "shader",
             "render",
+            "docs/nodes/shader.fragment.md",
+            1,
             {},
             { { "output", "Output", "texture.rgba", "out" } },
             {
@@ -259,6 +273,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Preview Output",
             "output",
             "render",
+            "docs/nodes/output.preview.md",
+            1,
             { { "input", "Input", "texture.rgba", "in" } },
             {},
             {}
@@ -268,6 +284,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Audio Input",
             "audio",
             "audio",
+            "docs/nodes/audio.input.md",
+            1,
             {},
             { { "mono", "Mono", "audio.mono", "out" } },
             {
@@ -279,6 +297,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "RMS",
             "analyzer",
             "audioAnalysis",
+            "docs/nodes/analyzer.rms.md",
+            1,
             { { "input", "Input", "audio.mono", "in" } },
             { { "rms", "RMS", "signal.float", "out" } },
             {}
@@ -288,6 +308,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Loudness",
             "analyzer",
             "audioAnalysis",
+            "docs/nodes/analyzer.loudness.md",
+            1,
             { { "input", "Input", "audio.mono", "in" } },
             { { "out", "Loudness", "signal.float", "out" } },
             {
@@ -300,6 +322,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "MIDI CC Out",
             "midi",
             "control",
+            "docs/nodes/midi.ccOut.md",
+            1,
             { { "value", "Value", "signal.float", "in" } },
             {},
             {
@@ -312,6 +336,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Texture",
             "top",
             "render",
+            "docs/nodes/top.texture.md",
+            1,
             {},
             { { "output", "Output", "texture.rgba", "out" } },
             {}
@@ -321,6 +347,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Plane",
             "sop",
             "geometry",
+            "docs/nodes/sop.plane.md",
+            1,
             {},
             { { "geometry", "Geometry", "geometry.mesh", "out" } },
             {}
@@ -330,6 +358,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "Shader Material",
             "mat",
             "render",
+            "docs/nodes/mat.shader.md",
+            1,
             { { "shader", "Shader", "shader.program", "in" } },
             { { "material", "Material", "material", "out" } },
             {}
@@ -359,7 +389,52 @@ bool isKnownNodeCategory (const std::string& category)
 }
 ```
 
-- [ ] **Step 4: Verify GREEN**
+- [ ] **Step 4: Add first human node manuals**
+
+Create `docs/nodes/README.md`:
+
+```markdown
+# Node Manuals
+
+Human manuals and machine specs are separate.
+
+- Human manuals live here as Markdown and explain use, examples, and common failure modes.
+- Machine specs live in `NodeSpec` and define type, category, runtime domain, ports, params, and doc paths.
+- Node surfaces should show a doc icon that opens the human manual; the patch surface should not print long explanations directly on nodes.
+```
+
+Create `docs/nodes/analyzer.loudness.md`:
+
+```markdown
+# Loudness
+
+Use `analyzer.loudness` when you need a stable 0..1-ish signal representing trusted sound energy.
+
+## Inputs
+
+- `input` (`audio.mono`): mono audio measurement stream.
+
+## Outputs
+
+- `out` (`signal.float`): shaped loudness value.
+- `rms` (`signal.float`): raw RMS-style energy when exposed by a compound.
+- `peak` (`signal.float`): raw peak when exposed by a compound.
+- `confidence` (`signal.float`): trust signal when exposed by a compound.
+
+## Use
+
+- Drive shader uniforms such as `u_loudness`.
+- Drive MIDI CC values.
+- Gate visuals only when the room or instrument is active.
+
+## Failure Modes
+
+- Threshold too high erases soft breath or quiet performance.
+- Smooth too high makes the visual response late.
+- Treating loudness as a semantic emotion signal will overclaim what the analyzer knows.
+```
+
+- [ ] **Step 5: Verify GREEN**
 
 Run:
 
@@ -370,13 +445,14 @@ ctest --test-dir build --output-on-failure
 
 Expected: `node_specs` and existing tests pass.
 
-- [ ] **Step 5: Update spec and commit**
+- [ ] **Step 6: Update spec and commit**
 
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
 ```text
 - Proven: first node taxonomy registry exists with categories `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
 - Proven: node `type` is stable identity; `category` is registry metadata and can move without changing saved graph identity.
+- Proven: node specs point to human Markdown manuals while machine-readable behavior stays in `NodeSpec`.
 ```
 
 Run:
@@ -385,7 +461,7 @@ Run:
 git diff --check
 cmake --build build
 ctest --test-dir build --output-on-failure
-git add CMakeLists.txt source/core/NodeSpec.h source/core/NodeSpec.cpp tests/NodeSpecTests.cpp docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
+git add CMakeLists.txt source/core/NodeSpec.h source/core/NodeSpec.cpp tests/NodeSpecTests.cpp docs/nodes/README.md docs/nodes/analyzer.loudness.md docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
 git commit -m "Add node taxonomy contract"
 ```
 
@@ -694,6 +770,7 @@ Expected:
 - Build and tests pass.
 - `frame.png` includes the shader frame with an `A0 ImGui Smoke` overlay window.
 - The `smoke value` slider can be dragged when running the app interactively.
+- This smoke window is not the production node surface; it only proves ImGui frame/input/render viability.
 
 - [ ] **Step 5: Update spec and commit**
 
@@ -1485,6 +1562,8 @@ git commit -m "Wire loudness to shader uniform"
 
 - Stop before A1 if A0 is not committed. Audio meters may use JUCE labels during the proof, but graph/node UI must not grow a JUCE `Component` NodeView.
 - Stop before adding any node editor UI if it would store graph state inside ImGui ids or JUCE components instead of `NodeSpec` / `NodeInstance` / commands.
+- Stop before adding card-heavy node surfaces. Production nodes should stay vvvv-like: name, pins, tiny status, doc/patch icons. Long descriptions belong in human manuals or inspector.
+- Stop before putting usage prose directly on node surfaces; use `humanDocPath` and a doc icon instead.
 - Stop before claiming live A1 proof if `audio_stats.json` shows `sampleRate: 0` or `sampleCounter: 0`.
 - Stop before claiming realtime safety if any callback code allocates, locks, logs, opens files, parses JSON, or calls UI.
 - Stop before C1 compound work if A1 has no committed analyzer state and no updated spec.
