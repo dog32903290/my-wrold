@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.25)
 
 project(MyWorld VERSION 0.1.0 LANGUAGES C CXX OBJC OBJCXX)
 
+include(FetchContent)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -120,6 +122,35 @@ set_tests_properties(storage_contract PROPERTIES
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 
+    FetchContent_Declare(imgui
+        GIT_REPOSITORY https://github.com/ocornut/imgui.git
+        GIT_TAG v1.92.8
+    )
+
+    FetchContent_MakeAvailable(imgui)
+
+    add_library(my_world_imgui
+        ${imgui_SOURCE_DIR}/imgui.cpp
+        ${imgui_SOURCE_DIR}/imgui_draw.cpp
+        ${imgui_SOURCE_DIR}/imgui_tables.cpp
+        ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+        ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+        source/ui/ImGuiSmokeOverlay.cpp
+    )
+
+    target_include_directories(my_world_imgui
+        PUBLIC
+            ${imgui_SOURCE_DIR}
+            ${imgui_SOURCE_DIR}/backends
+            ${CMAKE_CURRENT_SOURCE_DIR}/source/ui
+    )
+
+    target_link_libraries(my_world_imgui
+        PUBLIC
+            my_world_node_specs
+            juce::juce_opengl
+    )
+
     juce_add_gui_app(my-world
         PRODUCT_NAME "${MY_WORLD_DISPLAY_NAME}"
         COMPANY_NAME "Chen Po-Wei"
@@ -139,6 +170,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             source/app
             source/core
+            source/ui
             source/render
     )
 
@@ -151,6 +183,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_link_libraries(my-world
         PRIVATE
             my_world_core
+            my_world_imgui
             juce::juce_gui_extra
             juce::juce_opengl
             juce::juce_recommended_config_flags

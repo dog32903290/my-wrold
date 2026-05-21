@@ -106,7 +106,10 @@ void OpenGLShaderPreview::newOpenGLContextCreated()
     glBindVertexArray (0);
 
     startTimeSeconds = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    lastFrameSeconds = startTimeSeconds;
     frameIndex = 0;
+    seedNodeSpecs = makeSeedNodeSpecs();
+    imguiOverlay.initialise();
 
     compilePendingShader();
 }
@@ -161,6 +164,12 @@ void OpenGLShaderPreview::renderOpenGL()
         glBindVertexArray (0);
     }
 
+    const auto deltaSeconds = static_cast<float> (nowSeconds - lastFrameSeconds);
+    lastFrameSeconds = nowSeconds;
+    imguiOverlay.beginFrame (juce::jmax (1, width), juce::jmax (1, height), scale, deltaSeconds);
+    imguiOverlay.drawSmokePanel (seedNodeSpecs, lastStatus.toStdString());
+    imguiOverlay.render();
+
     handlePendingProofDump (juce::jmax (1, width), juce::jmax (1, height), elapsed, frameIndex);
     ++frameIndex;
 }
@@ -173,6 +182,34 @@ void OpenGLShaderPreview::openGLContextClosing()
 void OpenGLShaderPreview::timerCallback()
 {
     openGLContext.triggerRepaint();
+}
+
+void OpenGLShaderPreview::mouseMove (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+}
+
+void OpenGLShaderPreview::mouseDown (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.setMouseButton (0, true);
+}
+
+void OpenGLShaderPreview::mouseDrag (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+}
+
+void OpenGLShaderPreview::mouseUp (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.setMouseButton (0, false);
+}
+
+void OpenGLShaderPreview::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.addMouseWheel (wheel.deltaY);
 }
 
 void OpenGLShaderPreview::compilePendingShader()
@@ -297,6 +334,8 @@ void OpenGLShaderPreview::releaseGLObjects()
 {
     using namespace ::juce::gl;
 
+    imguiOverlay.shutdown();
+
     positionAttribute.reset();
     timeUniform.reset();
     resolutionUniform.reset();
@@ -322,6 +361,12 @@ void OpenGLShaderPreview::reportStatus (juce::String message)
 
     if (onStatusMessage != nullptr)
         onStatusMessage (std::move (message));
+}
+
+void OpenGLShaderPreview::updateImGuiMousePosition (const juce::MouseEvent& event)
+{
+    const auto scale = static_cast<float> (openGLContext.getRenderingScale());
+    imguiOverlay.setMousePosition (event.position.x * scale, event.position.y * scale);
 }
 
 juce::String OpenGLShaderPreview::vertexShaderSource()

@@ -112,6 +112,8 @@ Contract:
 - Proven: node `type` is stable identity; `category` and `subcategory` are browser metadata and can move through aliases without changing saved graph identity.
 - Proven: node specs point to human Markdown manuals and preview policies while machine-readable behavior stays in `NodeSpec`.
 - Proven: Tooll3-inspired patch gestures lower to explicit commandGraph command names through `PatchInteraction`.
+- Proven: Dear ImGui is mounted in the OpenGL render loop before production node editor work.
+- Proven: first UI adapter is immediate-mode; no JUCE `Component` NodeView exists.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.
 - Forbidden: copying Tooll3's exact appearance, icons, branding, C# ownership model, DirectX/HLSL backend, or `SymbolPackage` compilation system.
