@@ -163,7 +163,8 @@ Contract:
 
 - Not started: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
-- Not started: native audio device input bridge.
+- Proven: JUCE audio callback bridge exists and only writes bounded analyzer state plus output silence.
+- Not proven: live microphone input on this Mac until permission is granted and meter values move.
 - Not started: the realtime audio path only measures or writes bounded realtime-safe state.
 - Not started: UI reads analyzer values outside the realtime callback.
 - Not started: first values include at least `rms`, `peak`, and `loudness`.

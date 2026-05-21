@@ -142,6 +142,16 @@ set_tests_properties(storage_contract PROPERTIES
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 
+    target_sources(my_world_audio
+        PRIVATE
+            source/audio/AudioInputAnalyzer.cpp
+    )
+
+    target_link_libraries(my_world_audio
+        PUBLIC
+            juce::juce_audio_devices
+    )
+
     FetchContent_Declare(imgui
         GIT_REPOSITORY https://github.com/ocornut/imgui.git
         GIT_TAG v1.92.8
@@ -203,7 +213,9 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_link_libraries(my-world
         PRIVATE
             my_world_core
+            my_world_audio
             my_world_imgui
+            juce::juce_audio_devices
             juce::juce_gui_extra
             juce::juce_opengl
             juce::juce_recommended_config_flags
