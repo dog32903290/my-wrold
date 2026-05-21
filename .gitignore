@@ -1,0 +1,12 @@
+.DS_Store
+build/
+Builds/
+cmake-build-*/
+out/
+dist/
+*.user
+*.xcuserdata/
+DerivedData/
+debug/
+*.log
+
