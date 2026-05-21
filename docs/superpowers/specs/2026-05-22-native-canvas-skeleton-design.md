@@ -134,6 +134,12 @@ Metal is parked, not rejected. `RenderBackend` exists as an interface, but `Open
 
 ## Audio Analyzer Migration
 
+Current execution plan:
+
+```text
+docs/superpowers/plans/2026-05-22-a1-audio-proof.md
+```
+
 The analyzer should borrow from:
 
 - `/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer-plugin`
