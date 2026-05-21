@@ -43,6 +43,11 @@ Contract:
 - Planned: auto commit is local-only. Push/sync to a remote repository must be an explicit later command.
 - Planned: after the synchronous save returns, the UI can report `save-ok commit-pending`; the background worker later records `saved-and-committed` or `save-ok commit-failed`.
 - Planned: if save succeeds but commit fails, the UI reports `save-ok commit-failed` and leaves evidence; it must not silently claim a full save.
+- Locked: `Command+S` creates at most one local commit per explicit save gesture.
+- Locked: `Command+S` never runs git add/commit on the UI thread.
+- Locked: no remote push happens on save.
+- Locked: no commit happens when there are no file changes.
+- Locked: save log records both save result and commit result.
 - Proven: minimal storage contract names WorkProject, PatchDocument, ModulePackage, WorkLibrary, and ModuleLibrary.
 - Proven: Command+S save statuses are explicit: clean, save-ok commit-pending, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
 - Proven: minimal work fixture stores a main patch with `shader1 -> out1` as reloadable project data.
