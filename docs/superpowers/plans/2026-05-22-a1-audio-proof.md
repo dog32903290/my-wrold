@@ -1,12 +1,12 @@
-# A1 Audio Proof Implementation Plan
+# A0/A1 ImGui And Audio Proof Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
+**Goal:** Prevent the JUCE `Component` NodeView trap, define the first node taxonomy contract, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
 
-**Architecture:** Keep realtime audio measurement separate from JUCE UI. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
+**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
 
-**Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, CMake, existing native app shell.
+**Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, JUCE OpenGL, Dear ImGui `v1.92.8`, CMake, existing native app shell.
 
 ---
 
@@ -21,9 +21,34 @@
 ## File Map
 
 - Modify: `CMakeLists.txt`
+  - Add `my_world_node_specs`.
+  - Add `my_world_node_spec_tests`.
+  - Fetch Dear ImGui `v1.92.8` for a smoke overlay.
+  - Add `my_world_imgui`.
   - Add `my_world_audio`.
   - Add `my_world_audio_analyzer_tests`.
-  - Link `my-world` with `my_world_audio` and `juce::juce_audio_devices`.
+  - Link `my-world` with `my_world_audio`, `my_world_imgui`, and `juce::juce_audio_devices`.
+
+- Create: `source/core/NodeSpec.h`
+  - Stable node taxonomy, port, param, and runtime domain structs.
+
+- Create: `source/core/NodeSpec.cpp`
+  - First seed node specs and lookup helpers.
+
+- Create: `tests/NodeSpecTests.cpp`
+  - Tests category/runtime/data-type contracts and extension behavior.
+
+- Create: `source/ui/ImGuiSmokeOverlay.h`
+  - Small Dear ImGui overlay wrapper.
+
+- Create: `source/ui/ImGuiSmokeOverlay.cpp`
+  - Creates ImGui context, renders a smoke window, and forwards OpenGL draw data.
+
+- Modify: `source/render/OpenGLShaderPreview.h`
+  - Own `ImGuiSmokeOverlay` and forward mouse input to ImGui.
+
+- Modify: `source/render/OpenGLShaderPreview.cpp`
+  - Initialise/shutdown/render the ImGui overlay inside the OpenGL render loop.
 
 - Create: `source/audio/AudioAnalyzerState.h`
   - Pure C++ realtime-safe analyzer state and snapshot types.
@@ -57,9 +82,637 @@
   - Tests RMS, peak, loudness, silence, and multi-channel mono mix.
 
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
-  - Keep A1 status accurate after each task.
+  - Keep A0/A1 status accurate after each task.
 
 ---
+
+### Task 0: Node Taxonomy Contract
+
+**Files:**
+- Create: `source/core/NodeSpec.h`
+- Create: `source/core/NodeSpec.cpp`
+- Create: `tests/NodeSpecTests.cpp`
+- Modify: `CMakeLists.txt`
+- Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
+
+- [ ] **Step 1: Write failing node spec tests**
+
+Add `tests/NodeSpecTests.cpp`:
+
+```cpp
+#include "NodeSpec.h"
+
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+}
+
+int main()
+{
+    const auto specs = myworld::makeSeedNodeSpecs();
+
+    const auto* shader = myworld::findNodeSpec (specs, "shader.fragment");
+    expect (shader != nullptr, "shader.fragment seed spec exists");
+    expect (shader->category == "shader", "shader category");
+    expect (shader->runtimeDomain == "render", "shader runtime domain");
+    expect (shader->outputs.size() == 1, "shader output count");
+    expect (shader->outputs[0].dataType == "texture.rgba", "shader output data type");
+
+    const auto* loudness = myworld::findNodeSpec (specs, "analyzer.loudness");
+    expect (loudness != nullptr, "analyzer.loudness seed spec exists");
+    expect (loudness->category == "analyzer", "loudness category");
+    expect (loudness->runtimeDomain == "audioAnalysis", "loudness runtime domain");
+    expect (loudness->inputs[0].dataType == "audio.mono", "loudness input data type");
+    expect (loudness->outputs[0].dataType == "signal.float", "loudness output data type");
+
+    const auto* midi = myworld::findNodeSpec (specs, "midi.ccOut");
+    expect (midi != nullptr, "midi.ccOut seed spec exists");
+    expect (midi->category == "midi", "midi category");
+    expect (midi->runtimeDomain == "control", "midi runtime domain");
+
+    expect (myworld::isKnownNodeCategory ("audio"), "audio category is known");
+    expect (myworld::isKnownNodeCategory ("top"), "top category is known");
+    expect (! myworld::isKnownNodeCategory ("weather"), "unknown category stays unknown until registry extension");
+
+    std::cout << "node spec contract ok\n";
+    return 0;
+}
+```
+
+- [ ] **Step 2: Wire the test target and verify RED**
+
+Modify `CMakeLists.txt` near `my_world_core`:
+
+```cmake
+add_library(my_world_node_specs
+    source/core/NodeSpec.cpp
+)
+
+target_include_directories(my_world_node_specs
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_node_spec_tests
+    tests/NodeSpecTests.cpp
+)
+
+target_link_libraries(my_world_node_spec_tests
+    PRIVATE
+        my_world_node_specs
+)
+
+add_test(NAME node_specs COMMAND my_world_node_spec_tests)
+```
+
+Run:
+
+```bash
+cmake --build build --target my_world_node_spec_tests
+```
+
+Expected: FAIL because `NodeSpec.h` does not exist yet.
+
+- [ ] **Step 3: Implement minimal node taxonomy**
+
+Create `source/core/NodeSpec.h`:
+
+```cpp
+#pragma once
+
+#include <string>
+#include <vector>
+
+namespace myworld
+{
+struct PortSpec
+{
+    std::string id;
+    std::string label;
+    std::string dataType;
+    std::string direction;
+};
+
+struct ParamSpec
+{
+    std::string id;
+    std::string label;
+    std::string dataType;
+    std::string defaultValue;
+    std::string range;
+};
+
+struct NodeSpec
+{
+    std::string type;
+    std::string displayName;
+    std::string category;
+    std::string runtimeDomain;
+    std::vector<PortSpec> inputs;
+    std::vector<PortSpec> outputs;
+    std::vector<ParamSpec> params;
+};
+
+std::vector<NodeSpec> makeSeedNodeSpecs();
+const NodeSpec* findNodeSpec (const std::vector<NodeSpec>& specs, const std::string& type);
+bool isKnownNodeCategory (const std::string& category);
+}
+```
+
+Create `source/core/NodeSpec.cpp`:
+
+```cpp
+#include "NodeSpec.h"
+
+#include <algorithm>
+#include <array>
+
+namespace myworld
+{
+std::vector<NodeSpec> makeSeedNodeSpecs()
+{
+    return {
+        {
+            "shader.fragment",
+            "Fragment Shader",
+            "shader",
+            "render",
+            {},
+            { { "output", "Output", "texture.rgba", "out" } },
+            {
+                { "source", "Source", "text.glsl", "", "" }
+            }
+        },
+        {
+            "output.preview",
+            "Preview Output",
+            "output",
+            "render",
+            { { "input", "Input", "texture.rgba", "in" } },
+            {},
+            {}
+        },
+        {
+            "audio.input",
+            "Audio Input",
+            "audio",
+            "audio",
+            {},
+            { { "mono", "Mono", "audio.mono", "out" } },
+            {
+                { "analysisGain", "Analysis Gain", "float", "1.0", "0.0..4.0" }
+            }
+        },
+        {
+            "analyzer.rms",
+            "RMS",
+            "analyzer",
+            "audioAnalysis",
+            { { "input", "Input", "audio.mono", "in" } },
+            { { "rms", "RMS", "signal.float", "out" } },
+            {}
+        },
+        {
+            "analyzer.loudness",
+            "Loudness",
+            "analyzer",
+            "audioAnalysis",
+            { { "input", "Input", "audio.mono", "in" } },
+            { { "out", "Loudness", "signal.float", "out" } },
+            {
+                { "curve", "Curve", "float", "1.0", "0.25..4.0" },
+                { "smooth", "Smooth", "float", "0.2", "0.0..1.0" }
+            }
+        },
+        {
+            "midi.ccOut",
+            "MIDI CC Out",
+            "midi",
+            "control",
+            { { "value", "Value", "signal.float", "in" } },
+            {},
+            {
+                { "channel", "Channel", "int", "1", "1..16" },
+                { "cc", "CC", "int", "1", "0..127" }
+            }
+        },
+        {
+            "top.texture",
+            "Texture",
+            "top",
+            "render",
+            {},
+            { { "output", "Output", "texture.rgba", "out" } },
+            {}
+        },
+        {
+            "sop.plane",
+            "Plane",
+            "sop",
+            "geometry",
+            {},
+            { { "geometry", "Geometry", "geometry.mesh", "out" } },
+            {}
+        },
+        {
+            "mat.shader",
+            "Shader Material",
+            "mat",
+            "render",
+            { { "shader", "Shader", "shader.program", "in" } },
+            { { "material", "Material", "material", "out" } },
+            {}
+        }
+    };
+}
+
+const NodeSpec* findNodeSpec (const std::vector<NodeSpec>& specs, const std::string& type)
+{
+    const auto found = std::find_if (specs.begin(), specs.end(), [&type] (const NodeSpec& spec)
+    {
+        return spec.type == type;
+    });
+
+    return found == specs.end() ? nullptr : &*found;
+}
+
+bool isKnownNodeCategory (const std::string& category)
+{
+    static constexpr std::array<const char*, 10> categories {
+        "audio", "analyzer", "signal", "midi", "shader",
+        "top", "sop", "mat", "output", "compound"
+    };
+
+    return std::find (categories.begin(), categories.end(), category) != categories.end();
+}
+}
+```
+
+- [ ] **Step 4: Verify GREEN**
+
+Run:
+
+```bash
+cmake --build build --target my_world_node_spec_tests
+ctest --test-dir build --output-on-failure
+```
+
+Expected: `node_specs` and existing tests pass.
+
+- [ ] **Step 5: Update spec and commit**
+
+Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
+
+```text
+- Proven: first node taxonomy registry exists with categories `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
+- Proven: node `type` is stable identity; `category` is registry metadata and can move without changing saved graph identity.
+```
+
+Run:
+
+```bash
+git diff --check
+cmake --build build
+ctest --test-dir build --output-on-failure
+git add CMakeLists.txt source/core/NodeSpec.h source/core/NodeSpec.cpp tests/NodeSpecTests.cpp docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
+git commit -m "Add node taxonomy contract"
+```
+
+---
+
+### Task 0.5: Dear ImGui Smoke Overlay
+
+**Files:**
+- Modify: `CMakeLists.txt`
+- Create: `source/ui/ImGuiSmokeOverlay.h`
+- Create: `source/ui/ImGuiSmokeOverlay.cpp`
+- Modify: `source/render/OpenGLShaderPreview.h`
+- Modify: `source/render/OpenGLShaderPreview.cpp`
+- Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
+
+- [ ] **Step 1: Fetch and build Dear ImGui**
+
+Modify the top of `CMakeLists.txt`:
+
+```cmake
+include(FetchContent)
+```
+
+Inside the existing `if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")` block, after `add_subdirectory("${MY_WORLD_JUCE_DIR}" ...)`, add:
+
+```cmake
+FetchContent_Declare(imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG v1.92.8
+)
+
+FetchContent_GetProperties(imgui)
+if(NOT imgui_POPULATED)
+    FetchContent_Populate(imgui)
+endif()
+
+add_library(my_world_imgui
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    source/ui/ImGuiSmokeOverlay.cpp
+)
+
+target_include_directories(my_world_imgui
+    PUBLIC
+        ${imgui_SOURCE_DIR}
+        ${imgui_SOURCE_DIR}/backends
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/ui
+)
+
+target_link_libraries(my_world_imgui
+    PUBLIC
+        juce::juce_opengl
+)
+```
+
+In the `target_link_libraries(my-world PRIVATE ...)` block, add:
+
+```cmake
+my_world_imgui
+```
+
+Run:
+
+```bash
+cmake --build build --target my-world
+```
+
+Expected: FAIL because `source/ui/ImGuiSmokeOverlay.cpp` does not exist yet.
+
+- [ ] **Step 2: Add ImGui smoke overlay wrapper**
+
+Create `source/ui/ImGuiSmokeOverlay.h`:
+
+```cpp
+#pragma once
+
+#include <string>
+#include <vector>
+
+namespace myworld
+{
+struct NodeSpec;
+
+class ImGuiSmokeOverlay
+{
+public:
+    void initialise();
+    void shutdown();
+    void beginFrame (int width, int height, float scale, float deltaSeconds);
+    void drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus);
+    void render();
+    bool wantsMouse() const;
+    void setMousePosition (float x, float y);
+    void setMouseButton (int buttonIndex, bool isDown);
+    void addMouseWheel (float deltaY);
+
+private:
+    bool initialised = false;
+    float smokeValue = 0.35f;
+};
+}
+```
+
+Create `source/ui/ImGuiSmokeOverlay.cpp`:
+
+```cpp
+#include "ImGuiSmokeOverlay.h"
+
+#include "NodeSpec.h"
+
+#include <imgui.h>
+#include <backends/imgui_impl_opengl3.h>
+
+namespace myworld
+{
+void ImGuiSmokeOverlay::initialise()
+{
+    if (initialised)
+        return;
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
+    ImGui_ImplOpenGL3_Init ("#version 150");
+    initialised = true;
+}
+
+void ImGuiSmokeOverlay::shutdown()
+{
+    if (! initialised)
+        return;
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui::DestroyContext();
+    initialised = false;
+}
+
+void ImGuiSmokeOverlay::beginFrame (int width, int height, float scale, float deltaSeconds)
+{
+    if (! initialised)
+        return;
+
+    auto& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2 (static_cast<float> (width) / scale, static_cast<float> (height) / scale);
+    io.DisplayFramebufferScale = ImVec2 (scale, scale);
+    io.DeltaTime = deltaSeconds > 0.0f ? deltaSeconds : 1.0f / 60.0f;
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui::NewFrame();
+}
+
+void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus)
+{
+    if (! initialised)
+        return;
+
+    ImGui::SetNextWindowPos (ImVec2 (16.0f, 16.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize (ImVec2 (360.0f, 220.0f), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin ("A0 ImGui Smoke");
+    ImGui::TextUnformatted ("Immediate-mode UI is active.");
+    ImGui::Text ("Seed node specs: %d", static_cast<int> (nodeSpecs.size()));
+    ImGui::SliderFloat ("smoke value", &smokeValue, 0.0f, 1.0f);
+    ImGui::Separator();
+    ImGui::TextWrapped ("%s", shaderStatus.c_str());
+    ImGui::End();
+}
+
+void ImGuiSmokeOverlay::render()
+{
+    if (! initialised)
+        return;
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData (ImGui::GetDrawData());
+}
+
+bool ImGuiSmokeOverlay::wantsMouse() const
+{
+    return initialised && ImGui::GetIO().WantCaptureMouse;
+}
+
+void ImGuiSmokeOverlay::setMousePosition (float x, float y)
+{
+    if (initialised)
+        ImGui::GetIO().AddMousePosEvent (x, y);
+}
+
+void ImGuiSmokeOverlay::setMouseButton (int buttonIndex, bool isDown)
+{
+    if (initialised)
+        ImGui::GetIO().AddMouseButtonEvent (buttonIndex, isDown);
+}
+
+void ImGuiSmokeOverlay::addMouseWheel (float deltaY)
+{
+    if (initialised)
+        ImGui::GetIO().AddMouseWheelEvent (0.0f, deltaY);
+}
+}
+```
+
+- [ ] **Step 3: Integrate ImGui into the OpenGL render loop**
+
+In `source/render/OpenGLShaderPreview.h`, include:
+
+```cpp
+#include "ImGuiSmokeOverlay.h"
+#include "NodeSpec.h"
+```
+
+Add to the class:
+
+```cpp
+void mouseMove (const juce::MouseEvent& event) override;
+void mouseDown (const juce::MouseEvent& event) override;
+void mouseDrag (const juce::MouseEvent& event) override;
+void mouseUp (const juce::MouseEvent& event) override;
+void mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel) override;
+
+void updateImGuiMousePosition (const juce::MouseEvent& event);
+
+ImGuiSmokeOverlay imguiOverlay;
+std::vector<NodeSpec> seedNodeSpecs;
+double lastFrameSeconds = 0.0;
+```
+
+In `OpenGLShaderPreview::newOpenGLContextCreated()`:
+
+```cpp
+imguiOverlay.initialise();
+seedNodeSpecs = makeSeedNodeSpecs();
+lastFrameSeconds = startTimeSeconds;
+```
+
+In `OpenGLShaderPreview::renderOpenGL()`, after shader drawing and before proof dump:
+
+```cpp
+const auto deltaSeconds = static_cast<float> (nowSeconds - lastFrameSeconds);
+lastFrameSeconds = nowSeconds;
+imguiOverlay.beginFrame (juce::jmax (1, width), juce::jmax (1, height), scale, deltaSeconds);
+imguiOverlay.drawSmokePanel (seedNodeSpecs, lastStatus.toStdString());
+imguiOverlay.render();
+```
+
+In `releaseGLObjects()`:
+
+```cpp
+imguiOverlay.shutdown();
+```
+
+Add mouse forwarding:
+
+```cpp
+void OpenGLShaderPreview::updateImGuiMousePosition (const juce::MouseEvent& event)
+{
+    const auto scale = static_cast<float> (openGLContext.getRenderingScale());
+    imguiOverlay.setMousePosition (event.position.x * scale, event.position.y * scale);
+}
+
+void OpenGLShaderPreview::mouseMove (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+}
+
+void OpenGLShaderPreview::mouseDown (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.setMouseButton (0, true);
+}
+
+void OpenGLShaderPreview::mouseDrag (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+}
+
+void OpenGLShaderPreview::mouseUp (const juce::MouseEvent& event)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.setMouseButton (0, false);
+}
+
+void OpenGLShaderPreview::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)
+{
+    updateImGuiMousePosition (event);
+    imguiOverlay.addMouseWheel (wheel.deltaY);
+}
+```
+
+- [ ] **Step 4: Verify ImGui smoke proof**
+
+Run:
+
+```bash
+cmake --build build
+ctest --test-dir build --output-on-failure
+rm -rf debug/v1-shader-proof
+perl -e 'alarm 12; exec @ARGV' ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
+test -s debug/v1-shader-proof/frame.png
+```
+
+Expected:
+- Build and tests pass.
+- `frame.png` includes the shader frame with an `A0 ImGui Smoke` overlay window.
+- The `smoke value` slider can be dragged when running the app interactively.
+
+- [ ] **Step 5: Update spec and commit**
+
+Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
+
+```text
+- Proven: Dear ImGui is mounted in the OpenGL render loop before production node editor work.
+- Proven: first UI adapter is immediate-mode; no JUCE `Component` NodeView exists.
+```
+
+Run:
+
+```bash
+git diff --check
+cmake --build build
+ctest --test-dir build --output-on-failure
+git add CMakeLists.txt source/ui/ImGuiSmokeOverlay.h source/ui/ImGuiSmokeOverlay.cpp source/render/OpenGLShaderPreview.h source/render/OpenGLShaderPreview.cpp docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
+git commit -m "Add ImGui smoke overlay"
+```
 
 ### Task 1: Pure Analyzer State
 
@@ -830,10 +1483,12 @@ git commit -m "Wire loudness to shader uniform"
 
 ## Stop Conditions
 
+- Stop before A1 if A0 is not committed. Audio meters may use JUCE labels during the proof, but graph/node UI must not grow a JUCE `Component` NodeView.
+- Stop before adding any node editor UI if it would store graph state inside ImGui ids or JUCE components instead of `NodeSpec` / `NodeInstance` / commands.
 - Stop before claiming live A1 proof if `audio_stats.json` shows `sampleRate: 0` or `sampleCounter: 0`.
 - Stop before claiming realtime safety if any callback code allocates, locks, logs, opens files, parses JSON, or calls UI.
 - Stop before C1 compound work if A1 has no committed analyzer state and no updated spec.
-- Stop before node editor work; ImGui remains parked until A1 has evidence.
+- Stop before production node editor work; A0 only proves ImGui loop/input viability, not imnodes or a full graph editor.
 
 ## Final Verification
 
@@ -856,4 +1511,5 @@ Expected:
 - Build passes.
 - All CTest tests pass.
 - V1 shader proof still dumps.
+- A0 ImGui smoke overlay remains visible in `debug/v1-shader-proof/frame.png`.
 - A1 audio proof dumps. If live microphone permission is missing, plan/spec states that live proof is blocked rather than complete.

@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof dump implemented; A1/C1 not yet built
+Status: V1 shader preview proof dump implemented; A0 taxonomy/ImGui smoke proof planned before A1; A1/C1 not yet built
 
 ## Purpose
 
@@ -20,6 +20,23 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Old Web canvas works are migration fixtures, not the native graph law.
 
 ## First Stage Proofs
+
+### A0 UI / Node Contract Guard
+
+Goal:
+
+```text
+NodeSpec taxonomy -> Dear ImGui smoke overlay -> no JUCE Component NodeView trap
+```
+
+Contract:
+
+- Planned: first node taxonomy registry separates `type`, `category`, `runtimeDomain`, and port `dataType`.
+- Planned: seed categories include `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
+- Planned: `type` remains stable saved graph identity; `category` is registry metadata and can be extended or migrated later.
+- Planned: Dear ImGui mounts in the OpenGL render loop before any production node editor work.
+- Planned: A0 may show a simple ImGui smoke panel / slider, but it must not own graph truth or graph mutation.
+- Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 
 ### V1 Visual Proof
 
@@ -110,6 +127,36 @@ RuntimeOp     execution logic for render/audio/control domains
 Command       single mutation entrypoint
 ```
 
+`NodeView` means a generic view adapter over `NodeSpec` / `NodeInstance`; it must not mean one JUCE `Component` subclass per node. The first graphics-side adapter should be Dear ImGui, proved by A0 before building production node editor interactions.
+
+### Node Taxonomy
+
+Use four separate labels:
+
+```text
+type           stable saved graph identity, e.g. analyzer.loudness
+category       UI / browser grouping, e.g. analyzer
+runtimeDomain  cook owner, e.g. audioAnalysis
+dataType       port compatibility, e.g. signal.float
+```
+
+First category registry:
+
+```text
+audio
+analyzer
+signal
+midi
+shader
+top
+sop
+mat
+output
+compound
+```
+
+New categories can be added later through the registry. Existing saved graph identity should move through aliases or migration, not by casually renaming `type`.
+
 ### Render Backend
 
 Initial implementation:
@@ -195,7 +242,8 @@ The first skeleton does not need full AI UI, but it must not design graph mutati
 - No plugin build target yet.
 - No complete 13-patch analyzer UI yet.
 - No full AI worker UI yet.
-- No production node editor UI yet; Dear ImGui / node editor integration remains a later proof after graph evidence is stable.
+- No production node editor UI yet; however Dear ImGui smoke proof is now required before A1 meter UI grows further.
+- No temporary JUCE `Component` node editor.
 
 ## Open Questions
 
