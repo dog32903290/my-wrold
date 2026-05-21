@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof dump implemented; S0 storage proof planned before A0/A1; A0/A1/C1 not yet built
+Status: V1 shader preview proof dump implemented; S0 storage and G0 graph language proofs planned before A0/A1; A0/A1/C1 not yet built
 
 ## Purpose
 
@@ -45,6 +45,33 @@ Current storage execution plan:
 
 ```text
 docs/superpowers/plans/2026-05-22-s0-storage-proof.md
+```
+
+### G0 Graph Language Contract
+
+Goal:
+
+```text
+NodeSpec + RegionSpec + TypeSpec + StreamKind + Command schema -> typed graph IR
+```
+
+Contract:
+
+- Planned: graph objects include nodes and regions; `NodeSpec` is not the only visible or serializable graph object.
+- Planned: `RegionSpec` supports future `if`, `for_each`, `repeat`, and `while` control blocks without spaghetti node wiring.
+- Planned: `TypeSpec` distinguishes values such as `audio.mono`, `signal.float`, `texture.rgba`, `geometry.mesh`, `event.midi`, `command.graph`, and future generics.
+- Planned: `StreamKind` distinguishes continuous data, event streams, command streams, and resources.
+- Planned: edges carry `dataType` and `streamKind`, not only `from` / `to`.
+- Planned: graph validation produces a typed graph IR / AST before runtime execution or code generation.
+- Planned: AI worker mutates graph state only through typed commands such as `create_node`, `create_region`, `connect`, `set_param`, `publish_module`, and `save_work`.
+- Planned: future compiler workers may consume graph IR and generate GLSL, C++, validation reports, migration output, or documentation.
+- Forbidden: direct AI JSON surgery.
+- Forbidden: C# / .NET code in realtime audio callbacks, render hot paths, or native app lifecycle for the first stage.
+
+Current graph language execution plan:
+
+```text
+docs/superpowers/plans/2026-05-22-g0-graph-language-contract.md
 ```
 
 ### A0 UI / Node Contract Guard
@@ -155,6 +182,58 @@ saveLog            save attempts, commit ids, failures, validation evidence
 ```
 
 Storage is not an export layer. It is the graph source-of-truth boundary that lets UI, runtime, AI worker, and future module libraries read the same work back.
+
+### Graph Language
+
+The graph is closer to a visual programming language than to a canvas of UI widgets.
+
+First-class graph objects:
+
+```text
+Node       ordinary operation or value source
+Region     visual control-flow block such as if / for_each / repeat
+Edge       typed connection with dataType and streamKind
+Command    validated graph mutation
+Module     saved patch/compound with public ports
+```
+
+Graph flow:
+
+```text
+editorGraph
+-> command validation
+-> type validation
+-> region boundary validation
+-> graphIR / AST
+-> runtimeGraph or compiler worker output
+```
+
+This allows the first runtime to remain direct C++/OpenGL while preserving a path to future compilation.
+
+### Language / Runtime Boundary
+
+C++ owns the first-stage app body:
+
+```text
+JUCE app shell
+CoreAudio / audio callback
+OpenGL / future Metal render loop
+shader preview
+realtime analyzer
+work save and local commit
+runtimeGraph hot path
+```
+
+External compiler workers are parked behind files/process boundaries:
+
+```text
+graphIR.json
+commandGraph.json
+validation_report.json
+generated shader/source artifacts
+```
+
+C# may be useful later for graph compiler tooling, type inference experiments, module indexing, migration, documentation generation, or AI worker-side validation. It must not be embedded into realtime audio/render paths in the first stage.
 
 ### C++ Boundary
 
