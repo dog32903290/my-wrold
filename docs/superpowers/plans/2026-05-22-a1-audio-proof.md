@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Prevent the JUCE `Component` NodeView trap, define the first node taxonomy contract, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
+**Goal:** Prevent the JUCE `Component` NodeView trap, define the first Tooll3-seeded node taxonomy and patch interaction contracts, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
 
-**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Node surfaces follow a vvvv-like minimal patch style: compact names, pins, tiny state marks, and doc/patch icons instead of card-heavy explanations. Parameter controls follow the Tooll3-inspired rule that manual values remain stored while connected or animated values can override live output; this is graph `PortBinding` state, not ImGui widget state. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
+**Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Tooll3 supplies the seed browser taxonomy and patch interaction grammar, but `type`, `category`, `subcategory`, `dataType`, and `runtimeDomain` remain separate. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Node surfaces follow a vvvv-like minimal patch style: compact names, pins, tiny state marks, and doc/patch icons instead of card-heavy explanations. Parameter controls follow the Tooll3-inspired rule that manual values remain stored while connected or animated values can override live output; this is graph `PortBinding` state, not ImGui widget state. The audio callback writes bounded atomic analyzer state only; the message thread reads snapshots and updates meter rows. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
 
 **Tech Stack:** C++20, JUCE `AudioDeviceManager` / `AudioIODeviceCallback`, JUCE OpenGL, Dear ImGui `v1.92.8`, CMake, existing native app shell.
 
@@ -19,6 +19,33 @@
 - Use `caffeinate` during execution if the user explicitly starts an overnight run so the machine does not sleep mid-build.
 - Do not ask for or store the user's password. If a specific `sudo` command becomes necessary, pause and explain the exact command and reason.
 
+## Tooll3 Borrowing Scope
+
+Borrow for A0:
+
+```text
+canvas zoom / pan / selection / framing
+drag from pin to empty canvas -> compatible node search
+drag from pin to pin -> connect
+parameter slider -> connected/animated override state
+Symbol / Instance style definition vs placement split
+compound/module enter, collapse, and public ports
+undo / redo operation rhythm
+timeline / parameter / preview / node graph layout rhythm
+Tooll3-seeded browser taxonomy
+```
+
+Do not borrow:
+
+```text
+C# runtime ownership
+DirectX / HLSL backend
+SymbolPackage compilation system
+exact appearance, icons, branding, or copied layout identity
+```
+
+Every borrowed interaction must lower into `commandGraph`; every category remains browser metadata and never replaces `runtimeDomain` or `dataType`.
+
 ## File Map
 
 - Modify: `CMakeLists.txt`
@@ -31,13 +58,13 @@
   - Link `my-world` with `my_world_audio`, `my_world_imgui`, and `juce::juce_audio_devices`.
 
 - Create: `source/core/NodeSpec.h`
-  - Stable node taxonomy, port, param, human manual path, and runtime domain structs.
+  - Stable node taxonomy, subcategory, port, param, human manual path, and runtime domain structs.
 
 - Create: `source/core/NodeSpec.cpp`
   - First seed node specs and lookup helpers.
 
 - Create: `tests/NodeSpecTests.cpp`
-  - Tests category/runtime/data-type contracts and extension behavior.
+  - Tests Tooll3-seeded category/subcategory/runtime/data-type contracts and alias behavior.
 
 - Create: `docs/nodes/analyzer.loudness.md`
   - First human-readable node manual.
@@ -134,6 +161,7 @@ int main()
     const auto* shader = myworld::findNodeSpec (specs, "shader.fragment");
     expect (shader != nullptr, "shader.fragment seed spec exists");
     expect (shader->category == "shader", "shader category");
+    expect (shader->subcategory == "use", "shader subcategory");
     expect (shader->runtimeDomain == "render", "shader runtime domain");
     expect (shader->outputs.size() == 1, "shader output count");
     expect (shader->outputs[0].dataType == "texture.rgba", "shader output data type");
@@ -141,19 +169,38 @@ int main()
     const auto* loudness = myworld::findNodeSpec (specs, "analyzer.loudness");
     expect (loudness != nullptr, "analyzer.loudness seed spec exists");
     expect (loudness->category == "analyzer", "loudness category");
+    expect (loudness->subcategory == "feature", "loudness subcategory");
     expect (loudness->runtimeDomain == "audioAnalysis", "loudness runtime domain");
     expect (loudness->inputs[0].dataType == "audio.mono", "loudness input data type");
     expect (loudness->outputs[0].dataType == "signal.float", "loudness output data type");
     expect (loudness->humanDocPath == "docs/nodes/analyzer.loudness.md", "loudness human manual path");
     expect (loudness->machineSpecVersion == 1, "machine spec version");
 
-    const auto* midi = myworld::findNodeSpec (specs, "midi.ccOut");
-    expect (midi != nullptr, "midi.ccOut seed spec exists");
-    expect (midi->category == "midi", "midi category");
+    const auto* midi = myworld::findNodeSpec (specs, "io.midi.cc_out");
+    expect (midi != nullptr, "io.midi.cc_out seed spec exists");
+    expect (midi->category == "io", "midi category is io");
+    expect (midi->subcategory == "midi", "midi subcategory");
     expect (midi->runtimeDomain == "control", "midi runtime domain");
 
+    const auto* texture = myworld::findNodeSpec (specs, "image.texture");
+    expect (texture != nullptr, "image.texture seed spec exists");
+    expect (texture->category == "image", "texture category");
+    expect (texture->subcategory == "use", "texture subcategory");
+
+    const auto* mesh = myworld::findNodeSpec (specs, "mesh.plane");
+    expect (mesh != nullptr, "mesh.plane seed spec exists");
+    expect (mesh->category == "mesh", "mesh category");
+    expect (mesh->subcategory == "generate", "mesh subcategory");
+
     expect (myworld::isKnownNodeCategory ("audio"), "audio category is known");
-    expect (myworld::isKnownNodeCategory ("top"), "top category is known");
+    expect (myworld::isKnownNodeCategory ("image"), "image category is known");
+    expect (myworld::isKnownNodeCategory ("mesh"), "mesh category is known");
+    expect (myworld::isKnownNodeCategory ("io"), "io category is known");
+    expect (myworld::isKnownNodeSubcategory ("midi"), "midi subcategory is known");
+    expect (myworld::isKnownNodeSubcategory ("use"), "use subcategory is known");
+    expect (myworld::isKnownNodeSubcategory ("measurement"), "measurement subcategory is known");
+    expect (myworld::isKnownNodeCategoryAlias ("top"), "top is accepted as a browser alias");
+    expect (! myworld::isKnownNodeCategory ("top"), "top is not first-level category law");
     expect (! myworld::isKnownNodeCategory ("weather"), "unknown category stays unknown until registry extension");
 
     std::cout << "node spec contract ok\n";
@@ -229,6 +276,7 @@ struct NodeSpec
     std::string type;
     std::string displayName;
     std::string category;
+    std::string subcategory;
     std::string runtimeDomain;
     std::string humanDocPath;
     int machineSpecVersion = 1;
@@ -240,6 +288,8 @@ struct NodeSpec
 std::vector<NodeSpec> makeSeedNodeSpecs();
 const NodeSpec* findNodeSpec (const std::vector<NodeSpec>& specs, const std::string& type);
 bool isKnownNodeCategory (const std::string& category);
+bool isKnownNodeSubcategory (const std::string& subcategory);
+bool isKnownNodeCategoryAlias (const std::string& alias);
 }
 ```
 
@@ -260,6 +310,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "shader.fragment",
             "Fragment Shader",
             "shader",
+            "use",
             "render",
             "docs/nodes/shader.fragment.md",
             1,
@@ -273,6 +324,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "output.preview",
             "Preview Output",
             "output",
+            "output",
             "render",
             "docs/nodes/output.preview.md",
             1,
@@ -284,6 +336,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "audio.input",
             "Audio Input",
             "audio",
+            "input",
             "audio",
             "docs/nodes/audio.input.md",
             1,
@@ -297,6 +350,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "analyzer.rms",
             "RMS",
             "analyzer",
+            "measurement",
             "audioAnalysis",
             "docs/nodes/analyzer.rms.md",
             1,
@@ -308,6 +362,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             "analyzer.loudness",
             "Loudness",
             "analyzer",
+            "feature",
             "audioAnalysis",
             "docs/nodes/analyzer.loudness.md",
             1,
@@ -319,11 +374,12 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             }
         },
         {
-            "midi.ccOut",
+            "io.midi.cc_out",
             "MIDI CC Out",
+            "io",
             "midi",
             "control",
-            "docs/nodes/midi.ccOut.md",
+            "docs/nodes/io.midi.cc_out.md",
             1,
             { { "value", "Value", "signal.float", "in" } },
             {},
@@ -333,36 +389,39 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             }
         },
         {
-            "top.texture",
+            "image.texture",
             "Texture",
-            "top",
+            "image",
+            "use",
             "render",
-            "docs/nodes/top.texture.md",
+            "docs/nodes/image.texture.md",
             1,
             {},
             { { "output", "Output", "texture.rgba", "out" } },
             {}
         },
         {
-            "sop.plane",
+            "mesh.plane",
             "Plane",
-            "sop",
+            "mesh",
+            "generate",
             "geometry",
-            "docs/nodes/sop.plane.md",
+            "docs/nodes/mesh.plane.md",
             1,
             {},
             { { "geometry", "Geometry", "geometry.mesh", "out" } },
             {}
         },
         {
-            "mat.shader",
+            "material.shader",
             "Shader Material",
-            "mat",
+            "material",
+            "shading",
             "render",
-            "docs/nodes/mat.shader.md",
+            "docs/nodes/material.shader.md",
             1,
-            { { "shader", "Shader", "shader.program", "in" } },
-            { { "material", "Material", "material", "out" } },
+            { { "shader", "Shader", "texture.rgba", "in" } },
+            { { "material", "Material", "material.shader", "out" } },
             {}
         }
     };
@@ -380,12 +439,34 @@ const NodeSpec* findNodeSpec (const std::vector<NodeSpec>& specs, const std::str
 
 bool isKnownNodeCategory (const std::string& category)
 {
-    static constexpr std::array<const char*, 10> categories {
-        "audio", "analyzer", "signal", "midi", "shader",
-        "top", "sop", "mat", "output", "compound"
+    static constexpr std::array<const char*, 18> categories {
+        "image", "render", "mesh", "point", "numbers", "io",
+        "field", "flow", "particle", "string", "data", "assets",
+        "shader", "material", "audio", "analyzer", "output", "compound"
     };
 
     return std::find (categories.begin(), categories.end(), category) != categories.end();
+}
+
+bool isKnownNodeSubcategory (const std::string& subcategory)
+{
+    static constexpr std::array<const char*, 22> subcategories {
+        "generate", "modify", "draw", "color", "analyze", "transform",
+        "camera", "postfx", "shading", "scene", "input", "output",
+        "midi", "osc", "audio", "file", "context", "feature",
+        "detector", "aggregate", "use", "measurement"
+    };
+
+    return std::find (subcategories.begin(), subcategories.end(), subcategory) != subcategories.end();
+}
+
+bool isKnownNodeCategoryAlias (const std::string& alias)
+{
+    static constexpr std::array<const char*, 7> aliases {
+        "geometry", "signal", "midi", "texture", "top", "sop", "mat"
+    };
+
+    return std::find (aliases.begin(), aliases.end(), alias) != aliases.end();
 }
 }
 ```
@@ -400,7 +481,7 @@ Create `docs/nodes/README.md`:
 Human manuals and machine specs are separate.
 
 - Human manuals live here as Markdown and explain use, examples, and common failure modes.
-- Machine specs live in `NodeSpec` and define type, category, runtime domain, ports, params, and doc paths.
+- Machine specs live in `NodeSpec` and define type, category, subcategory, runtime domain, ports, params, and doc paths.
 - Node surfaces should show a doc icon that opens the human manual; the patch surface should not print long explanations directly on nodes.
 ```
 
@@ -451,8 +532,8 @@ Expected: `node_specs` and existing tests pass.
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
 ```text
-- Proven: first node taxonomy registry exists with categories `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
-- Proven: node `type` is stable identity; `category` is registry metadata and can move without changing saved graph identity.
+- Proven: first node taxonomy registry exists with Tooll3-seeded categories `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`, plus project categories `shader`, `material`, `audio`, `analyzer`, `output`, and `compound`.
+- Proven: node `type` is stable identity; `category` and `subcategory` are browser metadata and can move through aliases without changing saved graph identity.
 - Proven: node specs point to human Markdown manuals while machine-readable behavior stays in `NodeSpec`.
 ```
 
@@ -465,6 +546,185 @@ ctest --test-dir build --output-on-failure
 git add CMakeLists.txt source/core/NodeSpec.h source/core/NodeSpec.cpp tests/NodeSpecTests.cpp docs/nodes/README.md docs/nodes/analyzer.loudness.md docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
 git commit -m "Add node taxonomy contract"
 ```
+
+---
+
+### Task 0.25: Tooll3 Patch Interaction Grammar
+
+**Files:**
+- Create: `source/core/PatchInteraction.h`
+- Create: `source/core/PatchInteraction.cpp`
+- Create: `tests/PatchInteractionTests.cpp`
+- Modify: `CMakeLists.txt`
+- Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
+
+- [ ] **Step 1: Write failing interaction grammar tests**
+
+Add `tests/PatchInteractionTests.cpp`:
+
+```cpp
+#include "PatchInteraction.h"
+
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+}
+
+int main()
+{
+    expect (myworld::isKnownPatchGesture ("zoom"), "zoom gesture");
+    expect (myworld::isKnownPatchGesture ("pan"), "pan gesture");
+    expect (myworld::isKnownPatchGesture ("select"), "select gesture");
+    expect (myworld::isKnownPatchGesture ("frame_selection"), "frame selection gesture");
+    expect (myworld::isKnownPatchGesture ("drag_pin_to_empty_canvas"), "pin to empty canvas gesture");
+    expect (myworld::isKnownPatchGesture ("drag_pin_to_pin"), "pin to pin gesture");
+    expect (myworld::isKnownPatchGesture ("override_parameter_with_connection"), "parameter override gesture");
+    expect (myworld::isKnownPatchGesture ("enter_compound"), "enter compound gesture");
+    expect (myworld::isKnownPatchGesture ("collapse_compound"), "collapse compound gesture");
+    expect (myworld::isKnownPatchGesture ("undo"), "undo gesture");
+    expect (myworld::isKnownPatchGesture ("redo"), "redo gesture");
+    expect (! myworld::isKnownPatchGesture ("edit_json_directly"), "direct json edit forbidden");
+
+    expect (myworld::commandForGesture ("zoom") == "set_view", "zoom command");
+    expect (myworld::commandForGesture ("pan") == "set_view", "pan command");
+    expect (myworld::commandForGesture ("select") == "select", "select command");
+    expect (myworld::commandForGesture ("frame_selection") == "set_view", "frame selection command");
+    expect (myworld::commandForGesture ("drag_pin_to_empty_canvas") == "create_node+connect", "node search lowers to create and connect");
+    expect (myworld::commandForGesture ("drag_pin_to_pin") == "connect", "pin to pin command");
+    expect (myworld::commandForGesture ("override_parameter_with_connection") == "set_port_binding", "parameter override command");
+    expect (myworld::commandForGesture ("enter_compound") == "enter_patch", "enter compound command");
+    expect (myworld::commandForGesture ("collapse_compound") == "exit_patch", "collapse compound command");
+    expect (myworld::commandForGesture ("undo") == "undo", "undo command");
+    expect (myworld::commandForGesture ("redo") == "redo", "redo command");
+
+    std::cout << "patch interaction grammar ok\n";
+    return 0;
+}
+```
+
+- [ ] **Step 2: Wire the test target and verify RED**
+
+Modify `CMakeLists.txt`:
+
+```cmake
+add_library(my_world_patch_interaction
+    source/core/PatchInteraction.cpp
+)
+
+target_include_directories(my_world_patch_interaction
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_patch_interaction_tests
+    tests/PatchInteractionTests.cpp
+)
+
+target_link_libraries(my_world_patch_interaction_tests
+    PRIVATE
+        my_world_patch_interaction
+)
+
+add_test(NAME patch_interaction COMMAND my_world_patch_interaction_tests)
+```
+
+Run:
+
+```bash
+cmake --build build --target my_world_patch_interaction_tests
+```
+
+Expected: FAIL because `PatchInteraction.h` does not exist yet.
+
+- [ ] **Step 3: Implement minimal interaction grammar**
+
+Create `source/core/PatchInteraction.h`:
+
+```cpp
+#pragma once
+
+#include <string>
+
+namespace myworld
+{
+bool isKnownPatchGesture (const std::string& gesture);
+std::string commandForGesture (const std::string& gesture);
+}
+```
+
+Create `source/core/PatchInteraction.cpp`:
+
+```cpp
+#include "PatchInteraction.h"
+
+#include <array>
+#include <utility>
+
+namespace myworld
+{
+namespace
+{
+using GestureCommand = std::pair<const char*, const char*>;
+
+static constexpr std::array<GestureCommand, 11> gestures {
+    GestureCommand { "zoom", "set_view" },
+    GestureCommand { "pan", "set_view" },
+    GestureCommand { "select", "select" },
+    GestureCommand { "frame_selection", "set_view" },
+    GestureCommand { "drag_pin_to_empty_canvas", "create_node+connect" },
+    GestureCommand { "drag_pin_to_pin", "connect" },
+    GestureCommand { "override_parameter_with_connection", "set_port_binding" },
+    GestureCommand { "enter_compound", "enter_patch" },
+    GestureCommand { "collapse_compound", "exit_patch" },
+    GestureCommand { "undo", "undo" },
+    GestureCommand { "redo", "redo" }
+};
+}
+
+bool isKnownPatchGesture (const std::string& gesture)
+{
+    for (const auto& entry : gestures)
+        if (gesture == entry.first)
+            return true;
+
+    return false;
+}
+
+std::string commandForGesture (const std::string& gesture)
+{
+    for (const auto& entry : gestures)
+        if (gesture == entry.first)
+            return entry.second;
+
+    return {};
+}
+}
+```
+
+- [ ] **Step 4: Verify and commit**
+
+Run:
+
+```bash
+git diff --check
+cmake --build build --target my_world_patch_interaction_tests
+ctest --test-dir build --output-on-failure
+git add CMakeLists.txt source/core/PatchInteraction.h source/core/PatchInteraction.cpp tests/PatchInteractionTests.cpp docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
+git commit -m "Add patch interaction grammar contract"
+```
+
+Expected: patch interaction tests pass and the spec says Tooll3-inspired gestures lower into commandGraph commands.
 
 ---
 
@@ -1562,6 +1822,9 @@ git commit -m "Wire loudness to shader uniform"
 ## Stop Conditions
 
 - Stop before A1 if A0 is not committed. Audio meters may use JUCE labels during the proof, but graph/node UI must not grow a JUCE `Component` NodeView.
+- Stop before implementing node browser UI if Tooll3-seeded `category` / `subcategory` are being treated as runtime execution rules instead of browser metadata.
+- Stop before implementing pin-drag node search if the gesture cannot lower into `create_node` plus `connect` commands.
+- Stop before implementing parameter override UI if connected or animated values would erase stored manual values.
 - Stop before adding any node editor UI if it would store graph state inside ImGui ids or JUCE components instead of `NodeSpec` / `NodeInstance` / commands.
 - Stop before adding card-heavy node surfaces. Production nodes should stay vvvv-like: name, pins, tiny status, doc/patch icons. Long descriptions belong in human manuals or inspector.
 - Stop before putting usage prose directly on node surfaces; use `humanDocPath` and a doc icon instead.

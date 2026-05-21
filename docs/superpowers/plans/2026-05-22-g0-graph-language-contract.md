@@ -41,9 +41,14 @@ audio.mono
 signal.float
 texture.rgba
 geometry.mesh
+point.cloud
+field.scalar
+material.shader
 event.midi
 event.osc
 command.graph
+text.string
+data.object
 resource.file
 generic<T>
 ```
@@ -73,8 +78,15 @@ create_node
 create_region
 connect
 set_param
+set_port_binding
+set_view
+select
+enter_patch
+exit_patch
 publish_module
 save_work
+undo
+redo
 ```
 
 ### C# Boundary
@@ -160,6 +172,8 @@ int main()
 
     expect (myworld::isKnownTypeSpec ("audio.mono"), "audio.mono type");
     expect (myworld::isKnownTypeSpec ("signal.float"), "signal.float type");
+    expect (myworld::isKnownTypeSpec ("point.cloud"), "point.cloud type");
+    expect (myworld::isKnownTypeSpec ("material.shader"), "material.shader type");
     expect (myworld::isKnownTypeSpec ("generic<T>"), "generic type slot");
     expect (! myworld::isKnownTypeSpec ("mystery.blob"), "unknown type");
 
@@ -190,6 +204,12 @@ int main()
 
     expect (myworld::isKnownCommandType ("create_node"), "create_node command");
     expect (myworld::isKnownCommandType ("create_region"), "create_region command");
+    expect (myworld::isKnownCommandType ("set_port_binding"), "set_port_binding command");
+    expect (myworld::isKnownCommandType ("set_view"), "set_view command");
+    expect (myworld::isKnownCommandType ("select"), "select command");
+    expect (myworld::isKnownCommandType ("enter_patch"), "enter_patch command");
+    expect (myworld::isKnownCommandType ("undo"), "undo command");
+    expect (myworld::isKnownCommandType ("redo"), "redo command");
     expect (myworld::isKnownCommandType ("save_work"), "save_work command");
     expect (! myworld::isKnownCommandType ("edit_json_directly"), "direct json mutation forbidden");
 
@@ -302,14 +322,19 @@ bool isKnownRegionType (const std::string& type)
 
 bool isKnownTypeSpec (const std::string& type)
 {
-    static constexpr std::array<const char*, 9> values {
+    static constexpr std::array<const char*, 14> values {
         "audio.mono",
         "signal.float",
         "texture.rgba",
         "geometry.mesh",
+        "point.cloud",
+        "field.scalar",
+        "material.shader",
         "event.midi",
         "event.osc",
         "command.graph",
+        "text.string",
+        "data.object",
         "resource.file",
         "generic<T>"
     };
@@ -330,13 +355,20 @@ bool isKnownPortBindingMode (const std::string& mode)
 
 bool isKnownCommandType (const std::string& type)
 {
-    static constexpr std::array<const char*, 6> values {
+    static constexpr std::array<const char*, 13> values {
         "create_node",
         "create_region",
         "connect",
         "set_param",
+        "set_port_binding",
+        "set_view",
+        "select",
+        "enter_patch",
+        "exit_patch",
         "publish_module",
-        "save_work"
+        "save_work",
+        "undo",
+        "redo"
     };
     return contains (values, type);
 }
@@ -393,7 +425,7 @@ Expected: graph language and existing tests pass.
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
 ```text
-- Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, PortBinding modes, typed edges, AI-safe command names, and C# external compiler worker boundary.
+- Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, PortBinding modes, typed edges, Tooll3-inspired command names, AI-safe mutation rules, and C# external compiler worker boundary.
 ```
 
 Run:

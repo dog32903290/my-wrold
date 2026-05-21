@@ -81,20 +81,23 @@ docs/superpowers/plans/2026-05-22-g0-graph-language-contract.md
 Goal:
 
 ```text
-NodeSpec taxonomy -> Dear ImGui smoke overlay -> no JUCE Component NodeView trap
+Tooll3-seeded NodeSpec taxonomy -> Dear ImGui patch interaction smoke -> no JUCE Component NodeView trap
 ```
 
 Contract:
 
-- Planned: first node taxonomy registry separates `type`, `category`, `runtimeDomain`, and port `dataType`.
-- Planned: seed categories include `audio`, `analyzer`, `signal`, `midi`, `shader`, `top`, `sop`, `mat`, `output`, and `compound`.
-- Planned: `type` remains stable saved graph identity; `category` is registry metadata and can be extended or migrated later.
+- Planned: first node taxonomy registry separates `type`, `category`, `subcategory`, `runtimeDomain`, and port `dataType`.
+- Planned: seed categories borrow Tooll3's library domains: `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`.
+- Planned: project-specific seed categories add `shader`, `material`, `audio`, `analyzer`, `output`, and `compound`.
+- Planned: familiar vocabularies such as `top`, `sop`, `mat`, `geometry`, `signal`, `texture`, and `midi` are aliases or browser filters, not first-level saved category law.
+- Planned: `type` remains stable saved graph identity; `category` / `subcategory` are registry metadata and can be extended or migrated later.
 - Planned: each node spec points to a human manual; machine-readable behavior lives in `NodeSpec`, not prose.
 - Planned: Dear ImGui mounts in the OpenGL render loop before any production node editor work.
-- Planned: A0 may show a simple ImGui smoke panel / slider, but it must not own graph truth or graph mutation.
+- Planned: A0 proves Tooll3-inspired patch gestures: zoom, pan, selection, framing, drag from pin to empty canvas, compatible node search, connect, parameter override, compound enter/exit, and undo/redo.
 - Planned: production node surfaces follow vvvv-like minimal patching: compact name, pins, tiny status, doc/patch icons; values live in IOBox / Pad / Meter / Scope nodes or inspector.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.
+- Forbidden: copying Tooll3's exact appearance, icons, branding, C# ownership model, DirectX/HLSL backend, or `SymbolPackage` compilation system.
 
 ### V1 Visual Proof
 
@@ -222,9 +225,12 @@ Borrow:
 ```text
 Symbol / Instance split
 plain-text graph serialization
+Tooll3-seeded library taxonomy
+pin-drag node search and connection gestures
 parameter value overridden by connection or animation
 ImGui draw-list canvas techniques
 undoable command discipline
+timeline / parameter / preview / node graph panel rhythm
 ```
 
 Do not borrow:
@@ -235,6 +241,7 @@ DirectX / HLSL first backend
 SymbolPackage / C# compilation as module law
 UI ids as saved graph ids
 JSON edits that bypass commandGraph validation
+exact Tooll3 appearance, icons, branding, or window layout as identity
 ```
 
 Current borrowing note:
@@ -289,26 +296,73 @@ Use four separate labels:
 ```text
 type           stable saved graph identity, e.g. analyzer.loudness
 category       UI / browser grouping, e.g. analyzer
+subcategory    UI / browser subgrouping, e.g. feature
 runtimeDomain  cook owner, e.g. audioAnalysis
 dataType       port compatibility, e.g. signal.float
 ```
 
-First category registry:
+First category registry is seeded from Tooll3 library domains plus project-specific domains:
 
 ```text
+image
+render
+mesh
+point
+numbers
+io
+field
+flow
+particle
+string
+data
+assets
+shader
+material
 audio
 analyzer
-signal
-midi
-shader
-top
-sop
-mat
 output
 compound
 ```
 
-New categories can be added later through the registry. Existing saved graph identity should move through aliases or migration, not by casually renaming `type`.
+First subcategory examples:
+
+```text
+generate
+modify
+draw
+color
+analyze
+transform
+camera
+postfx
+shading
+scene
+input
+output
+midi
+osc
+audio
+file
+context
+feature
+detector
+aggregate
+use
+measurement
+```
+
+Aliases and browser filters:
+
+```text
+geometry -> mesh
+signal -> numbers
+midi -> io.midi
+texture / top -> image
+sop -> mesh / point
+mat -> material
+```
+
+New categories can be added later through the registry. Existing saved graph identity should move through aliases or migration, not by casually renaming `type`. Category and subcategory never decide runtime execution; `runtimeDomain` does.
 
 ### Node Surface
 
@@ -366,6 +420,52 @@ machine spec   NodeSpec registry / serialized graph schema
 ```
 
 The node surface may show a `?` or small book icon that opens the human manual in an inspector. The machine spec is used by validation, node browser filtering, graph migration, AI worker commands, and runtime dispatch.
+
+### Patch Interaction Grammar
+
+Borrow Tooll3's operation feel, but lower every gesture into our commands.
+
+```text
+zoom / pan / selection / framing
+drag from pin to empty canvas -> compatible node search
+drag from pin to compatible pin -> connect
+parameter slider -> manual PortBinding
+connect parameter pin -> connected PortBinding
+timeline assignment -> animated PortBinding
+double-click compound/module -> enter patch body
+collapse compound/module -> show public ports only
+undo / redo -> commandGraph-backed history
+```
+
+Expected command lowering:
+
+```text
+create_node
+connect
+set_param
+set_port_binding
+set_view
+select
+enter_patch
+exit_patch
+publish_module
+undo
+redo
+```
+
+The first A0 smoke proof can fake the node library visually, but it must still record the intended command names. Production UI cannot mutate graph state directly through ImGui widget state.
+
+Tooll3's panel rhythm can be borrowed as a layout reference:
+
+```text
+node graph      primary writing surface
+preview         live visual/audio proof surface
+parameters      selected node and PortBinding editor
+timeline        animated bindings and time clips
+library/search  category/subcategory node browser
+```
+
+The first implementation may show only a subset, but the layout should not force node graph, preview, parameters, and timeline into one overloaded panel.
 
 ### Render Backend
 
