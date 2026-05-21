@@ -1,0 +1,40 @@
+{
+  "kind": "graphIR",
+  "version": 1,
+  "nodes": [
+    { "id": "audio1", "type": "audio.input" },
+    { "id": "loudness1", "type": "analyzer.loudness" }
+  ],
+  "regions": [
+    {
+      "id": "region1",
+      "type": "if",
+      "bodyPatchId": "patch.if-body",
+      "inputBorderPorts": ["condition"],
+      "outputBorderPorts": ["result"]
+    }
+  ],
+  "portBindings": [
+    {
+      "id": "loudness1.gain",
+      "dataType": "signal.float",
+      "bindingMode": "manual",
+      "storedValue": 1.0
+    },
+    {
+      "id": "shader1.brightness",
+      "dataType": "signal.float",
+      "bindingMode": "connected",
+      "overrideSource": "loudness1.out"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge1",
+      "from": "audio1.mono",
+      "to": "loudness1.input",
+      "dataType": "audio.mono",
+      "streamKind": "continuous"
+    }
+  ]
+}

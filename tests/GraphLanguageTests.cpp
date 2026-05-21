@@ -1,6 +1,7 @@
 #include "GraphLanguage.h"
 
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <string>
 
@@ -68,6 +69,9 @@ int main()
     expect (myworld::isAllowedCompilerWorkerLanguage ("c++"), "c++ compiler worker language");
     expect (myworld::isAllowedCompilerWorkerLanguage ("c#"), "c# external compiler worker language");
     expect (! myworld::isAllowedRealtimeRuntimeLanguage ("c#"), "c# not allowed in realtime runtime");
+
+    expect (std::filesystem::exists ("fixtures/graph-language/minimal-graph-ir.json"), "minimal graph IR fixture");
+    expect (std::filesystem::exists ("fixtures/graph-language/compiler-worker.manifest.json"), "compiler worker manifest fixture");
 
     std::cout << "graph language contract ok\n";
     return 0;

@@ -1,0 +1,12 @@
+{
+  "kind": "externalCompilerWorker",
+  "version": 1,
+  "allowedLanguages": ["c++", "c#"],
+  "forbiddenRuntimeTargets": ["audioCallback", "renderLoop", "appLifecycle"],
+  "bridgeModes": {
+    "batchProof": "files",
+    "interactiveEditor": "namedPipe|grpc|zeromq|sharedMemory"
+  },
+  "inputs": ["graphIR.json", "commandGraph.json"],
+  "outputs": ["validation_report.json", "generated_artifacts"]
+}

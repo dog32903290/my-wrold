@@ -50,6 +50,9 @@ target_link_libraries(my_world_graph_language_tests
 )
 
 add_test(NAME graph_language COMMAND my_world_graph_language_tests)
+set_tests_properties(graph_language PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 add_library(my_world_storage
     source/storage/StorageContract.cpp

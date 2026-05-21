@@ -79,6 +79,7 @@ Contract:
 - Planned: future compiler workers may consume graph IR and generate GLSL, C++, validation reports, migration output, or documentation.
 - Planned: file-based `graphIR.json` / `validation_report.json` exchange is only for batch fixtures, CI, and proof dumps. A live C# compiler worker needs an explicit interactive bridge such as named pipes, gRPC, ZeroMQ, or shared memory before it can support drag-time feedback.
 - Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, PortBinding modes, typed edges, Tooll3-inspired command names, AI-safe mutation rules, and C# external compiler worker boundary.
+- Proven: graphIR and compiler-worker fixtures exist for batch proof exchange, with live editor IPC explicitly separated from file IO.
 - Forbidden: direct AI JSON surgery.
 - Forbidden: C# / .NET code in realtime audio callbacks, render hot paths, or native app lifecycle for the first stage.
 
