@@ -54,6 +54,26 @@ set_tests_properties(graph_language PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_node_specs
+    source/core/NodeSpec.cpp
+)
+
+target_include_directories(my_world_node_specs
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_node_spec_tests
+    tests/NodeSpecTests.cpp
+)
+
+target_link_libraries(my_world_node_spec_tests
+    PRIVATE
+        my_world_node_specs
+)
+
+add_test(NAME node_specs COMMAND my_world_node_spec_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
 )
