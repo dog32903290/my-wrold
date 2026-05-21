@@ -43,6 +43,8 @@ Contract:
 - Planned: auto commit is local-only. Push/sync to a remote repository must be an explicit later command.
 - Planned: after the synchronous save returns, the UI can report `save-ok commit-pending`; the background worker later records `saved-and-committed` or `save-ok commit-failed`.
 - Planned: if save succeeds but commit fails, the UI reports `save-ok commit-failed` and leaves evidence; it must not silently claim a full save.
+- Proven: minimal storage contract names WorkProject, PatchDocument, ModulePackage, WorkLibrary, and ModuleLibrary.
+- Proven: Command+S save statuses are explicit: clean, save-ok commit-pending, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:

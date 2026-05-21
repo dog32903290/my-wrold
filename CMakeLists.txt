@@ -31,6 +31,26 @@ target_link_libraries(my_world_graph_contract_tests
 
 add_test(NAME graph_contract COMMAND my_world_graph_contract_tests)
 
+add_library(my_world_storage
+    source/storage/StorageContract.cpp
+)
+
+target_include_directories(my_world_storage
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+add_executable(my_world_storage_tests
+    tests/StorageContractTests.cpp
+)
+
+target_link_libraries(my_world_storage_tests
+    PRIVATE
+        my_world_storage
+)
+
+add_test(NAME storage_contract COMMAND my_world_storage_tests)
+
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 
