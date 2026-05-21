@@ -247,6 +247,7 @@ void MainComponent::updateAudioMeters()
     rmsLabel.setText ("rms " + juce::String (snapshot.rms, 4), juce::dontSendNotification);
     peakLabel.setText ("peak " + juce::String (snapshot.peak, 4), juce::dontSendNotification);
     loudnessLabel.setText ("loudness " + juce::String (snapshot.loudness, 4), juce::dontSendNotification);
+    preview.setLoudness (snapshot.loudness);
 
     const auto sampleRate = audioInputAnalyzer.getSampleRate();
 

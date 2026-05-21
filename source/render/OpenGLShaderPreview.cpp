@@ -1,5 +1,6 @@
 #include "OpenGLShaderPreview.h"
 
+#include <atomic>
 #include <vector>
 
 namespace myworld
@@ -74,6 +75,11 @@ void OpenGLShaderPreview::setFragmentShader (std::string source)
     openGLContext.triggerRepaint();
 }
 
+void OpenGLShaderPreview::setLoudness (float newLoudness)
+{
+    loudness.store (juce::jlimit (0.0f, 1.0f, newLoudness), std::memory_order_relaxed);
+}
+
 void OpenGLShaderPreview::requestProofDump (juce::File outputDirectory, GraphContract graph)
 {
     {
@@ -145,6 +151,9 @@ void OpenGLShaderPreview::renderOpenGL()
 
         if (frameUniform != nullptr)
             frameUniform->set (static_cast<float> (frameIndex));
+
+        if (loudnessUniform != nullptr)
+            loudnessUniform->set (loudness.load (std::memory_order_relaxed));
 
         glBindVertexArray (vertexArray);
         glBindBuffer (GL_ARRAY_BUFFER, vertexBuffer);
@@ -239,6 +248,7 @@ void OpenGLShaderPreview::compilePendingShader()
         timeUniform = makeUniform (*shaderProgram, "u_time");
         resolutionUniform = makeUniform (*shaderProgram, "u_resolution");
         frameUniform = makeUniform (*shaderProgram, "u_frame");
+        loudnessUniform = makeUniform (*shaderProgram, "u_loudness");
 
         reportStatus ("compiled: GLSL v" + juce::String (juce::OpenGLShaderProgram::getLanguageVersion(), 2));
         return;
@@ -340,6 +350,7 @@ void OpenGLShaderPreview::releaseGLObjects()
     timeUniform.reset();
     resolutionUniform.reset();
     frameUniform.reset();
+    loudnessUniform.reset();
     shaderProgram.reset();
 
     if (vertexBuffer != 0)

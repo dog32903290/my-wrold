@@ -7,6 +7,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
@@ -25,6 +26,7 @@ public:
     ~OpenGLShaderPreview() override;
 
     void setFragmentShader (std::string source);
+    void setLoudness (float newLoudness);
     void requestProofDump (juce::File outputDirectory, GraphContract graph);
 
     StatusCallback onStatusMessage;
@@ -70,7 +72,9 @@ private:
     std::unique_ptr<juce::OpenGLShaderProgram::Uniform> timeUniform;
     std::unique_ptr<juce::OpenGLShaderProgram::Uniform> resolutionUniform;
     std::unique_ptr<juce::OpenGLShaderProgram::Uniform> frameUniform;
+    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> loudnessUniform;
 
+    std::atomic<float> loudness { 0.0f };
     juce::uint32 vertexArray = 0;
     juce::uint32 vertexBuffer = 0;
     juce::uint32 frameIndex = 0;

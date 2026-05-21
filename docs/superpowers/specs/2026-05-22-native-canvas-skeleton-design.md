@@ -167,6 +167,7 @@ Contract:
 - Proven: UI reads analyzer snapshots outside the realtime callback and displays `rms`, `peak`, and `loudness` meter rows.
 - Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json` from `--dump-audio-proof-and-exit`.
 - Proven: live input was observed on this Mac in the current A1 proof dump (`48000Hz`, `512` samples, `sampleCounter` greater than `0`, `active: true`).
+- Proven: analyzer `loudness` snapshots are wired into shader uniform `u_loudness`; V1 proof `node_stats.json` records `u_loudness` as a system uniform.
 - Proven: the realtime audio path currently only measures or writes bounded realtime-safe state; it does not mutate graph structure.
 - Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
 - Proven: the macOS app bundle includes `NSMicrophoneUsageDescription` before live audio proof asks for input.

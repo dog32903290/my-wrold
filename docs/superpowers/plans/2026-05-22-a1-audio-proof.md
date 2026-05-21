@@ -1759,7 +1759,7 @@ git commit -m "Add audio analyzer proof dump"
 - Modify: `tests/GraphContractTests.cpp`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Extend graph contract test**
+- [x] **Step 1: Extend graph contract test**
 
 In `tests/GraphContractTests.cpp`, add:
 
@@ -1769,7 +1769,7 @@ expect (myworld::usesSystemUniform (shader, "u_loudness"), "default shader decla
 
 Expected RED: test fails because `u_loudness` is not in the shader node yet.
 
-- [ ] **Step 2: Add `u_loudness` to default shader graph and shader**
+- [x] **Step 2: Add `u_loudness` to default shader graph and shader**
 
 In `source/core/GraphContract.cpp`, add `u_loudness` to the Shader node uniforms and default shader source:
 
@@ -1784,7 +1784,7 @@ float pulse = 1.0 + clamp(u_loudness, 0.0, 1.0) * 0.35;
 vec3 color = mix(vec3(0.02, 0.025, 0.035), base * pulse, ring);
 ```
 
-- [ ] **Step 3: Add preview uniform setter**
+- [x] **Step 3: Add preview uniform setter**
 
 In `OpenGLShaderPreview.h`, add:
 
@@ -1796,7 +1796,7 @@ std::unique_ptr<juce::OpenGLShaderProgram::Uniform> loudnessUniform;
 
 In `OpenGLShaderPreview.cpp`, bind `u_loudness` after compile and set it during render.
 
-- [ ] **Step 4: Feed analyzer snapshot into preview**
+- [x] **Step 4: Feed analyzer snapshot into preview**
 
 In `MainComponent::updateAudioMeters()`:
 
@@ -1804,7 +1804,7 @@ In `MainComponent::updateAudioMeters()`:
 preview.setLoudness (snapshot.loudness);
 ```
 
-- [ ] **Step 5: Verify visual/audio closure**
+- [x] **Step 5: Verify visual/audio closure**
 
 Run:
 
@@ -1822,7 +1822,7 @@ Expected:
 - V1 dump still works.
 - `node_stats.json` includes `u_loudness` in `systemUniforms`.
 
-- [ ] **Step 6: Update spec and commit**
+- [x] **Step 6: Update spec and commit**
 
 Update A1:
 

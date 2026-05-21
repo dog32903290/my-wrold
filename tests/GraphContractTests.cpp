@@ -44,6 +44,7 @@ int main()
     expect (myworld::usesSystemUniform (shader, "u_time"), "default shader declares u_time");
     expect (myworld::usesSystemUniform (shader, "u_resolution"), "default shader declares u_resolution");
     expect (myworld::usesSystemUniform (shader, "u_frame"), "default shader declares u_frame");
+    expect (myworld::usesSystemUniform (shader, "u_loudness"), "default shader declares u_loudness");
 
     const auto cookOrderJson = myworld::makeCookOrderJson (graph);
     expectContains (cookOrderJson, "\"version\": 1", "cook order json");

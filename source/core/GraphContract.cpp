@@ -13,7 +13,7 @@ GraphNode makeShaderNode()
     return {
         "shader1",
         "shader.fragment",
-        { "u_time", "u_resolution", "u_frame" }
+        { "u_time", "u_resolution", "u_frame", "u_loudness" }
     };
 }
 
@@ -122,6 +122,7 @@ std::string defaultFragmentShader()
 uniform float u_time;
 uniform vec2 u_resolution;
 uniform float u_frame;
+uniform float u_loudness;
 
 void main()
 {
@@ -131,7 +132,8 @@ void main()
 
     float ring = 0.5 + 0.5 * cos(16.0 * length(centered) - u_time * 2.4);
     vec3 base = 0.5 + 0.5 * cos(u_time + vec3(0.0, 2.1, 4.2) + uv.xyx * 4.0);
-    vec3 color = mix(vec3(0.02, 0.025, 0.035), base, ring);
+    float pulse = 1.0 + clamp(u_loudness, 0.0, 1.0) * 0.35;
+    vec3 color = mix(vec3(0.02, 0.025, 0.035), base * pulse, ring);
 
     gl_FragColor = vec4(color, 1.0);
 }
