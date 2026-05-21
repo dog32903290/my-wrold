@@ -165,10 +165,11 @@ Contract:
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
 - Proven: JUCE audio callback bridge exists and only writes bounded analyzer state plus output silence.
 - Proven: UI reads analyzer snapshots outside the realtime callback and displays `rms`, `peak`, and `loudness` meter rows.
-- Not proven: live microphone input on this Mac until permission is granted and meter values move.
+- Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json` from `--dump-audio-proof-and-exit`.
+- Proven: live input was observed on this Mac in the current A1 proof dump (`48000Hz`, `512` samples, `sampleCounter` greater than `0`, `active: true`).
 - Proven: the realtime audio path currently only measures or writes bounded realtime-safe state; it does not mutate graph structure.
 - Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
-- Planned: the macOS app bundle includes `NSMicrophoneUsageDescription` before any live audio proof asks for input.
+- Proven: the macOS app bundle includes `NSMicrophoneUsageDescription` before live audio proof asks for input.
 - Forbidden: mutating or rebuilding the audio runtime graph directly inside the audio callback. Live audio graph changes must be compiled/prepared off-thread and swapped through a realtime-safe snapshot or command queue.
 
 ### C1 Compound Proof

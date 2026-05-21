@@ -11,7 +11,9 @@ class MainComponent final : public juce::Component,
                             private juce::Timer
 {
 public:
-    explicit MainComponent (bool dumpProofOnStart = false, bool quitAfterProofDump = false);
+    MainComponent (bool dumpProofOnStart = false,
+                   bool dumpAudioProofOnStart = false,
+                   bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
     void paint (juce::Graphics& g) override;
@@ -20,6 +22,8 @@ public:
 private:
     void timerCallback() override;
     void dumpProof();
+    void dumpAudioProof();
+    void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();
     void updateAudioMeters();
@@ -36,7 +40,7 @@ private:
     juce::Label peakLabel;
     juce::Label loudnessLabel;
     GraphContract graph;
-    bool shouldQuitAfterProofDump = false;
+    bool shouldQuitAfterStartupDump = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

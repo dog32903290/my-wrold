@@ -1654,7 +1654,7 @@ git commit -m "Show audio analyzer meter rows"
 - Modify: `source/app/MainComponent.cpp`
 - Modify: `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`
 
-- [ ] **Step 1: Add command-line mode**
+- [x] **Step 1: Add command-line mode**
 
 In `source/app/Main.cpp`, parse:
 
@@ -1664,7 +1664,7 @@ const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and
 
 Pass it into `MainComponent`.
 
-- [ ] **Step 2: Add audio proof dump helper**
+- [x] **Step 2: Add audio proof dump helper**
 
 In `MainComponent`, add:
 
@@ -1697,7 +1697,7 @@ void MainComponent::dumpAudioProof()
 }
 ```
 
-- [ ] **Step 3: Trigger delayed dump**
+- [x] **Step 3: Trigger delayed dump**
 
 When `--dump-audio-proof-and-exit` is set, use:
 
@@ -1711,7 +1711,7 @@ juce::Timer::callAfterDelay (2500, [safe = juce::Component::SafePointer<MainComp
 
 After dump, quit the app.
 
-- [ ] **Step 4: Verify proof dump**
+- [x] **Step 4: Verify proof dump**
 
 Run:
 
@@ -1728,7 +1728,7 @@ Expected:
 - `active` may be false in a silent room; that is not a failure.
 - If sample rate is `0`, mark live device proof blocked and do not claim A1 live proof.
 
-- [ ] **Step 5: Update spec and commit**
+- [x] **Step 5: Update spec and commit**
 
 Update A1:
 

@@ -22,7 +22,13 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         const auto dumpProofAndExit = commandLine.contains ("--dump-proof-and-exit");
-        mainWindow = std::make_unique<MainWindow> (getApplicationName(), dumpProofAndExit);
+        const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and-exit");
+        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit;
+
+        mainWindow = std::make_unique<MainWindow> (getApplicationName(),
+                                                   dumpProofAndExit,
+                                                   dumpAudioProofAndExit,
+                                                   quitAfterStartupDump);
     }
 
     void shutdown() override
@@ -39,13 +45,19 @@ private:
     class MainWindow final : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name, bool dumpProofAndExit)
+        MainWindow (juce::String name,
+                    bool dumpProofAndExit,
+                    bool dumpAudioProofAndExit,
+                    bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent (dumpProofAndExit, dumpProofAndExit), true);
+            setContentOwned (new MainComponent (dumpProofAndExit,
+                                                dumpAudioProofAndExit,
+                                                quitAfterStartupDump),
+                             true);
             centreWithSize (getWidth(), getHeight());
             setResizable (true, true);
             setVisible (true);

@@ -33,11 +33,18 @@ juce::File proofDumpDirectory()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("v1-shader-proof");
 }
+
+juce::File audioProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("a1-audio-proof");
+}
 }
 
-MainComponent::MainComponent (bool dumpProofOnStart, bool quitAfterProofDump)
+MainComponent::MainComponent (bool dumpProofOnStart,
+                              bool dumpAudioProofOnStart,
+                              bool quitAfterStartupDump)
     : graph (makeDefaultShaderOutputGraph()),
-      shouldQuitAfterProofDump (quitAfterProofDump)
+      shouldQuitAfterStartupDump (quitAfterStartupDump)
 {
     graphLabel.setText (juce::String (graph.runtimeGraph.nodes[0].id) + " -> " + graph.runtimeGraph.nodes[1].id,
                         juce::dontSendNotification);
@@ -100,6 +107,15 @@ MainComponent::MainComponent (bool dumpProofOnStart, bool quitAfterProofDump)
         });
     }
 
+    if (dumpAudioProofOnStart)
+    {
+        juce::Timer::callAfterDelay (2500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpAudioProof();
+        });
+    }
+
     setSize (1180, 720);
 }
 
@@ -149,24 +165,65 @@ void MainComponent::dumpProof()
     preview.requestProofDump (directory, graph);
 }
 
+void MainComponent::dumpAudioProof()
+{
+    const auto directory = audioProofDumpDirectory();
+
+    if (! directory.createDirectory())
+    {
+        statusLabel.setText ("audio proof failed: could not create " + directory.getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    const auto snapshot = audioInputAnalyzer.getSnapshot();
+    const auto json = juce::String()
+        + "{\n"
+        + "  \"sampleRate\": " + juce::String (audioInputAnalyzer.getSampleRate(), 0) + ",\n"
+        + "  \"bufferSize\": " + juce::String (audioInputAnalyzer.getBufferSize()) + ",\n"
+        + "  \"rms\": " + juce::String (snapshot.rms, 6) + ",\n"
+        + "  \"peak\": " + juce::String (snapshot.peak, 6) + ",\n"
+        + "  \"loudness\": " + juce::String (snapshot.loudness, 6) + ",\n"
+        + "  \"active\": " + juce::String (snapshot.active ? "true" : "false") + ",\n"
+        + "  \"sampleCounter\": " + juce::String (static_cast<juce::int64> (snapshot.sampleCounter)) + "\n"
+        + "}\n";
+
+    const auto audioStatsFile = directory.getChildFile ("audio_stats.json");
+
+    if (! audioStatsFile.replaceWithText (json, false, false, "\n"))
+    {
+        statusLabel.setText ("audio proof failed: could not write " + audioStatsFile.getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    statusLabel.setText ("audio proof dumped: " + directory.getFullPathName(), juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
 void MainComponent::timerCallback()
 {
     updateAudioMeters();
 }
 
+void MainComponent::quitAfterDelay()
+{
+    juce::Timer::callAfterDelay (250, []
+    {
+        if (auto* app = juce::JUCEApplicationBase::getInstance())
+            app->systemRequestedQuit();
+    });
+}
+
 void MainComponent::setShaderStatus (juce::String message)
 {
-    const auto shouldQuit = shouldQuitAfterProofDump && message.startsWith ("proof dumped:");
+    const auto shouldQuit = shouldQuitAfterStartupDump && message.startsWith ("proof dumped:");
     statusLabel.setText (std::move (message), juce::dontSendNotification);
 
     if (shouldQuit)
-    {
-        juce::Timer::callAfterDelay (250, []
-        {
-            if (auto* app = juce::JUCEApplicationBase::getInstance())
-                app->systemRequestedQuit();
-        });
-    }
+        quitAfterDelay();
 }
 
 void MainComponent::startAudioInput()
