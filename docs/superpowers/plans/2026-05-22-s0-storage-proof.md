@@ -19,7 +19,7 @@ WorkProject
   A full artwork project. Owns one main patch, optional subpatches, assets, debug/proof outputs, and local git history.
 
 PatchDocument
-  A serializable graph document. Can be a whole work patch, a mother patch, or a compound patcher body.
+  A serializable graph document. Can be a whole work patch, a mother patch, or a compound patcher body. Stores graph structure and parameter binding state.
 
 ModulePackage
   A reusable patch/compound published from a PatchDocument into a module repository. Exposes public ports and docs.
@@ -168,6 +168,7 @@ int main()
     expectContains (patchJson, "\"kind\": \"patchDocument\"", "patch json");
     expectContains (patchJson, "\"editorGraph\"", "patch json");
     expectContains (patchJson, "\"runtimeGraph\"", "patch json");
+    expectContains (patchJson, "\"portBindings\"", "patch json");
 
     const auto module = myworld::makeModulePackage ("module.loudness", "Loudness Module", "patches/loudness.patch.json");
     const auto moduleJson = myworld::toJson (module);
@@ -246,6 +247,7 @@ struct PatchDocumentManifest
     std::string title;
     std::string editorGraphKind;
     std::string runtimeGraphKind;
+    std::string portBindingsKind;
 };
 
 struct ModulePackageManifest
@@ -328,7 +330,7 @@ WorkProjectManifest makeMinimalWorkProject (const std::string& id, const std::st
 
 PatchDocumentManifest makeMinimalPatchDocument (const std::string& id, const std::string& title)
 {
-    return { id, title, "editorGraph", "runtimeGraph" };
+    return { id, title, "editorGraph", "runtimeGraph", "portBindings" };
 }
 
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath)
@@ -369,7 +371,8 @@ std::string toJson (const PatchDocumentManifest& manifest)
     out << "  \"id\": " << quote (manifest.id) << ",\n";
     out << "  \"title\": " << quote (manifest.title) << ",\n";
     out << "  \"editorGraph\": { \"kind\": " << quote (manifest.editorGraphKind) << " },\n";
-    out << "  \"runtimeGraph\": { \"kind\": " << quote (manifest.runtimeGraphKind) << " }\n";
+    out << "  \"runtimeGraph\": { \"kind\": " << quote (manifest.runtimeGraphKind) << " },\n";
+    out << "  \"portBindings\": { \"kind\": " << quote (manifest.portBindingsKind) << " }\n";
     out << "}\n";
     return out.str();
 }
@@ -481,6 +484,16 @@ Create `fixtures/storage/minimal-work/patches/main.patch.json`:
     ],
     "edges": [
       { "from": "shader1.output", "to": "out1.input" }
+    ]
+  },
+  "portBindings": {
+    "items": [
+      {
+        "id": "shader1.brightness",
+        "dataType": "signal.float",
+        "bindingMode": "manual",
+        "storedValue": 1.0
+      }
     ]
   }
 }

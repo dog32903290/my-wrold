@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the first graph-language contract for nodes, regions, typed ports, stream kinds, and AI-safe commands before building production node UI or audio graphs.
+**Goal:** Add the first graph-language contract for nodes, regions, typed ports, port binding modes, stream kinds, and AI-safe commands before building production node UI or audio graphs.
 
-**Architecture:** Treat the patch as a typed IR / AST that can later compile to runtime graphs, GLSL, C++, validation reports, or migration output. Keep the first implementation pure C++ and testable; park future C# compiler workers behind file/process boundaries so they never enter realtime audio/render paths.
+**Architecture:** Treat the patch as a typed IR / AST that can later compile to runtime graphs, GLSL, C++, validation reports, or migration output. Borrow Tooll3's Symbol/Instance and parameter override lessons as vocabulary, but keep the first implementation pure C++ and testable; park future C# compiler workers behind file/process boundaries so they never enter realtime audio/render paths.
 
 **Tech Stack:** C++20, existing graph contract, deterministic JSON strings for proof, future external workers via files/processes.
 
@@ -23,6 +23,9 @@ Region
 
 Edge
   Typed connection with dataType and streamKind.
+
+PortBinding
+  Default/manual/connected/animated ownership for a parameter or port value.
 
 Command
   Validated mutation request used by UI, AI worker, imports, and scripts.
@@ -52,6 +55,15 @@ continuous
 event
 command
 resource
+```
+
+### First Port Binding Modes
+
+```text
+default
+manual
+connected
+animated
 ```
 
 ### First Commands
@@ -89,13 +101,13 @@ C# nodes inside runtimeGraph hot path
 ## File Map
 
 - Create: `source/core/GraphLanguage.h`
-  - Region, type, stream, edge, command, and graph IR structs.
+  - Region, type, stream, edge, port binding, command, and graph IR structs.
 
 - Create: `source/core/GraphLanguage.cpp`
   - Seed type/stream/command registries and minimal validation helpers.
 
 - Create: `tests/GraphLanguageTests.cpp`
-  - Tests region types, typed edges, stream kinds, command vocabulary, and C# boundary labels.
+  - Tests region types, typed edges, port binding modes, stream kinds, command vocabulary, and C# boundary labels.
 
 - Modify: `CMakeLists.txt`
   - Add `my_world_graph_language` and `my_world_graph_language_tests`.
@@ -155,12 +167,26 @@ int main()
     expect (myworld::isKnownStreamKind ("event"), "event stream");
     expect (myworld::isKnownStreamKind ("command"), "command stream");
     expect (myworld::isKnownStreamKind ("resource"), "resource stream");
+    expect (myworld::isKnownPortBindingMode ("default"), "default binding mode");
+    expect (myworld::isKnownPortBindingMode ("manual"), "manual binding mode");
+    expect (myworld::isKnownPortBindingMode ("connected"), "connected binding mode");
+    expect (myworld::isKnownPortBindingMode ("animated"), "animated binding mode");
+    expect (! myworld::isKnownPortBindingMode ("forgotten"), "unknown binding mode");
 
     const myworld::TypedEdge edge { "edge1", "audio1.mono", "loudness1.input", "audio.mono", "continuous" };
     expect (myworld::isValidTypedEdge (edge), "typed edge validates");
 
     const myworld::TypedEdge badEdge { "edge2", "midi1.note", "shader1.input", "event.midi", "continuous" };
     expect (! myworld::isValidTypedEdge (badEdge), "event data cannot use continuous stream kind");
+
+    const myworld::PortBinding manualBinding { "gain", "signal.float", "manual" };
+    expect (myworld::isValidPortBinding (manualBinding), "manual port binding validates");
+
+    const myworld::PortBinding connectedBinding { "brightness", "signal.float", "connected" };
+    expect (myworld::isValidPortBinding (connectedBinding), "connected port binding validates");
+
+    const myworld::PortBinding badBinding { "mystery", "mystery.blob", "manual" };
+    expect (! myworld::isValidPortBinding (badBinding), "unknown binding type rejected");
 
     expect (myworld::isKnownCommandType ("create_node"), "create_node command");
     expect (myworld::isKnownCommandType ("create_region"), "create_region command");
@@ -230,11 +256,20 @@ struct TypedEdge
     std::string streamKind;
 };
 
+struct PortBinding
+{
+    std::string id;
+    std::string dataType;
+    std::string bindingMode;
+};
+
 bool isKnownRegionType (const std::string& type);
 bool isKnownTypeSpec (const std::string& type);
 bool isKnownStreamKind (const std::string& kind);
+bool isKnownPortBindingMode (const std::string& mode);
 bool isKnownCommandType (const std::string& type);
 bool isValidTypedEdge (const TypedEdge& edge);
+bool isValidPortBinding (const PortBinding& binding);
 bool isAllowedCompilerWorkerLanguage (const std::string& language);
 bool isAllowedRealtimeRuntimeLanguage (const std::string& language);
 }
@@ -287,6 +322,12 @@ bool isKnownStreamKind (const std::string& kind)
     return contains (values, kind);
 }
 
+bool isKnownPortBindingMode (const std::string& mode)
+{
+    static constexpr std::array<const char*, 4> values { "default", "manual", "connected", "animated" };
+    return contains (values, mode);
+}
+
 bool isKnownCommandType (const std::string& type)
 {
     static constexpr std::array<const char*, 6> values {
@@ -315,6 +356,11 @@ bool isValidTypedEdge (const TypedEdge& edge)
         return edge.streamKind == "resource";
 
     return edge.streamKind == "continuous";
+}
+
+bool isValidPortBinding (const PortBinding& binding)
+{
+    return isKnownTypeSpec (binding.dataType) && isKnownPortBindingMode (binding.bindingMode);
 }
 
 bool isAllowedCompilerWorkerLanguage (const std::string& language)
@@ -347,7 +393,7 @@ Expected: graph language and existing tests pass.
 Update `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md`:
 
 ```text
-- Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, typed edges, AI-safe command names, and C# external compiler worker boundary.
+- Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, PortBinding modes, typed edges, AI-safe command names, and C# external compiler worker boundary.
 ```
 
 Run:
@@ -389,6 +435,20 @@ Create `fixtures/graph-language/minimal-graph-ir.json`:
       "bodyPatchId": "patch.if-body",
       "inputBorderPorts": ["condition"],
       "outputBorderPorts": ["result"]
+    }
+  ],
+  "portBindings": [
+    {
+      "id": "loudness1.gain",
+      "dataType": "signal.float",
+      "bindingMode": "manual",
+      "storedValue": 1.0
+    },
+    {
+      "id": "shader1.brightness",
+      "dataType": "signal.float",
+      "bindingMode": "connected",
+      "overrideSource": "loudness1.out"
     }
   ],
   "edges": [
@@ -451,6 +511,7 @@ git commit -m "Add graph IR compiler worker fixtures"
 
 - Stop before A0/A1 if G0 has no committed graph language contract or is not explicitly deferred.
 - Stop before region UI if `RegionSpec` cannot name type, body patch, input border ports, and output border ports.
+- Stop before production parameter UI if `PortBinding` cannot represent default, manual, connected, and animated ownership without erasing stored manual values.
 - Stop before AI worker graph edits if commands can bypass validation or mutate JSON directly.
 - Stop before using C# if it would run in the realtime audio callback, render loop, or native app lifecycle.
 - Stop before type inference work if the first `TypeSpec` and `StreamKind` registries are not committed.

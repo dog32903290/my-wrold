@@ -18,6 +18,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Use OpenGL/GLSL for the first shader backend to preserve GLSL vibe-coding speed.
 - Do not hardwire the app to OpenGL. Create a `RenderBackend` boundary so Metal can replace or sit beside it later.
 - Old Web canvas works are migration fixtures, not the native graph law.
+- Tooll3 / TiXL is a reference system for ImGui canvas, Symbol/Instance separation, JSON graph shape, and parameter override behavior. It is not a codebase to fork into this repo.
 
 ## First Stage Proofs
 
@@ -33,6 +34,7 @@ Contract:
 
 - Planned: a work is a project folder with a manifest, one or more patch documents, assets, debug/proof outputs, and a local git history.
 - Planned: a patch can be a mother patch containing smaller nodes, compound patchers, and references to saved modules.
+- Planned: patch documents store parameter binding state so manual values survive connected or animated overrides.
 - Planned: a selected patch or compound can be published into a module repository as a reusable module package.
 - Planned: large works can be stored in a work repository/library separately from the module repository.
 - Planned: `Command+S` performs an atomic save of the active work project and then creates a local git commit when files changed.
@@ -190,11 +192,12 @@ The graph is closer to a visual programming language than to a canvas of UI widg
 First-class graph objects:
 
 ```text
-Node       ordinary operation or value source
-Region     visual control-flow block such as if / for_each / repeat
-Edge       typed connection with dataType and streamKind
-Command    validated graph mutation
-Module     saved patch/compound with public ports
+Node         ordinary operation or value source
+Region       visual control-flow block such as if / for_each / repeat
+Edge         typed connection with dataType and streamKind
+PortBinding  default/manual/connected/animated parameter ownership
+Command      validated graph mutation
+Module       saved patch/compound with public ports
 ```
 
 Graph flow:
@@ -209,6 +212,36 @@ editorGraph
 ```
 
 This allows the first runtime to remain direct C++/OpenGL while preserving a path to future compilation.
+
+### Reference Systems
+
+Tooll3 / TiXL is useful as a pressure reference, not as an inherited foundation.
+
+Borrow:
+
+```text
+Symbol / Instance split
+plain-text graph serialization
+parameter value overridden by connection or animation
+ImGui draw-list canvas techniques
+undoable command discipline
+```
+
+Do not borrow:
+
+```text
+C# runtime ownership
+DirectX / HLSL first backend
+SymbolPackage / C# compilation as module law
+UI ids as saved graph ids
+JSON edits that bypass commandGraph validation
+```
+
+Current borrowing note:
+
+```text
+docs/research/2026-05-22-tooll3-borrowing-notes.md
+```
 
 ### Language / Runtime Boundary
 
@@ -313,6 +346,17 @@ Meter
 Scope
 Preview
 ```
+
+Parameter controls must support Tooll3-style binding without inheriting Tooll3's runtime:
+
+```text
+default value     NodeSpec default
+manual value      saved user value
+connected value   data-flow override
+animated value    timeline / event override
+```
+
+Connecting a cable to a parameter does not erase the manual value. It changes the live binding mode, and disconnecting can reveal the stored manual value again.
 
 Human documentation and machine documentation are separate:
 
