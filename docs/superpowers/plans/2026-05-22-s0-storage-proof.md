@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Current status, 2026-05-22:** Implemented as the first storage contract proof. `storage_contract` passes, minimal work fixtures exist, and the main native skeleton spec is the newer source for current status. Production `Command+S` wiring remains parked.
+
 **Goal:** Prove that a work can be saved as reloadable patch documents, published into module/work libraries, and committed locally by a background `Command+S` git worker.
 
 **Architecture:** Storage is the graph source-of-truth boundary, not a late export feature. A work project owns patch documents and proof outputs; module packages are reusable saved mother patches or compounds; library indexes list available works and modules. `Command+S` writes an atomic project snapshot, validates it can be read back, then schedules a local git commit in the artwork project repository only. The save path may block briefly for atomic file replacement and reload validation; git work runs on a background worker so saving does not freeze the creative UI.

@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Current status, 2026-05-22:** Implemented through A1 plus the first C1 bridge. ImGui smoke UI, audio input/analyzer state, audio/MIDI preferences, `u_loudness` shader uniform wiring, and C1 loudness compound evidence are in place. Production node canvas, module publication, and full analyzer family expansion remain parked.
+
 **Goal:** Prevent the JUCE `Component` NodeView trap, define the first Tooll3-seeded node taxonomy and patch interaction contracts, then build the first native audio proof: audio input enters a realtime-safe analyzer, UI shows `rms` / `peak` / `loudness`, and the app can dump audio proof evidence.
 
 **Architecture:** Keep graph/node identity independent from the drawing library. `NodeSpec` / `NodeInstance` / `PortSpec` / `ParamSpec` are stable data contracts; human manuals live in Markdown and machine-readable behavior lives in the registry. Tooll3 supplies the seed browser taxonomy, patch interaction grammar, compact ImGui node surface, node preview expectation, and panel rhythm, but `type`, `category`, `subcategory`, `dataType`, and `runtimeDomain` remain separate. Dear ImGui is the first graphics-side UI adapter, and JUCE `Component` remains shell/status UI only. Parameter controls follow the Tooll3-inspired rule that manual values remain stored while connected or animated values can override live output; this is graph `PortBinding` state, not ImGui widget state, and the UI must visibly distinguish default/manual/connected/animated. The audio callback writes bounded atomic analyzer state only; dynamic audio graph mutation is parked until prepared graph snapshots or realtime-safe queues exist. Proof dumps record whether live input was actually observed, so microphone permission blocks are explicit instead of hidden.
@@ -1319,7 +1321,7 @@ Update A1 in `docs/superpowers/specs/2026-05-22-native-canvas-skeleton-design.md
 
 ```text
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
-- Not started: native audio device input bridge.
+- Proven: native audio device input bridge exists in the current A1 implementation.
 ```
 
 Run:

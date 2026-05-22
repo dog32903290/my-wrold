@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Current status, 2026-05-22:** Implemented as the first graph language contract proof. `graph_language` passes, `audio.channels` is now part of the type vocabulary, and the main native skeleton spec is the newer source for current status. Live editor IPC and compiler workers remain parked.
+
 **Goal:** Add the first graph-language contract for nodes, regions, typed ports, port binding modes, stream kinds, and AI-safe commands before building production node UI or audio graphs.
 
 **Architecture:** Treat the patch as a typed IR / AST that can later compile to runtime graphs, GLSL, C++, validation reports, or migration output. Borrow Tooll3's Symbol/Instance and parameter override lessons as vocabulary, but keep the first implementation pure C++ and testable. Batch C# compiler workers may read/write files for fixtures and CI; live editor feedback must use an explicit interactive bridge and still never enter realtime audio/render paths.
@@ -37,6 +39,7 @@ GraphIR
 ### First Type Vocabulary
 
 ```text
+audio.channels
 audio.mono
 signal.float
 texture.rgba

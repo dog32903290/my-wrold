@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof dump implemented; S0 storage and G0 graph language proofs planned before A0/A1; A0/A1/C1 not yet built
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui smoke, A1 audio/MIDI proof, and C1 loudness compound contract implemented. RenderBackend extraction, production node canvas, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -71,14 +71,14 @@ Contract:
 
 - Planned: graph objects include nodes and regions; `NodeSpec` is not the only visible or serializable graph object.
 - Planned: `RegionSpec` supports future `if`, `for_each`, `repeat`, and `while` control blocks without spaghetti node wiring.
-- Planned: `TypeSpec` distinguishes values such as `audio.mono`, `signal.float`, `texture.rgba`, `geometry.mesh`, `event.midi`, `command.graph`, and future generics.
+- Planned: `TypeSpec` distinguishes values such as `audio.channels`, `audio.mono`, `signal.float`, `texture.rgba`, `geometry.mesh`, `event.midi`, `command.graph`, and future generics.
 - Planned: `StreamKind` distinguishes continuous data, event streams, command streams, and resources.
 - Planned: edges carry `dataType` and `streamKind`, not only `from` / `to`.
 - Planned: graph validation produces a typed graph IR / AST before runtime execution or code generation.
 - Planned: AI worker mutates graph state only through typed commands such as `create_node`, `create_region`, `connect`, `set_param`, `publish_module`, and `save_work`.
 - Planned: future compiler workers may consume graph IR and generate GLSL, C++, validation reports, migration output, or documentation.
 - Planned: file-based `graphIR.json` / `validation_report.json` exchange is only for batch fixtures, CI, and proof dumps. A live C# compiler worker needs an explicit interactive bridge such as named pipes, gRPC, ZeroMQ, or shared memory before it can support drag-time feedback.
-- Proven: G0 first graph language contract has region types, TypeSpec, StreamKind, PortBinding modes, typed edges, Tooll3-inspired command names, AI-safe mutation rules, and C# external compiler worker boundary.
+- Proven: G0 first graph language contract has region types, TypeSpec including `audio.channels`, StreamKind, PortBinding modes, typed edges, Tooll3-inspired command names, AI-safe mutation rules, and C# external compiler worker boundary.
 - Proven: graphIR and compiler-worker fixtures exist for batch proof exchange, with live editor IPC explicitly separated from file IO.
 - Forbidden: direct AI JSON surgery.
 - Forbidden: C# / .NET code in realtime audio callbacks, render hot paths, or native app lifecycle for the first stage.
@@ -101,14 +101,15 @@ Contract:
 
 - Planned: first node taxonomy registry separates `type`, `category`, `subcategory`, `runtimeDomain`, and port `dataType`.
 - Planned: seed categories borrow Tooll3's library domains: `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`.
-- Planned: project-specific seed categories add `shader`, `material`, `audio`, `analyzer`, `output`, and `compound`.
-- Planned: familiar vocabularies such as `top`, `sop`, `mat`, `geometry`, `signal`, `texture`, and `midi` are aliases or browser filters, not first-level saved category law.
+- Planned: project-specific seed categories add `shader`, `material`, `audio`, `analyzer`, `signal`, `output`, and `compound`.
+- Planned: familiar vocabularies such as `top`, `sop`, `mat`, `geometry`, `texture`, and `midi` are aliases or browser filters, not first-level saved category law. `signal` is now also a first-level project category because `signal.smoother` is a standalone node.
 - Planned: `type` remains stable saved graph identity; `category` / `subcategory` are registry metadata and can be extended or migrated later.
 - Planned: each node spec points to a human manual; machine-readable behavior lives in `NodeSpec`, not prose.
 - Planned: Dear ImGui mounts in the OpenGL render loop before any production node editor work.
 - Planned: A0 proves Tooll3-inspired patch gestures: zoom, pan, selection, framing, drag from pin to empty canvas, compatible node search, connect, parameter override, compound enter/exit, and undo/redo.
 - Planned: production node surfaces follow Tooll3-like compact ImGui patching: compact name, pins, tiny status, doc/patch icons, optional inline preview affordance, and inspector/parameter panels for depth.
-- Proven: first node taxonomy registry exists with Tooll3-seeded categories `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`, plus project categories `shader`, `material`, `audio`, `analyzer`, `output`, and `compound`.
+- Proven: first node taxonomy registry exists with Tooll3-seeded categories `image`, `render`, `mesh`, `point`, `numbers`, `io`, `field`, `flow`, `particle`, `string`, `data`, and `assets`, plus project categories `shader`, `material`, `audio`, `analyzer`, `signal`, `output`, and `compound`.
+- Proven: the seed registry now includes standalone C1 child nodes `audio.mono_mix`, `analyzer.analysis_gain`, `analyzer.pre_gate`, `signal.smoother`, and `analyzer.loudness_out`, plus the mother node `compound.loudness`.
 - Proven: node `type` is stable identity; `category` and `subcategory` are browser metadata and can move through aliases without changing saved graph identity.
 - Proven: node specs point to human Markdown manuals and preview policies while machine-readable behavior stays in `NodeSpec`.
 - Proven: Tooll3-inspired patch gestures lower to explicit commandGraph command names through `PatchInteraction`.
@@ -147,6 +148,7 @@ Current proof output:
 debug/v1-shader-proof/frame.png
 debug/v1-shader-proof/cook_order.json
 debug/v1-shader-proof/node_stats.json
+debug/v1-shader-proof/loudness_compound.json
 ```
 
 The V1 dump currently reads back the OpenGL framebuffer from `OpenGLShaderPreview`. This proves native render evidence, but the render backend boundary is not fully extracted yet.
@@ -161,16 +163,18 @@ native preferences -> audio input -> native analyzer meter rows
 
 Contract:
 
-- Not started: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
+- Proven: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
 - Proven: JUCE audio callback bridge exists and only writes bounded analyzer state plus output silence.
 - Proven: UI reads analyzer snapshots outside the realtime callback and displays `rms`, `peak`, and `loudness` meter rows.
-- Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json` from `--dump-audio-proof-and-exit`.
+- Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json` and `debug/a1-audio-proof/loudness_compound.json` from `--dump-audio-proof-and-exit`.
 - Proven: live input was observed on this Mac in the current A1 proof dump (`48000Hz`, `512` samples, `sampleCounter` greater than `0`, `active: true`).
 - Proven: analyzer `loudness` snapshots are wired into shader uniform `u_loudness`; V1 proof `node_stats.json` records `u_loudness` as a system uniform.
+- Proven: analyzer snapshot now exposes `rms`, `peak`, `loudness`, `gate`, `confidence`, `active`, and `sampleCounter`.
 - Proven: the realtime audio path currently only measures or writes bounded realtime-safe state; it does not mutate graph structure.
-- Not started: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode.
+- Proven: MIDI preferences are present early: output device, channel, CC map, stream on/off, and map mode, with default loudness mapping to CC20.
 - Proven: the macOS app bundle includes `NSMicrophoneUsageDescription` before live audio proof asks for input.
+- Known gate: macOS microphone permission cannot be silently self-granted. First live mic run requires the user to click Allow; unattended agent tests should use synthetic analyzer/unit proofs unless permission is already granted.
 - Forbidden: mutating or rebuilding the audio runtime graph directly inside the audio callback. Live audio graph changes must be compiled/prepared off-thread and swapped through a realtime-safe snapshot or command queue.
 
 ### C1 Compound Proof
@@ -183,10 +187,16 @@ loudness compound patcher -> expanded child patchers -> collapsed public ports
 
 Contract:
 
-- Not started: `loudness` can appear as one collapsed node.
-- Not started: it can expand to show child patchers such as `AudioIn`, `MonoMix`, `RMS`, `AnalysisGain`, `PreGate`, `OutputSmoother`, and `LoudnessOut`.
-- Not started: the compound exposes public ports such as `loudness.out`.
-- Not started: it can also expose selected inner ports such as `loudness.rms`, `loudness.peak`, `loudness.gate`, and `loudness.confidence`.
+- Proven: `compound.loudness` exists as the first mother patch contract.
+- Proven: it can be represented as one collapsed node with public ports.
+- Proven: it expands to child patchers `AudioIn`, `MonoMix`, `RMS`, `AnalysisGain`, `PreGate`, `OutputSmoother`, and `LoudnessOut`.
+- Proven: the compound exposes `out`, `rms`, `peak`, `gate`, and `confidence` as public outputs.
+- Proven: child patchers are also standalone module-library node specs, so `audio.mono_mix`, `analyzer.rms`, `analyzer.analysis_gain`, `analyzer.pre_gate`, `signal.smoother`, and `analyzer.loudness_out` can be called directly outside the mother patch.
+- Proven: `makeCompoundPatchJson()` creates proof evidence, and both V1/A1 proof dumps write `loudness_compound.json`.
+- Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
+- Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
+- Not yet proven: compiling the compound child graph into independent `RuntimeOp` execution. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
+- Not yet proven: publishing a compound patch into a reloadable module package.
 
 ## Architecture
 
@@ -345,6 +355,7 @@ shader
 material
 audio
 analyzer
+signal
 output
 compound
 ```
@@ -372,6 +383,9 @@ context
 feature
 detector
 aggregate
+calibration
+gate
+shaping
 use
 measurement
 ```
@@ -380,7 +394,6 @@ Aliases and browser filters:
 
 ```text
 geometry -> mesh
-signal -> numbers
 midi -> io.midi
 texture / top -> image
 sop -> mesh / point
