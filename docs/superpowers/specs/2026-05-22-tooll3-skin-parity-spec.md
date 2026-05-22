@@ -242,12 +242,14 @@ Acceptance:
 - No successful connection exists only as pixels.
 - Cancelled drag leaves graph state unchanged.
 - Compatible-node popup is spatially attached to the release point.
+- Delete acts on the current graph selection: selected edge lowers to `disconnect`, selected node lowers to `delete_node`.
 
 Current proof:
 
 - Connections now use `Tooll3ConnectionSkin`, so edge color follows `GraphEdge.dataType` and selected edges thicken without changing graph state.
 - Ports now render as left/right colored strips from `PortSpec.dataType` while hit-tests and mutations continue through `InteractionContract`.
 - Dragging from an output still uses commandGraph-backed connect/create behavior; full compatible-target dimming polish remains parked for P5.
+- Delete button/key now follows Tooll3-style selected-object behavior instead of the old edge-only proof path.
 
 ### S6 Inspector And Parameter Skin
 

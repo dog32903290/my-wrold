@@ -30,6 +30,7 @@ public:
     void setMouseButton (int buttonIndex, bool isDown);
     void addMouseWheel (float deltaY);
     void setShaderSource (std::string source);
+    void requestDeleteSelection();
 
     ShaderSourceCallback onShaderSourceSubmitted;
 
@@ -64,5 +65,6 @@ private:
     bool interactionViewReady = false;
     bool panningCanvas = false;
     bool hasTraceReport = false;
+    bool deleteSelectionRequested = false;
 };
 }

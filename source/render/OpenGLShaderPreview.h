@@ -48,6 +48,7 @@ private:
     void mouseDrag (const juce::MouseEvent& event) override;
     void mouseUp (const juce::MouseEvent& event) override;
     void mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel) override;
+    bool keyPressed (const juce::KeyPress& key) override;
 
     void compilePendingShader();
     void handlePendingProofDump (int width, int height, double timeSeconds, juce::uint32 currentFrameIndex);

@@ -194,11 +194,6 @@ CanvasPoint displayedPosition (const GraphNode& node, const std::string& draggin
     return { node.position.x + dragCanvasDelta.x, node.position.y + dragCanvasDelta.y };
 }
 
-std::string firstEdgeId (const GraphSession& session)
-{
-    return session.graph.editorGraph.edges.empty() ? std::string {} : session.graph.editorGraph.edges.front().id;
-}
-
 std::string selectedEdgeId (const GraphSession& session)
 {
     return session.selectedEdgeIds.empty() ? std::string {} : session.selectedEdgeIds.front();
@@ -218,6 +213,19 @@ bool nodeIsCompound (const GraphContract& graph, const std::string& nodeId)
 bool selectedNodeIsCompound (const GraphSession& session)
 {
     return nodeIsCompound (session.graph, selectedNodeId (session));
+}
+
+CommandResult deleteSelectedGraphItem (GraphSession& session)
+{
+    const auto edgeId = selectedEdgeId (session);
+    if (! edgeId.empty())
+        return disconnectEdge (session, edgeId);
+
+    const auto nodeId = selectedNodeId (session);
+    if (! nodeId.empty())
+        return deleteNode (session, nodeId);
+
+    return { false, "nothing selected" };
 }
 
 std::string paramValueForNode (const GraphNode& node, const std::string& paramId)
@@ -409,6 +417,11 @@ void ImGuiSmokeOverlay::setShaderSource (std::string source)
     shaderSourceDraftNodeId = selectedNodeId (interactionSession);
 }
 
+void ImGuiSmokeOverlay::requestDeleteSelection()
+{
+    deleteSelectionRequested = true;
+}
+
 void ImGuiSmokeOverlay::shutdown()
 {
     if (! initialised)
@@ -441,6 +454,14 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
 {
     if (! initialised)
         return;
+
+    if (deleteSelectionRequested)
+    {
+        deleteSelectionRequested = false;
+
+        if (! ImGui::GetIO().WantTextInput)
+            runInteractionCommand ("delete", deleteSelectedGraphItem (interactionSession));
+    }
 
     const auto displaySize = ImGui::GetIO().DisplaySize;
     const auto layout = makeTooll3SkinLayout (displaySize.x, displaySize.y);
@@ -592,13 +613,8 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             if (ImGui::Button ("Redo"))
                 runInteractionCommand ("redo", redo (interactionSession));
             ImGui::SameLine();
-            if (ImGui::Button ("Delete Edge"))
-            {
-                const auto edgeId = selectedEdgeId (interactionSession).empty() ? firstEdgeId (interactionSession)
-                                                                                : selectedEdgeId (interactionSession);
-                runInteractionCommand ("disconnect", edgeId.empty() ? CommandResult { false, "no edge" }
-                                                                    : disconnectEdge (interactionSession, edgeId));
-            }
+            if (ImGui::Button ("Delete"))
+                runInteractionCommand ("delete", deleteSelectedGraphItem (interactionSession));
             ImGui::SameLine();
             if (ImGui::Button ("Run Trace"))
             {
@@ -679,13 +695,8 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Redo"))
         runInteractionCommand ("redo", redo (interactionSession));
 
-    if (ImGui::Button ("Delete Edge"))
-    {
-        const auto edgeId = selectedEdgeId (interactionSession).empty() ? firstEdgeId (interactionSession)
-                                                                        : selectedEdgeId (interactionSession);
-        runInteractionCommand ("disconnect", edgeId.empty() ? CommandResult { false, "no edge" }
-                                                            : disconnectEdge (interactionSession, edgeId));
-    }
+    if (ImGui::Button ("Delete"))
+        runInteractionCommand ("delete", deleteSelectedGraphItem (interactionSession));
 
     ImGui::SameLine();
     if (ImGui::Button ("Connect"))

@@ -85,6 +85,7 @@ struct GraphSession
 
 GraphSession makeGraphSession (GraphContract graph);
 CommandResult moveNode (GraphSession& session, const std::string& nodeId, double deltaX, double deltaY);
+CommandResult deleteNode (GraphSession& session, const std::string& nodeId);
 CommandResult connectPorts (GraphSession& session, const std::string& from, const std::string& to);
 CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId);
 CommandResult createNode (GraphSession& session, const std::string& nodeType, const std::string& nodeId, CanvasPoint position);

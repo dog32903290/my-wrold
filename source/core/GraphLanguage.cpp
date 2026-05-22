@@ -56,8 +56,9 @@ bool isKnownPortBindingMode (const std::string& mode)
 
 bool isKnownCommandType (const std::string& type)
 {
-    static constexpr std::array<const char*, 16> values {
+    static constexpr std::array<const char*, 17> values {
         "create_node",
+        "delete_node",
         "create_region",
         "connect",
         "disconnect",

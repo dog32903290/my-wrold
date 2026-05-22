@@ -66,6 +66,8 @@ int mouseButtonIndex (const juce::MouseEvent& event)
 OpenGLShaderPreview::OpenGLShaderPreview()
     : pendingFragmentShader (defaultFragmentShader())
 {
+    setWantsKeyboardFocus (true);
+
     imguiOverlay.onShaderSourceSubmitted = [this] (const std::string& source)
     {
         setFragmentShader (source);
@@ -221,6 +223,7 @@ void OpenGLShaderPreview::mouseMove (const juce::MouseEvent& event)
 
 void OpenGLShaderPreview::mouseDown (const juce::MouseEvent& event)
 {
+    grabKeyboardFocus();
     updateImGuiMousePosition (event);
     imguiOverlay.setMouseButton (mouseButtonIndex (event), true);
 }
@@ -242,6 +245,18 @@ void OpenGLShaderPreview::mouseWheelMove (const juce::MouseEvent& event, const j
 {
     updateImGuiMousePosition (event);
     imguiOverlay.addMouseWheel (wheel.deltaY);
+}
+
+bool OpenGLShaderPreview::keyPressed (const juce::KeyPress& key)
+{
+    if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
+    {
+        imguiOverlay.requestDeleteSelection();
+        openGLContext.triggerRepaint();
+        return true;
+    }
+
+    return false;
 }
 
 void OpenGLShaderPreview::compilePendingShader()

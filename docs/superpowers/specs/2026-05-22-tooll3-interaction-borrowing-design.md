@@ -329,6 +329,7 @@ Goal:
 ```text
 drag output port to input port -> AddConnectionCommand
 delete selected edge -> DeleteConnectionCommand
+delete selected node -> DeleteNodeCommand
 ```
 
 Borrowed Tooll3 behavior:
@@ -337,12 +338,13 @@ Borrowed Tooll3 behavior:
 - Valid targets highlight only when port type and cardinality match.
 - Dragging from an already-connected single input detaches the old edge and starts reconnection.
 - Cancelled drags leave graph unchanged.
-- Connection add/delete goes through undoable commands.
+- Connection add/delete and selected node delete go through undoable commands.
 
 Native commands:
 
 ```text
 connect
+delete_node
 disconnect
 reconnect
 ```
@@ -350,8 +352,9 @@ reconnect
 Command vocabulary status:
 
 ```text
-connect     already exists in GraphLanguage
-disconnect  must be added to GraphLanguage before T2 implementation
+connect     proven in GraphLanguage
+delete_node proven in GraphLanguage
+disconnect  proven in GraphLanguage
 reconnect   may lower to disconnect+connect internally, but the user gesture must still be traceable as reconnect
 ```
 
@@ -359,9 +362,9 @@ Contract:
 
 | Question | Answer |
 | --- | --- |
-| Trigger | Pointer down on output port, drag to input port, pointer up; pointer down on connected input to detach; delete selected edge. |
+| Trigger | Pointer down on output port, drag to input port, pointer up; pointer down on connected input to detach; delete selected edge; Delete key/button on selected node. |
 | Input | Source node/port, target node/port, port data type, stream kind, input cardinality, existing edges. |
-| Success | Valid connection mutates editorGraph and regenerated runtimeGraph; delete removes edge; undo/redo restores graph states. |
+| Success | Valid connection mutates editorGraph and regenerated runtimeGraph; edge delete removes edge; node delete removes node plus incident edges; undo/redo restores graph states. |
 | Failure | Type mismatch, missing port, duplicate edge, cardinality violation, or cycle rule violation rejects command and leaves graph unchanged. |
 | Evidence | Tooll3 behavior trace, command log, graph invariant result, runtimeGraph edge count, save/load roundtrip. |
 
@@ -387,6 +390,11 @@ idle
 -> edgeSelected(edgeId)
 -> deletePressed
 -> disconnect
+
+idle
+-> nodeSelected(nodeId)
+-> deletePressed
+-> delete_node
 ```
 
 Reconnect state:
@@ -420,7 +428,9 @@ First tests:
 drag Shader.output to Output.input emits connect
 connect adds one editorGraph edge and one runtimeGraph edge
 delete selected edge emits disconnect
+delete selected node emits delete_node and removes incident edges
 undo disconnect restores edge
+undo delete_node restores node and incident edges
 type mismatch rejects command and leaves graph unchanged
 cancelled connection drag leaves graph unchanged
 save/load preserves connected graph

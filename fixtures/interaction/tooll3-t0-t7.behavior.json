@@ -16,6 +16,10 @@
       "expectedCommands": ["disconnect", "undo:disconnect"]
     },
     {
+      "name": "delete selected node",
+      "expectedCommands": ["delete_node", "undo:delete_node"]
+    },
+    {
       "name": "create output node from dragged port",
       "expectedCommands": ["create_node+connect"]
     },

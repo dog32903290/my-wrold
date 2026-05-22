@@ -120,6 +120,7 @@ Contract:
 - Proven: Tooll3-style T0-T7 interaction core exists below the drawing layer: canvas transform, node move, connect/disconnect, create-and-connect, compound enter/exit/collapse, param/binding commands, dirty/save state, and behavior trace replay.
 - Proven: the app now shows a visible T0-T7 ImGui canvas proof over the shader preview, backed by the same `InteractionContract` command path rather than UI-only graph state.
 - Proven: first visible T0-T2 canvas gestures exist: empty-canvas pan, wheel zoom, node drag to `move_node`, output-port drag to input-port `connect`, edge click selection, and selected-edge disconnect.
+- Proven: selected node deletion now has a command-backed path: UI Delete button/key lowers to `delete_node`, removes incident edges, syncs runtimeGraph, and preserves undo/redo.
 - Proven: first visible T3 gesture exists: dragging from an output port to empty canvas opens a compatible-node popup filtered by `NodeSpec` input type, and candidate selection runs `create_node+connect`.
 - Proven: visible T4-T7 controls exist: compound add/enter/exit/collapse, selected-node inspector param/binding commands, interaction state save/reload, and in-app Tooll3 behavior trace replay.
 - Proven: Codex Hands V0 exists as a low-token internal canvas operation layer in `source/core/CanvasHands.*`; semantic targets such as node, port, canvas point, and viewport center resolve through graph data, `canvasToScreen`, and `hitTestGraph` before pointer actions run.

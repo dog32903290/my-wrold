@@ -141,6 +141,23 @@ bool eraseEdgeById (std::vector<GraphEdge>& edges, const std::string& edgeId)
     return edges.size() != originalSize;
 }
 
+bool edgeTouchesNode (const GraphEdge& edge, const std::string& nodeId)
+{
+    return nodeIdFromEndpoint (edge.from) == nodeId || nodeIdFromEndpoint (edge.to) == nodeId;
+}
+
+void eraseIncidentEdges (std::vector<GraphEdge>& edges, const std::string& nodeId)
+{
+    edges.erase (std::remove_if (edges.begin(), edges.end(), [&] (const auto& edge) {
+        return edgeTouchesNode (edge, nodeId);
+    }), edges.end());
+}
+
+void eraseSelectionValue (std::vector<std::string>& values, const std::string& value)
+{
+    values.erase (std::remove (values.begin(), values.end(), value), values.end());
+}
+
 double distanceSquared (CanvasPoint a, CanvasPoint b)
 {
     const auto dx = a.x - b.x;
@@ -359,6 +376,34 @@ CommandResult moveNode (GraphSession& session, const std::string& nodeId, double
     return commitCommand (session, "move_node", before);
 }
 
+CommandResult deleteNode (GraphSession& session, const std::string& nodeId)
+{
+    auto candidate = session.graph;
+    const auto originalNodeCount = candidate.editorGraph.nodes.size();
+    candidate.editorGraph.nodes.erase (std::remove_if (candidate.editorGraph.nodes.begin(),
+                                                       candidate.editorGraph.nodes.end(),
+                                                       [&] (const auto& node) {
+                                                           return node.id == nodeId;
+                                                       }),
+                                       candidate.editorGraph.nodes.end());
+
+    if (candidate.editorGraph.nodes.size() == originalNodeCount)
+        return { false, "missing node: " + nodeId };
+
+    eraseIncidentEdges (candidate.editorGraph.edges, nodeId);
+    syncRuntimeFromEditor (candidate);
+
+    const auto report = validateGraphInvariants (candidate, makeSeedNodeSpecs());
+    if (! report.ok)
+        return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    eraseSelectionValue (session.selectedNodeIds, nodeId);
+    session.selectedEdgeIds.clear();
+    return commitCommand (session, "delete_node", before);
+}
+
 CommandResult connectPorts (GraphSession& session, const std::string& from, const std::string& to)
 {
     if (hasEdge (session.graph.editorGraph.edges, from, to))
@@ -388,6 +433,7 @@ CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId)
     if (! eraseEdgeById (session.graph.editorGraph.edges, edgeId))
         return { false, "missing edge: " + edgeId };
 
+    eraseSelectionValue (session.selectedEdgeIds, edgeId);
     return commitCommand (session, "disconnect", before);
 }
 
@@ -779,6 +825,12 @@ BehaviorTraceReport runBehaviorTraceFixture (const std::string& path)
 
     runTrace ("delete selected edge", { "disconnect", "undo:disconnect" }, [&] (const auto& name, auto& session) {
         expectCommandOk (report, name, disconnectEdge (session, "edge.shader1.output.out1.input"));
+        expectBoolOk (report, name, undo (session), "undo failed");
+    });
+
+    runTrace ("delete selected node", { "delete_node", "undo:delete_node" }, [&] (const auto& name, auto& session) {
+        session.selectedNodeIds = { "shader1" };
+        expectCommandOk (report, name, deleteNode (session, "shader1"));
         expectBoolOk (report, name, undo (session), "undo failed");
     });
 
