@@ -20,6 +20,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Park the exact production backend choice until after the boundary is real; candidates are Metal, WGPU, or bgfx. DirectX/HLSL remains out of scope for this app body.
 - Old Web canvas works are migration fixtures, not the native graph law.
 - Tooll3 / TiXL is the primary reference for ImGui canvas style, Symbol/Instance separation, JSON graph shape, parameter override behavior, and panel rhythm. It is not a codebase to fork into this repo.
+- CodeGraph is a local development index for C++ symbol, caller/callee, and impact lookup. `.codegraph/` is ignored and must not become source or graph contract data.
 
 ## First Stage Proofs
 

@@ -10,3 +10,4 @@ DerivedData/
 debug/
 *.log
 imgui.ini
+.codegraph/

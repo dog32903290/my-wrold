@@ -8,6 +8,7 @@ This file is the restart line for the next Codex session.
 - Current branch: `main`
 - Latest implementation commit before this docs handoff: `44b6db6 Add loudness compound patch contract`
 - Do not assume Web canvas or LiteGraph is the native law. The native contract is being built from proof lines.
+- CodeGraph is initialized locally for this repo; `.codegraph/` is ignored and used only as a C++ symbol/caller/impact development index.
 
 ## What Is Proven
 
@@ -117,9 +118,11 @@ cd /Users/chenbaiwei/Desktop/我的世界
 git status --short
 cmake --build build --target my-world
 ctest --test-dir build --output-on-failure
+codegraph status /Users/chenbaiwei/Desktop/我的世界
 ```
 
 Last known full gate: `ctest` passed 8/8 and `cmake --build build --target my-world` passed.
+Last known CodeGraph gate: 36 C++ files, 349 nodes, 784 edges, 0.95 MB, index up to date.
 
 Avoid launching the app just to test docs or pure contracts; launching may hit the macOS microphone permission prompt if the app has not already been allowed.
 
