@@ -34,6 +34,8 @@ int main()
     expectNear (snapshot.rms, std::sqrt ((0.0f + 0.25f + 0.25f + 1.0f) / 4.0f), 0.0001f, "rms");
     expectNear (snapshot.peak, 1.0f, 0.0001f, "peak");
     expectNear (snapshot.loudness, snapshot.rms, 0.0001f, "loudness follows rms for first proof");
+    expectNear (snapshot.gate, 1.0f, 0.0001f, "gate opens for non-silent input");
+    expectNear (snapshot.confidence, 1.0f, 0.0001f, "confidence follows trusted input");
     expect (snapshot.active, "non-silent input should be active");
     expect (snapshot.sampleCounter == 4, "sample counter");
 
@@ -44,6 +46,8 @@ int main()
     snapshot = analyzer.getSnapshot();
     expectNear (snapshot.rms, 0.0f, 0.0001f, "silence rms");
     expectNear (snapshot.peak, 0.0f, 0.0001f, "silence peak");
+    expectNear (snapshot.gate, 0.0f, 0.0001f, "gate closes for silence");
+    expectNear (snapshot.confidence, 0.0f, 0.0001f, "confidence falls for silence");
     expect (! snapshot.active, "silence inactive");
     expect (snapshot.sampleCounter == 8, "sample counter accumulates");
 

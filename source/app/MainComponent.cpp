@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 
+#include "CompoundPatch.h"
 #include "GraphContract.h"
 
 namespace myworld
@@ -210,6 +211,8 @@ void MainComponent::dumpAudioProof()
         + "  \"rms\": " + juce::String (snapshot.rms, 6) + ",\n"
         + "  \"peak\": " + juce::String (snapshot.peak, 6) + ",\n"
         + "  \"loudness\": " + juce::String (snapshot.loudness, 6) + ",\n"
+        + "  \"gate\": " + juce::String (snapshot.gate, 6) + ",\n"
+        + "  \"confidence\": " + juce::String (snapshot.confidence, 6) + ",\n"
         + "  \"active\": " + juce::String (snapshot.active ? "true" : "false") + ",\n"
         + "  \"analysisGain\": " + juce::String (performancePreferences.audio.analysisGain, 3) + ",\n"
         + "  \"midi\": {\n"
@@ -224,10 +227,21 @@ void MainComponent::dumpAudioProof()
         + "}\n";
 
     const auto audioStatsFile = directory.getChildFile ("audio_stats.json");
+    const auto loudnessCompoundFile = directory.getChildFile ("loudness_compound.json");
 
     if (! audioStatsFile.replaceWithText (json, false, false, "\n"))
     {
         statusLabel.setText ("audio proof failed: could not write " + audioStatsFile.getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    if (! loudnessCompoundFile.replaceWithText (juce::String::fromUTF8 (makeCompoundPatchJson (makeLoudnessCompoundPatchSpec()).c_str()),
+                                                false,
+                                                false,
+                                                "\n"))
+    {
+        statusLabel.setText ("audio proof failed: could not write " + loudnessCompoundFile.getFullPathName(),
                              juce::dontSendNotification);
         return;
     }

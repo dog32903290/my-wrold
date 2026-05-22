@@ -115,6 +115,7 @@ void OpenGLShaderPreview::newOpenGLContextCreated()
     lastFrameSeconds = startTimeSeconds;
     frameIndex = 0;
     seedNodeSpecs = makeSeedNodeSpecs();
+    loudnessCompound = makeLoudnessCompoundPatchSpec();
     imguiOverlay.initialise();
 
     compilePendingShader();
@@ -176,7 +177,7 @@ void OpenGLShaderPreview::renderOpenGL()
     const auto deltaSeconds = static_cast<float> (nowSeconds - lastFrameSeconds);
     lastFrameSeconds = nowSeconds;
     imguiOverlay.beginFrame (juce::jmax (1, width), juce::jmax (1, height), scale, deltaSeconds);
-    imguiOverlay.drawSmokePanel (seedNodeSpecs, lastStatus.toStdString());
+    imguiOverlay.drawSmokePanel (seedNodeSpecs, loudnessCompound, lastStatus.toStdString());
     imguiOverlay.render();
 
     handlePendingProofDump (juce::jmax (1, width), juce::jmax (1, height), elapsed, frameIndex);
@@ -283,6 +284,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto frameFile = dump->outputDirectory.getChildFile ("frame.png");
     const auto cookOrderFile = dump->outputDirectory.getChildFile ("cook_order.json");
     const auto nodeStatsFile = dump->outputDirectory.getChildFile ("node_stats.json");
+    const auto loudnessCompoundFile = dump->outputDirectory.getChildFile ("loudness_compound.json");
 
     const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
     const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
@@ -293,9 +295,11 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                                                                     timeSeconds,
                                                                     "OpenGL",
                                                                     lastStatus.toStdString()));
+    const auto loudnessCompoundWritten = writeTextFile (loudnessCompoundFile,
+                                                        makeCompoundPatchJson (loudnessCompound));
     const auto frameWritten = writePngFile (frameFile, frameImage);
 
-    if (cookOrderWritten && nodeStatsWritten && frameWritten)
+    if (cookOrderWritten && nodeStatsWritten && loudnessCompoundWritten && frameWritten)
     {
         reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
         return;
@@ -304,6 +308,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     reportStatus ("proof dump failed: "
                   + juce::String (cookOrderWritten ? "" : "cook_order.json ")
                   + juce::String (nodeStatsWritten ? "" : "node_stats.json ")
+                  + juce::String (loudnessCompoundWritten ? "" : "loudness_compound.json ")
                   + juce::String (frameWritten ? "" : "frame.png"));
 }
 

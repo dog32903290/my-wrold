@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CompoundPatch.h"
 #include "GraphContract.h"
 #include "ImGuiSmokeOverlay.h"
 #include "NodeSpec.h"
@@ -62,6 +63,7 @@ private:
     juce::CriticalSection shaderLock;
     juce::CriticalSection proofDumpLock;
     std::vector<NodeSpec> seedNodeSpecs;
+    CompoundPatchSpec loudnessCompound;
 
     std::string pendingFragmentShader;
     bool compileRequested = true;

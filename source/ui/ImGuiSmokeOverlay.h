@@ -5,6 +5,7 @@
 
 namespace myworld
 {
+struct CompoundPatchSpec;
 struct NodeSpec;
 
 class ImGuiSmokeOverlay
@@ -13,7 +14,9 @@ public:
     void initialise();
     void shutdown();
     void beginFrame (int width, int height, float scale, float deltaSeconds);
-    void drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus);
+    void drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
+                         const CompoundPatchSpec& loudnessCompound,
+                         const std::string& shaderStatus);
     void render();
     bool wantsMouse() const;
     void setMousePosition (float x, float y);
@@ -23,5 +26,6 @@ public:
 private:
     bool initialised = false;
     float smokeValue = 0.35f;
+    bool loudnessExpanded = false;
 };
 }

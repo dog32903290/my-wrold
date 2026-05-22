@@ -15,6 +15,8 @@ void AudioAnalyzerState::processBlock (const float* const* inputChannels,
         rms.store (0.0f, std::memory_order_relaxed);
         peak.store (0.0f, std::memory_order_relaxed);
         loudness.store (0.0f, std::memory_order_relaxed);
+        gate.store (0.0f, std::memory_order_relaxed);
+        confidence.store (0.0f, std::memory_order_relaxed);
         active.store (false, std::memory_order_relaxed);
         return;
     }
@@ -44,10 +46,13 @@ void AudioAnalyzerState::processBlock (const float* const* inputChannels,
     }
 
     const auto blockRms = static_cast<float> (std::sqrt (sumSquares / static_cast<double> (numSamples)));
+    const auto blockGate = blockPeak > 0.0001f ? 1.0f : 0.0f;
     rms.store (blockRms, std::memory_order_relaxed);
     peak.store (blockPeak, std::memory_order_relaxed);
-    loudness.store (blockRms, std::memory_order_relaxed);
-    active.store (blockPeak > 0.0001f, std::memory_order_relaxed);
+    loudness.store (blockRms * blockGate, std::memory_order_relaxed);
+    gate.store (blockGate, std::memory_order_relaxed);
+    confidence.store (blockGate, std::memory_order_relaxed);
+    active.store (blockGate > 0.0f, std::memory_order_relaxed);
     sampleCounter.fetch_add (static_cast<std::uint64_t> (numSamples), std::memory_order_relaxed);
 }
 
@@ -57,6 +62,8 @@ AudioAnalyzerSnapshot AudioAnalyzerState::getSnapshot() const noexcept
         rms.load (std::memory_order_relaxed),
         peak.load (std::memory_order_relaxed),
         loudness.load (std::memory_order_relaxed),
+        gate.load (std::memory_order_relaxed),
+        confidence.load (std::memory_order_relaxed),
         active.load (std::memory_order_relaxed),
         sampleCounter.load (std::memory_order_relaxed)
     };

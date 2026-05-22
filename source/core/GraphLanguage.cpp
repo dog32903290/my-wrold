@@ -22,7 +22,8 @@ bool isKnownRegionType (const std::string& type)
 
 bool isKnownTypeSpec (const std::string& type)
 {
-    static constexpr std::array<const char*, 14> values {
+    static constexpr std::array<const char*, 15> values {
+        "audio.channels",
         "audio.mono",
         "signal.float",
         "texture.rgba",

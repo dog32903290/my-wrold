@@ -24,6 +24,7 @@ int main()
     expect (! myworld::isKnownRegionType ("maze"), "unknown region");
 
     expect (myworld::isKnownTypeSpec ("audio.mono"), "audio.mono type");
+    expect (myworld::isKnownTypeSpec ("audio.channels"), "audio.channels type");
     expect (myworld::isKnownTypeSpec ("signal.float"), "signal.float type");
     expect (myworld::isKnownTypeSpec ("point.cloud"), "point.cloud type");
     expect (myworld::isKnownTypeSpec ("material.shader"), "material.shader type");

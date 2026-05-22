@@ -1,5 +1,6 @@
 #include "ImGuiSmokeOverlay.h"
 
+#include "CompoundPatch.h"
 #include "NodeSpec.h"
 
 #include <imgui.h>
@@ -45,7 +46,9 @@ void ImGuiSmokeOverlay::beginFrame (int width, int height, float scale, float de
     ImGui::NewFrame();
 }
 
-void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus)
+void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
+                                        const CompoundPatchSpec& loudnessCompound,
+                                        const std::string& shaderStatus)
 {
     if (! initialised)
         return;
@@ -57,6 +60,26 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs, 
     ImGui::TextUnformatted ("Immediate-mode UI is active.");
     ImGui::Text ("Seed node specs: %d", static_cast<int> (nodeSpecs.size()));
     ImGui::SliderFloat ("smoke value", &smokeValue, 0.0f, 1.0f);
+    ImGui::Separator();
+    ImGui::TextUnformatted ("C1 Loudness Compound");
+    ImGui::Checkbox ("expanded", &loudnessExpanded);
+    ImGui::Text ("children: %d  outputs: %d",
+                 static_cast<int> (loudnessCompound.children.size()),
+                 static_cast<int> (loudnessCompound.publicOutputs.size()));
+
+    if (loudnessExpanded)
+    {
+        ImGui::SeparatorText ("child patchers");
+
+        for (const auto& child : loudnessCompound.children)
+            ImGui::BulletText ("%s  [%s]", child.id.c_str(), child.nodeType.c_str());
+
+        ImGui::SeparatorText ("public outputs");
+
+        for (const auto& output : loudnessCompound.publicOutputs)
+            ImGui::BulletText ("%s -> %s", output.id.c_str(), output.mapsTo.c_str());
+    }
+
     ImGui::Separator();
     ImGui::TextWrapped ("%s", shaderStatus.c_str());
     ImGui::End();

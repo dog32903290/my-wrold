@@ -76,6 +76,26 @@ target_link_libraries(my_world_node_spec_tests
 
 add_test(NAME node_specs COMMAND my_world_node_spec_tests)
 
+add_library(my_world_compound
+    source/core/CompoundPatch.cpp
+)
+
+target_include_directories(my_world_compound
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_compound_patch_tests
+    tests/CompoundPatchTests.cpp
+)
+
+target_link_libraries(my_world_compound_patch_tests
+    PRIVATE
+        my_world_compound
+)
+
+add_test(NAME compound_patch COMMAND my_world_compound_patch_tests)
+
 add_library(my_world_patch_interaction
     source/core/PatchInteraction.cpp
 )
@@ -198,6 +218,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_link_libraries(my_world_imgui
         PUBLIC
             my_world_node_specs
+            my_world_compound
             juce::juce_opengl
     )
 

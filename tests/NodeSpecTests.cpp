@@ -40,6 +40,32 @@ int main()
     expect (loudness->humanDocPath == "docs/nodes/analyzer.loudness.md", "loudness human manual path");
     expect (loudness->machineSpecVersion == 1, "machine spec version");
 
+    const auto* monoMix = myworld::findNodeSpec (specs, "audio.mono_mix");
+    expect (monoMix != nullptr, "audio.mono_mix can be pulled from module library");
+    expect (monoMix->category == "audio", "mono mix category");
+    expect (monoMix->outputs[0].dataType == "audio.mono", "mono mix output");
+
+    const auto* analysisGain = myworld::findNodeSpec (specs, "analyzer.analysis_gain");
+    expect (analysisGain != nullptr, "analysis gain can be pulled from module library");
+    expect (analysisGain->subcategory == "calibration", "analysis gain subcategory");
+
+    const auto* preGate = myworld::findNodeSpec (specs, "analyzer.pre_gate");
+    expect (preGate != nullptr, "pre gate can be pulled from module library");
+    expect (preGate->outputs.size() == 3, "pre gate exposes out gate confidence");
+
+    const auto* smoother = myworld::findNodeSpec (specs, "signal.smoother");
+    expect (smoother != nullptr, "signal smoother can be pulled from module library");
+    expect (smoother->category == "signal", "smoother category");
+
+    const auto* loudnessOut = myworld::findNodeSpec (specs, "analyzer.loudness_out");
+    expect (loudnessOut != nullptr, "loudness out can be pulled from module library");
+    expect (loudnessOut->outputs.size() == 5, "loudness out public output count");
+
+    const auto* loudnessCompound = myworld::findNodeSpec (specs, "compound.loudness");
+    expect (loudnessCompound != nullptr, "compound.loudness seed spec exists");
+    expect (loudnessCompound->category == "compound", "compound loudness category");
+    expect (loudnessCompound->outputs.size() == 5, "compound loudness public output count");
+
     const auto* midi = myworld::findNodeSpec (specs, "io.midi.cc_out");
     expect (midi != nullptr, "io.midi.cc_out seed spec exists");
     expect (midi->category == "io", "midi category is io");
@@ -60,9 +86,13 @@ int main()
     expect (myworld::isKnownNodeCategory ("image"), "image category is known");
     expect (myworld::isKnownNodeCategory ("mesh"), "mesh category is known");
     expect (myworld::isKnownNodeCategory ("io"), "io category is known");
+    expect (myworld::isKnownNodeCategory ("signal"), "signal category is known");
     expect (myworld::isKnownNodeSubcategory ("midi"), "midi subcategory is known");
     expect (myworld::isKnownNodeSubcategory ("use"), "use subcategory is known");
     expect (myworld::isKnownNodeSubcategory ("measurement"), "measurement subcategory is known");
+    expect (myworld::isKnownNodeSubcategory ("calibration"), "calibration subcategory is known");
+    expect (myworld::isKnownNodeSubcategory ("gate"), "gate subcategory is known");
+    expect (myworld::isKnownNodeSubcategory ("shaping"), "shaping subcategory is known");
     expect (myworld::isKnownPreviewPolicy ("none"), "none preview policy is known");
     expect (myworld::isKnownPreviewPolicy ("tiny_preview"), "tiny preview policy is known");
     expect (myworld::isKnownPreviewPolicy ("meter_scope"), "meter scope preview policy is known");
