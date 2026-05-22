@@ -130,9 +130,21 @@ std::string outputDataTypeForEndpoint (const GraphContract& graph,
     return {};
 }
 
+std::string makeNodeIdStem (const std::string& nodeType);
+
 bool canCreateFromEndpoint (const NodeSpec& spec, const std::string& sourceDataType)
 {
     return ! spec.inputs.empty() && spec.inputs.front().dataType == sourceDataType;
+}
+
+bool nodeSpecMatchesFilter (const NodeSpec& spec, const std::string& filter)
+{
+    if (filter.empty())
+        return true;
+
+    const auto needle = makeNodeIdStem (filter);
+    const auto haystack = makeNodeIdStem (spec.type + " " + spec.displayName + " " + spec.category + " " + spec.subcategory);
+    return haystack.find (needle) != std::string::npos;
 }
 
 std::string makeNodeIdStem (const std::string& nodeType)
@@ -273,7 +285,7 @@ void drawPortStrip (ImDrawList& drawList, ImVec2 min, ImVec2 max, const Tooll3Po
 std::string compactInspectorValue (const ParamSpec& param, const std::string& value)
 {
     if (param.dataType == "text.glsl")
-        return value.empty() ? "default GLSL" : std::to_string (value.size()) + " bytes";
+        return value.empty() ? "GLSL" : std::to_string (value.size()) + " bytes";
 
     if (value.empty())
         return param.defaultValue.empty() ? "default" : param.defaultValue;
@@ -478,22 +490,41 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                            false,
                            ImGuiWindowFlags_NoScrollbar);
         {
-            if (ImGui::Button ("Presets"))
+            const auto railPolicy = makeTooll3LeftRailPolicy();
+
+            if (ImGui::BeginTabBar ("left-rail-tabs", ImGuiTabBarFlags_NoTooltip))
             {
-                lastInteractionMessage = "presets: empty";
+                for (const auto& tab : railPolicy.tabs)
+                {
+                    if (! ImGui::BeginTabItem (tab.c_str()))
+                        continue;
+
+                    if (tab == "Presets")
+                    {
+                        ImGui::Dummy (ImVec2 (0.0f, 44.0f));
+                        ImGui::TextDisabled ("No presets yet.");
+                    }
+                    else if (tab == "Snapshots")
+                    {
+                        ImGui::Dummy (ImVec2 (0.0f, 44.0f));
+                        ImGui::TextDisabled ("No snapshots yet.");
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled ("nodes: %d", static_cast<int> (nodeSpecs.size()));
+                        ImGui::Separator();
+
+                        for (size_t index = 0; index < std::min<size_t> (nodeSpecs.size(), 7); ++index)
+                            ImGui::TextDisabled ("%s", nodeSpecs[index].type.c_str());
+                    }
+
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
             }
 
-            ImGui::SameLine();
-            if (ImGui::Button ("Snapshots"))
-            {
-                lastInteractionMessage = "snapshots: empty";
-            }
-
-            ImGui::SameLine();
-            ImGui::Button ("+");
-            ImGui::Dummy (ImVec2 (0.0f, 44.0f));
-            ImGui::TextDisabled ("No presets yet.");
-            ImGui::Dummy (ImVec2 (0.0f, 24.0f));
+            ImGui::Dummy (ImVec2 (0.0f, 14.0f));
             drawInspectorPanel (nodeSpecs, shaderStatus);
 
             ImGui::SeparatorText ("Shader");
@@ -534,7 +565,9 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                            false,
                            ImGuiWindowFlags_NoScrollbar);
         {
-            ImGui::TextDisabled ("00:00:%05.2f  Secs", ImGui::GetTime());
+            const auto transportPolicy = makeTooll3TransportPolicy();
+            const auto appTime = static_cast<float> (ImGui::GetTime());
+            ImGui::TextDisabled ("00:00:%05.2f", appTime);
             ImGui::SameLine();
             if (ImGui::Button ("Reset"))
             {
@@ -585,9 +618,28 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             {
                 ImGui::TextDisabled ("trace not run");
             }
-            ImGui::TextDisabled ("last: %s   saved bytes %d",
-                                 lastInteractionMessage.c_str(),
-                                 static_cast<int> (savedInteractionState.size()));
+
+            if (transportPolicy.hasCommandStrip)
+                ImGui::TextDisabled ("last: %s   saved bytes %d",
+                                     lastInteractionMessage.c_str(),
+                                     static_cast<int> (savedInteractionState.size()));
+
+            if (transportPolicy.timelineEditingParked)
+            {
+                const auto trackPos = ImGui::GetCursorScreenPos();
+                const auto trackWidth = ImGui::GetContentRegionAvail().x;
+                const auto playhead = std::fmod (appTime, 10.0f) / 10.0f;
+                auto& transportDrawList = *ImGui::GetWindowDrawList();
+                transportDrawList.AddRectFilled (trackPos,
+                                                 { trackPos.x + trackWidth, trackPos.y + 7.0f },
+                                                 rgba (28, 28, 30, 210),
+                                                 0.0f);
+                transportDrawList.AddLine ({ trackPos.x + trackWidth * playhead, trackPos.y - 2.0f },
+                                           { trackPos.x + trackWidth * playhead, trackPos.y + 10.0f },
+                                           rgba (116, 166, 226, 230),
+                                           1.0f);
+                ImGui::Dummy ({ trackWidth, 10.0f });
+            }
         }
         ImGui::EndChild();
     }
@@ -729,7 +781,9 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     }
 
     const auto origin = ImGui::GetCursorScreenPos();
-    ImGui::InvisibleButton ("interaction-canvas", canvasSize, ImGuiButtonFlags_MouseButtonLeft);
+    ImGui::InvisibleButton ("interaction-canvas",
+                            canvasSize,
+                            ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
     const auto hovered = ImGui::IsItemHovered();
     const auto active = ImGui::IsItemActive();
     const auto wheel = ImGui::GetIO().MouseWheel;
@@ -816,6 +870,25 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
             panningCanvas = true;
             previousPanDrag = {};
             lastInteractionMessage = "pan canvas";
+        }
+    }
+
+    if (hovered && ImGui::IsMouseClicked (ImGuiMouseButton_Right))
+    {
+        const auto mouse = ImGui::GetMousePos();
+        const auto hit = hitTestGraph (interactionSession.graph,
+                                       nodeSpecs,
+                                       interactionSession.view,
+                                       { mouse.x - origin.x, mouse.y - origin.y });
+
+        if (hit.kind == HitTestKind::none)
+        {
+            pendingCreateSourceEndpoint.clear();
+            pendingCreatePosition = canvasPointFromMouse (interactionSession.view, origin);
+            nodeBrowserScreenPosition = { mouse.x, mouse.y };
+            nodeBrowserFilter.clear();
+            ImGui::OpenPopup ("workspace-node-browser");
+            lastInteractionMessage = "node browser";
         }
     }
 
@@ -1006,6 +1079,7 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     drawList.PopClipRect();
     ImGui::Dummy (ImVec2 (0.0f, 6.0f));
     drawCreateNodePopup (nodeSpecs);
+    drawWorkspaceNodeBrowser (nodeSpecs);
 }
 
 void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs)
@@ -1068,6 +1142,59 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
     ImGui::EndPopup();
 }
 
+void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& nodeSpecs)
+{
+    ImGui::SetNextWindowPos ({ static_cast<float> (nodeBrowserScreenPosition.x),
+                               static_cast<float> (nodeBrowserScreenPosition.y) },
+                             ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize (ImVec2 (340.0f, 390.0f), ImGuiCond_Appearing);
+
+    if (! ImGui::BeginPopup ("workspace-node-browser"))
+        return;
+
+    ImGui::TextUnformatted ("Create Node");
+    ImGui::InputText ("##node-browser-filter", &nodeBrowserFilter);
+    ImGui::Separator();
+
+    bool showedCandidate = false;
+
+    for (const auto& spec : nodeSpecs)
+    {
+        if (! nodeSpecMatchesFilter (spec, nodeBrowserFilter))
+            continue;
+
+        showedCandidate = true;
+        const auto label = spec.displayName + "##workspace-" + spec.type;
+
+        if (ImGui::Selectable (label.c_str()))
+        {
+            const auto nodeId = makeUniqueNodeId (interactionSession.graph, spec.type);
+            runInteractionCommand ("create " + spec.type,
+                                   createNode (interactionSession,
+                                               spec.type,
+                                               nodeId,
+                                               pendingCreatePosition));
+            nodeBrowserFilter.clear();
+            ImGui::CloseCurrentPopup();
+        }
+
+        ImGui::SameLine();
+        ImGui::TextDisabled ("%s", spec.type.c_str());
+    }
+
+    if (! showedCandidate)
+        ImGui::TextDisabled ("empty");
+
+    if (ImGui::Button ("Cancel"))
+    {
+        nodeBrowserFilter.clear();
+        lastInteractionMessage = "node browser: cancelled";
+        ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
+}
+
 void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus)
 {
     ImGui::SeparatorText ("Inspector");
@@ -1084,7 +1211,6 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
 
     const auto policy = makeTooll3InspectorPolicy (node->type, true);
     ImGui::Text ("%s", node->id.c_str());
-    ImGui::SameLine();
     ImGui::TextDisabled ("%s", node->type.c_str());
 
     if (spec->params.empty())

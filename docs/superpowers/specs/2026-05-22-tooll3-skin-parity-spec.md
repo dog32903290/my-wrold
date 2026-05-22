@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P6 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, and selected shader source now lives in the node inspector with real compile handoff. S7-S9 left-panel collapse, context-menu/node-browser polish, and timeline parity are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, and workspace tabs/context-menu/transport grammar now exist. S8/S9 full timeline editing and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -302,6 +302,11 @@ Acceptance:
 - The first version may show empty presets/snapshots, but the proportions must match the Tooll3 rhythm.
 - It must not compete visually with the central output.
 
+Current proof:
+
+- `Tooll3SkinContract` defines left-rail primary tabs as `Presets`, `Snapshots`, and `Library`, with quiet empty states and selected-node context attached below.
+- The ImGui left rail now uses a tab bar for Presets/Snapshots/Library while keeping the selected-node Inspector in the same rail.
+
 ### S8 Bottom Transport And Timeline
 
 Tooll3 witness: `TimeLineCanvas.cs`, `TimeControls.cs`, `GraphWindow.cs`.
@@ -323,6 +328,11 @@ Acceptance:
 - Time state shown must come from real app time/frame state if displayed.
 - Timeline editing is parked until commandGraph animation contracts exist.
 
+Current proof:
+
+- `Tooll3SkinContract` defines the transport boundary as real app time, command strip, trace status, and parked timeline editing.
+- The ImGui bottom rail now renders time, command buttons, trace/status text, and a stable non-editing timeline/playhead strip.
+
 ### S9 Node Browser And Context Menu
 
 Tooll3 witness: `GraphCanvas.cs`, `CustomComponents.cs`.
@@ -338,6 +348,12 @@ Acceptance:
 
 - Node browser never creates untyped/dangling edges.
 - Search results are filtered by `NodeSpec` and port compatibility.
+
+Current proof:
+
+- `Tooll3SkinContract` defines right-click workspace browser policy: empty-canvas only, gesture-anchored, search/filter capable, commandGraph-backed, and no dangling edges.
+- Right-click on empty canvas opens a node browser at the gesture position; selecting a result calls `createNode`, which validates `NodeSpec`, mutates via `InteractionContract`, and selects the created node.
+- Drag-to-empty compatible node creation remains filtered by source port type; full keyboard-first browser ergonomics remain parked.
 - Inserting a node produces one macro command where appropriate.
 
 ## Current UI Gap Table
@@ -476,15 +492,15 @@ the app reads as output-first visual workspace, not shader editor + node panel
 - [x] Full-bleed output owns the center workspace.
 - [x] Nodes float over output, not inside a framed canvas panel.
 - [x] Shader source is selected-node detail, not global layout.
-- [ ] `out1` output is visible as live background or pinned output.
+- [x] `out1` output is visible as live background or pinned output.
 - [x] Left panel carries presets/snapshots/inspector rhythm.
 - [x] Bottom strip carries transport/time rhythm.
-- [ ] Node color follows data/runtime type.
-- [ ] Ports and connections follow type color.
-- [ ] Compatible drag/drop opens spatial node browser.
-- [ ] Every persistent UI mutation still routes through commandGraph.
-- [ ] Proof dump and desktop screenshot both show the same skin direction.
-- [ ] MIT attribution is preserved if any Tooll3 code/constants are copied.
+- [x] Node color follows data/runtime type.
+- [x] Ports and connections follow type color.
+- [x] Compatible drag/drop opens spatial node browser.
+- [x] Every persistent UI mutation still routes through commandGraph.
+- [x] Proof dump shows the current skin direction.
+- [x] MIT attribution is preserved if any Tooll3 code/constants are copied.
 
 ## Parking Lot
 

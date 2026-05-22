@@ -50,6 +50,17 @@ bool writePngFile (const juce::File& file, const juce::Image& image)
     juce::PNGImageFormat pngFormat;
     return pngFormat.writeImageToStream (image, *output);
 }
+
+int mouseButtonIndex (const juce::MouseEvent& event)
+{
+    if (event.mods.isRightButtonDown())
+        return 1;
+
+    if (event.mods.isMiddleButtonDown())
+        return 2;
+
+    return 0;
+}
 }
 
 OpenGLShaderPreview::OpenGLShaderPreview()
@@ -211,7 +222,7 @@ void OpenGLShaderPreview::mouseMove (const juce::MouseEvent& event)
 void OpenGLShaderPreview::mouseDown (const juce::MouseEvent& event)
 {
     updateImGuiMousePosition (event);
-    imguiOverlay.setMouseButton (0, true);
+    imguiOverlay.setMouseButton (mouseButtonIndex (event), true);
 }
 
 void OpenGLShaderPreview::mouseDrag (const juce::MouseEvent& event)
@@ -223,6 +234,8 @@ void OpenGLShaderPreview::mouseUp (const juce::MouseEvent& event)
 {
     updateImGuiMousePosition (event);
     imguiOverlay.setMouseButton (0, false);
+    imguiOverlay.setMouseButton (1, false);
+    imguiOverlay.setMouseButton (2, false);
 }
 
 void OpenGLShaderPreview::mouseWheelMove (const juce::MouseEvent& event, const juce::MouseWheelDetails& wheel)

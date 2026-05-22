@@ -128,6 +128,7 @@ Contract:
 - Proven: Tooll3 skin parity P0-P3 first pass exists: `Tooll3SkinContract` makes output-as-background, hidden global shader source, non-framed canvas, left rail, and bottom transport testable; the app proof frame now draws nodes floating over the shader output background.
 - Proven: Tooll3 skin parity P4 first pass exists: node fills, labels, selection outlines, input/output side strips, and connection colors now come from `Tooll3SkinContract` typed visual grammar instead of ad hoc ImGui colors.
 - Proven: Tooll3 skin parity P5/P6 first pass exists: selected-node inspector policy and row-state styling are testable, and `shader.fragment` source editing now lives in the ImGui inspector with `set_param` commandGraph evidence plus OpenGL compile handoff.
+- Proven: Tooll3 skin parity P7 first pass exists: the left rail has Presets/Snapshots/Library tabs, right-click empty canvas opens a gesture-anchored commandGraph-backed node browser, and the bottom strip reads as transport/status/timeline boundary.
 - Planned: future Codex Hands layers may inject into ImGui IO or OS-level mouse control, but only after the internal semantic trace layer stays commandGraph-backed and replayable.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.

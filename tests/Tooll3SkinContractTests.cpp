@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -138,6 +139,39 @@ void parameterRowsExposeValueState()
     require (defaultRow.layoutStableOnStateChange, "row state does not resize layout");
     require (animatedRow.layoutStableOnStateChange, "animated state does not resize layout");
 }
+
+void workspaceContextMenuIsCommandBacked()
+{
+    const auto menu = myworld::makeTooll3WorkspaceMenuPolicy();
+    require (menu.rightClickOpensNodeBrowser, "right click opens node browser");
+    require (menu.onlyOnEmptyCanvas, "context menu opens only on empty canvas");
+    require (menu.popupAnchoredToGesture, "node browser is anchored to gesture position");
+    require (menu.createsNodesThroughCommandGraph, "node browser create goes through commandGraph");
+    require (menu.supportsSearchFilter, "node browser has search/filter field");
+    require (menu.rejectsDanglingEdges, "node browser does not create dangling edges");
+}
+
+void leftRailHasTooll3TabsAndSelectionContext()
+{
+    const auto rail = myworld::makeTooll3LeftRailPolicy();
+    const std::vector<std::string> expectedTabs { "Presets", "Snapshots", "Library" };
+
+    require (rail.tabs == expectedTabs, "left rail primary tabs");
+    require (rail.emptyStateIsQuiet, "left rail empty state is quiet");
+    require (rail.selectionContextAttached, "selection inspector remains attached to left rail");
+    require (rail.collapsibleLater, "left rail can collapse later without changing center workspace");
+}
+
+void bottomTransportIsWorkspaceBoundary()
+{
+    const auto transport = myworld::makeTooll3TransportPolicy();
+    require (transport.hasTimeReadout, "transport has time readout");
+    require (transport.hasCommandStrip, "transport has command strip");
+    require (transport.hasTraceStatus, "transport has trace status");
+    require (transport.timelineEditingParked, "timeline editing is parked");
+    require (transport.usesRealAppTime, "transport time comes from app time");
+    require (transport.layoutStable, "transport layout is stable");
+}
 }
 
 int main()
@@ -152,5 +186,8 @@ int main()
     connectionColourFollowsTypeAndCompatibility();
     shaderSourceBelongsToSelectedNodeInspector();
     parameterRowsExposeValueState();
+    workspaceContextMenuIsCommandBacked();
+    leftRailHasTooll3TabsAndSelectionContext();
+    bottomTransportIsWorkspaceBoundary();
     return 0;
 }

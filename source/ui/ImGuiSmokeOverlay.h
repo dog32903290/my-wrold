@@ -37,6 +37,7 @@ private:
     void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs, float canvasWidth, float canvasHeight);
     void drawInteractionControls();
     void drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs);
+    void drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& nodeSpecs);
     void drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus);
     void drawTracePanel();
     void runInteractionCommand (const std::string& label, CommandResult result);
@@ -51,9 +52,11 @@ private:
     std::string pendingCreateSourceEndpoint;
     std::string shaderSourceDraft;
     std::string shaderSourceDraftNodeId;
+    std::string nodeBrowserFilter;
     CanvasPoint dragCanvasDelta;
     CanvasPoint draggingConnectionPoint;
     CanvasPoint pendingCreatePosition;
+    ScreenPoint nodeBrowserScreenPosition;
     ScreenPoint previousPanDrag;
     std::string savedInteractionState;
     BehaviorTraceReport lastTraceReport;

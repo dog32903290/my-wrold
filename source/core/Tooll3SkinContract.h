@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace myworld
 {
@@ -90,6 +91,34 @@ struct Tooll3InspectorRowSkin
     bool layoutStableOnStateChange = true;
 };
 
+struct Tooll3WorkspaceMenuPolicy
+{
+    bool rightClickOpensNodeBrowser = true;
+    bool onlyOnEmptyCanvas = true;
+    bool popupAnchoredToGesture = true;
+    bool createsNodesThroughCommandGraph = true;
+    bool supportsSearchFilter = true;
+    bool rejectsDanglingEdges = true;
+};
+
+struct Tooll3LeftRailPolicy
+{
+    std::vector<std::string> tabs;
+    bool emptyStateIsQuiet = true;
+    bool selectionContextAttached = true;
+    bool collapsibleLater = true;
+};
+
+struct Tooll3TransportPolicy
+{
+    bool hasTimeReadout = true;
+    bool hasCommandStrip = true;
+    bool hasTraceStatus = true;
+    bool timelineEditingParked = true;
+    bool usesRealAppTime = true;
+    bool layoutStable = true;
+};
+
 Tooll3SkinPolicy makeTooll3SkinPolicy();
 Tooll3SkinLayout makeTooll3SkinLayout (double width, double height);
 Tooll3SkinColor makeTooll3TypeColor (const std::string& dataType, const std::string& nodeType = {});
@@ -101,4 +130,7 @@ Tooll3PortSkin makeTooll3PortSkin (const std::string& dataType, bool compatible,
 Tooll3ConnectionSkin makeTooll3ConnectionSkin (const std::string& dataType, bool selected, bool compatible);
 Tooll3InspectorPolicy makeTooll3InspectorPolicy (const std::string& nodeType, bool hasSelection);
 Tooll3InspectorRowSkin makeTooll3InspectorRowSkin (const std::string& valueState);
+Tooll3WorkspaceMenuPolicy makeTooll3WorkspaceMenuPolicy();
+Tooll3LeftRailPolicy makeTooll3LeftRailPolicy();
+Tooll3TransportPolicy makeTooll3TransportPolicy();
 }

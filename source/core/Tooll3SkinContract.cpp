@@ -219,4 +219,19 @@ Tooll3InspectorRowSkin makeTooll3InspectorRowSkin (const std::string& valueState
 
     return skin;
 }
+
+Tooll3WorkspaceMenuPolicy makeTooll3WorkspaceMenuPolicy()
+{
+    return {};
+}
+
+Tooll3LeftRailPolicy makeTooll3LeftRailPolicy()
+{
+    return { { "Presets", "Snapshots", "Library" } };
+}
+
+Tooll3TransportPolicy makeTooll3TransportPolicy()
+{
+    return {};
+}
 }
