@@ -125,6 +125,7 @@ Contract:
 - Proven: Codex Hands V0 exists as a low-token internal canvas operation layer in `source/core/CanvasHands.*`; semantic targets such as node, port, canvas point, and viewport center resolve through graph data, `canvasToScreen`, and `hitTestGraph` before pointer actions run.
 - Proven: Codex Hands V0 can test semantic click selection, node drag, port-to-port connection drag, right click, middle click, and wheel evidence without screenshot guessing or global macOS mouse control.
 - Proven: first Tooll3-like workspace layout promotes the node canvas to the OpenGL/ImGui main surface; the prior shader editor lives in the JUCE side panel, while `out1` preview, shader status, and compound controls live in workspace side panels.
+- Proven: Tooll3 skin parity P0-P3 first pass exists: `Tooll3SkinContract` makes output-as-background, hidden global shader source, non-framed canvas, left rail, and bottom transport testable; the app proof frame now draws nodes floating over the shader output background.
 - Planned: future Codex Hands layers may inject into ImGui IO or OS-level mouse control, but only after the internal semantic trace layer stays commandGraph-backed and replayable.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.

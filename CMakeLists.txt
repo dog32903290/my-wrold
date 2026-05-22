@@ -238,6 +238,26 @@ target_link_libraries(my_world_canvas_hands_tests
 
 add_test(NAME canvas_hands COMMAND my_world_canvas_hands_tests)
 
+add_library(my_world_tooll3_skin
+    source/core/Tooll3SkinContract.cpp
+)
+
+target_include_directories(my_world_tooll3_skin
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_tooll3_skin_tests
+    tests/Tooll3SkinContractTests.cpp
+)
+
+target_link_libraries(my_world_tooll3_skin_tests
+    PRIVATE
+        my_world_tooll3_skin
+)
+
+add_test(NAME tooll3_skin_contract COMMAND my_world_tooll3_skin_tests)
+
 add_library(my_world_audio
     source/audio/AudioAnalyzerState.cpp
 )
@@ -342,6 +362,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_interaction
             my_world_node_specs
             my_world_compound
+            my_world_tooll3_skin
             juce::juce_opengl
     )
 

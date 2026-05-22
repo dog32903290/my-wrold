@@ -86,7 +86,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
     {
         applyMidiPreferences (std::move (preferences));
     };
-    addAndMakeVisible (preferencesPanel);
+    addChildComponent (preferencesPanel);
 
     dumpProofButton.setButtonText ("Dump Proof");
     dumpProofButton.onClick = [this] { dumpProof(); };
@@ -102,7 +102,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
     {
         preview.setFragmentShader (shaderEditor.getText().toStdString());
     };
-    addAndMakeVisible (shaderEditor);
+    addChildComponent (shaderEditor);
 
     preview.onStatusMessage = [safe = juce::Component::SafePointer<MainComponent> (this)] (juce::String incomingStatus)
     {
@@ -174,15 +174,6 @@ void MainComponent::resized()
     midiStatusLabel.setBounds (audioRow);
 
     area.removeFromTop (10);
-
-    const auto sideWidth = juce::jlimit (320, 430, area.getWidth() / 4);
-    auto sidePanel = area.removeFromLeft (sideWidth);
-    area.removeFromLeft (12);
-
-    const auto preferencesHeight = juce::jmin (178, juce::jmax (132, sidePanel.getHeight() / 3));
-    preferencesPanel.setBounds (sidePanel.removeFromTop (preferencesHeight));
-    sidePanel.removeFromTop (10);
-    shaderEditor.setBounds (sidePanel);
 
     preview.setBounds (area);
 }

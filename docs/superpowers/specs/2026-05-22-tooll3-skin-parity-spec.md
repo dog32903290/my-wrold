@@ -1,0 +1,480 @@
+# Tooll3 Skin Parity Spec
+
+Date: 2026-05-22
+Status: P0-P3 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, and left/bottom Tooll3-style rails exist. P4-P7 node/port/inspector/timeline parity is still pending.
+
+Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
+
+License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this project copies source code, style constants, icon data, or substantial implementation structure, preserve the MIT notice and attribution. This spec's preferred route is to borrow the interface grammar and reimplement it in `我的世界`'s C++/JUCE/ImGui body.
+
+## Purpose
+
+The previous T0-T7 work proved a Tooll3-like interaction spine:
+
+```text
+pan / zoom / select / move / connect / delete / undo / save / trace
+```
+
+That is not the same as Tooll3's skin.
+
+Tooll3's visual identity comes from a different layer:
+
+```text
+live output as the workspace
+-> nodes floating over that output
+-> dark translucent panels around the work
+-> compact typed nodes
+-> parameter inspector and timeline woven into the same surface
+```
+
+This spec defines the skin parity target before more UI code is written. "Parity" here means maximum practical UI/operation specification parity with Tooll3, not code forking.
+
+## Core Diagnosis
+
+Current native UI still reads as:
+
+```text
+shader editor + framed node canvas + preview/panels
+```
+
+Tooll3 reads as:
+
+```text
+live artwork/output surface + node controls floating on top + editor panels attached to the edges
+```
+
+The main difference is not button color. It is the compositing model.
+
+In Tooll3, the graph canvas can use the rendered output as its background. The node graph is an overlay on the result, not a separate box next to it. In the inspected code this is represented by `GraphWindow.ImageBackground.cs` rendering an output into the graph window background, and `GraphWindow.cs` suppressing the grid when that image background is active.
+
+## Source Witness Files
+
+Primary files to inspect again during implementation:
+
+```text
+Editor/Gui/Styling/T3Style.cs
+Editor/Gui/Styling/Color.cs
+Editor/Gui/Styling/ColorVariations.cs
+Editor/Gui/Styling/CustomComponents.cs
+Editor/Gui/InputUi/TypeUiRegistry.cs
+Editor/Gui/Windows/Window.cs
+Editor/Gui/Graph/GraphWindow.cs
+Editor/Gui/Graph/GraphWindow.ImageBackground.cs
+Editor/Gui/Graph/GraphCanvas.cs
+Editor/Gui/Graph/GraphNode.cs
+Editor/Gui/Graph/InputNode.cs
+Editor/Gui/Graph/OutputNode.cs
+Editor/Gui/Graph/Interaction/ConnectionMaker.cs
+Editor/Gui/Windows/ParameterWindow.cs
+Editor/Gui/Windows/Output/OutputWindow.cs
+Editor/Gui/Windows/TimeLine/TimeLineCanvas.cs
+Editor/Gui/Windows/Variations/VariationBaseCanvas.cs
+```
+
+Borrow these as witnesses for visual grammar and interaction state. Do not import their C# ownership model as our native law.
+
+## Non-Negotiable Boundary
+
+Allowed to borrow:
+
+- Full-bleed output-as-background composition.
+- Dark, low-padding ImGui style.
+- Flat, square, non-rounded window/panel grammar.
+- Type-colored nodes and ports.
+- Compact node labels, tiny indicators, inline port/value rows.
+- Parameter popup / inspector rhythm.
+- Presets / snapshots / variations panel rhythm.
+- Bottom transport / timeline strip.
+- Output pinning and selected-output preview behavior.
+- Context menu and node browser placement logic.
+
+Not allowed as native law:
+
+- C# class structure.
+- SharpDX / Direct3D / HLSL assumptions.
+- Tooll3 `Symbol` / `Instance` runtime as our graph schema.
+- Tooll3 branding, exact title strings, or identity.
+- UI-only graph mutation.
+- A skin layer that bypasses `InteractionContract` / commandGraph.
+
+## Skin Layers
+
+### S0 Attribution And Source Packet
+
+Every implementation pass that copies non-trivial code or constants from Tooll3 must list:
+
+```text
+source repo
+source commit
+source files
+what was copied vs reimplemented
+license notice location
+```
+
+Preferred default: reimplement behavior and style tokens from observation instead of copying code.
+
+### S1 Global Style Tokens
+
+Tooll3 witness: `T3Style.cs`, `Color.cs`, `ColorVariations.cs`.
+
+Target grammar:
+
+- Window background nearly black, around `0.05-0.10` luminance.
+- Panels are dark translucent overlays, not cards.
+- Window padding is close to zero.
+- Frame padding is tight.
+- Rounding is zero or almost zero.
+- Separators are dark structural lines.
+- Active accents are blue/cyan, but not the whole palette.
+- Text is mostly low-contrast white/gray, with stronger white only for active labels.
+
+Acceptance:
+
+- No rounded card aesthetic.
+- No large explanatory text on the workspace.
+- No grid panel that looks like a separate app inside the app.
+
+### S2 Workspace Composition
+
+Tooll3 witness: `GraphWindow.cs`.
+
+Target layout:
+
+```text
+top menu / status strip
+left edge panels: presets / snapshots / selected node inspector
+center: full-bleed live output background
+center overlay: node graph
+bottom: transport / time / timeline strip
+```
+
+The center workspace owns the visual weight. Side panels must feel attached to the workspace, not like independent forms.
+
+Acceptance:
+
+- On launch, at least 70% of the app's usable area is the live output/workspace surface.
+- Shader source editor is not globally visible by default.
+- Selecting a Shader node may reveal shader source in the inspector.
+- The node canvas is not drawn inside a bordered rectangular sub-panel.
+
+### S3 Output-As-Background
+
+Tooll3 witness: `GraphWindow.ImageBackground.cs`, `OutputWindow.cs`.
+
+Target behavior:
+
+```text
+out1 / pinned output
+-> renders into the workspace background
+-> nodes and connections draw over it
+-> grid becomes hidden or extremely muted while output background is active
+```
+
+This is the skin's main load-bearing line.
+
+Acceptance:
+
+- `shader1 -> out1` renders as the workspace background, not as a small preview panel.
+- `out1` still exists as a node and can be selected/pinned.
+- The background survives pan/zoom/selection without breaking hit-tests.
+- If shader compilation fails, last valid output remains visible with status in the inspector/status strip.
+
+### S4 Node Visual Grammar
+
+Tooll3 witness: `GraphNode.cs`, `TypeUiRegistry.cs`, `ColorVariations.cs`.
+
+Target node shape:
+
+```text
+flat rectangle
+typed color wash
+compact label
+left input strip
+right output strip
+inline input labels / values when zoom allows
+tiny status indicators
+selection outline
+optional cached preview above/inside visual nodes later
+```
+
+Node color follows data/runtime type, not arbitrary decoration:
+
+```text
+values      gray
+points      muted rose
+strings     green
+textures    magenta
+commands    cyan
+audio       project-specific blue/teal
+shader      project-specific violet/cyan
+compound    muted structural color
+output      emphasized but not neon
+```
+
+Acceptance:
+
+- Nodes can be scanned by type before reading text.
+- Text does not carry the whole node identity.
+- Selected state is an outline/contrast change, not layout change.
+- Hover and active states change color/opacity, not size.
+
+### S5 Ports And Connections
+
+Tooll3 witness: `GraphNode.cs`, `ConnectionMaker.cs`.
+
+Target grammar:
+
+- Inputs live on the left side of nodes.
+- Outputs live on the right side.
+- Connection color follows data type.
+- Dragging a connection highlights compatible targets and mutes incompatible targets.
+- Dropping on empty workspace opens compatible node browser at the drop position.
+- Existing graph mutation still goes through commandGraph.
+
+Acceptance:
+
+- No successful connection exists only as pixels.
+- Cancelled drag leaves graph state unchanged.
+- Compatible-node popup is spatially attached to the release point.
+
+### S6 Inspector And Parameter Skin
+
+Tooll3 witness: `ParameterWindow.cs`, input UI files under `Editor/Gui/InputUi`.
+
+Target grammar:
+
+```text
+selected node
+-> compact header
+-> parameter rows
+-> manual/default/connected/animated state visible
+-> source/code editors appear only inside node-specific panels
+```
+
+For `shader.fragment`, shader source belongs here:
+
+```text
+select shader1
+-> Inspector / Shader Source panel opens
+-> compile status shown near it
+-> preview remains the workspace background
+```
+
+Acceptance:
+
+- No global half-screen shader editor.
+- Parameter edits create commandGraph evidence.
+- Connected parameters visibly differ from manual values.
+
+### S7 Left Panels: Presets, Snapshots, Node Context
+
+Tooll3 witness: `VariationBaseCanvas.cs`, variation/snapshot windows.
+
+Target grammar:
+
+- Left rail is dark and attached to the workspace.
+- Top tabs can hold `Presets`, `Snapshots`, later `Library`.
+- Empty states are quiet.
+- Node context/description lives below, tied to current selection.
+
+Acceptance:
+
+- Left panel can be collapsed or narrowed later.
+- The first version may show empty presets/snapshots, but the proportions must match the Tooll3 rhythm.
+- It must not compete visually with the central output.
+
+### S8 Bottom Transport And Timeline
+
+Tooll3 witness: `TimeLineCanvas.cs`, `TimeControls.cs`, `GraphWindow.cs`.
+
+Target grammar:
+
+```text
+bottom strip
+-> transport controls
+-> time display
+-> optional timeline/dope view
+```
+
+The first native pass can be a nonfunctional visual/contract strip if realtime timeline logic is not ready, but it must not fake graph/runtime state.
+
+Acceptance:
+
+- Bottom strip exists as a workspace boundary.
+- Time state shown must come from real app time/frame state if displayed.
+- Timeline editing is parked until commandGraph animation contracts exist.
+
+### S9 Node Browser And Context Menu
+
+Tooll3 witness: `GraphCanvas.cs`, `CustomComponents.cs`.
+
+Target grammar:
+
+- Right-click on workspace opens context menu.
+- Drag connection to empty workspace opens compatible node browser.
+- Browser appears at gesture position.
+- Search/filter is dense and keyboard-friendly.
+
+Acceptance:
+
+- Node browser never creates untyped/dangling edges.
+- Search results are filtered by `NodeSpec` and port compatibility.
+- Inserting a node produces one macro command where appropriate.
+
+## Current UI Gap Table
+
+| Surface | Current Native State | Tooll3 Parity Target | First Fix |
+| --- | --- | --- | --- |
+| Main visual | Node canvas inside OpenGL/ImGui window, shader visible behind it | Output is the workspace background | Render `out1` into full workspace, draw nodes over it |
+| Shader editor | Always visible JUCE side panel | Node-specific inspector panel | Hide by default, reveal on selected shader node |
+| Output preview | Empty framed side panel plus background shader leak | Background is primary output, preview panel is secondary/pinned | Make `out1` background authoritative |
+| Nodes | Generic dark rounded-ish boxes | Flat typed operator rectangles | Implement type color and port strips |
+| Grid | Strong separate canvas grid | Hidden/muted when output background active | Conditional grid opacity |
+| Panels | JUCE preferences + ImGui side panel | Edge-attached Tooll3 panels | Create unified ImGui skin shell |
+| Timeline | None | Bottom strip with transport/time | Add bottom strip contract |
+
+## First Implementation Roadmap
+
+### P0 Skin Packet
+
+Create a tiny `Tooll3SkinNotes` doc or source comment packet listing witness files and MIT attribution decision.
+
+Gate:
+
+```text
+source commit recorded
+license note recorded
+no copied code without attribution
+```
+
+### P1 Style Tokens
+
+Add native style tokens for:
+
+```text
+workspace background
+panel background
+node type colors
+text muted/active
+connection colors
+separator / splitter
+selection outline
+```
+
+Gate:
+
+```text
+proof frame shows global Tooll3-like dark flat style
+no layout changes yet
+```
+
+### P2 Workspace Shell
+
+Replace current workspace shell with:
+
+```text
+top strip
+left rail
+full-bleed center surface
+bottom strip
+floating nodes
+```
+
+Gate:
+
+```text
+node canvas no longer appears inside a bordered sub-panel
+shader editor is hidden unless shader node selected
+```
+
+### P3 Output Background
+
+Render the shader output as the center workspace background.
+
+Gate:
+
+```text
+proof frame: shader output fills the center workspace
+nodes draw on top
+hit-tests still pass through CanvasHands / InteractionContract
+```
+
+### P4 Node Skin
+
+Implement Tooll3-like node surfaces over existing `GraphSession`.
+
+Gate:
+
+```text
+typed node colors visible
+port strips visible
+connection color follows data type
+selection/hover states do not shift layout
+```
+
+### P5 Inspector Skin
+
+Move selected-node details into a Tooll3-like left/side inspector.
+
+Gate:
+
+```text
+select shader1 -> shader params/source visible
+select out1 -> output preview/pin status visible
+no selected node -> quiet empty inspector
+```
+
+### P6 Bottom Strip
+
+Add transport/time strip using real app frame/time state.
+
+Gate:
+
+```text
+bottom strip displays real time/frame
+no fake timeline editing
+```
+
+### P7 Skin Parity Review
+
+Run visual pressure:
+
+```text
+desktop screenshot
+proof dump
+CanvasHands click/drag/connect trace
+current UI vs Tooll3 reference comparison
+```
+
+Gate:
+
+```text
+the app reads as output-first visual workspace, not shader editor + node panel
+```
+
+## Acceptance Checklist
+
+- [x] Full-bleed output owns the center workspace.
+- [x] Nodes float over output, not inside a framed canvas panel.
+- [x] Shader source is selected-node detail, not global layout.
+- [ ] `out1` output is visible as live background or pinned output.
+- [x] Left panel carries presets/snapshots/inspector rhythm.
+- [x] Bottom strip carries transport/time rhythm.
+- [ ] Node color follows data/runtime type.
+- [ ] Ports and connections follow type color.
+- [ ] Compatible drag/drop opens spatial node browser.
+- [ ] Every persistent UI mutation still routes through commandGraph.
+- [ ] Proof dump and desktop screenshot both show the same skin direction.
+- [ ] MIT attribution is preserved if any Tooll3 code/constants are copied.
+
+## Parking Lot
+
+- Exact icon font parity.
+- Dope sheet editing.
+- Multiple graph/output windows.
+- Tooll3-style variations blending.
+- Live thumbnail rendering on nodes.
+- Full Metal output texture embedded into ImGui.
+- Animation commandGraph contract.
+
+These are real Tooll3 skin organs, but they are not first-slice requirements.
