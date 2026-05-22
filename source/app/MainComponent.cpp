@@ -49,7 +49,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
       performancePreferences (makeDefaultPerformancePreferences()),
       shouldQuitAfterStartupDump (quitAfterStartupDump)
 {
-    graphLabel.setText (juce::String (graph.runtimeGraph.nodes[0].id) + " -> " + graph.runtimeGraph.nodes[1].id,
+    graphLabel.setText ("node canvas workspace",
                         juce::dontSendNotification);
     graphLabel.setColour (juce::Label::textColourId, juce::Colours::white);
     graphLabel.setFont (monoFont (15.0f));
@@ -137,7 +137,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         });
     }
 
-    setSize (1180, 720);
+    setSize (1440, 860);
 }
 
 MainComponent::~MainComponent()
@@ -155,10 +155,10 @@ void MainComponent::paint (juce::Graphics& g)
 
 void MainComponent::resized()
 {
-    auto area = getLocalBounds().reduced (14);
+    auto area = getLocalBounds().reduced (12);
     auto header = area.removeFromTop (28);
 
-    graphLabel.setBounds (header.removeFromLeft (220));
+    graphLabel.setBounds (header.removeFromLeft (260));
     dumpProofButton.setBounds (header.removeFromRight (112));
     header.removeFromRight (10);
     statusLabel.setBounds (header);
@@ -175,13 +175,15 @@ void MainComponent::resized()
 
     area.removeFromTop (10);
 
-    preferencesPanel.setBounds (area.removeFromTop (178));
-    area.removeFromTop (12);
-
-    auto left = area.removeFromLeft (juce::jmax (360, area.getWidth() / 2));
-    shaderEditor.setBounds (left.reduced (0, 0));
-
+    const auto sideWidth = juce::jlimit (320, 430, area.getWidth() / 4);
+    auto sidePanel = area.removeFromLeft (sideWidth);
     area.removeFromLeft (12);
+
+    const auto preferencesHeight = juce::jmin (178, juce::jmax (132, sidePanel.getHeight() / 3));
+    preferencesPanel.setBounds (sidePanel.removeFromTop (preferencesHeight));
+    sidePanel.removeFromTop (10);
+    shaderEditor.setBounds (sidePanel);
+
     preview.setBounds (area);
 }
 

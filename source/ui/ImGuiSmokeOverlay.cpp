@@ -207,9 +207,13 @@ CanvasPoint canvasPointFromMouse (const CanvasViewState& view, ImVec2 origin)
     return screenToCanvas (view, { mouse.x - origin.x, mouse.y - origin.y });
 }
 
-CanvasViewState defaultInteractionView()
+CanvasViewState defaultInteractionView (ImVec2 canvasSize)
 {
-    return { 0.82, 28.0, 18.0 };
+    return {
+        1.0,
+        std::max (48.0, static_cast<double> (canvasSize.x) * 0.28 - 80.0),
+        std::max (56.0, static_cast<double> (canvasSize.y) * 0.38 - 80.0)
+    };
 }
 
 BehaviorTraceReport runBundledTraceFixture()
@@ -280,60 +284,108 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
     if (! initialised)
         return;
 
-    ImGui::SetNextWindowPos (ImVec2 (16.0f, 16.0f), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize (ImVec2 (520.0f, 620.0f), ImGuiCond_Always);
+    const auto displaySize = ImGui::GetIO().DisplaySize;
+    const auto windowSize = ImVec2 (std::max (620.0f, displaySize.x - 16.0f),
+                                    std::max (420.0f, displaySize.y - 16.0f));
 
-    ImGui::Begin ("A0 ImGui Smoke + T0-T7 Canvas");
-    ImGui::SetWindowSize (ImVec2 (520.0f, 620.0f), ImGuiCond_Always);
-    ImGui::TextUnformatted ("Immediate-mode UI is active.");
-    ImGui::Text ("Seed node specs: %d", static_cast<int> (nodeSpecs.size()));
-    ImGui::SeparatorText ("T0-T7 Interaction Proof");
-    ImGui::Text ("nodes %d  edges %d  dirty %s  patch %s",
-                 static_cast<int> (interactionSession.graph.editorGraph.nodes.size()),
-                 static_cast<int> (interactionSession.graph.editorGraph.edges.size()),
-                 interactionSession.dirty ? "yes" : "no",
-                 patchPathText (interactionSession).c_str());
-    drawInteractionControls();
-    drawInteractionCanvas (nodeSpecs);
-    drawInspectorPanel (nodeSpecs);
+    ImGui::SetNextWindowPos (ImVec2 (8.0f, 8.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize (windowSize, ImGuiCond_Always);
 
-    ImGui::SliderFloat ("smoke value", &smokeValue, 0.0f, 1.0f);
-    ImGui::Separator();
-    ImGui::TextUnformatted ("C1 Loudness Compound");
-    ImGui::Checkbox ("expanded", &loudnessExpanded);
-    ImGui::Text ("children: %d  outputs: %d",
-                 static_cast<int> (loudnessCompound.children.size()),
-                 static_cast<int> (loudnessCompound.publicOutputs.size()));
+    constexpr auto windowFlags = ImGuiWindowFlags_NoCollapse
+                               | ImGuiWindowFlags_NoMove
+                               | ImGuiWindowFlags_NoResize;
 
-    if (loudnessExpanded)
+    if (ImGui::Begin ("Node Canvas Workspace", nullptr, windowFlags))
     {
-        ImGui::SeparatorText ("child patchers");
+        ImGui::TextUnformatted ("Node Canvas");
+        ImGui::SameLine();
+        ImGui::TextDisabled ("nodes %d  edges %d  dirty %s  patch %s",
+                             static_cast<int> (interactionSession.graph.editorGraph.nodes.size()),
+                             static_cast<int> (interactionSession.graph.editorGraph.edges.size()),
+                             interactionSession.dirty ? "yes" : "no",
+                             patchPathText (interactionSession).c_str());
+        ImGui::Separator();
+        drawInteractionControls();
+        ImGui::Separator();
 
-        for (const auto& child : loudnessCompound.children)
-            ImGui::BulletText ("%s  [%s]", child.id.c_str(), child.nodeType.c_str());
+        const auto contentSize = ImGui::GetContentRegionAvail();
+        const auto sidePanelWidth = std::clamp (contentSize.x * 0.25f, 280.0f, 360.0f);
+        const auto gap = 12.0f;
+        const auto canvasColumnWidth = std::max (360.0f, contentSize.x - sidePanelWidth - gap);
 
-        ImGui::SeparatorText ("public outputs");
+        ImGui::BeginChild ("workspace-canvas-column", ImVec2 (canvasColumnWidth, 0.0f), false);
+        {
+            const auto canvasColumnSize = ImGui::GetContentRegionAvail();
+            const auto canvasHeight = std::max (300.0f, canvasColumnSize.y - 126.0f);
+            drawInteractionCanvas (nodeSpecs, canvasColumnSize.x, canvasHeight);
 
-        for (const auto& output : loudnessCompound.publicOutputs)
-            ImGui::BulletText ("%s -> %s", output.id.c_str(), output.mapsTo.c_str());
+            ImGui::Text ("last: %s", lastInteractionMessage.c_str());
+            ImGui::SameLine();
+            ImGui::TextDisabled ("saved bytes %d", static_cast<int> (savedInteractionState.size()));
+            drawTracePanel();
+
+            ImGui::SeparatorText ("command log");
+            const auto logSize = static_cast<int> (interactionSession.commandLog.size());
+            const auto firstVisible = std::max (0, logSize - 6);
+
+            if (logSize == 0)
+                ImGui::TextUnformatted ("empty");
+
+            for (int index = firstVisible; index < logSize; ++index)
+                ImGui::BulletText ("%s", interactionSession.commandLog[static_cast<size_t> (index)].c_str());
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine (0.0f, gap);
+
+        ImGui::BeginChild ("workspace-side-panel", ImVec2 (sidePanelWidth, 0.0f), false);
+        {
+            drawInspectorPanel (nodeSpecs);
+
+            ImGui::SeparatorText ("Output Preview");
+            const auto previewWidth = ImGui::GetContentRegionAvail().x;
+            const auto previewSize = ImVec2 (previewWidth, std::clamp (previewWidth * 0.56f, 96.0f, 180.0f));
+            const auto previewTopLeft = ImGui::GetCursorScreenPos();
+            ImGui::InvisibleButton ("output-preview-panel", previewSize);
+
+            auto& drawList = *ImGui::GetWindowDrawList();
+            drawList.AddRectFilled (previewTopLeft,
+                                    { previewTopLeft.x + previewSize.x, previewTopLeft.y + previewSize.y },
+                                    IM_COL32 (7, 10, 15, 84),
+                                    4.0f);
+            drawList.AddRect (previewTopLeft,
+                              { previewTopLeft.x + previewSize.x, previewTopLeft.y + previewSize.y },
+                              IM_COL32 (112, 127, 145, 190),
+                              4.0f);
+            drawList.AddText ({ previewTopLeft.x + 10.0f, previewTopLeft.y + 8.0f },
+                              IM_COL32 (235, 240, 248, 230),
+                              "out1");
+
+            ImGui::SeparatorText ("Shader Panel");
+            ImGui::SliderFloat ("smoke value", &smokeValue, 0.0f, 1.0f);
+            ImGui::TextWrapped ("%s", shaderStatus.c_str());
+
+            ImGui::SeparatorText ("Audio Compound");
+            ImGui::Checkbox ("expanded", &loudnessExpanded);
+            ImGui::Text ("children: %d  outputs: %d",
+                         static_cast<int> (loudnessCompound.children.size()),
+                         static_cast<int> (loudnessCompound.publicOutputs.size()));
+
+            if (loudnessExpanded)
+            {
+                ImGui::SeparatorText ("child patchers");
+
+                for (const auto& child : loudnessCompound.children)
+                    ImGui::BulletText ("%s  [%s]", child.id.c_str(), child.nodeType.c_str());
+
+                ImGui::SeparatorText ("public outputs");
+
+                for (const auto& output : loudnessCompound.publicOutputs)
+                    ImGui::BulletText ("%s -> %s", output.id.c_str(), output.mapsTo.c_str());
+            }
+        }
+        ImGui::EndChild();
     }
-
-    ImGui::Separator();
-    ImGui::TextWrapped ("%s", shaderStatus.c_str());
-
-    ImGui::Text ("last: %s", lastInteractionMessage.c_str());
-    ImGui::Text ("saved state bytes: %d", static_cast<int> (savedInteractionState.size()));
-    drawTracePanel();
-
-    ImGui::SeparatorText ("command log");
-    const auto logSize = static_cast<int> (interactionSession.commandLog.size());
-    const auto firstVisible = std::max (0, logSize - 8);
-
-    if (logSize == 0)
-        ImGui::TextUnformatted ("empty");
-
-    for (int index = firstVisible; index < logSize; ++index)
-        ImGui::BulletText ("%s", interactionSession.commandLog[static_cast<size_t> (index)].c_str());
 
     ImGui::End();
 }
@@ -343,7 +395,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Reset"))
     {
         interactionSession = makeGraphSession (makeDefaultShaderOutputGraph());
-        interactionSession.view = defaultInteractionView();
+        interactionViewReady = false;
         draggingNodeId.clear();
         draggingConnectionEndpoint.clear();
         pendingCreateSourceEndpoint.clear();
@@ -354,7 +406,6 @@ void ImGuiSmokeOverlay::drawInteractionControls()
         savedInteractionState.clear();
         hasTraceReport = false;
         panningCanvas = false;
-        interactionViewReady = true;
         lastInteractionMessage = "reset";
     }
 
@@ -456,13 +507,18 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     }
 }
 
-void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs)
+void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,
+                                               float canvasWidth,
+                                               float canvasHeight)
 {
-    constexpr ImVec2 canvasSize { 480.0f, 170.0f };
+    const ImVec2 canvasSize {
+        std::max (320.0f, canvasWidth),
+        std::max (240.0f, canvasHeight)
+    };
 
     if (! interactionViewReady)
     {
-        interactionSession.view = defaultInteractionView();
+        interactionSession.view = defaultInteractionView (canvasSize);
         interactionViewReady = true;
     }
 
@@ -491,12 +547,36 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                       IM_COL32 (112, 127, 145, 180),
                       4.0f);
 
+    const auto gridStep = static_cast<float> (48.0 * interactionSession.view.scale);
+    if (gridStep > 8.0f)
+    {
+        const auto gridColour = IM_COL32 (45, 54, 64, 100);
+        const auto startX = std::fmod (static_cast<float> (interactionSession.view.scrollX), gridStep);
+        const auto startY = std::fmod (static_cast<float> (interactionSession.view.scrollY), gridStep);
+
+        for (auto x = startX; x < canvasSize.x; x += gridStep)
+            drawList.AddLine ({ origin.x + x, origin.y },
+                              { origin.x + x, origin.y + canvasSize.y },
+                              gridColour,
+                              1.0f);
+
+        for (auto y = startY; y < canvasSize.y; y += gridStep)
+            drawList.AddLine ({ origin.x, origin.y + y },
+                              { origin.x + canvasSize.x, origin.y + y },
+                              gridColour,
+                              1.0f);
+    }
+
     if (! interactionSession.currentPatchPath.empty())
     {
         drawList.AddText ({ origin.x + 16.0f, origin.y + 14.0f },
                           IM_COL32 (250, 214, 112, 255),
                           ("inside " + patchPathText (interactionSession)).c_str());
     }
+
+    drawList.PushClipRect (origin,
+                           { origin.x + canvasSize.x, origin.y + canvasSize.y },
+                           true);
 
     if (hovered && ImGui::IsMouseClicked (ImGuiMouseButton_Left))
     {
@@ -670,6 +750,7 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                       IM_COL32 (118, 212, 167, 255));
     }
 
+    drawList.PopClipRect();
     ImGui::Dummy (ImVec2 (0.0f, 6.0f));
     drawCreateNodePopup (nodeSpecs);
 }

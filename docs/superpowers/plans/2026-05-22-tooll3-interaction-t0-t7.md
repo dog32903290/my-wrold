@@ -86,3 +86,4 @@
 - Follow-up proof: visible canvas now has empty-canvas pan, wheel zoom, node drag, output-to-input connection drag, edge selection, and selected-edge disconnect.
 - T3 follow-up: output-to-empty drag now opens a compatible-node popup filtered by `NodeSpec`; selecting a candidate runs `create_node+connect`.
 - T4-T7 follow-up: compound navigation, inspector param/binding commands, interaction state save/reload, and in-app behavior trace replay are visible in the ImGui smoke canvas.
+- Workspace follow-up: the canvas proof has been promoted from a small smoke overlay to the main OpenGL/ImGui workspace, with inspector, `out1` preview, shader status, and audio compound controls downgraded into side panels; the JUCE shader source editor is now a side panel instead of half the app.

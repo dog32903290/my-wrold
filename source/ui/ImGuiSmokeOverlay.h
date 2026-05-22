@@ -26,7 +26,7 @@ public:
     void addMouseWheel (float deltaY);
 
 private:
-    void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs);
+    void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs, float canvasWidth, float canvasHeight);
     void drawInteractionControls();
     void drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs);
     void drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs);
