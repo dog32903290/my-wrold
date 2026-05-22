@@ -43,7 +43,9 @@ juce::File audioProofDumpDirectory()
 MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpAudioProofOnStart,
                               bool quitAfterStartupDump)
-    : graph (makeDefaultShaderOutputGraph()),
+    : preferencesPanel (audioDeviceManager),
+      graph (makeDefaultShaderOutputGraph()),
+      performancePreferences (makeDefaultPerformancePreferences()),
       shouldQuitAfterStartupDump (quitAfterStartupDump)
 {
     graphLabel.setText (juce::String (graph.runtimeGraph.nodes[0].id) + " -> " + graph.runtimeGraph.nodes[1].id,
@@ -65,9 +67,25 @@ MainComponent::MainComponent (bool dumpProofOnStart,
     configureMeterLabel (rmsLabel, "rms 0.0000");
     configureMeterLabel (peakLabel, "peak 0.0000");
     configureMeterLabel (loudnessLabel, "loudness 0.0000");
+    configureMeterLabel (activeLabel, "active no");
+    configureMeterLabel (midiStatusLabel, "midi off");
     addAndMakeVisible (rmsLabel);
     addAndMakeVisible (peakLabel);
     addAndMakeVisible (loudnessLabel);
+    addAndMakeVisible (activeLabel);
+    addAndMakeVisible (midiStatusLabel);
+
+    preferencesPanel.onAnalysisGainChanged = [this] (float gain)
+    {
+        performancePreferences.audio.analysisGain = gain;
+        performancePreferences = sanitizePerformancePreferences (performancePreferences);
+        audioInputAnalyzer.setAnalysisGain (performancePreferences.audio.analysisGain);
+    };
+    preferencesPanel.onMidiPreferencesChanged = [this] (MidiPreferences preferences)
+    {
+        applyMidiPreferences (std::move (preferences));
+    };
+    addAndMakeVisible (preferencesPanel);
 
     dumpProofButton.setButtonText ("Dump Proof");
     dumpProofButton.onClick = [this] { dumpProof(); };
@@ -96,6 +114,8 @@ MainComponent::MainComponent (bool dumpProofOnStart,
     addAndMakeVisible (preview);
 
     startAudioInput();
+    audioInputAnalyzer.setAnalysisGain (preferencesPanel.getAnalysisGain());
+    applyMidiPreferences (preferencesPanel.getMidiPreferences());
     startTimerHz (30);
 
     if (dumpProofOnStart)
@@ -123,6 +143,7 @@ MainComponent::~MainComponent()
 {
     stopTimer();
     audioDeviceManager.removeAudioCallback (&audioInputAnalyzer);
+    midiOutput.reset();
     preview.onStatusMessage = nullptr;
 }
 
@@ -148,8 +169,13 @@ void MainComponent::resized()
     rmsLabel.setBounds (audioRow.removeFromLeft (118));
     peakLabel.setBounds (audioRow.removeFromLeft (118));
     loudnessLabel.setBounds (audioRow.removeFromLeft (160));
+    activeLabel.setBounds (audioRow.removeFromLeft (104));
+    midiStatusLabel.setBounds (audioRow);
 
     area.removeFromTop (10);
+
+    preferencesPanel.setBounds (area.removeFromTop (178));
+    area.removeFromTop (12);
 
     auto left = area.removeFromLeft (juce::jmax (360, area.getWidth() / 2));
     shaderEditor.setBounds (left.reduced (0, 0));
@@ -185,6 +211,15 @@ void MainComponent::dumpAudioProof()
         + "  \"peak\": " + juce::String (snapshot.peak, 6) + ",\n"
         + "  \"loudness\": " + juce::String (snapshot.loudness, 6) + ",\n"
         + "  \"active\": " + juce::String (snapshot.active ? "true" : "false") + ",\n"
+        + "  \"analysisGain\": " + juce::String (performancePreferences.audio.analysisGain, 3) + ",\n"
+        + "  \"midi\": {\n"
+        + "    \"streamEnabled\": " + juce::String (performancePreferences.midi.streamEnabled ? "true" : "false") + ",\n"
+        + "    \"mapModeEnabled\": " + juce::String (performancePreferences.midi.mapModeEnabled ? "true" : "false") + ",\n"
+        + "    \"channel\": " + juce::String (performancePreferences.midi.channel) + ",\n"
+        + "    \"loudnessCc\": " + juce::String (performancePreferences.midi.loudnessCc) + ",\n"
+        + "    \"mapCc\": " + juce::String (performancePreferences.midi.mapCc) + ",\n"
+        + "    \"outputName\": \"" + juce::String (performancePreferences.midi.outputName) + "\"\n"
+        + "  },\n"
         + "  \"sampleCounter\": " + juce::String (static_cast<juce::int64> (snapshot.sampleCounter)) + "\n"
         + "}\n";
 
@@ -247,7 +282,10 @@ void MainComponent::updateAudioMeters()
     rmsLabel.setText ("rms " + juce::String (snapshot.rms, 4), juce::dontSendNotification);
     peakLabel.setText ("peak " + juce::String (snapshot.peak, 4), juce::dontSendNotification);
     loudnessLabel.setText ("loudness " + juce::String (snapshot.loudness, 4), juce::dontSendNotification);
+    activeLabel.setText (juce::String ("active ") + (snapshot.active ? "yes" : "no"), juce::dontSendNotification);
     preview.setLoudness (snapshot.loudness);
+    sendMidiForSnapshot (snapshot);
+    midiStatusLabel.setText (midiStatus, juce::dontSendNotification);
 
     const auto sampleRate = audioInputAnalyzer.getSampleRate();
 
@@ -260,5 +298,54 @@ void MainComponent::updateAudioMeters()
                                       + " samples",
                                   juce::dontSendNotification);
     }
+}
+
+void MainComponent::applyMidiPreferences (MidiPreferences preferences)
+{
+    performancePreferences.midi = std::move (preferences);
+    performancePreferences = sanitizePerformancePreferences (performancePreferences);
+
+    const auto identifier = juce::String (performancePreferences.midi.outputIdentifier);
+
+    if (identifier == openedMidiOutputIdentifier)
+        return;
+
+    midiOutput.reset();
+    openedMidiOutputIdentifier = identifier;
+
+    if (identifier.isEmpty())
+    {
+        midiStatus = "midi off";
+        return;
+    }
+
+    midiOutput = juce::MidiOutput::openDevice (identifier);
+
+    if (midiOutput == nullptr)
+    {
+        midiStatus = "midi open failed";
+        return;
+    }
+
+    midiStatus = "midi " + juce::String (performancePreferences.midi.outputName);
+}
+
+void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
+{
+    const auto frame = makeLoudnessMidiCcFrame (snapshot.loudness, performancePreferences);
+
+    if (! frame.shouldSend)
+        return;
+
+    if (midiOutput == nullptr)
+    {
+        midiStatus = "midi no output";
+        return;
+    }
+
+    midiOutput->sendMessageNow (juce::MidiMessage::controllerEvent (frame.channel, frame.cc, frame.value));
+    midiStatus = "midi ch" + juce::String (frame.channel)
+                 + " cc" + juce::String (frame.cc)
+                 + " " + juce::String (frame.value);
 }
 }

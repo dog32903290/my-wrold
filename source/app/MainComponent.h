@@ -2,7 +2,10 @@
 
 #include "AudioInputAnalyzer.h"
 #include "OpenGLShaderPreview.h"
+#include "PerformancePreferences.h"
+#include "PreferencesPanel.h"
 
+#include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
 namespace myworld
@@ -27,10 +30,13 @@ private:
     void setShaderStatus (juce::String message);
     void startAudioInput();
     void updateAudioMeters();
+    void applyMidiPreferences (MidiPreferences preferences);
+    void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
 
     OpenGLShaderPreview preview;
-    AudioInputAnalyzer audioInputAnalyzer;
     juce::AudioDeviceManager audioDeviceManager;
+    PreferencesPanel preferencesPanel;
+    AudioInputAnalyzer audioInputAnalyzer;
     juce::TextEditor shaderEditor;
     juce::TextButton dumpProofButton;
     juce::Label graphLabel;
@@ -39,7 +45,13 @@ private:
     juce::Label rmsLabel;
     juce::Label peakLabel;
     juce::Label loudnessLabel;
+    juce::Label activeLabel;
+    juce::Label midiStatusLabel;
     GraphContract graph;
+    PerformancePreferences performancePreferences;
+    std::unique_ptr<juce::MidiOutput> midiOutput;
+    juce::String openedMidiOutputIdentifier;
+    juce::String midiStatus = "midi off";
     bool shouldQuitAfterStartupDump = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

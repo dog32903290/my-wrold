@@ -116,6 +116,26 @@ target_link_libraries(my_world_audio_analyzer_tests
 
 add_test(NAME audio_analyzer_state COMMAND my_world_audio_analyzer_tests)
 
+add_library(my_world_preferences
+    source/preferences/PerformancePreferences.cpp
+)
+
+target_include_directories(my_world_preferences
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/preferences
+)
+
+add_executable(my_world_performance_preferences_tests
+    tests/PerformancePreferencesTests.cpp
+)
+
+target_link_libraries(my_world_performance_preferences_tests
+    PRIVATE
+        my_world_preferences
+)
+
+add_test(NAME performance_preferences COMMAND my_world_performance_preferences_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
 )
@@ -193,6 +213,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             source/app/Main.cpp
             source/app/MainComponent.cpp
+            source/app/PreferencesPanel.cpp
             source/render/OpenGLShaderPreview.cpp
     )
 
@@ -200,6 +221,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             source/app
             source/core
+            source/preferences
             source/ui
             source/render
     )
@@ -214,8 +236,10 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_core
             my_world_audio
+            my_world_preferences
             my_world_imgui
             juce::juce_audio_devices
+            juce::juce_audio_utils
             juce::juce_gui_extra
             juce::juce_opengl
             juce::juce_recommended_config_flags
