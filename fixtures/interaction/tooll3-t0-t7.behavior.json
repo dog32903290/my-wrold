@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "source": "Tooll3 interaction contract, not copied code",
+  "initialGraph": "fixtures/storage/minimal-work/patches/main.patch.json",
+  "traces": [
+    {
+      "name": "move shader node",
+      "expectedCommands": ["move_node"]
+    },
+    {
+      "name": "connect shader to output",
+      "expectedCommands": ["disconnect", "connect"]
+    },
+    {
+      "name": "delete selected edge",
+      "expectedCommands": ["disconnect", "undo:disconnect"]
+    },
+    {
+      "name": "create output node from dragged port",
+      "expectedCommands": ["create_node+connect"]
+    },
+    {
+      "name": "compound enter exit collapse",
+      "expectedCommands": ["create_node", "enter_patch", "exit_patch", "collapse_compound"]
+    },
+    {
+      "name": "inspector param and binding",
+      "expectedCommands": ["set_param", "set_port_binding"]
+    },
+    {
+      "name": "undo redo save",
+      "expectedCommands": ["move_node", "undo:move_node", "redo:move_node", "save_work:saved-and-committed"]
+    }
+  ]
+}

@@ -5,22 +5,49 @@
 
 namespace myworld
 {
+struct GraphPoint
+{
+    double x = 0.0;
+    double y = 0.0;
+};
+
 struct GraphNode
 {
+    struct ParamValue
+    {
+        std::string id;
+        std::string value;
+    };
+
+    struct PortBindingValue
+    {
+        std::string portId;
+        std::string bindingMode;
+        std::string value;
+    };
+
     std::string id;
     std::string type;
     std::vector<std::string> systemUniforms;
+    GraphPoint position;
+    bool collapsed = false;
+    std::vector<ParamValue> params;
+    std::vector<PortBindingValue> portBindings;
 };
 
 struct GraphEdge
 {
     std::string from;
     std::string to;
+    std::string id;
+    std::string dataType;
+    std::string streamKind;
 };
 
 struct EditorGraph
 {
     std::vector<GraphNode> nodes;
+    std::vector<GraphEdge> edges;
 };
 
 struct RuntimeGraph

@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui smoke, A1 audio/MIDI proof, and C1 loudness compound contract implemented. RenderBackend extraction, production node canvas, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui smoke, A1 audio/MIDI proof, C1 loudness compound contract, Tooll3 T0-T7 interaction core, and visible T0-T7 ImGui canvas proof implemented. RenderBackend extraction, production node canvas styling, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -16,8 +16,9 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Build a standalone app first, not a plugin.
 - Use display name `我的世界`; keep internal target names ASCII, starting with `my-world`.
 - Use OpenGL/GLSL only as the first proof backend to preserve GLSL vibe-coding speed.
-- Do not treat OpenGL as the production GPU strategy on Apple Silicon. Extract the current preview behind `RenderBackend` before building high-resolution node previews, compute-heavy shader graphs, or performance claims.
-- Park the exact production backend choice until after the boundary is real; candidates are Metal, WGPU, or bgfx. DirectX/HLSL remains out of scope for this app body.
+- Treat `我的世界` as a Mac-first native instrument. The production GPU direction is Metal, not MoltenVK/Vulkan.
+- Extract the current preview behind `RenderBackend` before building high-resolution node previews, compute-heavy shader graphs, Metal backend work, or performance claims.
+- Park WGPU/bgfx/MoltenVK unless cross-platform pressure becomes a real product requirement. DirectX/HLSL remains out of scope for this app body.
 - Old Web canvas works are migration fixtures, not the native graph law.
 - Tooll3 / TiXL is the primary reference for ImGui canvas style, Symbol/Instance separation, JSON graph shape, parameter override behavior, and panel rhythm. It is not a codebase to fork into this repo.
 - CodeGraph is a local development index for C++ symbol, caller/callee, and impact lookup. `.codegraph/` is ignored and must not become source or graph contract data.
@@ -116,6 +117,14 @@ Contract:
 - Proven: Tooll3-inspired patch gestures lower to explicit commandGraph command names through `PatchInteraction`.
 - Proven: Dear ImGui is mounted in the OpenGL render loop before production node editor work.
 - Proven: first UI adapter is immediate-mode; no JUCE `Component` NodeView exists.
+- Proven: Tooll3-style T0-T7 interaction core exists below the drawing layer: canvas transform, node move, connect/disconnect, create-and-connect, compound enter/exit/collapse, param/binding commands, dirty/save state, and behavior trace replay.
+- Proven: the app now shows a visible T0-T7 ImGui canvas proof over the shader preview, backed by the same `InteractionContract` command path rather than UI-only graph state.
+- Proven: first visible T0-T2 canvas gestures exist: empty-canvas pan, wheel zoom, node drag to `move_node`, output-port drag to input-port `connect`, edge click selection, and selected-edge disconnect.
+- Proven: first visible T3 gesture exists: dragging from an output port to empty canvas opens a compatible-node popup filtered by `NodeSpec` input type, and candidate selection runs `create_node+connect`.
+- Proven: visible T4-T7 controls exist: compound add/enter/exit/collapse, selected-node inspector param/binding commands, interaction state save/reload, and in-app Tooll3 behavior trace replay.
+- Proven: Codex Hands V0 exists as a low-token internal canvas operation layer in `source/core/CanvasHands.*`; semantic targets such as node, port, canvas point, and viewport center resolve through graph data, `canvasToScreen`, and `hitTestGraph` before pointer actions run.
+- Proven: Codex Hands V0 can test semantic click selection, node drag, port-to-port connection drag, right click, middle click, and wheel evidence without screenshot guessing or global macOS mouse control.
+- Planned: future Codex Hands layers may inject into ImGui IO or OS-level mouse control, but only after the internal semantic trace layer stays commandGraph-backed and replayable.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.
 - Forbidden: copying Tooll3's exact appearance, icons, branding, C# ownership model, DirectX/HLSL backend, or `SymbolPackage` compilation system.
@@ -195,6 +204,7 @@ Contract:
 - Proven: child patchers are also standalone module-library node specs, so `audio.mono_mix`, `analyzer.rms`, `analyzer.analysis_gain`, `analyzer.pre_gate`, `signal.smoother`, and `analyzer.loudness_out` can be called directly outside the mother patch.
 - Proven: `makeCompoundPatchJson()` creates proof evidence, and both V1/A1 proof dumps write `loudness_compound.json`.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
+- Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
 - Not yet proven: compiling the compound child graph into independent `RuntimeOp` execution. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
 - Not yet proven: publishing a compound patch into a reloadable module package.
@@ -541,8 +551,9 @@ Risk stance:
 
 ```text
 OpenGL    proof backend only
-Metal     likely Apple production backend candidate
-WGPU/bgfx portable backend candidates
+Metal     Mac-first production backend direction
+WGPU/bgfx parked portable backend candidates
+MoltenVK  parked Vulkan portability path, not first backend
 ```
 
 Minimum backend methods:
@@ -556,7 +567,7 @@ resize
 destroy
 ```
 
-Metal is parked, not rejected. `RenderBackend` exists as an interface, but `OpenGLShaderPreview` still owns compile/render/readback directly. Extracting the OpenGL implementation behind `RenderBackend` remains pending and blocks production node previews, high-resolution render claims, and compute-heavy visual graph work.
+Metal is the production direction, but it should not be implemented before the backend boundary bears weight. `RenderBackend` exists as an interface, but `OpenGLShaderPreview` still owns compile/render/readback directly. Extracting the OpenGL implementation behind `RenderBackend` remains pending and blocks Metal backend work, production node previews, high-resolution render claims, and compute-heavy visual graph work.
 
 ## Audio Analyzer Migration
 
@@ -617,7 +628,7 @@ The first skeleton does not need full AI UI, but it must not design graph mutati
 
 - No full old Web project importer.
 - No black velvet material demo as the first proof.
-- No Metal backend implementation yet, but no production performance promise may depend on OpenGL until `RenderBackend` is actually extracted.
+- No Metal backend implementation yet, but Metal is the production direction. No performance promise may depend on OpenGL until `RenderBackend` is actually extracted.
 - No plugin build target yet.
 - No complete 13-patch analyzer UI yet.
 - No full AI worker UI yet.
@@ -628,7 +639,7 @@ The first skeleton does not need full AI UI, but it must not design graph mutati
 
 - Exact JUCE version / dependency acquisition method for portable builds. Current local proof references `/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer-plugin/JUCE`.
 - Whether to vendor JUCE, use CPM/FetchContent, or keep a local checkout path for early work.
-- Whether production render backend becomes Metal, WGPU, or bgfx after the OpenGL proof backend is extracted behind `RenderBackend`.
+- Exact first Metal backend vertical slice after the OpenGL proof backend is extracted behind `RenderBackend`.
 - Exact first graph serialization format once `NodeSpec` is drafted.
 - Exact Dear ImGui node editor library choice (`imnodes`, `imgui-node-editor`, or custom layer) after the command graph contract is less soft.
 

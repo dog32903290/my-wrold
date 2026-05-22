@@ -39,6 +39,9 @@ bool writeTextFile (const juce::File& file, const std::string& text)
 
 bool writePngFile (const juce::File& file, const juce::Image& image)
 {
+    if (file.existsAsFile() && ! file.deleteFile())
+        return false;
+
     auto output = file.createOutputStream();
 
     if (output == nullptr)
@@ -381,8 +384,7 @@ void OpenGLShaderPreview::reportStatus (juce::String message)
 
 void OpenGLShaderPreview::updateImGuiMousePosition (const juce::MouseEvent& event)
 {
-    const auto scale = static_cast<float> (openGLContext.getRenderingScale());
-    imguiOverlay.setMousePosition (event.position.x * scale, event.position.y * scale);
+    imguiOverlay.setMousePosition (event.position.x, event.position.y);
 }
 
 juce::String OpenGLShaderPreview::vertexShaderSource()

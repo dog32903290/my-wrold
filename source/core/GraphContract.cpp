@@ -13,7 +13,9 @@ GraphNode makeShaderNode()
     return {
         "shader1",
         "shader.fragment",
-        { "u_time", "u_resolution", "u_frame", "u_loudness" }
+        { "u_time", "u_resolution", "u_frame", "u_loudness" },
+        { 80.0, 80.0 },
+        false
     };
 }
 
@@ -22,7 +24,20 @@ GraphNode makeOutputNode()
     return {
         "out1",
         "output.preview",
-        {}
+        {},
+        { 320.0, 80.0 },
+        false
+    };
+}
+
+GraphEdge makeDefaultEdge()
+{
+    return {
+        "shader1.output",
+        "out1.input",
+        "edge.shader1.output.out1.input",
+        "texture.rgba",
+        "continuous"
     };
 }
 
@@ -98,13 +113,14 @@ GraphContract makeDefaultShaderOutputGraph()
 {
     auto shader = makeShaderNode();
     auto output = makeOutputNode();
+    auto edge = makeDefaultEdge();
 
     return {
         1,
-        { { shader, output } },
+        { { shader, output }, { edge } },
         {
             { shader, output },
-            { { "shader1.output", "out1.input" } }
+            { edge }
         }
     };
 }

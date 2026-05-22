@@ -29,7 +29,7 @@ loudness compound patcher -> expanded child patchers -> collapsed public ports
 - App framework：JUCE + CMake。
 - Display name：`我的世界`。
 - Internal target / package id：ASCII，暫定 `my-world`。
-- Shader backend：第一版 OpenGL/GLSL；Metal 停車，但 `RenderBackend` 邊界一開始就要留。
+- Shader backend：第一版 OpenGL/GLSL 只做 proof；production GPU 方向鎖 Mac-first Metal。`RenderBackend` 邊界一開始就要留，MoltenVK/Vulkan 先不作為第一後端。
 - First app type：standalone native app，不先做 plugin。
 - Repo policy：小步 commit；每根 proof 都要有可回讀證據。
 

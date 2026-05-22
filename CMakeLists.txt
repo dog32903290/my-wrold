@@ -116,6 +116,128 @@ target_link_libraries(my_world_patch_interaction_tests
 
 add_test(NAME patch_interaction COMMAND my_world_patch_interaction_tests)
 
+add_library(my_world_interaction
+    source/core/InteractionContract.cpp
+)
+
+target_include_directories(my_world_interaction
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_interaction
+    PUBLIC
+        my_world_core
+        my_world_graph_language
+        my_world_node_specs
+)
+
+add_executable(my_world_canvas_view_state_tests
+    tests/CanvasViewStateTests.cpp
+)
+
+target_link_libraries(my_world_canvas_view_state_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME canvas_view_state COMMAND my_world_canvas_view_state_tests)
+
+add_executable(my_world_graph_command_tests
+    tests/GraphCommandTests.cpp
+)
+
+target_link_libraries(my_world_graph_command_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME graph_commands COMMAND my_world_graph_command_tests)
+
+add_executable(my_world_graph_invariant_tests
+    tests/GraphInvariantTests.cpp
+)
+
+target_link_libraries(my_world_graph_invariant_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME graph_invariants COMMAND my_world_graph_invariant_tests)
+
+add_executable(my_world_node_hit_test_tests
+    tests/NodeHitTestTests.cpp
+)
+
+target_link_libraries(my_world_node_hit_test_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME node_hit_tests COMMAND my_world_node_hit_test_tests)
+
+add_executable(my_world_t3_t5_command_tests
+    tests/T3T5CommandTests.cpp
+)
+
+target_link_libraries(my_world_t3_t5_command_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME t3_t5_commands COMMAND my_world_t3_t5_command_tests)
+
+add_executable(my_world_interaction_storage_roundtrip_tests
+    tests/InteractionStorageRoundtripTests.cpp
+)
+
+target_link_libraries(my_world_interaction_storage_roundtrip_tests
+    PRIVATE
+        my_world_interaction
+        my_world_storage
+)
+
+add_test(NAME interaction_storage_roundtrip COMMAND my_world_interaction_storage_roundtrip_tests)
+
+add_executable(my_world_interaction_trace_tests
+    tests/InteractionTraceTests.cpp
+)
+
+target_link_libraries(my_world_interaction_trace_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME interaction_traces COMMAND my_world_interaction_trace_tests)
+set_tests_properties(interaction_traces PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_library(my_world_canvas_hands
+    source/core/CanvasHands.cpp
+)
+
+target_include_directories(my_world_canvas_hands
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_canvas_hands
+    PUBLIC
+        my_world_interaction
+)
+
+add_executable(my_world_canvas_hands_tests
+    tests/CanvasHandsTests.cpp
+)
+
+target_link_libraries(my_world_canvas_hands_tests
+    PRIVATE
+        my_world_canvas_hands
+)
+
+add_test(NAME canvas_hands COMMAND my_world_canvas_hands_tests)
+
 add_library(my_world_audio
     source/audio/AudioAnalyzerState.cpp
 )
@@ -217,6 +339,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     target_link_libraries(my_world_imgui
         PUBLIC
+            my_world_interaction
             my_world_node_specs
             my_world_compound
             juce::juce_opengl
@@ -255,7 +378,6 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     target_link_libraries(my-world
         PRIVATE
-            my_world_core
             my_world_audio
             my_world_preferences
             my_world_imgui
