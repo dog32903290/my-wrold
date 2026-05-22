@@ -30,6 +30,54 @@ struct Tooll3SkinPolicy
     std::string gridWhenOutputActive = "muted";
 };
 
+struct Tooll3SkinColor
+{
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    int a = 255;
+};
+
+struct Tooll3NodeSkin
+{
+    Tooll3SkinColor fill;
+    Tooll3SkinColor label;
+    Tooll3SkinColor secondaryLabel;
+    Tooll3SkinColor border;
+    Tooll3SkinColor inputStrip;
+    Tooll3SkinColor outputStrip;
+    std::string role;
+    double cornerRadius = 0.0;
+    double borderWidth = 1.0;
+    bool layoutStableOnHover = true;
+    bool layoutStableOnSelection = true;
+};
+
+struct Tooll3PortSkin
+{
+    Tooll3SkinColor strip;
+    Tooll3SkinColor label;
+    double stripWidth = 5.0;
+    bool compatibleHighlight = false;
+    bool muted = false;
+};
+
+struct Tooll3ConnectionSkin
+{
+    Tooll3SkinColor color;
+    double thickness = 3.0;
+    double selectedThickness = 5.0;
+    double mutedOpacity = 0.32;
+    bool compatible = true;
+};
+
 Tooll3SkinPolicy makeTooll3SkinPolicy();
 Tooll3SkinLayout makeTooll3SkinLayout (double width, double height);
+Tooll3SkinColor makeTooll3TypeColor (const std::string& dataType, const std::string& nodeType = {});
+Tooll3NodeSkin makeTooll3NodeSkin (const std::string& nodeType,
+                                   const std::string& primaryDataType,
+                                   bool selected,
+                                   bool hovered);
+Tooll3PortSkin makeTooll3PortSkin (const std::string& dataType, bool compatible, bool active);
+Tooll3ConnectionSkin makeTooll3ConnectionSkin (const std::string& dataType, bool selected, bool compatible);
 }

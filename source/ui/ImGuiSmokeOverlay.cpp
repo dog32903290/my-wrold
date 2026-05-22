@@ -45,6 +45,11 @@ ImU32 rgba (int r, int g, int b, int a)
     return IM_COL32 (r, g, b, a);
 }
 
+ImU32 rgba (Tooll3SkinColor colour)
+{
+    return IM_COL32 (colour.r, colour.g, colour.b, colour.a);
+}
+
 std::string patchPathText (const GraphSession& session)
 {
     if (session.currentPatchPath.empty())
@@ -222,10 +227,26 @@ std::string demoValueForParam (const ParamSpec& param)
     return "demo";
 }
 
-void drawPort (ImDrawList& drawList, ImVec2 center, ImU32 colour)
+std::string primaryDataTypeForSpec (const NodeSpec* spec)
 {
-    drawList.AddCircleFilled (center, 5.0f, colour, 16);
-    drawList.AddCircle (center, 5.0f, IM_COL32 (230, 235, 245, 220), 16, 1.0f);
+    if (spec == nullptr)
+        return {};
+
+    if (! spec->outputs.empty())
+        return spec->outputs.front().dataType;
+
+    if (! spec->inputs.empty())
+        return spec->inputs.front().dataType;
+
+    return {};
+}
+
+void drawPortStrip (ImDrawList& drawList, ImVec2 min, ImVec2 max, const Tooll3PortSkin& skin)
+{
+    drawList.AddRectFilled (min, max, rgba (skin.strip), 0.0f);
+
+    if (skin.compatibleHighlight)
+        drawList.AddRect (min, max, IM_COL32 (245, 250, 255, 235), 0.0f, 0, 1.0f);
 }
 
 CanvasPoint canvasPointFromMouse (const CanvasViewState& view, ImVec2 origin)
@@ -795,12 +816,13 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         const auto selected = std::find (interactionSession.selectedEdgeIds.begin(),
                                          interactionSession.selectedEdgeIds.end(),
                                          edge.id) != interactionSession.selectedEdgeIds.end();
+        const auto skin = makeTooll3ConnectionSkin (edge.dataType, selected, true);
         drawList.AddBezierCubic (p1,
                                  c1,
                                  c2,
                                  p2,
-                                 selected ? IM_COL32 (250, 214, 112, 255) : IM_COL32 (111, 184, 217, 235),
-                                 selected ? 5.0f : 3.0f,
+                                 rgba (skin.color),
+                                 static_cast<float> (skin.thickness),
                                  24);
     }
 
@@ -812,54 +834,100 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         {
             const auto p1 = toImVec (from.point, interactionSession.view, origin);
             const auto p2 = toImVec (draggingConnectionPoint, interactionSession.view, origin);
+            const auto sourceDataType = outputDataTypeForEndpoint (interactionSession.graph,
+                                                                   nodeSpecs,
+                                                                   draggingConnectionEndpoint);
+            const auto skin = makeTooll3ConnectionSkin (sourceDataType, false, true);
             drawList.AddBezierCubic (p1,
                                      { p1.x + 58.0f, p1.y },
                                      { p2.x - 58.0f, p2.y },
                                      p2,
-                                     IM_COL32 (250, 214, 112, 220),
-                                     3.0f,
+                                     rgba (skin.color),
+                                     static_cast<float> (skin.thickness),
                                      24);
         }
     }
+
+    const auto mousePosition = ImGui::GetMousePos();
+    const auto hoverHit = hovered ? hitTestGraph (interactionSession.graph,
+                                                  nodeSpecs,
+                                                  interactionSession.view,
+                                                  { mousePosition.x - origin.x, mousePosition.y - origin.y })
+                                  : HitTestResult {};
+    const auto sourceDataType = draggingConnectionEndpoint.empty()
+                                    ? std::string {}
+                                    : outputDataTypeForEndpoint (interactionSession.graph,
+                                                                 nodeSpecs,
+                                                                 draggingConnectionEndpoint);
 
     for (const auto& node : interactionSession.graph.editorGraph.nodes)
     {
         const auto position = displayedPosition (node, draggingNodeId, dragCanvasDelta);
         const auto topLeft = toImVec (position, interactionSession.view, origin);
         const auto bottomRight = ImVec2 (topLeft.x + nodeWidth, topLeft.y + nodeHeight);
+        const auto* spec = findNodeSpec (nodeSpecs, node.type);
+        const auto primaryDataType = primaryDataTypeForSpec (spec);
         const auto selected = std::find (interactionSession.selectedNodeIds.begin(),
                                          interactionSession.selectedNodeIds.end(),
                                          node.id) != interactionSession.selectedNodeIds.end();
-        const auto fill = node.type.rfind ("shader.", 0) == 0
-                              ? IM_COL32 (104, 64, 138, 188)
-                              : (node.type.rfind ("output.", 0) == 0
-                                     ? IM_COL32 (32, 136, 145, 188)
-                                     : (node.collapsed ? IM_COL32 (42, 57, 66, 188) : IM_COL32 (95, 62, 82, 188)));
-        const auto border = selected || node.id == draggingNodeId ? IM_COL32 (255, 255, 255, 245)
-                                                                  : IM_COL32 (0, 0, 0, 200);
+        const auto activeNode = selected || node.id == draggingNodeId;
+        const auto hoveredNode = hoverHit.kind == HitTestKind::nodeBody && hoverHit.nodeId == node.id;
+        const auto skin = makeTooll3NodeSkin (node.type, primaryDataType, activeNode, hoveredNode);
 
-        drawList.AddRectFilled (topLeft, bottomRight, fill, 0.0f);
-        drawList.AddRect (topLeft, bottomRight, border, 0.0f, 0, selected ? 2.0f : 1.0f);
+        drawList.AddRectFilled (topLeft, bottomRight, rgba (skin.fill), static_cast<float> (skin.cornerRadius));
+        drawList.AddRect (topLeft,
+                          bottomRight,
+                          rgba (skin.border),
+                          static_cast<float> (skin.cornerRadius),
+                          0,
+                          static_cast<float> (skin.borderWidth));
         drawList.AddText ({ topLeft.x + 12.0f, topLeft.y + 10.0f },
-                          IM_COL32 (235, 240, 248, 255),
+                          rgba (skin.label),
                           node.id.c_str());
         drawList.AddText ({ topLeft.x + 12.0f, topLeft.y + 32.0f },
-                          IM_COL32 (166, 181, 198, 255),
+                          rgba (skin.secondaryLabel),
                           node.type.c_str());
 
-        const auto* spec = findNodeSpec (nodeSpecs, node.type);
         if (spec == nullptr)
             continue;
 
         for (size_t index = 0; index < spec->inputs.size(); ++index)
-            drawPort (drawList,
-                      { topLeft.x, topLeft.y + 30.0f + static_cast<float> (index) * 18.0f },
-                      IM_COL32 (103, 154, 209, 255));
+        {
+            const auto centerY = topLeft.y + 30.0f + static_cast<float> (index) * 18.0f;
+            const auto compatible = sourceDataType.empty() || spec->inputs[index].dataType == sourceDataType;
+            const auto portSkin = makeTooll3PortSkin (spec->inputs[index].dataType,
+                                                      compatible,
+                                                      ! draggingConnectionEndpoint.empty());
+            drawPortStrip (drawList,
+                           { topLeft.x, centerY - 7.0f },
+                           { topLeft.x + static_cast<float> (portSkin.stripWidth), centerY + 7.0f },
+                           portSkin);
+
+            if (interactionSession.view.scale >= 0.80)
+                drawList.AddText ({ topLeft.x + 10.0f, centerY - 7.0f },
+                                  rgba (portSkin.label),
+                                  spec->inputs[index].id.c_str());
+        }
 
         for (size_t index = 0; index < spec->outputs.size(); ++index)
-            drawPort (drawList,
-                      { bottomRight.x, topLeft.y + 30.0f + static_cast<float> (index) * 18.0f },
-                      IM_COL32 (118, 212, 167, 255));
+        {
+            const auto centerY = topLeft.y + 30.0f + static_cast<float> (index) * 18.0f;
+            const auto endpoint = node.id + "." + spec->outputs[index].id;
+            const auto activePort = endpoint == draggingConnectionEndpoint;
+            const auto portSkin = makeTooll3PortSkin (spec->outputs[index].dataType, true, activePort);
+            drawPortStrip (drawList,
+                           { bottomRight.x - static_cast<float> (portSkin.stripWidth), centerY - 7.0f },
+                           { bottomRight.x, centerY + 7.0f },
+                           portSkin);
+
+            if (interactionSession.view.scale >= 0.80)
+            {
+                const auto labelSize = ImGui::CalcTextSize (spec->outputs[index].id.c_str());
+                drawList.AddText ({ bottomRight.x - labelSize.x - 10.0f, centerY - 7.0f },
+                                  rgba (portSkin.label),
+                                  spec->outputs[index].id.c_str());
+            }
+        }
     }
 
     drawList.PopClipRect();

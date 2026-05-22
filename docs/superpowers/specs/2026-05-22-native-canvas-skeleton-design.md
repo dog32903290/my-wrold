@@ -126,6 +126,7 @@ Contract:
 - Proven: Codex Hands V0 can test semantic click selection, node drag, port-to-port connection drag, right click, middle click, and wheel evidence without screenshot guessing or global macOS mouse control.
 - Proven: first Tooll3-like workspace layout promotes the node canvas to the OpenGL/ImGui main surface; the prior shader editor lives in the JUCE side panel, while `out1` preview, shader status, and compound controls live in workspace side panels.
 - Proven: Tooll3 skin parity P0-P3 first pass exists: `Tooll3SkinContract` makes output-as-background, hidden global shader source, non-framed canvas, left rail, and bottom transport testable; the app proof frame now draws nodes floating over the shader output background.
+- Proven: Tooll3 skin parity P4 first pass exists: node fills, labels, selection outlines, input/output side strips, and connection colors now come from `Tooll3SkinContract` typed visual grammar instead of ad hoc ImGui colors.
 - Planned: future Codex Hands layers may inject into ImGui IO or OS-level mouse control, but only after the internal semantic trace layer stays commandGraph-backed and replayable.
 - Forbidden: implementing a temporary JUCE `Component` node editor or `NodeView` that would later be replaced wholesale by ImGui.
 - Forbidden: writing long explanatory sentences directly on node surfaces.

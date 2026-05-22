@@ -44,6 +44,67 @@ void edgePanelsAndTransportExist()
     require (layout.bottomStrip.height >= 28.0, "bottom transport strip should exist");
     require (layout.outputSurface.height > layout.bottomStrip.height * 10.0, "bottom strip should not dominate output");
 }
+
+bool sameColour (myworld::Tooll3SkinColor a, myworld::Tooll3SkinColor b)
+{
+    return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+}
+
+void nodeColourFollowsRoleAndType()
+{
+    const auto shader = myworld::makeTooll3NodeSkin ("shader.fragment", "texture.rgba", false, false);
+    const auto output = myworld::makeTooll3NodeSkin ("output.preview", "texture.rgba", false, false);
+    const auto audio = myworld::makeTooll3NodeSkin ("audio.input", "audio.channels", false, false);
+    const auto signal = myworld::makeTooll3NodeSkin ("analyzer.rms", "signal.float", false, false);
+
+    require (shader.role == "shader", "shader node role");
+    require (output.role == "output", "output node role");
+    require (audio.role == "audio", "audio node role");
+    require (signal.role == "signal", "signal node role");
+    require (! sameColour (shader.fill, output.fill), "shader and output should scan as different roles");
+    require (! sameColour (audio.fill, signal.fill), "audio stream and signal value should scan differently");
+    require (shader.inputStrip.a > 0 && shader.outputStrip.a > 0, "node skins include port strip colours");
+}
+
+void nodeStateDoesNotChangeGeometry()
+{
+    const auto base = myworld::makeTooll3NodeSkin ("shader.fragment", "texture.rgba", false, false);
+    const auto selected = myworld::makeTooll3NodeSkin ("shader.fragment", "texture.rgba", true, false);
+    const auto hovered = myworld::makeTooll3NodeSkin ("shader.fragment", "texture.rgba", false, true);
+
+    require (base.cornerRadius == 0.0, "Tooll3 node skin is square");
+    require (selected.cornerRadius == base.cornerRadius, "selected node keeps same radius");
+    require (hovered.cornerRadius == base.cornerRadius, "hovered node keeps same radius");
+    require (selected.layoutStableOnSelection, "selected state must not resize nodes");
+    require (hovered.layoutStableOnHover, "hover state must not resize nodes");
+    require (selected.borderWidth > base.borderWidth, "selected state is an outline change");
+}
+
+void portStripsUseDataTypeColour()
+{
+    const auto texture = myworld::makeTooll3PortSkin ("texture.rgba", true, false);
+    const auto command = myworld::makeTooll3PortSkin ("command.graph", true, true);
+    const auto muted = myworld::makeTooll3PortSkin ("audio.mono", false, false);
+
+    require (texture.stripWidth >= 4.0, "ports are visible side strips");
+    require (! sameColour (texture.strip, command.strip), "port strip colour follows data type");
+    require (command.compatibleHighlight, "active compatible port is highlighted");
+    require (muted.muted, "incompatible port is muted");
+    require (muted.strip.a < texture.strip.a, "muted port has lower opacity");
+}
+
+void connectionColourFollowsTypeAndCompatibility()
+{
+    const auto texture = myworld::makeTooll3ConnectionSkin ("texture.rgba", false, true);
+    const auto selected = myworld::makeTooll3ConnectionSkin ("texture.rgba", true, true);
+    const auto audio = myworld::makeTooll3ConnectionSkin ("audio.mono", false, true);
+    const auto incompatible = myworld::makeTooll3ConnectionSkin ("audio.mono", false, false);
+
+    require (! sameColour (texture.color, audio.color), "connection colour follows data type");
+    require (selected.thickness > texture.thickness, "selected connection thickens");
+    require (! incompatible.compatible, "incompatible connection is marked");
+    require (incompatible.color.a < audio.color.a, "incompatible connection is visually muted");
+}
 }
 
 int main()
@@ -52,5 +113,9 @@ int main()
     shaderSourceIsSelectedNodeDetail();
     canvasIsNotAFramedSubPanel();
     edgePanelsAndTransportExist();
+    nodeColourFollowsRoleAndType();
+    nodeStateDoesNotChangeGeometry();
+    portStripsUseDataTypeColour();
+    connectionColourFollowsTypeAndCompatibility();
     return 0;
 }

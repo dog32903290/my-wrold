@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P3 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, and left/bottom Tooll3-style rails exist. P4-P7 node/port/inspector/timeline parity is still pending.
+Status: P0-P4 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, and node/port/connection skin grammar is now contract-backed. P5-P7 deeper inspector skin, context-menu/node-browser polish, and timeline parity are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -218,6 +218,12 @@ Acceptance:
 - Selected state is an outline/contrast change, not layout change.
 - Hover and active states change color/opacity, not size.
 
+Current proof:
+
+- `Tooll3SkinContract` now defines typed colors, square node skins, stable hover/selection geometry, and role labels for shader/output/audio/signal/compound/value nodes.
+- ImGui node drawing uses that contract for node fills, labels, outlines, and left/right side strips.
+- `tooll3_skin_contract` tests verify type-scannable colors and geometry-stable state changes.
+
 ### S5 Ports And Connections
 
 Tooll3 witness: `GraphNode.cs`, `ConnectionMaker.cs`.
@@ -236,6 +242,12 @@ Acceptance:
 - No successful connection exists only as pixels.
 - Cancelled drag leaves graph state unchanged.
 - Compatible-node popup is spatially attached to the release point.
+
+Current proof:
+
+- Connections now use `Tooll3ConnectionSkin`, so edge color follows `GraphEdge.dataType` and selected edges thicken without changing graph state.
+- Ports now render as left/right colored strips from `PortSpec.dataType` while hit-tests and mutations continue through `InteractionContract`.
+- Dragging from an output still uses commandGraph-backed connect/create behavior; full compatible-target dimming polish remains parked for P5.
 
 ### S6 Inspector And Parameter Skin
 
