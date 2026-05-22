@@ -6,10 +6,12 @@
 
 #include <imgui.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cfloat>
 #include <sstream>
 
 namespace myworld
@@ -48,6 +50,16 @@ ImU32 rgba (int r, int g, int b, int a)
 ImU32 rgba (Tooll3SkinColor colour)
 {
     return IM_COL32 (colour.r, colour.g, colour.b, colour.a);
+}
+
+ImVec4 vec4 (Tooll3SkinColor colour)
+{
+    return {
+        static_cast<float> (colour.r) / 255.0f,
+        static_cast<float> (colour.g) / 255.0f,
+        static_cast<float> (colour.b) / 255.0f,
+        static_cast<float> (colour.a) / 255.0f
+    };
 }
 
 std::string patchPathText (const GraphSession& session)
@@ -216,6 +228,15 @@ std::string bindingValueForPort (const GraphNode& node, const std::string& portI
     return {};
 }
 
+std::string bindingModeForPort (const GraphNode& node, const std::string& portId)
+{
+    for (const auto& binding : node.portBindings)
+        if (binding.portId == portId)
+            return binding.bindingMode.empty() ? "default" : binding.bindingMode;
+
+    return "default";
+}
+
 std::string demoValueForParam (const ParamSpec& param)
 {
     if (! param.defaultValue.empty())
@@ -247,6 +268,37 @@ void drawPortStrip (ImDrawList& drawList, ImVec2 min, ImVec2 max, const Tooll3Po
 
     if (skin.compatibleHighlight)
         drawList.AddRect (min, max, IM_COL32 (245, 250, 255, 235), 0.0f, 0, 1.0f);
+}
+
+std::string compactInspectorValue (const ParamSpec& param, const std::string& value)
+{
+    if (param.dataType == "text.glsl")
+        return value.empty() ? "default GLSL" : std::to_string (value.size()) + " bytes";
+
+    if (value.empty())
+        return param.defaultValue.empty() ? "default" : param.defaultValue;
+
+    return value;
+}
+
+void drawInspectorRow (const std::string& label, const std::string& value, const std::string& state)
+{
+    const auto skin = makeTooll3InspectorRowSkin (state);
+    const auto pos = ImGui::GetCursorScreenPos();
+    const auto width = ImGui::GetContentRegionAvail().x;
+
+    ImGui::GetWindowDrawList()->AddRectFilled ({ pos.x, pos.y + 2.0f },
+                                               { pos.x + 4.0f, pos.y + 18.0f },
+                                               rgba (skin.stateAccent),
+                                               0.0f);
+    ImGui::Dummy ({ width, 22.0f });
+    ImGui::SetCursorScreenPos ({ pos.x + 9.0f, pos.y + 1.0f });
+    ImGui::TextColored (vec4 (skin.label), "%s", label.c_str());
+    ImGui::SameLine (100.0f);
+    ImGui::TextColored (vec4 (skin.value), "%s", value.c_str());
+    const auto stateSize = ImGui::CalcTextSize (skin.stateLabel.c_str());
+    ImGui::SameLine (std::max (170.0f, width - stateSize.x - 4.0f));
+    ImGui::TextDisabled ("%s", skin.stateLabel.c_str());
 }
 
 CanvasPoint canvasPointFromMouse (const CanvasViewState& view, ImVec2 origin)
@@ -285,6 +337,20 @@ BehaviorTraceReport runBundledTraceFixture()
 
     return lastReport;
 }
+
+GraphSession makeDefaultOverlaySession()
+{
+    auto session = makeGraphSession (makeDefaultShaderOutputGraph());
+    session.selectedNodeIds = { "shader1" };
+    return session;
+}
+}
+
+ImGuiSmokeOverlay::ImGuiSmokeOverlay()
+    : interactionSession (makeDefaultOverlaySession()),
+      shaderSourceDraft (defaultFragmentShader()),
+      shaderSourceDraftNodeId ("shader1")
+{
 }
 
 void ImGuiSmokeOverlay::initialise()
@@ -323,6 +389,12 @@ void ImGuiSmokeOverlay::initialise()
     colours[ImGuiCol_Separator] = ImVec4 (0.0f, 0.0f, 0.0f, 1.0f);
     ImGui_ImplOpenGL3_Init ("#version 150");
     initialised = true;
+}
+
+void ImGuiSmokeOverlay::setShaderSource (std::string source)
+{
+    shaderSourceDraft = std::move (source);
+    shaderSourceDraftNodeId = selectedNodeId (interactionSession);
 }
 
 void ImGuiSmokeOverlay::shutdown()
@@ -422,7 +494,7 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             ImGui::Dummy (ImVec2 (0.0f, 44.0f));
             ImGui::TextDisabled ("No presets yet.");
             ImGui::Dummy (ImVec2 (0.0f, 24.0f));
-            drawInspectorPanel (nodeSpecs);
+            drawInspectorPanel (nodeSpecs, shaderStatus);
 
             ImGui::SeparatorText ("Shader");
             ImGui::TextWrapped ("%s", shaderStatus.c_str());
@@ -466,7 +538,7 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             ImGui::SameLine();
             if (ImGui::Button ("Reset"))
             {
-                interactionSession = makeGraphSession (makeDefaultShaderOutputGraph());
+                interactionSession = makeDefaultOverlaySession();
                 interactionViewReady = false;
                 draggingNodeId.clear();
                 draggingConnectionEndpoint.clear();
@@ -528,6 +600,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Reset"))
     {
         interactionSession = makeGraphSession (makeDefaultShaderOutputGraph());
+        interactionSession.selectedNodeIds = { "shader1" };
         interactionViewReady = false;
         draggingNodeId.clear();
         draggingConnectionEndpoint.clear();
@@ -995,7 +1068,7 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
     ImGui::EndPopup();
 }
 
-void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs)
+void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus)
 {
     ImGui::SeparatorText ("Inspector");
 
@@ -1009,6 +1082,7 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
         return;
     }
 
+    const auto policy = makeTooll3InspectorPolicy (node->type, true);
     ImGui::Text ("%s", node->id.c_str());
     ImGui::SameLine();
     ImGui::TextDisabled ("%s", node->type.c_str());
@@ -1022,10 +1096,11 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
         for (const auto& param : spec->params)
         {
             const auto stored = paramValueForNode (*node, param.id);
-            ImGui::Text ("%s", param.id.c_str());
-            ImGui::SameLine();
-            ImGui::TextDisabled ("%s", stored.empty() ? param.defaultValue.c_str() : stored.c_str());
-            ImGui::SameLine();
+            const auto state = stored.empty() ? "default" : "manual";
+            drawInspectorRow (param.id, compactInspectorValue (param, stored), state);
+
+            if (param.dataType == "text.glsl")
+                continue;
 
             const auto label = "Set##param-" + node->id + "-" + param.id;
             if (ImGui::Button (label.c_str()))
@@ -1037,25 +1112,54 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     if (spec->inputs.empty())
     {
         ImGui::TextDisabled ("inputs: none");
-        return;
+    }
+    else
+    {
+        for (const auto& input : spec->inputs)
+        {
+            const auto stored = bindingValueForPort (*node, input.id);
+            const auto state = bindingModeForPort (*node, input.id);
+            drawInspectorRow ("input " + input.id, stored.empty() ? input.dataType : stored, state);
+
+            const auto label = "Bind##input-" + node->id + "-" + input.id;
+            if (ImGui::Button (label.c_str()))
+                runInteractionCommand ("bind " + input.id,
+                                       setPortBinding (interactionSession,
+                                                       node->id,
+                                                       input.id,
+                                                       "connected",
+                                                       "shader1.output"));
+        }
     }
 
-    for (const auto& input : spec->inputs)
-    {
-        const auto stored = bindingValueForPort (*node, input.id);
-        ImGui::Text ("input %s", input.id.c_str());
-        ImGui::SameLine();
-        ImGui::TextDisabled ("%s", stored.empty() ? input.dataType.c_str() : stored.c_str());
-        ImGui::SameLine();
+    if (! policy.shaderSourceEditorVisible)
+        return;
 
-        const auto label = "Bind##input-" + node->id + "-" + input.id;
-        if (ImGui::Button (label.c_str()))
-            runInteractionCommand ("bind " + input.id,
-                                   setPortBinding (interactionSession,
-                                                   node->id,
-                                                   input.id,
-                                                   "connected",
-                                                   "shader1.output"));
+    if (shaderSourceDraftNodeId != node->id)
+    {
+        const auto storedSource = paramValueForNode (*node, "source");
+        shaderSourceDraft = storedSource.empty() ? defaultFragmentShader() : storedSource;
+        shaderSourceDraftNodeId = node->id;
+    }
+
+    ImGui::SeparatorText ("Shader Source");
+
+    if (policy.compileStatusVisible)
+        ImGui::TextWrapped ("%s", shaderStatus.c_str());
+
+    ImGui::InputTextMultiline ("##shader-source",
+                               &shaderSourceDraft,
+                               { -FLT_MIN, 210.0f },
+                               ImGuiInputTextFlags_AllowTabInput);
+
+    if (ImGui::Button ("Apply Source"))
+    {
+        const auto result = setParam (interactionSession, node->id, "source", shaderSourceDraft);
+
+        if (result.ok && onShaderSourceSubmitted != nullptr)
+            onShaderSourceSubmitted (shaderSourceDraft);
+
+        runInteractionCommand ("set source", result);
     }
 }
 

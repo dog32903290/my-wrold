@@ -105,6 +105,39 @@ void connectionColourFollowsTypeAndCompatibility()
     require (! incompatible.compatible, "incompatible connection is marked");
     require (incompatible.color.a < audio.color.a, "incompatible connection is visually muted");
 }
+
+void shaderSourceBelongsToSelectedNodeInspector()
+{
+    const auto none = myworld::makeTooll3InspectorPolicy ({}, false);
+    const auto shader = myworld::makeTooll3InspectorPolicy ("shader.fragment", true);
+    const auto output = myworld::makeTooll3InspectorPolicy ("output.preview", true);
+
+    require (! none.panelVisible, "inspector is quiet without selection");
+    require (shader.panelVisible, "selected shader shows inspector");
+    require (shader.shaderSourceEditorVisible, "selected shader owns source editor");
+    require (shader.compileStatusVisible, "selected shader shows compile status");
+    require (shader.shaderSourceOwner == "selected_shader_node", "source owner is selected shader node");
+    require (! shader.globalShaderSourceVisible, "shader source is not global");
+    require (! output.shaderSourceEditorVisible, "non-shader node does not show source editor");
+}
+
+void parameterRowsExposeValueState()
+{
+    const auto defaultRow = myworld::makeTooll3InspectorRowSkin ("default");
+    const auto manualRow = myworld::makeTooll3InspectorRowSkin ("manual");
+    const auto connectedRow = myworld::makeTooll3InspectorRowSkin ("connected");
+    const auto animatedRow = myworld::makeTooll3InspectorRowSkin ("animated");
+
+    require (defaultRow.stateLabel == "default", "default row label");
+    require (manualRow.stateLabel == "manual", "manual row label");
+    require (connectedRow.stateLabel == "connected", "connected row label");
+    require (animatedRow.stateLabel == "animated", "animated row label");
+    require (! sameColour (defaultRow.stateAccent, manualRow.stateAccent), "manual differs from default");
+    require (! sameColour (connectedRow.stateAccent, manualRow.stateAccent), "connected differs from manual");
+    require (connectedRow.connectionVisible, "connected row exposes connection state");
+    require (defaultRow.layoutStableOnStateChange, "row state does not resize layout");
+    require (animatedRow.layoutStableOnStateChange, "animated state does not resize layout");
+}
 }
 
 int main()
@@ -117,5 +150,7 @@ int main()
     nodeStateDoesNotChangeGeometry();
     portStripsUseDataTypeColour();
     connectionColourFollowsTypeAndCompatibility();
+    shaderSourceBelongsToSelectedNodeInspector();
+    parameterRowsExposeValueState();
     return 0;
 }

@@ -71,6 +71,25 @@ struct Tooll3ConnectionSkin
     bool compatible = true;
 };
 
+struct Tooll3InspectorPolicy
+{
+    bool panelVisible = false;
+    bool shaderSourceEditorVisible = false;
+    bool compileStatusVisible = false;
+    bool globalShaderSourceVisible = false;
+    std::string shaderSourceOwner = "none";
+};
+
+struct Tooll3InspectorRowSkin
+{
+    Tooll3SkinColor stateAccent;
+    Tooll3SkinColor label;
+    Tooll3SkinColor value;
+    std::string stateLabel;
+    bool connectionVisible = false;
+    bool layoutStableOnStateChange = true;
+};
+
 Tooll3SkinPolicy makeTooll3SkinPolicy();
 Tooll3SkinLayout makeTooll3SkinLayout (double width, double height);
 Tooll3SkinColor makeTooll3TypeColor (const std::string& dataType, const std::string& nodeType = {});
@@ -80,4 +99,6 @@ Tooll3NodeSkin makeTooll3NodeSkin (const std::string& nodeType,
                                    bool hovered);
 Tooll3PortSkin makeTooll3PortSkin (const std::string& dataType, bool compatible, bool active);
 Tooll3ConnectionSkin makeTooll3ConnectionSkin (const std::string& dataType, bool selected, bool compatible);
+Tooll3InspectorPolicy makeTooll3InspectorPolicy (const std::string& nodeType, bool hasSelection);
+Tooll3InspectorRowSkin makeTooll3InspectorRowSkin (const std::string& valueState);
 }

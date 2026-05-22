@@ -2,6 +2,7 @@
 
 #include "InteractionContract.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,10 @@ struct NodeSpec;
 class ImGuiSmokeOverlay
 {
 public:
+    using ShaderSourceCallback = std::function<void (const std::string&)>;
+
+    ImGuiSmokeOverlay();
+
     void initialise();
     void shutdown();
     void beginFrame (int width, int height, float scale, float deltaSeconds);
@@ -24,12 +29,15 @@ public:
     void setMousePosition (float x, float y);
     void setMouseButton (int buttonIndex, bool isDown);
     void addMouseWheel (float deltaY);
+    void setShaderSource (std::string source);
+
+    ShaderSourceCallback onShaderSourceSubmitted;
 
 private:
     void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs, float canvasWidth, float canvasHeight);
     void drawInteractionControls();
     void drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs);
-    void drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs);
+    void drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus);
     void drawTracePanel();
     void runInteractionCommand (const std::string& label, CommandResult result);
     void runInteractionCommand (const std::string& label, bool result);
@@ -37,10 +45,12 @@ private:
     bool initialised = false;
     float smokeValue = 0.35f;
     bool loudnessExpanded = false;
-    GraphSession interactionSession = makeGraphSession (makeDefaultShaderOutputGraph());
+    GraphSession interactionSession;
     std::string draggingNodeId;
     std::string draggingConnectionEndpoint;
     std::string pendingCreateSourceEndpoint;
+    std::string shaderSourceDraft;
+    std::string shaderSourceDraftNodeId;
     CanvasPoint dragCanvasDelta;
     CanvasPoint draggingConnectionPoint;
     CanvasPoint pendingCreatePosition;

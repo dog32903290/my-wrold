@@ -170,4 +170,53 @@ Tooll3ConnectionSkin makeTooll3ConnectionSkin (const std::string& dataType, bool
 
     return skin;
 }
+
+Tooll3InspectorPolicy makeTooll3InspectorPolicy (const std::string& nodeType, bool hasSelection)
+{
+    Tooll3InspectorPolicy policy;
+    policy.panelVisible = hasSelection;
+
+    if (! hasSelection)
+        return policy;
+
+    if (startsWith (nodeType, "shader."))
+    {
+        policy.shaderSourceEditorVisible = true;
+        policy.compileStatusVisible = true;
+        policy.shaderSourceOwner = "selected_shader_node";
+    }
+
+    return policy;
+}
+
+Tooll3InspectorRowSkin makeTooll3InspectorRowSkin (const std::string& valueState)
+{
+    Tooll3InspectorRowSkin skin;
+    skin.label = color (212, 220, 232, 235);
+    skin.value = color (170, 184, 202, 230);
+    skin.stateLabel = valueState.empty() ? "default" : valueState;
+    skin.layoutStableOnStateChange = true;
+
+    if (skin.stateLabel == "manual")
+    {
+        skin.stateAccent = color (104, 154, 218, 230);
+    }
+    else if (skin.stateLabel == "connected")
+    {
+        skin.stateAccent = color (92, 198, 162, 235);
+        skin.connectionVisible = true;
+    }
+    else if (skin.stateLabel == "animated")
+    {
+        skin.stateAccent = color (204, 132, 220, 235);
+        skin.connectionVisible = true;
+    }
+    else
+    {
+        skin.stateLabel = "default";
+        skin.stateAccent = color (92, 96, 106, 190);
+    }
+
+    return skin;
+}
 }

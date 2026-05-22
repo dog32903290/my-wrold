@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P4 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, and node/port/connection skin grammar is now contract-backed. P5-P7 deeper inspector skin, context-menu/node-browser polish, and timeline parity are still pending.
+Status: P0-P6 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, and selected shader source now lives in the node inspector with real compile handoff. S7-S9 left-panel collapse, context-menu/node-browser polish, and timeline parity are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -277,6 +277,13 @@ Acceptance:
 - No global half-screen shader editor.
 - Parameter edits create commandGraph evidence.
 - Connected parameters visibly differ from manual values.
+
+Current proof:
+
+- `Tooll3SkinContract` now defines inspector policy: shader source is owned by the selected shader node, compile status is shown with that source panel, and source is not global.
+- Inspector rows now use visible default/manual/connected/animated state accents from `Tooll3InspectorRowSkin`.
+- `shader.fragment` source edits live in the ImGui Inspector; `Apply Source` runs `set_param` on the selected node and hands the source to `OpenGLShaderPreview` for compilation.
+- The hidden JUCE shader editor no longer carries the visible editing surface; it remains parked as legacy plumbing until the preview/graph ownership boundary is fully collapsed.
 
 ### S7 Left Panels: Presets, Snapshots, Node Context
 

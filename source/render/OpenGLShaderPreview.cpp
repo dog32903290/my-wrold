@@ -55,6 +55,11 @@ bool writePngFile (const juce::File& file, const juce::Image& image)
 OpenGLShaderPreview::OpenGLShaderPreview()
     : pendingFragmentShader (defaultFragmentShader())
 {
+    imguiOverlay.onShaderSourceSubmitted = [this] (const std::string& source)
+    {
+        setFragmentShader (source);
+    };
+
     openGLContext.setOpenGLVersionRequired (juce::OpenGLContext::openGL3_2);
     openGLContext.setRenderer (this);
     openGLContext.setContinuousRepainting (false);
@@ -119,6 +124,7 @@ void OpenGLShaderPreview::newOpenGLContextCreated()
     frameIndex = 0;
     seedNodeSpecs = makeSeedNodeSpecs();
     loudnessCompound = makeLoudnessCompoundPatchSpec();
+    imguiOverlay.setShaderSource (pendingFragmentShader);
     imguiOverlay.initialise();
 
     compilePendingShader();
