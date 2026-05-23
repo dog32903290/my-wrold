@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, C1.18 expanded/collapsed compound drag-drop proof, C1.19 loaded loudness runtime bridge proof, C1.20 live-safe loudness runtime proof, C1.21 compound public-port surface proof, C1.22 compound public-port persistence proof, C1.23 expanded child layout persistence proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Raw callback-buffer runtime execution, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, C1.18 expanded/collapsed compound drag-drop proof, C1.19 loaded loudness runtime bridge proof, C1.20 live-safe loudness runtime proof, C1.21 compound public-port surface proof, C1.22 compound public-port persistence proof, C1.23 expanded child layout persistence proof, and C1.24 compound proof closure are implemented. Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Raw callback-buffer runtime execution, patch-document compound instance schema, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are parked as C2+ work.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 02:25 Asia/Taipei.
+Date: 2026-05-24 02:30 Asia/Taipei.
 
 已鎖定:
 
@@ -54,11 +54,12 @@ Date: 2026-05-24 02:25 Asia/Taipei.
 - C1.21 compound public-port surface proof is implemented: `connectPorts(session, specs, from, to)` validates against the loaded visible `NodeSpec` registry, CanvasHands/ImGui connection gestures use that registry, and collapsed `compound.loudness` public input/output ports connect at root level.
 - C1.22 compound public-port persistence proof is implemented: behavior trace `compound public ports persist undo` proves root public-port edges survive interaction serialize/deserialize into both editorGraph/runtimeGraph, then disconnect/undo/redo cleanly.
 - C1.23 expanded child layout persistence proof is implemented: `storeExpandedPatchLayout()` stores moved expanded child positions on the parent compound instance, regenerated expanded graphs apply that layout, and visible Exit stores layout before leaving a compound patch.
-- Latest C1.23 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `./build/my_world_compound_interaction_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`, and `git diff --check`.
+- C1.24 closes the first loudness compound proof. C1 is no longer extended for raw callback-buffer runtime, patch document schema, visual mapping polish, 13-patch analyzer expansion, or AI worker modules; those are C2+.
+- Latest C1.24 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `./build/my_world_compound_interaction_tests`, `./build/my_world_interaction_trace_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- How to close C1 explicitly and move remaining compound work into a C2 backlog instead of extending the first proof forever.
+- How to define C2 compound patch document boundaries without reopening C1.
 
 還沒承重:
 
@@ -72,7 +73,7 @@ Date: 2026-05-24 02:25 Asia/Taipei.
 
 下一根線:
 
-- C1.24 compound proof closure: `C1.1-C1.23 evidence -> close first loudness compound proof status -> identify remaining C2 work outside the first C1 spine -> keep raw callback-buffer runtime and visual polish parked`.
+- C2.1 compound patch document boundary: `interaction-state proof -> saved patch document shape for compound instances -> reload root edges, public ports, and expanded child layout without using the temporary interaction serializer`.
 
 ## First Stage Proofs
 
@@ -298,6 +299,7 @@ Contract:
 - Proven: collapsed compound public ports are command-backed at root level: `connectPorts(session, specs, from, to)` validates against the loaded visible registry, `library_loud1.audio.in` and `library_loud1.out` have port centers, and root edges keep `audio.channels` / `signal.float` data types.
 - Proven: public-port root edges survive interaction persistence pressure: the behavior trace fixture now runs `compound public ports persist undo`, checks editorGraph/runtimeGraph endpoints after deserialize, and verifies disconnect/undo/redo for `loud1.out -> midi1.value`.
 - Proven: expanded child layout persists per compound instance: `storeExpandedPatchLayout()` writes moved child positions onto the parent compound node, root serialize/deserialize keeps them, and regenerated expanded graphs restore user-moved child positions.
+- Proven: first C1 loudness compound proof is closed. Remaining compound work is C2+ work, not unfinished C1 evidence.
 - Not yet proven: the runtime proof input is shaped from the analyzer snapshot, not raw callback buffers; live UI timer does not yet cache a prepared loaded runtime snapshot.
 - Not yet proven: expanded view pan/zoom, raw callback-buffer runtime, and visual mapping-editor polish remain parked outside the closed first C1 spine.
 

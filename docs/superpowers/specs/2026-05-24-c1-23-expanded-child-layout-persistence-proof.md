@@ -56,10 +56,10 @@ Only child node positions are persisted; expanded view pan/zoom is still session
 No visual mapping editor exists yet for public port mapping.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.24 compound proof closure:
+C1.24 compound proof closure is now implemented:
 C1.1-C1.23 evidence
 -> close first loudness compound proof status
 -> identify remaining C2 work outside the first C1 spine
