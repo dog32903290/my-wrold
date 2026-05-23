@@ -53,10 +53,10 @@ Public port connect does not yet open an inline mapping editor; it trusts loaded
 Expanded child patcher create-node search remains parked.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.22 compound public-port persistence proof:
+C1.22 compound public-port persistence proof is now implemented:
 root compound public-port edges
 -> serialize/deserialize interaction state
 -> runtimeGraph preserves the same public endpoints

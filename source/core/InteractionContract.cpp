@@ -1044,6 +1044,59 @@ BehaviorTraceReport runBehaviorTraceFixture (const std::string& path)
                                 "collapsed compound did not roundtrip");
               });
 
+    runTrace ("compound public ports persist undo",
+              { "create_node",
+                "create_node",
+                "create_node",
+                "connect",
+                "connect",
+                "save_work:saved-and-committed",
+                "disconnect",
+                "undo:disconnect",
+                "redo:disconnect" },
+              [&] (const auto& name, auto& session) {
+                  const auto inputEdgeFrom = std::string { "live_audio.channels" };
+                  const auto inputEdgeTo = std::string { "loud1.audio.in" };
+                  const auto outputEdgeFrom = std::string { "loud1.out" };
+                  const auto outputEdgeTo = std::string { "midi1.value" };
+                  const auto outputEdgeId = makeEdgeId (outputEdgeFrom, outputEdgeTo);
+
+                  expectCommandOk (report, name, createNode (session, "audio.input", "live_audio", { 80.0, 260.0 }));
+                  expectCommandOk (report, name, createNode (session, "compound.loudness", "loud1", { 280.0, 260.0 }));
+                  expectCommandOk (report, name, createNode (session, "io.midi.cc_out", "midi1", { 520.0, 280.0 }));
+                  expectCommandOk (report, name, connectPorts (session, inputEdgeFrom, inputEdgeTo));
+                  expectCommandOk (report, name, connectPorts (session, outputEdgeFrom, outputEdgeTo));
+                  markSavedAndCommitted (session);
+
+                  const auto restored = deserializeInteractionState (serializeInteractionState (session));
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (restored.graph.editorGraph.edges, inputEdgeFrom, inputEdgeTo)
+                                    && hasEdge (restored.graph.runtimeGraph.edges, inputEdgeFrom, inputEdgeTo),
+                                "public input edge did not roundtrip through editor/runtime graphs");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (restored.graph.editorGraph.edges, outputEdgeFrom, outputEdgeTo)
+                                    && hasEdge (restored.graph.runtimeGraph.edges, outputEdgeFrom, outputEdgeTo),
+                                "public output edge did not roundtrip through editor/runtime graphs");
+
+                  expectCommandOk (report, name, disconnectEdge (session, outputEdgeId));
+                  expectBoolOk (report,
+                                name,
+                                ! hasEdge (session.graph.editorGraph.edges, outputEdgeFrom, outputEdgeTo),
+                                "disconnect did not remove public output edge");
+                  expectBoolOk (report, name, undo (session), "undo failed");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, outputEdgeFrom, outputEdgeTo),
+                                "undo did not restore public output edge");
+                  expectBoolOk (report, name, redo (session), "redo failed");
+                  expectBoolOk (report,
+                                name,
+                                ! hasEdge (session.graph.editorGraph.edges, outputEdgeFrom, outputEdgeTo),
+                                "redo did not remove public output edge");
+              });
+
     runTrace ("inspector param and binding", { "set_param", "set_port_binding" }, [&] (const auto& name, auto& session) {
         expectCommandOk (report, name, setParam (session, "shader1", "fragmentSource", "void main(){}"));
         expectCommandOk (report,

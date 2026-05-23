@@ -32,6 +32,10 @@
       "expectedCommands": ["create_node", "collapse_compound", "move_node", "enter_patch", "save_work:saved-and-committed"]
     },
     {
+      "name": "compound public ports persist undo",
+      "expectedCommands": ["create_node", "create_node", "create_node", "connect", "connect", "save_work:saved-and-committed", "disconnect", "undo:disconnect", "redo:disconnect"]
+    },
+    {
       "name": "inspector param and binding",
       "expectedCommands": ["set_param", "set_port_binding"]
     },

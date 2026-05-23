@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 02:13 Asia/Taipei
+Date: 2026-05-24 02:18 Asia/Taipei
 
 ## Current Head
 
 ```text
-C1 current: C1.21 compound public-port surface proof ready for commit
+C1 current: C1.22 compound public-port persistence proof ready for commit
+df67f57 Add compound public port connection proof
 809215e Add live-safe loudness runtime proof
 da04d84 Add loudness runtime bridge proof
 a81eba2 Add compound expanded canvas interaction proof
@@ -60,6 +61,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.19 exists: `makeLoudnessRuntimeBridgeSnapshot()` prefers loaded runtime public outputs when available, falls back to direct analyzer snapshots with the same `out`, `rms`, `peak`, `gate`, and `confidence` vocabulary, and app audio proof dump writes `debug/a1-audio-proof/loudness_runtime_bridge.json`.
 - C1.20 exists: `makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot()` prepares a non-realtime snapshot-shaped input, app audio proof executes the loaded loudness runtime, writes `debug/a1-audio-proof/loudness_runtime_execution.json`, and bridge JSON now records `sourceMode: loaded-runtime-publicOutputs`.
 - C1.21 exists: `connectPorts(session, specs, from, to)` validates public ports through the loaded visible `NodeSpec` registry, CanvasHands/ImGui connection gestures use that registry, and collapsed `compound.loudness` public input/output ports connect at root level.
+- C1.22 exists: behavior trace `compound public ports persist undo` proves root compound public-port edges survive interaction serialize/deserialize into both editorGraph/runtimeGraph, then disconnect/undo/redo cleanly.
 
 ## 試壓結果
 
@@ -127,35 +129,37 @@ debug/a1-audio-proof/loudness_runtime_execution.json records seven loaded child 
 debug/a1-audio-proof/loudness_runtime_bridge.json records sourceMode loaded-runtime-publicOutputs with publicOutputs { out, rms, peak, gate, confidence } and field-level sources
 compound interaction tests prove collapsed compound public ports have port centers and can connect live_audio.channels -> library_loud1.audio.in and library_loud1.out -> midi_loudness.value through the loaded registry
 CanvasHands and ImGui connection gestures now call the spec-aware connectPorts overload instead of seed-only validation
-latest accepted source commit before C1.21: 809215e
+interaction trace fixture now runs 10 traces including compound public ports persist undo
+the C1.22 trace proves live_audio.channels -> loud1.audio.in and loud1.out -> midi1.value survive serialize/deserialize in editorGraph and runtimeGraph, then disconnect/undo/redo the public output edge
+latest accepted source commit before C1.22: df67f57
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, loaded/fallback loudness bridge, app audio proof loaded runtime execution, and collapsed compound public-port connection are storage-backed/test-backed.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, loaded/fallback loudness bridge, app audio proof loaded runtime execution, collapsed compound public-port connection, and public-port persistence/undo are storage-backed/test-backed.
 - Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
 - AI worker graph edits are still parked until saved commandGraph/module evidence is stronger.
 - App audio proof now feeds the loaded runtime from a non-realtime snapshot-shaped input. It is not yet raw callback-buffer capture, and live UI timer still uses direct fallback unless a prepared runtime snapshot is cached.
-- Collapsed compound ports are command/hit-test backed; deeper label grouping and mapping-editor polish remain skin/tooling work.
+- Collapsed compound ports are command/hit-test backed and persist through interaction state; deeper label grouping and mapping-editor polish remain skin/tooling work.
 
 ## 下一根線
 
-C1.22 compound public-port persistence proof:
+C1.23 expanded child layout persistence proof:
 
 ```text
-root compound public-port edges
--> serialize/deserialize interaction state
--> runtimeGraph preserves the same public endpoints
--> undo/redo disconnect keeps expanded child graph intact
+user-moved expanded child node
+-> per compound instance layout snapshot
+-> exit/re-enter expanded patch keeps child position
+-> root public-port edges remain intact
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-Collapsed compound ports now behave like real root-level ports through the command path.
-The next weakness is persistence and undo pressure on those public-port edges after save/load and disconnect/reconnect.
+Public-port root edges now persist and survive disconnect undo/redo.
+The next visible C gap is expanded child layout memory: C1.18 still uses deterministic proof layout instead of per-instance user layout.
 ```
