@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, RuntimeOp catalog coverage, UI-facing RuntimeOp diagnostics, dry-run snapshots, first executable child runtime execution snapshots, value-handoff snapshots, public-output snapshots, internal-edge source snapshots, named RuntimeOp execution snapshots, and saved missing RuntimeOp coverage failure snapshots. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, RuntimeOp catalog coverage, UI-facing RuntimeOp diagnostics, coverage-gated creation state, dry-run snapshots, first executable child runtime execution snapshots, value-handoff snapshots, public-output snapshots, internal-edge source snapshots, named RuntimeOp execution snapshots, and saved missing RuntimeOp coverage failure snapshots. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -77,6 +77,7 @@ Existing project facts this design must respect:
 - C1.13 adds a saved negative module fixture, so `debug.unsupported` is loaded from storage and proof dump writes `runtime_missing_runtimeop_registry.json`, `runtime_missing_runtimeop_dry_run.json`, and `runtime_missing_runtimeop_execution.json`.
 - C1.14 adds RuntimeOp catalog coverage evidence, so proof dump writes `runtime_op_catalog.json`, `runtime_op_coverage.json`, and `runtime_missing_runtimeop_coverage.json` before execution.
 - C1.15 adds UI-facing RuntimeOp diagnostics, so proof dump writes `runtime_ui_diagnostics.json` and the workspace can show `runtime ready` / `missing RuntimeOp` status from coverage snapshots before create/execute.
+- C1.16 adds coverage-gated creation evidence, so RuntimeOp diagnostics carry `creationStatus`, the browser/create popup passes `NodeCreationGate` into `InteractionContract`, and missing-runtime modules are blocked before graph mutation.
 
 ## First Slice
 

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -46,6 +47,44 @@ int main()
 
     const auto createCompound = myworld::createNode (session, "compound.loudness", "loud1", { 160.0, 260.0 });
     expect (createCompound.ok, "create compound node");
+
+    const std::vector<myworld::NodeCreationGate> creationGates {
+        { "compound.loudness", true, "" },
+        { "compound.loudness.missing-runtimeop", false, "missing RuntimeOp: debug.unsupported" }
+    };
+    auto gatedSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    const auto blockedCreate = myworld::createNode (gatedSession,
+                                                    myworld::makeSeedNodeSpecs(),
+                                                    creationGates,
+                                                    "compound.loudness.missing-runtimeop",
+                                                    "blocked_loud1",
+                                                    { 180.0, 260.0 });
+    expect (! blockedCreate.ok, "missing RuntimeOp create should be blocked");
+    expect (blockedCreate.message.find ("debug.unsupported") != std::string::npos,
+            "blocked create names missing RuntimeOp");
+    expect (findNode (gatedSession.graph, "blocked_loud1") == nullptr, "blocked create does not mutate graph");
+
+    const auto blockedConnect = myworld::createNodeAndConnect (gatedSession,
+                                                               myworld::makeSeedNodeSpecs(),
+                                                               creationGates,
+                                                               "shader1.output",
+                                                               "compound.loudness.missing-runtimeop",
+                                                               "blocked_loud2",
+                                                               { 240.0, 280.0 });
+    expect (! blockedConnect.ok, "missing RuntimeOp create-and-connect should be blocked");
+    expect (blockedConnect.message.find ("debug.unsupported") != std::string::npos,
+            "blocked create-and-connect names missing RuntimeOp");
+    expect (findNode (gatedSession.graph, "blocked_loud2") == nullptr,
+            "blocked create-and-connect does not mutate graph");
+
+    const auto gatedCreate = myworld::createNode (gatedSession,
+                                                  myworld::makeSeedNodeSpecs(),
+                                                  creationGates,
+                                                  "compound.loudness",
+                                                  "gated_loud1",
+                                                  { 180.0, 260.0 });
+    expect (gatedCreate.ok, "runtime-ready module create is allowed");
+    expect (findNode (gatedSession.graph, "gated_loud1") != nullptr, "gated create mutates graph");
 
     const auto enter = myworld::enterPatch (session, "loud1");
     expect (enter.ok, "enter compound patch");

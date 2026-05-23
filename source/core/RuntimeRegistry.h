@@ -188,6 +188,9 @@ struct RuntimeOpModuleDiagnostic
     std::string status;
     std::string browserLabel;
     std::string inspectorDetail;
+    std::string creationStatus;
+    std::string creationLabel;
+    std::string creationBlockReason;
     size_t supportedChildCount = 0;
     size_t missingChildCount = 0;
     std::vector<std::string> missingNodeTypes;
@@ -197,6 +200,7 @@ RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::strin
 std::vector<RuntimeOpCatalogEntry> makeRuntimeOpCatalog();
 RuntimeOpCoverageResult inspectRuntimeOpCoverage (const RuntimeRegistry& registry);
 std::vector<RuntimeOpModuleDiagnostic> makeRuntimeOpModuleDiagnostics (const RuntimeOpCoverageSnapshot& snapshot);
+bool runtimeOpDiagnosticAllowsCreation (const RuntimeOpModuleDiagnostic& diagnostic);
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const std::vector<float>& samples,

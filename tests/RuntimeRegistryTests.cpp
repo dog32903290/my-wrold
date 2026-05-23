@@ -169,6 +169,10 @@ int main()
     expectEqual (diagnostics.front().nodeType, "compound.loudness", "runtime diagnostic node type");
     expectEqual (diagnostics.front().status, "runtime-op-ready", "runtime diagnostic status");
     expectEqual (diagnostics.front().browserLabel, "runtime ready", "runtime diagnostic browser label");
+    expectEqual (diagnostics.front().creationStatus, "create-enabled", "runtime diagnostic creation status");
+    expectEqual (diagnostics.front().creationLabel, "create", "runtime diagnostic creation label");
+    expect (myworld::runtimeOpDiagnosticAllowsCreation (diagnostics.front()),
+            "runtime diagnostic allows creation");
     expectContains (diagnostics.front().inspectorDetail,
                     "7 RuntimeOps registered",
                     "runtime diagnostic inspector detail");
@@ -180,6 +184,7 @@ int main()
                     "\"visibleIn\": [\"browser\", \"inspector\", \"leftRail\"]",
                     "runtime diagnostics json");
     expectContains (diagnosticsJson, "\"browserLabel\": \"runtime ready\"", "runtime diagnostics json");
+    expectContains (diagnosticsJson, "\"creationStatus\": \"create-enabled\"", "runtime diagnostics json");
     expectContains (diagnosticsJson, "\"nodeType\": \"compound.loudness\"", "runtime diagnostics json");
 
     const auto unsupportedRegistry = makeRegistryWithUnsupportedRuntimeOp (registryResult.registry);
@@ -356,9 +361,20 @@ int main()
     expectEqual (savedNegativeDiagnostics.front().browserLabel,
                  "missing RuntimeOp",
                  "saved negative diagnostic browser label");
+    expectEqual (savedNegativeDiagnostics.front().creationStatus,
+                 "create-blocked",
+                 "saved negative diagnostic creation status");
+    expectEqual (savedNegativeDiagnostics.front().creationLabel,
+                 "blocked",
+                 "saved negative diagnostic creation label");
+    expect (! myworld::runtimeOpDiagnosticAllowsCreation (savedNegativeDiagnostics.front()),
+            "saved negative diagnostic blocks creation");
     expectContains (savedNegativeDiagnostics.front().inspectorDetail,
                     "debug.unsupported",
                     "saved negative diagnostic inspector detail");
+    expectContains (savedNegativeDiagnostics.front().creationBlockReason,
+                    "debug.unsupported",
+                    "saved negative diagnostic creation reason");
     expect (savedNegativeDiagnostics.front().missingNodeTypes.size() == 1,
             "saved negative diagnostic missing count");
     expectEqual (savedNegativeDiagnostics.front().missingNodeTypes.front(),
@@ -369,6 +385,9 @@ int main()
         savedNegativeDiagnostics);
     expectContains (savedNegativeDiagnosticsJson,
                     "\"browserLabel\": \"missing RuntimeOp\"",
+                    "saved negative diagnostics json");
+    expectContains (savedNegativeDiagnosticsJson,
+                    "\"creationStatus\": \"create-blocked\"",
                     "saved negative diagnostics json");
     expectContains (savedNegativeDiagnosticsJson,
                     "\"missingNodeTypes\": [\"debug.unsupported\"]",

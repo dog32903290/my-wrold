@@ -38,6 +38,13 @@ struct CommandResult
     std::string message;
 };
 
+struct NodeCreationGate
+{
+    std::string nodeType;
+    bool canCreate = true;
+    std::string reason;
+};
+
 struct GraphInvariantReport
 {
     bool ok = false;
@@ -94,7 +101,26 @@ CommandResult createNode (GraphSession& session,
                           const std::string& nodeType,
                           const std::string& nodeId,
                           CanvasPoint position);
+CommandResult createNode (GraphSession& session,
+                          const std::vector<NodeSpec>& specs,
+                          const std::vector<NodeCreationGate>& creationGates,
+                          const std::string& nodeType,
+                          const std::string& nodeId,
+                          CanvasPoint position);
 CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::string& sourceEndpoint,
+                                    const std::string& nodeType,
+                                    const std::string& nodeId,
+                                    CanvasPoint position);
+CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::vector<NodeSpec>& specs,
+                                    const std::string& sourceEndpoint,
+                                    const std::string& nodeType,
+                                    const std::string& nodeId,
+                                    CanvasPoint position);
+CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::vector<NodeSpec>& specs,
+                                    const std::vector<NodeCreationGate>& creationGates,
                                     const std::string& sourceEndpoint,
                                     const std::string& nodeType,
                                     const std::string& nodeId,

@@ -123,6 +123,27 @@ ImVec4 diagnosticTextColour (const RuntimeOpModuleDiagnostic& diagnostic)
                : ImVec4 (1.0f, 0.70f, 0.42f, 1.0f);
 }
 
+std::vector<NodeCreationGate> makeNodeCreationGates (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics)
+{
+    std::vector<NodeCreationGate> gates;
+    gates.reserve (diagnostics.size());
+
+    for (const auto& diagnostic : diagnostics)
+    {
+        const auto canCreate = runtimeOpDiagnosticAllowsCreation (diagnostic);
+        gates.push_back ({ diagnostic.nodeType,
+                           canCreate,
+                           canCreate ? std::string {} : diagnostic.creationBlockReason });
+    }
+
+    return gates;
+}
+
+const char* diagnosticCreationLabel (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    return diagnostic.creationLabel.empty() ? diagnostic.browserLabel.c_str() : diagnostic.creationLabel.c_str();
+}
+
 void drawRuntimeDiagnosticSummary (const RuntimeOpModuleDiagnostic& diagnostic)
 {
     ImGui::TextColored (diagnosticTextColour (diagnostic), "%s", diagnostic.browserLabel.c_str());
@@ -1162,6 +1183,7 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
     const auto sourceDataType = outputDataTypeForEndpoint (interactionSession.graph,
                                                            nodeSpecs,
                                                            pendingCreateSourceEndpoint);
+    const auto creationGates = makeNodeCreationGates (runtimeOpDiagnostics);
     ImGui::Text ("from %s", pendingCreateSourceEndpoint.c_str());
     ImGui::Text ("type %s", sourceDataType.empty() ? "unknown" : sourceDataType.c_str());
     ImGui::Separator();
@@ -1175,12 +1197,19 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
 
         showedCandidate = true;
         const auto label = spec.displayName + "##" + spec.type;
+        const auto* diagnostic = diagnosticForNodeType (runtimeOpDiagnostics, spec.type);
+        const auto canCreate = diagnostic == nullptr || runtimeOpDiagnosticAllowsCreation (*diagnostic);
+
+        if (! canCreate)
+            ImGui::BeginDisabled();
 
         if (ImGui::Selectable (label.c_str()))
         {
             const auto nodeId = makeUniqueNodeId (interactionSession.graph, spec.type);
             runInteractionCommand ("create " + spec.type,
                                    createNodeAndConnect (interactionSession,
+                                                         nodeSpecs,
+                                                         creationGates,
                                                          pendingCreateSourceEndpoint,
                                                          spec.type,
                                                          nodeId,
@@ -1190,13 +1219,16 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
             ImGui::CloseCurrentPopup();
         }
 
+        if (! canCreate)
+            ImGui::EndDisabled();
+
         ImGui::SameLine();
         ImGui::TextDisabled ("%s", spec.type.c_str());
 
-        if (const auto* diagnostic = diagnosticForNodeType (runtimeOpDiagnostics, spec.type))
+        if (diagnostic != nullptr)
         {
             ImGui::SameLine();
-            ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnostic->browserLabel.c_str());
+            ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnosticCreationLabel (*diagnostic));
         }
     }
 
@@ -1229,6 +1261,7 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
     ImGui::Separator();
 
     bool showedCandidate = false;
+    const auto creationGates = makeNodeCreationGates (runtimeOpDiagnostics);
 
     for (const auto& spec : nodeSpecs)
     {
@@ -1237,6 +1270,11 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
 
         showedCandidate = true;
         const auto label = spec.displayName + "##workspace-" + spec.type;
+        const auto* diagnostic = diagnosticForNodeType (runtimeOpDiagnostics, spec.type);
+        const auto canCreate = diagnostic == nullptr || runtimeOpDiagnosticAllowsCreation (*diagnostic);
+
+        if (! canCreate)
+            ImGui::BeginDisabled();
 
         if (ImGui::Selectable (label.c_str()))
         {
@@ -1244,6 +1282,7 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
             runInteractionCommand ("create " + spec.type,
                                    createNode (interactionSession,
                                                nodeSpecs,
+                                               creationGates,
                                                spec.type,
                                                nodeId,
                                                pendingCreatePosition));
@@ -1251,8 +1290,17 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
             ImGui::CloseCurrentPopup();
         }
 
+        if (! canCreate)
+            ImGui::EndDisabled();
+
         ImGui::SameLine();
         ImGui::TextDisabled ("%s", spec.type.c_str());
+
+        if (diagnostic != nullptr)
+        {
+            ImGui::SameLine();
+            ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnosticCreationLabel (*diagnostic));
+        }
     }
 
     if (! showedCandidate)

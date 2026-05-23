@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 00:21 Asia/Taipei
+Date: 2026-05-24 00:39 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.15 visible RuntimeOp coverage diagnostics commit
+pending C1.16 coverage-gated module creation commit
+bdab7fc Add visible RuntimeOp coverage diagnostics
 701aeb9 Add RuntimeOp catalog coverage proof
 fbc8a0c Add saved negative RuntimeOp fixture proof
 4cf4b77 Fail runtime execution on missing RuntimeOps
@@ -48,6 +49,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.13 exists: `fixtures/module-libraries/missing-runtimeop.module-library.json` loads a saved `compound.loudness.missing-runtimeop` module with `debug.unsupported`; runtime tests and app proof dump persist `runtime_missing_runtimeop_registry.json`, `runtime_missing_runtimeop_dry_run.json`, and `runtime_missing_runtimeop_execution.json`.
 - C1.14 exists: the synthetic RuntimeOp table is exposed as `runtime_op_catalog.json`, registry coverage is reported before execution as `runtime_op_coverage.json`, and the saved negative fixture writes `runtime_missing_runtimeop_coverage.json` with supported vs missing child counts.
 - C1.15 exists: RuntimeOp coverage now has a UI-facing diagnostic contract, app proof dump writes `runtime_ui_diagnostics.json`, and the ImGui workspace shows `runtime ready` / `missing RuntimeOp` status in the browser/inspector/left rail without inventing UI-only truth.
+- C1.16 exists: RuntimeOp diagnostics now carry `create-enabled` / `create-blocked` affordance state, `InteractionContract` has a command-level `NodeCreationGate`, and the ImGui browser/create popup disables missing-runtime modules instead of letting UI-only confidence create them.
 
 ## 試壓結果
 
@@ -95,13 +97,17 @@ runtime registry tests produce UI-facing RuntimeOp module diagnostics for positi
 debug/v1-shader-proof/runtime_ui_diagnostics.json records visibleIn ["browser", "inspector", "leftRail"], runtime ready for compound.loudness, and missing RuntimeOp: debug.unsupported for the saved negative fixture
 debug/v1-shader-proof/frame.png shows Runtime Coverage as readable workspace diagnostics in the left rail
 compile-first-semantic-porting C1.15 measurement records 0 compile repairs, 0 test repairs, and one skin-contract drift avoided by keeping diagnostics downstream of coverage snapshots
-latest accepted source commit before C1.15: 701aeb9
+runtime registry tests record create-enabled/create-blocked diagnostics for positive and saved negative registries
+t3-t5 command tests prove NodeCreationGate blocks compound.loudness.missing-runtimeop without mutating the graph and allows runtime-ready compound.loudness
+debug/v1-shader-proof/runtime_ui_diagnostics.json records creationStatus create-enabled for compound.loudness and create-blocked for compound.loudness.missing-runtimeop
+compile-first-semantic-porting C1.16 measurement records 0 compile repairs, 0 test repairs, and one UI-only gate risk moved into command-level NodeCreationGate
+latest accepted source commit before C1.16: bdab7fc
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, and visible RuntimeOp diagnostics are storage-backed/test-backed.
-- RuntimeOp support is now visible as author feedback, but module creation is not yet gated by coverage status.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, and coverage-gated creation are storage-backed/test-backed.
+- Missing-runtime modules are now blocked by command-level creation gates, but there is no explicit debug override path yet.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -109,19 +115,19 @@ latest accepted source commit before C1.15: 701aeb9
 
 ## 下一根線
 
-C1.16 coverage-gated module creation:
+C1.17 explicit debug override for blocked module creation:
 
 ```text
-runtime UI diagnostics
--> node browser command affordance
--> supported modules create normally
--> missing RuntimeOp modules are blocked or require an explicit debug override
+create-blocked diagnostics
+-> explicit debug override command
+-> blocked module can be inserted only with visible reason
+-> override state is logged and undoable
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The RuntimeOp support matrix is now visible in the workspace.
-The next weakness is that a missing-runtime module can still look selectable unless the command affordance itself reads the diagnostic state.
+The normal creation path now reads RuntimeOp diagnostic state.
+The next weakness is deciding whether a blocked diagnostic is absolute or can be intentionally inserted for repair/debug with explicit evidence.
 ```

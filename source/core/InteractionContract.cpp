@@ -90,6 +90,25 @@ const NodeSpec* specForNode (const GraphContract& graph,
     return node == nullptr ? nullptr : findNodeSpec (specs, node->type);
 }
 
+const NodeCreationGate* creationGateForNodeType (const std::vector<NodeCreationGate>& creationGates,
+                                                 const std::string& nodeType)
+{
+    const auto found = std::find_if (creationGates.begin(), creationGates.end(), [&] (const auto& gate) {
+        return gate.nodeType == nodeType;
+    });
+
+    return found == creationGates.end() ? nullptr : &*found;
+}
+
+CommandResult checkCreationGate (const std::vector<NodeCreationGate>& creationGates, const std::string& nodeType)
+{
+    const auto* gate = creationGateForNodeType (creationGates, nodeType);
+    if (gate == nullptr || gate->canCreate)
+        return { true, "create allowed" };
+
+    return { false, gate->reason.empty() ? "create blocked: " + nodeType : gate->reason };
+}
+
 GraphEdge makeEdge (const GraphContract& graph,
                     const std::vector<NodeSpec>& specs,
                     const std::string& from,
@@ -460,7 +479,31 @@ CommandResult createNode (GraphSession& session, const std::string& nodeType, co
     return createNode (session, makeSeedNodeSpecs(), nodeType, nodeId, position);
 }
 
+CommandResult createNode (GraphSession& session,
+                          const std::vector<NodeSpec>& specs,
+                          const std::vector<NodeCreationGate>& creationGates,
+                          const std::string& nodeType,
+                          const std::string& nodeId,
+                          CanvasPoint position)
+{
+    const auto gate = checkCreationGate (creationGates, nodeType);
+    if (! gate.ok)
+        return gate;
+
+    return createNode (session, specs, nodeType, nodeId, position);
+}
+
 CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::string& sourceEndpoint,
+                                    const std::string& nodeType,
+                                    const std::string& nodeId,
+                                    CanvasPoint position)
+{
+    return createNodeAndConnect (session, makeSeedNodeSpecs(), sourceEndpoint, nodeType, nodeId, position);
+}
+
+CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::vector<NodeSpec>& specs,
                                     const std::string& sourceEndpoint,
                                     const std::string& nodeType,
                                     const std::string& nodeId,
@@ -469,7 +512,6 @@ CommandResult createNodeAndConnect (GraphSession& session,
     if (containsNode (session.graph, nodeId))
         return { false, "duplicate node: " + nodeId };
 
-    const auto specs = makeSeedNodeSpecs();
     const auto* spec = findNodeSpec (specs, nodeType);
     if (spec == nullptr)
         return { false, "unknown node type: " + nodeType };
@@ -491,6 +533,21 @@ CommandResult createNodeAndConnect (GraphSession& session,
     session.graph = candidate;
     session.selectedNodeIds = { nodeId };
     return commitCommand (session, "create_node+connect", before);
+}
+
+CommandResult createNodeAndConnect (GraphSession& session,
+                                    const std::vector<NodeSpec>& specs,
+                                    const std::vector<NodeCreationGate>& creationGates,
+                                    const std::string& sourceEndpoint,
+                                    const std::string& nodeType,
+                                    const std::string& nodeId,
+                                    CanvasPoint position)
+{
+    const auto gate = checkCreationGate (creationGates, nodeType);
+    if (! gate.ok)
+        return gate;
+
+    return createNodeAndConnect (session, specs, sourceEndpoint, nodeType, nodeId, position);
 }
 
 CommandResult enterPatch (GraphSession& session, const std::string& nodeId)

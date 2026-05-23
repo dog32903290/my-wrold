@@ -744,18 +744,28 @@ std::vector<RuntimeOpModuleDiagnostic> makeRuntimeOpModuleDiagnostics (const Run
             diagnostic.browserLabel = "runtime ready";
             diagnostic.inspectorDetail = std::to_string (entry.supportedChildCount)
                                        + " RuntimeOps registered; execution not run";
+            diagnostic.creationStatus = "create-enabled";
+            diagnostic.creationLabel = "create";
         }
         else
         {
             diagnostic.status = "missing-runtime-op";
             diagnostic.browserLabel = "missing RuntimeOp";
             diagnostic.inspectorDetail = "missing RuntimeOp: " + joinedNodeTypes (diagnostic.missingNodeTypes);
+            diagnostic.creationStatus = "create-blocked";
+            diagnostic.creationLabel = "blocked";
+            diagnostic.creationBlockReason = diagnostic.inspectorDetail;
         }
 
         diagnostics.push_back (std::move (diagnostic));
     }
 
     return diagnostics;
+}
+
+bool runtimeOpDiagnosticAllowsCreation (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    return diagnostic.creationStatus != "create-blocked";
 }
 
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry)
@@ -1095,6 +1105,9 @@ std::string makeRuntimeOpModuleDiagnosticsJson (const std::vector<RuntimeOpModul
         out << "      \"status\": \"" << jsonEscaped (diagnostic.status) << "\",\n";
         out << "      \"browserLabel\": \"" << jsonEscaped (diagnostic.browserLabel) << "\",\n";
         out << "      \"inspectorDetail\": \"" << jsonEscaped (diagnostic.inspectorDetail) << "\",\n";
+        out << "      \"creationStatus\": \"" << jsonEscaped (diagnostic.creationStatus) << "\",\n";
+        out << "      \"creationLabel\": \"" << jsonEscaped (diagnostic.creationLabel) << "\",\n";
+        out << "      \"creationBlockReason\": \"" << jsonEscaped (diagnostic.creationBlockReason) << "\",\n";
         out << "      \"supportedChildCount\": " << diagnostic.supportedChildCount << ",\n";
         out << "      \"missingChildCount\": " << diagnostic.missingChildCount << ",\n";
         out << "      \"missingNodeTypes\": ";
