@@ -73,8 +73,51 @@ struct RuntimeDryRunResult
     std::string error;
 };
 
+struct RuntimeOutputValue
+{
+    std::string id;
+    double value = 0.0;
+};
+
+struct RuntimeChildExecutionStatus
+{
+    size_t cookIndex = 0;
+    std::string childId;
+    std::string nodeType;
+    std::string role;
+    std::string status;
+    std::string reason;
+    std::vector<RuntimeOutputValue> outputs;
+};
+
+struct RuntimeEntryExecutionStatus
+{
+    std::string nodeType;
+    std::string executionKind;
+    std::string status;
+    std::vector<RuntimeChildExecutionStatus> children;
+};
+
+struct RuntimeExecutionSnapshot
+{
+    int version = 1;
+    std::string mode = "synthetic-audio";
+    std::vector<RuntimeEntryExecutionStatus> entries;
+};
+
+struct RuntimeExecutionResult
+{
+    bool ok = false;
+    RuntimeExecutionSnapshot snapshot;
+    std::string error;
+};
+
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath);
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
+RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
+                                                                 const std::vector<float>& samples,
+                                                                 float analysisGain);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
 std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
+std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot);
 }

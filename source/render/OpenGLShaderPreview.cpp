@@ -373,8 +373,13 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto loudnessCompoundFile = dump->outputDirectory.getChildFile ("loudness_compound.json");
     const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
     const auto runtimeDryRunFile = dump->outputDirectory.getChildFile ("runtime_dry_run.json");
+    const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
     const auto runtimeRegistry = loadVisibleRuntimeRegistry();
     const auto runtimeDryRun = dryRunRuntimeRegistry (runtimeRegistry);
+    const std::vector<float> syntheticRuntimeSamples { 0.0f, 1.0f, -1.0f, 0.0f };
+    const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry,
+                                                                            syntheticRuntimeSamples,
+                                                                            1.0f);
 
     const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
     const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
@@ -392,6 +397,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeDryRunWritten = runtimeDryRun.ok
                                           && writeTextFile (runtimeDryRunFile,
                                                             makeRuntimeDryRunJson (runtimeDryRun.snapshot));
+    const auto runtimeExecutionWritten = runtimeExecution.ok
+                                             && writeTextFile (runtimeExecutionFile,
+                                                               makeRuntimeExecutionJson (runtimeExecution.snapshot));
     const auto frameWritten = writePngFile (frameFile, frameImage);
 
     if (cookOrderWritten
@@ -399,6 +407,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
         && loudnessCompoundWritten
         && runtimeRegistryWritten
         && runtimeDryRunWritten
+        && runtimeExecutionWritten
         && frameWritten)
     {
         reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
@@ -411,6 +420,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                   + juce::String (loudnessCompoundWritten ? "" : "loudness_compound.json ")
                   + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
                   + juce::String (runtimeDryRunWritten ? "" : "runtime_dry_run.json ")
+                  + juce::String (runtimeExecutionWritten ? "" : "runtime_execution.json ")
                   + juce::String (frameWritten ? "" : "frame.png"));
 }
 

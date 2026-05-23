@@ -1,5 +1,6 @@
 #include "RuntimeRegistry.h"
 
+#include "AudioAnalyzerState.h"
 #include "CompoundPatch.h"
 #include "StorageContract.h"
 
@@ -203,6 +204,66 @@ RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry)
     return { true, snapshot, {} };
 }
 
+RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
+                                                                 const std::vector<float>& samples,
+                                                                 const float analysisGain)
+{
+    if (samples.empty())
+        return { false, {}, "synthetic audio execution requires at least one sample" };
+
+    RuntimeExecutionSnapshot snapshot;
+    snapshot.version = registry.version;
+
+    for (const auto& entry : registry.entries)
+    {
+        RuntimeEntryExecutionStatus entryStatus;
+        entryStatus.nodeType = entry.nodeType;
+        entryStatus.executionKind = entry.executionKind;
+        entryStatus.status = "partial-execution";
+        entryStatus.children.reserve (entry.cookOrder.size());
+
+        for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
+        {
+            const auto& childId = entry.cookOrder[cookIndex];
+            const auto* child = findRuntimeChild (entry, childId);
+
+            if (child == nullptr)
+                return { false, {}, "execution missing child metadata for " + entry.nodeType + ":" + childId };
+
+            RuntimeChildExecutionStatus childStatus {
+                cookIndex,
+                child->id,
+                child->nodeType,
+                child->role,
+                "not-executed",
+                "RuntimeOp not implemented for " + child->nodeType,
+                {}
+            };
+
+            if (child->nodeType == "analyzer.rms")
+            {
+                const float* channels[] { samples.data() };
+                AudioAnalyzerState analyzer;
+                analyzer.processBlock (channels, 1, static_cast<int> (samples.size()), analysisGain);
+                const auto analyzerSnapshot = analyzer.getSnapshot();
+
+                childStatus.status = "computed";
+                childStatus.reason = "executed analyzer.rms over synthetic mono samples";
+                childStatus.outputs = {
+                    { "rms", static_cast<double> (analyzerSnapshot.rms) },
+                    { "peak", static_cast<double> (analyzerSnapshot.peak) }
+                };
+            }
+
+            entryStatus.children.push_back (childStatus);
+        }
+
+        snapshot.entries.push_back (entryStatus);
+    }
+
+    return { true, snapshot, {} };
+}
+
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
 {
     std::ostringstream out;
@@ -288,6 +349,73 @@ std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot)
             out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
             out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
             out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\"\n";
+            out << "        }";
+
+            if (childIndex + 1 < entry.children.size())
+                out << ",";
+
+            out << "\n";
+        }
+
+        out << "      ]\n";
+        out << "    }";
+
+        if (entryIndex + 1 < snapshot.entries.size())
+            out << ",";
+
+        out << "\n";
+    }
+
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"runtimeExecution\",\n";
+    out << "  \"version\": " << snapshot.version << ",\n";
+    out << "  \"mode\": \"" << jsonEscaped (snapshot.mode) << "\",\n";
+    out << "  \"entries\": [\n";
+
+    for (size_t entryIndex = 0; entryIndex < snapshot.entries.size(); ++entryIndex)
+    {
+        const auto& entry = snapshot.entries[entryIndex];
+        out << "    {\n";
+        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
+        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
+        out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"children\": [\n";
+
+        for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)
+        {
+            const auto& child = entry.children[childIndex];
+            out << "        {\n";
+            out << "          \"cookIndex\": " << child.cookIndex << ",\n";
+            out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
+            out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
+            out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
+            out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
+            out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\",\n";
+            out << "          \"outputs\": {";
+
+            for (size_t outputIndex = 0; outputIndex < child.outputs.size(); ++outputIndex)
+            {
+                const auto& output = child.outputs[outputIndex];
+
+                if (outputIndex != 0)
+                    out << ",";
+
+                out << " \"" << jsonEscaped (output.id) << "\": " << output.value;
+            }
+
+            if (! child.outputs.empty())
+                out << " ";
+
+            out << "}\n";
             out << "        }";
 
             if (childIndex + 1 < entry.children.size())

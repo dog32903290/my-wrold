@@ -1,5 +1,6 @@
 #include "RuntimeRegistry.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -19,6 +20,12 @@ void expect (bool condition, const std::string& message)
 void expectEqual (const std::string& actual, const std::string& expected, const std::string& message)
 {
     expect (actual == expected, message + " expected " + expected + " got " + actual);
+}
+
+void expectNear (double actual, double expected, double tolerance, const std::string& message)
+{
+    expect (std::abs (actual - expected) <= tolerance,
+            message + " expected near " + std::to_string (expected) + " got " + std::to_string (actual));
 }
 
 void expectContains (const std::string& text, const std::string& expected, const std::string& message)
@@ -86,6 +93,38 @@ int main()
     expectContains (dryRunJson, "\"childId\": \"audio_in\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"nodeType\": \"audio.input\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
+
+    const std::vector<float> syntheticSamples { 0.0f, 1.0f, -1.0f, 0.0f };
+    const auto execution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
+                                                                              syntheticSamples,
+                                                                              1.0f);
+    expect (execution.ok, execution.error);
+    expect (execution.snapshot.entries.size() == 1, "execution entry count");
+    expectEqual (execution.snapshot.entries.front().nodeType, "compound.loudness", "execution entry node type");
+    expectEqual (execution.snapshot.entries.front().status, "partial-execution", "execution entry status");
+    expect (execution.snapshot.entries.front().children.size() == 7, "execution child count");
+
+    const auto& rmsChild = execution.snapshot.entries.front().children.at (2);
+    expectEqual (rmsChild.childId, "rms", "executed child id");
+    expectEqual (rmsChild.nodeType, "analyzer.rms", "executed child type");
+    expectEqual (rmsChild.status, "computed", "executed child status");
+    expect (rmsChild.outputs.size() == 2, "executed child output count");
+    expectEqual (rmsChild.outputs.at (0).id, "rms", "rms output id");
+    expectNear (rmsChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "rms output value");
+    expectEqual (rmsChild.outputs.at (1).id, "peak", "peak output id");
+    expectNear (rmsChild.outputs.at (1).value, 1.0, 0.000001, "peak output value");
+
+    const auto& firstChild = execution.snapshot.entries.front().children.front();
+    expectEqual (firstChild.status, "not-executed", "non-rms child status");
+    expectContains (firstChild.reason, "RuntimeOp not implemented", "non-rms child reason");
+
+    const auto executionJson = myworld::makeRuntimeExecutionJson (execution.snapshot);
+    expectContains (executionJson, "\"kind\": \"runtimeExecution\"", "runtime execution json");
+    expectContains (executionJson, "\"mode\": \"synthetic-audio\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"rms\"", "runtime execution json");
+    expectContains (executionJson, "\"status\": \"computed\"", "runtime execution json");
+    expectContains (executionJson, "\"rms\": 0.707107", "runtime execution json");
+    expectContains (executionJson, "\"peak\": 1.000000", "runtime execution json");
 
     std::cout << "runtime registry ok\n";
     return 0;

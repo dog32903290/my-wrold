@@ -109,11 +109,13 @@ add_library(my_world_runtime_registry
 target_include_directories(my_world_runtime_registry
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
         ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
 )
 
 target_link_libraries(my_world_runtime_registry
     PUBLIC
+        my_world_audio
         my_world_compound_module
 )
 

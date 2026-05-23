@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, executable RuntimeOp chain for loaded compounds, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, full executable RuntimeOp chain for loaded compounds, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 09:45 Asia/Taipei.
+Date: 2026-05-23 09:59 Asia/Taipei.
 
 已鎖定:
 
@@ -37,21 +37,22 @@ Date: 2026-05-23 09:45 Asia/Taipei.
 - C1.4 module-library index proof is implemented: `fixtures/module-libraries/default.module-library.json` lists module packages, storage parses `ModuleLibraryManifest`, `CompoundModule` loads a registry from that library, and the visible app startup uses the library index instead of a hardcoded module manifest path.
 - C1.5 loaded compound runtime-registry proof is implemented: `RuntimeRegistry` loads the default module library into runtime entries, records `compound.patch` execution kind, public ports, child counts, and cook order, and `--dump-proof-and-exit` writes `debug/v1-shader-proof/runtime_registry.json`.
 - C1.6 loaded compound dry-run proof is implemented: the runtime registry stores child metadata, `dryRunRuntimeRegistry()` walks the loaded compound cook order, and `--dump-proof-and-exit` writes `debug/v1-shader-proof/runtime_dry_run.json` with per-child `dry-run-ready` statuses.
-- Latest C1.6 verification before commit: `cmake --build build`, `./build/my_world_runtime_registry_tests`, `ctest --test-dir build --output-on-failure` with 19/19 tests passing, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
+- C1.7 first executable child RuntimeOp proof is implemented: `executeRuntimeRegistryWithSyntheticAudio()` runs the loaded `analyzer.rms` child over synthetic mono samples through `AudioAnalyzerState`, records `rms=0.707107` and `peak=1.000000`, keeps unimplemented children explicitly `not-executed`, and `--dump-proof-and-exit` writes `debug/v1-shader-proof/runtime_execution.json`.
+- Latest C1.7 verification before commit: `cmake --build build`, `./build/my_world_runtime_registry_tests`, `ctest --test-dir build --output-on-failure` with 19/19 tests passing, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether the first loaded child can execute a real synthetic-data `RuntimeOp` instead of only a dry-run status.
+- Whether loaded compound execution can move from one computed child to explicit value handoff between adjacent child RuntimeOps.
 
 還沒承重:
 
-- Module discovery, runtime registry snapshots, and child dry-run statuses are storage-backed, but the runtime side still does not compute loaded compound child outputs as independent `RuntimeOp`s.
+- Module discovery, runtime registry snapshots, child dry-run statuses, and the first computed child output are storage-backed, but the runtime side still does not execute a full loaded compound chain with value handoff.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
 
 下一根線:
 
-- C1.7 first executable child RuntimeOp proof: `loaded analyzer.rms child -> synthetic audio facts -> rms/peak output JSON -> per-child runtime status`.
+- C1.8 loaded loudness mini-chain proof: `audio.mono_mix / analyzer.rms / analysis_gain -> explicit value handoff -> calibrated output JSON -> per-child runtime status`.
 
 ## First Stage Proofs
 
@@ -196,6 +197,9 @@ debug/v1-shader-proof/frame.png
 debug/v1-shader-proof/cook_order.json
 debug/v1-shader-proof/node_stats.json
 debug/v1-shader-proof/loudness_compound.json
+debug/v1-shader-proof/runtime_registry.json
+debug/v1-shader-proof/runtime_dry_run.json
+debug/v1-shader-proof/runtime_execution.json
 ```
 
 The V1 dump currently reads back the OpenGL framebuffer from `OpenGLShaderPreview`. This proves native render evidence, but the render backend boundary is not fully extracted yet.
@@ -246,12 +250,12 @@ Contract:
 - Proven: `loadCompoundModuleNodeSpecsFromLibrary()` loads the default module library index, resolves listed package paths near the library, and produces the visible registry consumed by app startup.
 - Proven: `RuntimeRegistry` loads the same default module library into runtime entries and proof dumps now write `runtime_registry.json` with `compound.loudness`, `executionKind: compound.patch`, public ports, child counts, internal edge counts, and cook order.
 - Proven: loaded runtime entries now include child metadata and `dryRunRuntimeRegistry()` writes `runtime_dry_run.json` with per-child cook index, node type, role, and `dry-run-ready` status.
+- Proven: the first loaded executable child RuntimeOp exists: `executeRuntimeRegistryWithSyntheticAudio()` runs the `analyzer.rms` child through existing analyzer code over synthetic mono samples, records `rms` and `peak` outputs, and writes `runtime_execution.json` with computed vs not-executed child statuses.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
-- Not yet proven: compiling the compound child graph into independent `RuntimeOp` execution. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
-- Not yet proven: executing loaded compound children as real `RuntimeOp`s with computed outputs. The current dry-run proves traversal and status ownership, not DSP/render computation.
+- Not yet proven: compiling the full compound child graph into independent `RuntimeOp` execution with value handoff. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
 
 ## Architecture
 
