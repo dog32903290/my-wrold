@@ -101,7 +101,7 @@ int main()
     expect (execution.ok, execution.error);
     expect (execution.snapshot.entries.size() == 1, "execution entry count");
     expectEqual (execution.snapshot.entries.front().nodeType, "compound.loudness", "execution entry node type");
-    expectEqual (execution.snapshot.entries.front().status, "partial-execution", "execution entry status");
+    expectEqual (execution.snapshot.entries.front().status, "computed", "execution entry status");
     expect (execution.snapshot.entries.front().children.size() == 7, "execution child count");
 
     const auto& rmsChild = execution.snapshot.entries.front().children.at (2);
@@ -136,8 +136,44 @@ int main()
     expectNear (analysisGainChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "analysis gain output value");
 
     const auto& gatedChild = execution.snapshot.entries.front().children.at (4);
-    expectEqual (gatedChild.status, "not-executed", "first parked child status");
-    expectContains (gatedChild.reason, "RuntimeOp not implemented", "first parked child reason");
+    expectEqual (gatedChild.childId, "pre_gate", "pre gate child id");
+    expectEqual (gatedChild.status, "computed", "pre gate child status");
+    expectEqual (gatedChild.inputs.at (0).id, "input", "pre gate input id");
+    expectNear (gatedChild.inputs.at (0).value, std::sqrt (0.5), 0.000001, "pre gate input value");
+    expectEqual (gatedChild.outputs.at (0).id, "out", "pre gate output id");
+    expectNear (gatedChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "pre gate output value");
+    expectEqual (gatedChild.outputs.at (1).id, "gate", "pre gate gate id");
+    expectNear (gatedChild.outputs.at (1).value, 1.0, 0.000001, "pre gate gate value");
+    expectEqual (gatedChild.outputs.at (2).id, "confidence", "pre gate confidence id");
+    expectNear (gatedChild.outputs.at (2).value, 1.0, 0.000001, "pre gate confidence value");
+
+    const auto& smootherChild = execution.snapshot.entries.front().children.at (5);
+    expectEqual (smootherChild.childId, "output_smoother", "smoother child id");
+    expectEqual (smootherChild.status, "computed", "smoother child status");
+    expectEqual (smootherChild.outputs.at (0).id, "out", "smoother output id");
+    expectNear (smootherChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "smoother output value");
+
+    const auto& loudnessOutChild = execution.snapshot.entries.front().children.at (6);
+    expectEqual (loudnessOutChild.childId, "loudness_out", "loudness out child id");
+    expectEqual (loudnessOutChild.status, "computed", "loudness out child status");
+    expect (loudnessOutChild.outputs.size() == 5, "loudness out output count");
+    expectEqual (loudnessOutChild.outputs.at (0).id, "out", "loudness out output id");
+    expectNear (loudnessOutChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "loudness out output value");
+    expectEqual (loudnessOutChild.outputs.at (1).id, "rms", "loudness out rms id");
+    expectNear (loudnessOutChild.outputs.at (1).value, std::sqrt (0.5), 0.000001, "loudness out rms value");
+    expectEqual (loudnessOutChild.outputs.at (2).id, "peak", "loudness out peak id");
+    expectNear (loudnessOutChild.outputs.at (2).value, 1.0, 0.000001, "loudness out peak value");
+    expectEqual (loudnessOutChild.outputs.at (3).id, "gate", "loudness out gate id");
+    expectNear (loudnessOutChild.outputs.at (3).value, 1.0, 0.000001, "loudness out gate value");
+    expectEqual (loudnessOutChild.outputs.at (4).id, "confidence", "loudness out confidence id");
+    expectNear (loudnessOutChild.outputs.at (4).value, 1.0, 0.000001, "loudness out confidence value");
+
+    expect (execution.snapshot.entries.front().publicOutputs.size() == 5, "entry public output count");
+    expectEqual (execution.snapshot.entries.front().publicOutputs.at (0).id, "out", "entry public out id");
+    expectNear (execution.snapshot.entries.front().publicOutputs.at (0).value,
+                std::sqrt (0.5),
+                0.000001,
+                "entry public out value");
 
     myworld::RuntimeSyntheticAudioInput stereoExecutionInput;
     stereoExecutionInput.channels = {
@@ -166,6 +202,32 @@ int main()
                 std::sqrt (0.28125) * 1.5,
                 0.000001,
                 "stereo analysis gain output value");
+    expectNear (stereoExecution.snapshot.entries.front().publicOutputs.at (0).value,
+                std::sqrt (0.28125) * 1.5,
+                0.000001,
+                "stereo public output value");
+
+    myworld::RuntimeSyntheticAudioInput silentExecutionInput;
+    silentExecutionInput.channels = {
+        { 0.0f, 0.0f, 0.0f, 0.0f }
+    };
+    silentExecutionInput.analysisGain = 2.0f;
+    const auto silentExecution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
+                                                                                    silentExecutionInput);
+    expect (silentExecution.ok, silentExecution.error);
+    expectEqual (silentExecution.snapshot.entries.front().status, "computed", "silent entry status");
+    expectNear (silentExecution.snapshot.entries.front().publicOutputs.at (0).value,
+                0.0,
+                0.000001,
+                "silent public out value");
+    expectNear (silentExecution.snapshot.entries.front().publicOutputs.at (3).value,
+                0.0,
+                0.000001,
+                "silent public gate value");
+    expectNear (silentExecution.snapshot.entries.front().publicOutputs.at (4).value,
+                0.0,
+                0.000001,
+                "silent public confidence value");
 
     const auto executionJson = myworld::makeRuntimeExecutionJson (execution.snapshot);
     expectContains (executionJson, "\"kind\": \"runtimeExecution\"", "runtime execution json");
@@ -175,7 +237,13 @@ int main()
     expectContains (executionJson, "\"childId\": \"rms\"", "runtime execution json");
     expectContains (executionJson, "\"status\": \"computed\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"analysis_gain\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"pre_gate\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"output_smoother\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"loudness_out\"", "runtime execution json");
+    expectContains (executionJson, "\"publicOutputs\": {", "runtime execution json");
     expectContains (executionJson, "\"out\": 0.707107", "runtime execution json");
+    expectContains (executionJson, "\"gate\": 1.000000", "runtime execution json");
+    expectContains (executionJson, "\"confidence\": 1.000000", "runtime execution json");
     expectContains (executionJson, "\"rms\": 0.707107", "runtime execution json");
     expectContains (executionJson, "\"peak\": 1.000000", "runtime execution json");
 

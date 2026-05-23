@@ -310,7 +310,16 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
         bool hasAudioInput = false;
         bool hasMonoMix = false;
         bool hasRms = false;
+        bool hasAnalysisGain = false;
+        bool hasPreGate = false;
+        bool hasSmoother = false;
         double rmsOutput = 0.0;
+        double peakOutput = 0.0;
+        double analysisGainOutput = 0.0;
+        double gateOutput = 0.0;
+        double gateValue = 0.0;
+        double confidenceValue = 0.0;
+        double smootherOutput = 0.0;
 
         for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
         {
@@ -383,11 +392,12 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
 
                     hasRms = true;
                     rmsOutput = static_cast<double> (analyzerSnapshot.rms);
+                    peakOutput = static_cast<double> (analyzerSnapshot.peak);
                     childStatus.status = "computed";
                     childStatus.reason = "computed rms/peak from audio.mono_mix output";
                     childStatus.outputs = {
                         { "rms", rmsOutput },
-                        { "peak", static_cast<double> (analyzerSnapshot.peak) }
+                        { "peak", peakOutput }
                     };
                 }
                 else
@@ -405,10 +415,12 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
 
                 if (hasRms)
                 {
+                    hasAnalysisGain = true;
+                    analysisGainOutput = rmsOutput * static_cast<double> (input.analysisGain);
                     childStatus.status = "computed";
                     childStatus.reason = "calibrated analyzer.rms output with analysis gain";
                     childStatus.outputs = {
-                        { "out", rmsOutput * static_cast<double> (input.analysisGain) }
+                        { "out", analysisGainOutput }
                     };
                 }
                 else
@@ -417,8 +429,95 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                     childStatus.reason = "waiting for analyzer.rms output";
                 }
             }
+            else if (child->nodeType == "analyzer.pre_gate")
+            {
+                constexpr double gateThreshold = 0.0001;
+                childStatus.inputs = {
+                    { "input", analysisGainOutput },
+                    { "threshold", gateThreshold }
+                };
+
+                if (hasAnalysisGain)
+                {
+                    hasPreGate = true;
+                    gateValue = analysisGainOutput > gateThreshold ? 1.0 : 0.0;
+                    confidenceValue = gateValue;
+                    gateOutput = analysisGainOutput * gateValue;
+                    childStatus.status = "computed";
+                    childStatus.reason = "gated calibrated loudness with fixed first-proof threshold";
+                    childStatus.outputs = {
+                        { "out", gateOutput },
+                        { "gate", gateValue },
+                        { "confidence", confidenceValue }
+                    };
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for analyzer.analysis_gain output";
+                }
+            }
+            else if (child->nodeType == "signal.smoother")
+            {
+                childStatus.inputs = {
+                    { "input", gateOutput }
+                };
+
+                if (hasPreGate)
+                {
+                    hasSmoother = true;
+                    smootherOutput = gateOutput;
+                    childStatus.status = "computed";
+                    childStatus.reason = "first-proof pass-through smoother";
+                    childStatus.outputs = {
+                        { "out", smootherOutput }
+                    };
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for analyzer.pre_gate output";
+                }
+            }
+            else if (child->nodeType == "analyzer.loudness_out")
+            {
+                childStatus.inputs = {
+                    { "input", smootherOutput },
+                    { "rms", rmsOutput },
+                    { "peak", peakOutput },
+                    { "gate", gateValue },
+                    { "confidence", confidenceValue }
+                };
+
+                if (hasSmoother)
+                {
+                    childStatus.status = "computed";
+                    childStatus.reason = "published loaded compound public outputs";
+                    childStatus.outputs = {
+                        { "out", smootherOutput },
+                        { "rms", rmsOutput },
+                        { "peak", peakOutput },
+                        { "gate", gateValue },
+                        { "confidence", confidenceValue }
+                    };
+                    entryStatus.publicOutputs = childStatus.outputs;
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for signal.smoother output";
+                }
+            }
 
             entryStatus.children.push_back (childStatus);
+        }
+
+        if (! entryStatus.publicOutputs.empty()
+            && std::all_of (entryStatus.children.begin(), entryStatus.children.end(), [] (const auto& child) {
+                return child.status == "computed";
+            }))
+        {
+            entryStatus.status = "computed";
         }
 
         snapshot.entries.push_back (entryStatus);
@@ -551,6 +650,9 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
         out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
         out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
         out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"publicOutputs\": ";
+        appendValueObject (out, entry.publicOutputs);
+        out << ",\n";
         out << "      \"children\": [\n";
 
         for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)

@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, dry-run snapshots, first executable child runtime execution snapshots, and first value-handoff mini-chain snapshots. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, dry-run snapshots, first executable child runtime execution snapshots, value-handoff snapshots, and public-output snapshots. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -70,6 +70,7 @@ Existing project facts this design must respect:
 - C1.6 adds a dry-run snapshot for that runtime registry, so proof evidence can show per-child cook order and status without pretending computed outputs exist yet.
 - C1.7 adds a synthetic runtime execution snapshot for that runtime registry, so proof evidence can show the loaded `analyzer.rms` child as computed with `rms` and `peak` outputs while unimplemented siblings stay explicit.
 - C1.8 adds multi-channel synthetic execution and per-child input/output values, so proof evidence can show `audio.mono_mix -> analyzer.rms -> analyzer.analysis_gain` value handoff in the loaded compound cook order.
+- C1.9 adds loaded public output publication, so proof evidence can show all seven loudness children as computed and entry-level `publicOutputs` without relying on UI-only status.
 
 ## First Slice
 

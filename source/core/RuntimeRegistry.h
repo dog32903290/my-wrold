@@ -96,6 +96,7 @@ struct RuntimeEntryExecutionStatus
     std::string nodeType;
     std::string executionKind;
     std::string status;
+    std::vector<RuntimeOutputValue> publicOutputs;
     std::vector<RuntimeChildExecutionStatus> children;
 };
 
