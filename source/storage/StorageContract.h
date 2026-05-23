@@ -38,6 +38,13 @@ struct ModulePackageManifest
     std::vector<std::string> publicPorts;
 };
 
+struct ModuleLibraryManifest
+{
+    std::string id;
+    std::string title;
+    std::vector<std::string> modulePackages;
+};
+
 struct ModulePackageLoadResult
 {
     bool ok = false;
@@ -45,14 +52,27 @@ struct ModulePackageLoadResult
     std::string error;
 };
 
+struct ModuleLibraryLoadResult
+{
+    bool ok = false;
+    ModuleLibraryManifest manifest;
+    std::string error;
+};
+
 WorkProjectManifest makeMinimalWorkProject (const std::string& id, const std::string& title);
 PatchDocumentManifest makeMinimalPatchDocument (const std::string& id, const std::string& title);
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath);
+ModuleLibraryManifest makeModuleLibrary (const std::string& id,
+                                         const std::string& title,
+                                         const std::vector<std::string>& modulePackages);
 
 std::string toJson (const WorkProjectManifest& manifest);
 std::string toJson (const PatchDocumentManifest& manifest);
 std::string toJson (const ModulePackageManifest& manifest);
+std::string toJson (const ModuleLibraryManifest& manifest);
 ModulePackageLoadResult parseModulePackageManifest (const std::string& text);
 ModulePackageLoadResult loadModulePackageManifest (const std::string& path);
+ModuleLibraryLoadResult parseModuleLibraryManifest (const std::string& text);
+ModuleLibraryLoadResult loadModuleLibraryManifest (const std::string& path);
 bool isKnownSaveStatus (const std::string& status);
 }

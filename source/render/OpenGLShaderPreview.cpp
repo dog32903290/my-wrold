@@ -72,15 +72,15 @@ juce::File parentDirectory (juce::File file, const int levels)
     return file;
 }
 
-std::vector<std::string> moduleManifestCandidatePaths()
+std::vector<std::string> moduleLibraryCandidatePaths()
 {
-    const auto manifestPath = juce::String ("fixtures/modules/loudness/module.json");
+    const auto libraryPath = juce::String ("fixtures/module-libraries/default.module-library.json");
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
     const auto buildAppRepoRoot = parentDirectory (executableDir, 5);
 
     return {
-        juce::File::getCurrentWorkingDirectory().getChildFile (manifestPath).getFullPathName().toStdString(),
-        buildAppRepoRoot.getChildFile (manifestPath).getFullPathName().toStdString()
+        juce::File::getCurrentWorkingDirectory().getChildFile (libraryPath).getFullPathName().toStdString(),
+        buildAppRepoRoot.getChildFile (libraryPath).getFullPathName().toStdString()
     };
 }
 
@@ -88,9 +88,9 @@ std::vector<NodeSpec> loadVisibleNodeSpecs()
 {
     const auto seedSpecs = makeSeedNodeSpecs();
 
-    for (const auto& path : moduleManifestCandidatePaths())
+    for (const auto& path : moduleLibraryCandidatePaths())
     {
-        const auto modules = loadCompoundModuleNodeSpecs ({ path });
+        const auto modules = loadCompoundModuleNodeSpecsFromLibrary (path);
         if (modules.ok)
             return mergeNodeSpecs (seedSpecs, modules.specs);
     }

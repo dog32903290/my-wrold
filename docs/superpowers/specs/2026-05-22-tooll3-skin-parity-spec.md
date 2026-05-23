@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module registry. S8 full timeline editing, output pinning, live thumbnails, storage-backed module-library indexing, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. S8 full timeline editing, output pinning, live thumbnails, runtime registry for loaded modules, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 09:05 Asia/Taipei.
+Date: 2026-05-23 09:12 Asia/Taipei.
 
 已鎖定:
 
@@ -17,21 +17,22 @@ Date: 2026-05-23 09:05 Asia/Taipei.
 - P0-P7 skin parity first pass is implemented and proof-backed by tests and proof dump.
 - Delete is now part of Tooll3-style selection behavior: selected edge lowers to `disconnect`, selected node lowers to `delete_node`.
 - C1.3 visible module registry proof exists, so the skin now consumes loaded module specs instead of only seed specs when creating nodes.
+- C1.4 module-library index proof exists, so the browser registry is fed through the default saved `ModuleLibrary` index rather than an app-side loudness module path.
 
 正在試壓:
 
-- Whether module libraries can be discovered from saved storage instead of app-side candidate paths.
+- Whether loaded library modules can expose runtime status without becoming only a browser/editor skin feature.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module registry feeding is wired, but the browser still needs storage-backed module-library discovery before it can become a real user library.
+- Module-library discovery is wired, but the browser still needs deeper category/search ergonomics and runtime status once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
 
 下一根線:
 
-- Keep new skin surface area parked until module-library discovery is storage-backed. The browser can consume a loaded registry now; next pressure is replacing hardcoded app manifest paths with a `ModuleLibrary` index.
+- Keep new skin surface area parked until loaded modules have runtime status/proof. The browser consumes a saved `ModuleLibrary` index now; next pressure is making loaded compounds explicit in runtime evidence.
 
 ## Purpose
 
@@ -395,7 +396,7 @@ Current proof:
 | Grid | Hidden/muted behind output background | Hidden/muted when output background active | No extra work until multiple background modes exist |
 | Panels | Left rail and bottom strip are unified ImGui workspace surfaces | Edge-attached Tooll3 panels | Collapse/resize persistence after storage path matures |
 | Timeline | Bottom strip shows real time/status plus non-editing playhead | Bottom strip with transport/time | Animation commandGraph contract before editing |
-| Module browser | Browser consumes a merged visible registry sourced from seed specs plus loaded module specs | Saved module libraries feed search/create without app hardcoding | Storage-backed `ModuleLibrary` index |
+| Module browser | Browser consumes a merged visible registry sourced from seed specs plus the default saved `ModuleLibrary` index | Saved module libraries feed search/create without app hardcoding | Runtime status and deeper browser ergonomics after more modules exist |
 
 ## First Implementation Roadmap
 

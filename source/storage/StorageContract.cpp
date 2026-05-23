@@ -177,6 +177,13 @@ ModulePackageManifest makeModulePackage (const std::string& id, const std::strin
     };
 }
 
+ModuleLibraryManifest makeModuleLibrary (const std::string& id,
+                                         const std::string& title,
+                                         const std::vector<std::string>& modulePackages)
+{
+    return { id, title, modulePackages };
+}
+
 std::string toJson (const WorkProjectManifest& manifest)
 {
     std::ostringstream out;
@@ -231,6 +238,20 @@ std::string toJson (const ModulePackageManifest& manifest)
     return out.str();
 }
 
+std::string toJson (const ModuleLibraryManifest& manifest)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"moduleLibrary\",\n";
+    out << "  \"id\": " << quote (manifest.id) << ",\n";
+    out << "  \"title\": " << quote (manifest.title) << ",\n";
+    out << "  \"modulePackages\": ";
+    appendStringArray (out, manifest.modulePackages);
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 ModulePackageLoadResult parseModulePackageManifest (const std::string& text)
 {
     ModulePackageManifest manifest {
@@ -264,6 +285,26 @@ ModulePackageLoadResult parseModulePackageManifest (const std::string& text)
     return { true, manifest, {} };
 }
 
+ModuleLibraryLoadResult parseModuleLibraryManifest (const std::string& text)
+{
+    ModuleLibraryManifest manifest {
+        stringMember (text, "id"),
+        stringMember (text, "title"),
+        stringArrayMember (text, "modulePackages")
+    };
+
+    if (stringMember (text, "kind") != "moduleLibrary")
+        return { false, {}, "module library kind must be moduleLibrary" };
+
+    if (manifest.id.empty() || manifest.title.empty())
+        return { false, {}, "module library is missing required identity fields" };
+
+    if (manifest.modulePackages.empty())
+        return { false, {}, "module library must list module packages" };
+
+    return { true, manifest, {} };
+}
+
 ModulePackageLoadResult loadModulePackageManifest (const std::string& path)
 {
     std::ifstream input (path);
@@ -273,6 +314,17 @@ ModulePackageLoadResult loadModulePackageManifest (const std::string& path)
     std::ostringstream buffer;
     buffer << input.rdbuf();
     return parseModulePackageManifest (buffer.str());
+}
+
+ModuleLibraryLoadResult loadModuleLibraryManifest (const std::string& path)
+{
+    std::ifstream input (path);
+    if (! input)
+        return { false, {}, "could not open module library: " + path };
+
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    return parseModuleLibraryManifest (buffer.str());
 }
 
 bool isKnownSaveStatus (const std::string& status)

@@ -123,6 +123,22 @@ int main()
     expect (visibleCreate.ok, "visible registry creates module compound");
     expect (visibleSession.commandLog.back() == "create_node", "visible registry create command logged");
 
+    const auto libraryRegistry = myworld::loadCompoundModuleNodeSpecsFromLibrary (
+        "fixtures/module-libraries/default.module-library.json");
+    expect (libraryRegistry.ok, libraryRegistry.error);
+    expect (libraryRegistry.specs.size() == 1, "library registry count");
+    expectEqual (libraryRegistry.specs.front().type, "compound.loudness", "library registry node type");
+
+    const auto browserRegistry = myworld::mergeNodeSpecs (myworld::makeSeedNodeSpecs(), libraryRegistry.specs);
+    auto browserSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    const auto browserCreate = myworld::createNode (browserSession,
+                                                    browserRegistry,
+                                                    "compound.loudness",
+                                                    "library_loud1",
+                                                    { 300.0, 320.0 });
+    expect (browserCreate.ok, "library registry creates browser compound");
+    expect (findNode (browserSession.graph, "library_loud1") != nullptr, "library-created node exists");
+
     std::cout << "compound module fixture ok\n";
     return 0;
 }

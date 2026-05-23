@@ -54,6 +54,26 @@ int main()
     expect (parsedModule.manifest.id == module.id, "module json parses id");
     expect (parsedModule.manifest.patchPath == module.patchPath, "module json parses patch path");
 
+    const auto library = myworld::makeModuleLibrary ("library.default",
+                                                     "Default Module Library",
+                                                     { "modules/loudness/module.json" });
+    const auto libraryJson = myworld::toJson (library);
+    expectContains (libraryJson, "\"kind\": \"moduleLibrary\"", "module library json");
+    expectContains (libraryJson, "\"modulePackages\"", "module library json");
+
+    const auto parsedLibrary = myworld::parseModuleLibraryManifest (libraryJson);
+    expect (parsedLibrary.ok, parsedLibrary.error);
+    expect (parsedLibrary.manifest.id == library.id, "module library json parses id");
+    expect (parsedLibrary.manifest.modulePackages.size() == 1, "module library json parses package count");
+    expect (parsedLibrary.manifest.modulePackages.front() == "modules/loudness/module.json",
+            "module library json parses package path");
+
+    const auto loadedLibrary = myworld::loadModuleLibraryManifest ("fixtures/module-libraries/default.module-library.json");
+    expect (loadedLibrary.ok, loadedLibrary.error);
+    expect (loadedLibrary.manifest.modulePackages.size() == 1, "module library fixture package count");
+    expect (loadedLibrary.manifest.modulePackages.front() == "modules/loudness/module.json",
+            "module library fixture stores relative package path");
+
     const auto loadedModule = myworld::loadModulePackageManifest ("fixtures/modules/loudness/module.json");
     expect (loadedModule.ok, loadedModule.error);
     expect (loadedModule.manifest.nodeType == "compound.loudness", "module fixture node type");

@@ -15,5 +15,6 @@ struct CompoundModuleNodeSpecsResult
 
 NodeSpec makeCompoundModuleNodeSpec (const ModulePackageManifest& manifest, const CompoundPatchSpec& compound);
 CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecs (const std::vector<std::string>& manifestPaths);
+CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecsFromLibrary (const std::string& libraryPath);
 std::vector<NodeSpec> mergeNodeSpecs (std::vector<NodeSpec> baseSpecs, const std::vector<NodeSpec>& overrideSpecs);
 }
