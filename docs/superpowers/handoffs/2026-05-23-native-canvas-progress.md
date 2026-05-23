@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 10:46 Asia/Taipei
+Date: 2026-05-23 18:13 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.10 loaded internal-edge value-bus proof commit
+pending C1.11 RuntimeOp dispatch-table proof commit
+c47a59c Route loaded runtime values through internal edges
 918545b Publish loaded loudness runtime outputs
 b3a3a72 Add loaded loudness mini-chain execution proof
 81c10cb Add synthetic RMS runtime execution proof
@@ -38,6 +39,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.8 exists: `RuntimeSyntheticAudioInput` supports multi-channel synthetic fixtures, runtime execution records per-child `inputs` and `outputs`, and `audio.mono_mix -> analyzer.rms -> analyzer.analysis_gain` now passes values in cook order.
 - C1.9 exists: `pre_gate`, `output_smoother`, and `loudness_out` execute after `analysis_gain`; app proof dump writes entry-level `publicOutputs` for `out`, `rms`, `peak`, `gate`, and `confidence`.
 - C1.10 exists: runtime registry entries retain loaded `internalEdges` and `publicOutputMappings`; execution uses a `child.port` value bus and writes per-child `inputSources` plus entry `publicOutputSources`.
+- C1.11 exists: synthetic loaded-compound execution dispatches child node types through named RuntimeOp functions and writes each executed child's `runtimeOp` id into `runtime_execution.json`.
 
 ## 試壓結果
 
@@ -67,12 +69,13 @@ debug/v1-shader-proof/runtime_execution.json records audio.mono_mix, analyzer.rm
 debug/v1-shader-proof/runtime_execution.json records publicOutputs { out, rms, peak, gate, confidence } and all seven children as computed
 debug/v1-shader-proof/runtime_registry.json records loaded internalEdges and publicOutputMappings
 debug/v1-shader-proof/runtime_execution.json records inputSources and publicOutputSources from loaded routes
-latest accepted source commit before C1.10: 918545b
+debug/v1-shader-proof/runtime_execution.json records named runtimeOp ids for executed children
+latest accepted source commit before C1.11: c47a59c
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, and internal-edge source evidence are storage-backed, but loaded compound execution still uses a single node-type branch ladder.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, and named RuntimeOp dispatch are storage-backed, but missing RuntimeOp coverage is not yet validated as a first-class failure.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -80,16 +83,15 @@ latest accepted source commit before C1.10: 918545b
 
 ## 下一根線
 
-C1.11 RuntimeOp dispatch-table proof:
+C1.12 RuntimeOp coverage failure proof:
 
 ```text
 module-library manifest
 -> runtime registry entry
--> nodeType dispatch table
--> named RuntimeOp function
--> value bus in/out
--> same public output JSON with smaller execution body
--> per-child runtime status
+-> RuntimeOp coverage check
+-> missing child nodeType fixture
+-> explicit dry-run/execution failure reason
+-> proof JSON records missing runtimeOp
 -> run tests and proof dump
 ```
 
@@ -97,5 +99,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is execution shape. The loaded routes now own value flow, but the node RuntimeOps are still branches inside one function instead of named dispatch units.
+The next weakness is runtime coverage law. The loaded routes and named RuntimeOps now execute, but a module can still contain an unsupported child node without a dedicated validation proof.
 ```

@@ -125,6 +125,7 @@ int main()
                  "mono mix child status");
     expectEqual (rmsChild.childId, "rms", "executed child id");
     expectEqual (rmsChild.nodeType, "analyzer.rms", "executed child type");
+    expectEqual (rmsChild.runtimeOp, "synthetic.analyzer.rms", "executed child runtime op");
     expectEqual (rmsChild.status, "computed", "executed child status");
     expect (rmsChild.inputs.size() == 1, "executed child input count");
     expectEqual (rmsChild.inputs.front().id, "input", "rms input id");
@@ -138,6 +139,7 @@ int main()
 
     const auto& analysisGainChild = execution.snapshot.entries.front().children.at (3);
     expectEqual (analysisGainChild.childId, "analysis_gain", "analysis gain child id");
+    expectEqual (analysisGainChild.runtimeOp, "synthetic.analyzer.analysis_gain", "analysis gain runtime op");
     expectEqual (analysisGainChild.status, "computed", "analysis gain child status");
     expect (analysisGainChild.inputs.size() == 2, "analysis gain input count");
     expectEqual (analysisGainChild.inputs.at (0).id, "input", "analysis gain input id");
@@ -151,6 +153,7 @@ int main()
 
     const auto& gatedChild = execution.snapshot.entries.front().children.at (4);
     expectEqual (gatedChild.childId, "pre_gate", "pre gate child id");
+    expectEqual (gatedChild.runtimeOp, "synthetic.analyzer.pre_gate", "pre gate runtime op");
     expectEqual (gatedChild.status, "computed", "pre gate child status");
     expectEqual (gatedChild.inputs.at (0).id, "input", "pre gate input id");
     expectEqual (gatedChild.inputs.at (0).source, "analysis_gain.out", "pre gate input source");
@@ -164,6 +167,7 @@ int main()
 
     const auto& smootherChild = execution.snapshot.entries.front().children.at (5);
     expectEqual (smootherChild.childId, "output_smoother", "smoother child id");
+    expectEqual (smootherChild.runtimeOp, "synthetic.signal.smoother", "smoother runtime op");
     expectEqual (smootherChild.status, "computed", "smoother child status");
     expectEqual (smootherChild.inputs.at (0).source, "pre_gate.out", "smoother input source");
     expectEqual (smootherChild.outputs.at (0).id, "out", "smoother output id");
@@ -171,6 +175,7 @@ int main()
 
     const auto& loudnessOutChild = execution.snapshot.entries.front().children.at (6);
     expectEqual (loudnessOutChild.childId, "loudness_out", "loudness out child id");
+    expectEqual (loudnessOutChild.runtimeOp, "synthetic.analyzer.loudness_out", "loudness out runtime op");
     expectEqual (loudnessOutChild.status, "computed", "loudness out child status");
     expectEqual (loudnessOutChild.inputs.at (0).source, "output_smoother.out", "loudness out input source");
     expectEqual (loudnessOutChild.inputs.at (2).source, "rms.peak", "loudness out peak source");
@@ -264,6 +269,9 @@ int main()
     expectContains (executionJson, "\"input\": \"rms.rms\"", "runtime execution json");
     expectContains (executionJson, "\"out\": \"loudness_out.out\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"rms\"", "runtime execution json");
+    expectContains (executionJson, "\"runtimeOp\": \"synthetic.audio.input\"", "runtime execution json");
+    expectContains (executionJson, "\"runtimeOp\": \"synthetic.analyzer.rms\"", "runtime execution json");
+    expectContains (executionJson, "\"runtimeOp\": \"synthetic.analyzer.loudness_out\"", "runtime execution json");
     expectContains (executionJson, "\"status\": \"computed\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"analysis_gain\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"pre_gate\"", "runtime execution json");

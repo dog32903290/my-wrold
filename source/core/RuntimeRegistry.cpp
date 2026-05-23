@@ -203,11 +203,14 @@ const RuntimeRegistryEdge* findInboundEdge (const RuntimeRegistryEntry& entry,
     return found == entry.internalEdges.end() ? nullptr : &(*found);
 }
 
+using RuntimeValueBus = std::map<std::string, RuntimeOutputValue>;
+using RuntimeSampleBus = std::map<std::string, std::vector<float>>;
+
 RuntimeOutputValue makeInputValue (const std::string& id,
                                    const RuntimeRegistryEntry& entry,
                                    const std::string& childId,
                                    const std::string& inputPort,
-                                   const std::map<std::string, RuntimeOutputValue>& valueBus)
+                                   const RuntimeValueBus& valueBus)
 {
     const auto* edge = findInboundEdge (entry, childId, inputPort);
 
@@ -219,7 +222,7 @@ RuntimeOutputValue makeInputValue (const std::string& id,
     return { id, value, edge->from };
 }
 
-void publishValue (std::map<std::string, RuntimeOutputValue>& valueBus,
+void publishValue (RuntimeValueBus& valueBus,
                    std::vector<RuntimeOutputValue>& outputs,
                    const std::string& childId,
                    const std::string& portId,
@@ -230,7 +233,7 @@ void publishValue (std::map<std::string, RuntimeOutputValue>& valueBus,
     valueBus[childId + "." + portId] = output;
 }
 
-bool hasValue (const std::map<std::string, RuntimeOutputValue>& valueBus, const std::string& key)
+bool hasValue (const RuntimeValueBus& valueBus, const std::string& key)
 {
     return valueBus.find (key) != valueBus.end();
 }
@@ -275,6 +278,246 @@ MonoMixResult mixToMono (const std::vector<std::vector<float>>& channels)
     result.rms = std::sqrt (sumSquares / static_cast<double> (sampleCount));
     result.peak = peak;
     return result;
+}
+
+struct SyntheticRuntimeOpContext
+{
+    const RuntimeRegistryEntry& entry;
+    const RuntimeRegistryChild& child;
+    const RuntimeSyntheticAudioInput& input;
+    size_t sampleCount = 0;
+    RuntimeValueBus& valueBus;
+    RuntimeSampleBus& sampleBus;
+};
+
+using SyntheticRuntimeOpFunction = void (*) (SyntheticRuntimeOpContext&, RuntimeChildExecutionStatus&);
+
+struct SyntheticRuntimeOpDefinition
+{
+    const char* nodeType = "";
+    const char* id = "";
+    SyntheticRuntimeOpFunction execute = nullptr;
+};
+
+void runSyntheticAudioInputOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    childStatus.status = "computed";
+    childStatus.reason = "accepted synthetic audio channels";
+    publishValue (context.valueBus,
+                  childStatus.outputs,
+                  context.child.id,
+                  "channels",
+                  static_cast<double> (context.input.channels.size()));
+    publishValue (context.valueBus,
+                  childStatus.outputs,
+                  context.child.id,
+                  "sampleCount",
+                  static_cast<double> (context.sampleCount));
+}
+
+void runSyntheticMonoMixOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto audioInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    childStatus.inputs = { audioInput };
+
+    if (hasValue (context.valueBus, audioInput.source))
+    {
+        auto monoMix = mixToMono (context.input.channels);
+        context.sampleBus[context.child.id + ".mono"] = monoMix.samples;
+        childStatus.status = "computed";
+        childStatus.reason = "averaged synthetic channels into mono samples";
+        publishValue (context.valueBus,
+                      childStatus.outputs,
+                      context.child.id,
+                      "sampleCount",
+                      static_cast<double> (monoMix.samples.size()));
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "rms", monoMix.rms);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "peak", monoMix.peak);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "mono", monoMix.rms);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for audio.input output";
+    }
+}
+
+void runSyntheticAnalyzerRmsOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto monoInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    childStatus.inputs = { monoInput };
+    const auto sampleSource = context.sampleBus.find (monoInput.source);
+
+    if (sampleSource != context.sampleBus.end())
+    {
+        const auto& monoSamples = sampleSource->second;
+        const float* channels[] { monoSamples.data() };
+        AudioAnalyzerState analyzer;
+        analyzer.processBlock (channels, 1, static_cast<int> (monoSamples.size()), 1.0f);
+        const auto analyzerSnapshot = analyzer.getSnapshot();
+
+        childStatus.status = "computed";
+        childStatus.reason = "computed rms/peak from audio.mono_mix output";
+        publishValue (context.valueBus,
+                      childStatus.outputs,
+                      context.child.id,
+                      "rms",
+                      static_cast<double> (analyzerSnapshot.rms));
+        publishValue (context.valueBus,
+                      childStatus.outputs,
+                      context.child.id,
+                      "peak",
+                      static_cast<double> (analyzerSnapshot.peak));
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for audio.mono_mix output";
+    }
+}
+
+void runSyntheticAnalysisGainOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto measuredInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    childStatus.inputs = {
+        measuredInput,
+        { "gain", static_cast<double> (context.input.analysisGain) }
+    };
+
+    if (hasValue (context.valueBus, measuredInput.source))
+    {
+        const auto calibrated = measuredInput.value * static_cast<double> (context.input.analysisGain);
+        childStatus.status = "computed";
+        childStatus.reason = "calibrated analyzer.rms output with analysis gain";
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "out", calibrated);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for analyzer.rms output";
+    }
+}
+
+void runSyntheticPreGateOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    constexpr double gateThreshold = 0.0001;
+    const auto calibratedInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    childStatus.inputs = {
+        calibratedInput,
+        { "threshold", gateThreshold }
+    };
+
+    if (hasValue (context.valueBus, calibratedInput.source))
+    {
+        const auto gateValue = calibratedInput.value > gateThreshold ? 1.0 : 0.0;
+        const auto confidenceValue = gateValue;
+        const auto gateOutput = calibratedInput.value * gateValue;
+        childStatus.status = "computed";
+        childStatus.reason = "gated calibrated loudness with fixed first-proof threshold";
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "out", gateOutput);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "gate", gateValue);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "confidence", confidenceValue);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for analyzer.analysis_gain output";
+    }
+}
+
+void runSyntheticSmootherOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto gatedInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    childStatus.inputs = { gatedInput };
+
+    if (hasValue (context.valueBus, gatedInput.source))
+    {
+        childStatus.status = "computed";
+        childStatus.reason = "first-proof pass-through smoother";
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "out", gatedInput.value);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for analyzer.pre_gate output";
+    }
+}
+
+void runSyntheticLoudnessOutOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto smoothedInput = makeInputValue ("input", context.entry, context.child.id, "input", context.valueBus);
+    const auto rmsInput = RuntimeOutputValue { "rms",
+                                               hasValue (context.valueBus, "rms.rms")
+                                                   ? context.valueBus.at ("rms.rms").value
+                                                   : 0.0,
+                                               "rms.rms" };
+    const auto peakInput = makeInputValue ("peak", context.entry, context.child.id, "peak", context.valueBus);
+    const auto gateInput = RuntimeOutputValue { "gate",
+                                                hasValue (context.valueBus, "pre_gate.gate")
+                                                    ? context.valueBus.at ("pre_gate.gate").value
+                                                    : 0.0,
+                                                "pre_gate.gate" };
+    const auto confidenceInput = makeInputValue ("confidence",
+                                                 context.entry,
+                                                 context.child.id,
+                                                 "confidence",
+                                                 context.valueBus);
+    childStatus.inputs = {
+        smoothedInput,
+        rmsInput,
+        peakInput,
+        gateInput,
+        confidenceInput
+    };
+
+    if (hasValue (context.valueBus, smoothedInput.source)
+        && hasValue (context.valueBus, rmsInput.source)
+        && hasValue (context.valueBus, peakInput.source)
+        && hasValue (context.valueBus, gateInput.source)
+        && hasValue (context.valueBus, confidenceInput.source))
+    {
+        childStatus.status = "computed";
+        childStatus.reason = "published loaded compound public outputs";
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "out", smoothedInput.value);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "rms", rmsInput.value);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "peak", peakInput.value);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "gate", gateInput.value);
+        publishValue (context.valueBus,
+                      childStatus.outputs,
+                      context.child.id,
+                      "confidence",
+                      confidenceInput.value);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for signal.smoother output";
+    }
+}
+
+const std::vector<SyntheticRuntimeOpDefinition>& syntheticRuntimeOps()
+{
+    static const std::vector<SyntheticRuntimeOpDefinition> ops {
+        { "audio.input", "synthetic.audio.input", runSyntheticAudioInputOp },
+        { "audio.mono_mix", "synthetic.audio.mono_mix", runSyntheticMonoMixOp },
+        { "analyzer.rms", "synthetic.analyzer.rms", runSyntheticAnalyzerRmsOp },
+        { "analyzer.analysis_gain", "synthetic.analyzer.analysis_gain", runSyntheticAnalysisGainOp },
+        { "analyzer.pre_gate", "synthetic.analyzer.pre_gate", runSyntheticPreGateOp },
+        { "signal.smoother", "synthetic.signal.smoother", runSyntheticSmootherOp },
+        { "analyzer.loudness_out", "synthetic.analyzer.loudness_out", runSyntheticLoudnessOutOp }
+    };
+
+    return ops;
+}
+
+const SyntheticRuntimeOpDefinition* findSyntheticRuntimeOp (const std::string& nodeType)
+{
+    const auto& ops = syntheticRuntimeOps();
+    const auto found = std::find_if (ops.begin(), ops.end(), [&nodeType] (const auto& op) {
+        return op.nodeType == nodeType;
+    });
+
+    return found == ops.end() ? nullptr : &(*found);
 }
 
 RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& module, const CompoundPatchSpec& compound)
@@ -406,8 +649,8 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
         entryStatus.status = "partial-execution";
         entryStatus.children.reserve (entry.cookOrder.size());
 
-        std::map<std::string, RuntimeOutputValue> valueBus;
-        std::map<std::string, std::vector<float>> sampleBus;
+        RuntimeValueBus valueBus;
+        RuntimeSampleBus sampleBus;
 
         for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
         {
@@ -422,198 +665,18 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                 child->id,
                 child->nodeType,
                 child->role,
+                {},
                 "not-executed",
                 "RuntimeOp not implemented for " + child->nodeType,
                 {},
                 {}
             };
 
-            if (child->nodeType == "audio.input")
+            if (const auto* runtimeOp = findSyntheticRuntimeOp (child->nodeType))
             {
-                childStatus.status = "computed";
-                childStatus.reason = "accepted synthetic audio channels";
-                publishValue (valueBus,
-                              childStatus.outputs,
-                              child->id,
-                              "channels",
-                              static_cast<double> (input.channels.size()));
-                publishValue (valueBus,
-                              childStatus.outputs,
-                              child->id,
-                              "sampleCount",
-                              static_cast<double> (sampleCount));
-            }
-            else if (child->nodeType == "audio.mono_mix")
-            {
-                const auto audioInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                childStatus.inputs = { audioInput };
-
-                if (hasValue (valueBus, audioInput.source))
-                {
-                    auto monoMix = mixToMono (input.channels);
-                    sampleBus[child->id + ".mono"] = monoMix.samples;
-                    childStatus.status = "computed";
-                    childStatus.reason = "averaged synthetic channels into mono samples";
-                    publishValue (valueBus,
-                                  childStatus.outputs,
-                                  child->id,
-                                  "sampleCount",
-                                  static_cast<double> (monoMix.samples.size()));
-                    publishValue (valueBus, childStatus.outputs, child->id, "rms", monoMix.rms);
-                    publishValue (valueBus, childStatus.outputs, child->id, "peak", monoMix.peak);
-                    publishValue (valueBus, childStatus.outputs, child->id, "mono", monoMix.rms);
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for audio.input output";
-                }
-            }
-            else if (child->nodeType == "analyzer.rms")
-            {
-                const auto monoInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                childStatus.inputs = { monoInput };
-                const auto sampleSource = sampleBus.find (monoInput.source);
-
-                if (sampleSource != sampleBus.end())
-                {
-                    const auto& monoSamples = sampleSource->second;
-                    const float* channels[] { monoSamples.data() };
-                    AudioAnalyzerState analyzer;
-                    analyzer.processBlock (channels, 1, static_cast<int> (monoSamples.size()), 1.0f);
-                    const auto analyzerSnapshot = analyzer.getSnapshot();
-
-                    childStatus.status = "computed";
-                    childStatus.reason = "computed rms/peak from audio.mono_mix output";
-                    publishValue (valueBus,
-                                  childStatus.outputs,
-                                  child->id,
-                                  "rms",
-                                  static_cast<double> (analyzerSnapshot.rms));
-                    publishValue (valueBus,
-                                  childStatus.outputs,
-                                  child->id,
-                                  "peak",
-                                  static_cast<double> (analyzerSnapshot.peak));
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for audio.mono_mix output";
-                }
-            }
-            else if (child->nodeType == "analyzer.analysis_gain")
-            {
-                const auto measuredInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                childStatus.inputs = {
-                    measuredInput,
-                    { "gain", static_cast<double> (input.analysisGain) }
-                };
-
-                if (hasValue (valueBus, measuredInput.source))
-                {
-                    const auto calibrated = measuredInput.value * static_cast<double> (input.analysisGain);
-                    childStatus.status = "computed";
-                    childStatus.reason = "calibrated analyzer.rms output with analysis gain";
-                    publishValue (valueBus, childStatus.outputs, child->id, "out", calibrated);
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for analyzer.rms output";
-                }
-            }
-            else if (child->nodeType == "analyzer.pre_gate")
-            {
-                constexpr double gateThreshold = 0.0001;
-                const auto calibratedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                childStatus.inputs = {
-                    calibratedInput,
-                    { "threshold", gateThreshold }
-                };
-
-                if (hasValue (valueBus, calibratedInput.source))
-                {
-                    const auto gateValue = calibratedInput.value > gateThreshold ? 1.0 : 0.0;
-                    const auto confidenceValue = gateValue;
-                    const auto gateOutput = calibratedInput.value * gateValue;
-                    childStatus.status = "computed";
-                    childStatus.reason = "gated calibrated loudness with fixed first-proof threshold";
-                    publishValue (valueBus, childStatus.outputs, child->id, "out", gateOutput);
-                    publishValue (valueBus, childStatus.outputs, child->id, "gate", gateValue);
-                    publishValue (valueBus, childStatus.outputs, child->id, "confidence", confidenceValue);
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for analyzer.analysis_gain output";
-                }
-            }
-            else if (child->nodeType == "signal.smoother")
-            {
-                const auto gatedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                childStatus.inputs = { gatedInput };
-
-                if (hasValue (valueBus, gatedInput.source))
-                {
-                    childStatus.status = "computed";
-                    childStatus.reason = "first-proof pass-through smoother";
-                    publishValue (valueBus, childStatus.outputs, child->id, "out", gatedInput.value);
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for analyzer.pre_gate output";
-                }
-            }
-            else if (child->nodeType == "analyzer.loudness_out")
-            {
-                const auto smoothedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
-                const auto rmsInput = RuntimeOutputValue { "rms",
-                                                           hasValue (valueBus, "rms.rms") ? valueBus.at ("rms.rms").value : 0.0,
-                                                           "rms.rms" };
-                const auto peakInput = makeInputValue ("peak", entry, child->id, "peak", valueBus);
-                const auto gateInput = RuntimeOutputValue { "gate",
-                                                            hasValue (valueBus, "pre_gate.gate")
-                                                                ? valueBus.at ("pre_gate.gate").value
-                                                                : 0.0,
-                                                            "pre_gate.gate" };
-                const auto confidenceInput = makeInputValue ("confidence",
-                                                             entry,
-                                                             child->id,
-                                                             "confidence",
-                                                             valueBus);
-                childStatus.inputs = {
-                    smoothedInput,
-                    rmsInput,
-                    peakInput,
-                    gateInput,
-                    confidenceInput
-                };
-
-                if (hasValue (valueBus, smoothedInput.source)
-                    && hasValue (valueBus, rmsInput.source)
-                    && hasValue (valueBus, peakInput.source)
-                    && hasValue (valueBus, gateInput.source)
-                    && hasValue (valueBus, confidenceInput.source))
-                {
-                    childStatus.status = "computed";
-                    childStatus.reason = "published loaded compound public outputs";
-                    publishValue (valueBus, childStatus.outputs, child->id, "out", smoothedInput.value);
-                    publishValue (valueBus, childStatus.outputs, child->id, "rms", rmsInput.value);
-                    publishValue (valueBus, childStatus.outputs, child->id, "peak", peakInput.value);
-                    publishValue (valueBus, childStatus.outputs, child->id, "gate", gateInput.value);
-                    publishValue (valueBus,
-                                  childStatus.outputs,
-                                  child->id,
-                                  "confidence",
-                                  confidenceInput.value);
-                }
-                else
-                {
-                    childStatus.status = "blocked";
-                    childStatus.reason = "waiting for signal.smoother output";
-                }
+                childStatus.runtimeOp = runtimeOp->id;
+                SyntheticRuntimeOpContext context { entry, *child, input, sampleCount, valueBus, sampleBus };
+                runtimeOp->execute (context, childStatus);
             }
 
             entryStatus.children.push_back (childStatus);
@@ -813,6 +876,7 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
             out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
             out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
             out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
+            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
             out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
             out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\",\n";
             out << "          \"inputs\": ";
