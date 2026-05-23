@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 23:01 Asia/Taipei
+Date: 2026-05-23 23:41 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.12 RuntimeOp coverage failure proof commit
+pending C1.13 saved negative RuntimeOp fixture proof commit
+4cf4b77 Fail runtime execution on missing RuntimeOps
 0df9775 Dispatch loaded runtime nodes through named ops
 c47a59c Route loaded runtime values through internal edges
 918545b Publish loaded loudness runtime outputs
@@ -42,6 +43,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.10 exists: runtime registry entries retain loaded `internalEdges` and `publicOutputMappings`; execution uses a `child.port` value bus and writes per-child `inputSources` plus entry `publicOutputSources`.
 - C1.11 exists: synthetic loaded-compound execution dispatches child node types through named RuntimeOp functions and writes each executed child's `runtimeOp` id into `runtime_execution.json`.
 - C1.12 exists: unsupported loaded child node types now fail dry-run and execution as `missing-runtime-op`, preserve a serializable failure snapshot, and avoid publishing public outputs on coverage failure.
+- C1.13 exists: `fixtures/module-libraries/missing-runtimeop.module-library.json` loads a saved `compound.loudness.missing-runtimeop` module with `debug.unsupported`; runtime tests and app proof dump persist `runtime_missing_runtimeop_registry.json`, `runtime_missing_runtimeop_dry_run.json`, and `runtime_missing_runtimeop_execution.json`.
 
 ## 試壓結果
 
@@ -74,12 +76,18 @@ debug/v1-shader-proof/runtime_execution.json records inputSources and publicOutp
 debug/v1-shader-proof/runtime_execution.json records named runtimeOp ids for executed children
 runtime registry tests record unsupported child nodeType failure as missing-runtime-op for dry-run and execution
 compile-first-semantic-porting C1.12 measurement records 0 compile repairs, 0 test repairs, and 1 prevented coverage-honesty bug
-latest accepted source commit before C1.12: 0df9775
+runtime registry tests load the saved negative module fixture and verify dry-run/execution fail as missing-runtime-op without public outputs
+debug/v1-shader-proof/runtime_missing_runtimeop_registry.json records compound.loudness.missing-runtimeop and debug.unsupported
+debug/v1-shader-proof/runtime_missing_runtimeop_dry_run.json records missing-runtime-op before execution
+debug/v1-shader-proof/runtime_missing_runtimeop_execution.json records missing-runtime-op and no publicOutputs
+compile-first-semantic-porting C1.13 measurement records 0 compile repairs, 0 test repairs, and one storage-backed proof gap closed
+latest accepted source commit before C1.13: 4cf4b77
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, and missing RuntimeOp coverage failure are storage-backed/test-backed, but no saved negative module fixture is exported yet.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, and saved negative proof export are storage-backed/test-backed.
+- RuntimeOp support is not yet exposed as an inspectable catalog/coverage report for future module authors.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -87,20 +95,19 @@ latest accepted source commit before C1.12: 0df9775
 
 ## 下一根線
 
-C1.13 saved negative module fixture proof:
+C1.14 RuntimeOp catalog coverage proof:
 
 ```text
-module-library manifest
--> unsupported child nodeType in saved fixture
--> registry load succeeds
--> dry-run/execution fail with missing-runtime-op
--> persisted negative proof JSON
+RuntimeOp table
+-> support matrix JSON
+-> module-library coverage report
+-> proof dump names supported and missing child nodeTypes before execution
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is fixture-level evidence. The runtime coverage law exists in tests, but the negative case is not yet represented as a saved module fixture/artifact.
+Saved positive and negative module fixtures now bear weight.
+The next weakness is author feedback: future modules need to know RuntimeOp coverage before they hit execution failure.
 ```

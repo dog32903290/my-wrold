@@ -169,6 +169,79 @@ int main()
     expectContains (unsupportedExecutionJson, "\"status\": \"missing-runtime-op\"", "unsupported execution json");
     expectContains (unsupportedExecutionJson, "\"nodeType\": \"debug.unsupported\"", "unsupported execution json");
 
+    const auto savedNegativeRegistry = myworld::loadRuntimeRegistryFromModuleLibrary (
+        "fixtures/module-libraries/missing-runtimeop.module-library.json");
+    expect (savedNegativeRegistry.ok, savedNegativeRegistry.error);
+    expect (savedNegativeRegistry.registry.entries.size() == 1, "saved negative registry entry count");
+    expectEqual (savedNegativeRegistry.registry.entries.front().nodeType,
+                 "compound.loudness.missing-runtimeop",
+                 "saved negative registry node type");
+    expect (savedNegativeRegistry.registry.entries.front().children.size() == 8,
+            "saved negative registry child metadata count");
+    expectEqual (savedNegativeRegistry.registry.entries.front().children.back().id,
+                 "unsupported_probe",
+                 "saved negative registry unsupported child id");
+    expectEqual (savedNegativeRegistry.registry.entries.front().children.back().nodeType,
+                 "debug.unsupported",
+                 "saved negative registry unsupported child type");
+    expectEqual (savedNegativeRegistry.registry.entries.front().cookOrder.back(),
+                 "unsupported_probe",
+                 "saved negative registry unsupported cook order tail");
+
+    const auto savedNegativeRegistryJson = myworld::makeRuntimeRegistryJson (savedNegativeRegistry.registry);
+    expectContains (savedNegativeRegistryJson,
+                    "\"nodeType\": \"compound.loudness.missing-runtimeop\"",
+                    "saved negative registry json");
+    expectContains (savedNegativeRegistryJson,
+                    "\"nodeType\": \"debug.unsupported\"",
+                    "saved negative registry json");
+
+    const auto savedNegativeDryRun = myworld::dryRunRuntimeRegistry (savedNegativeRegistry.registry);
+    expect (! savedNegativeDryRun.ok, "saved negative dry-run should fail runtime op coverage");
+    expectContains (savedNegativeDryRun.error, "missing RuntimeOp", "saved negative dry-run error");
+    expectEqual (savedNegativeDryRun.snapshot.entries.front().status,
+                 "missing-runtime-op",
+                 "saved negative dry-run entry status");
+    expectEqual (savedNegativeDryRun.snapshot.entries.front().children.back().childId,
+                 "unsupported_probe",
+                 "saved negative dry-run child id");
+    expectEqual (savedNegativeDryRun.snapshot.entries.front().children.back().nodeType,
+                 "debug.unsupported",
+                 "saved negative dry-run child type");
+    expectEqual (savedNegativeDryRun.snapshot.entries.front().children.back().status,
+                 "missing-runtime-op",
+                 "saved negative dry-run child status");
+
+    const auto savedNegativeDryRunJson = myworld::makeRuntimeDryRunJson (savedNegativeDryRun.snapshot);
+    expectContains (savedNegativeDryRunJson, "\"status\": \"missing-runtime-op\"", "saved negative dry-run json");
+    expectContains (savedNegativeDryRunJson, "\"nodeType\": \"debug.unsupported\"", "saved negative dry-run json");
+
+    const auto savedNegativeExecution = myworld::executeRuntimeRegistryWithSyntheticAudio (
+        savedNegativeRegistry.registry,
+        syntheticSamples,
+        1.0f);
+    expect (! savedNegativeExecution.ok, "saved negative execution should fail runtime op coverage");
+    expectContains (savedNegativeExecution.error, "missing RuntimeOp", "saved negative execution error");
+    expectEqual (savedNegativeExecution.snapshot.entries.front().status,
+                 "missing-runtime-op",
+                 "saved negative execution entry status");
+    expectEqual (savedNegativeExecution.snapshot.entries.front().children.back().childId,
+                 "unsupported_probe",
+                 "saved negative execution child id");
+    expectEqual (savedNegativeExecution.snapshot.entries.front().children.back().status,
+                 "missing-runtime-op",
+                 "saved negative execution child status");
+    expect (savedNegativeExecution.snapshot.entries.front().publicOutputs.empty(),
+            "saved negative execution should not publish public outputs");
+
+    const auto savedNegativeExecutionJson = myworld::makeRuntimeExecutionJson (savedNegativeExecution.snapshot);
+    expectContains (savedNegativeExecutionJson,
+                    "\"status\": \"missing-runtime-op\"",
+                    "saved negative execution json");
+    expectContains (savedNegativeExecutionJson,
+                    "\"nodeType\": \"debug.unsupported\"",
+                    "saved negative execution json");
+
     const auto execution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
                                                                               syntheticSamples,
                                                                               1.0f);

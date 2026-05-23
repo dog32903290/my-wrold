@@ -73,9 +73,18 @@ juce::File parentDirectory (juce::File file, const int levels)
     return file;
 }
 
-std::vector<std::string> moduleLibraryCandidatePaths()
+juce::String defaultModuleLibraryPath()
 {
-    const auto libraryPath = juce::String ("fixtures/module-libraries/default.module-library.json");
+    return "fixtures/module-libraries/default.module-library.json";
+}
+
+juce::String missingRuntimeOpModuleLibraryPath()
+{
+    return "fixtures/module-libraries/missing-runtimeop.module-library.json";
+}
+
+std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
+{
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
     const auto buildAppRepoRoot = parentDirectory (executableDir, 5);
 
@@ -85,11 +94,28 @@ std::vector<std::string> moduleLibraryCandidatePaths()
     };
 }
 
+RuntimeRegistryLoadResult loadRuntimeRegistryFromCandidates (const juce::String& libraryPath)
+{
+    std::string lastError;
+
+    for (const auto& path : moduleLibraryCandidatePaths (libraryPath))
+    {
+        const auto registry = loadRuntimeRegistryFromModuleLibrary (path);
+        if (registry.ok)
+            return registry;
+
+        lastError = registry.error;
+    }
+
+    return { false, {}, lastError.empty() ? "could not load module library: " + libraryPath.toStdString()
+                                          : lastError };
+}
+
 std::vector<NodeSpec> loadVisibleNodeSpecs()
 {
     const auto seedSpecs = makeSeedNodeSpecs();
 
-    for (const auto& path : moduleLibraryCandidatePaths())
+    for (const auto& path : moduleLibraryCandidatePaths (defaultModuleLibraryPath()))
     {
         const auto modules = loadCompoundModuleNodeSpecsFromLibrary (path);
         if (modules.ok)
@@ -101,14 +127,7 @@ std::vector<NodeSpec> loadVisibleNodeSpecs()
 
 RuntimeRegistry loadVisibleRuntimeRegistry()
 {
-    for (const auto& path : moduleLibraryCandidatePaths())
-    {
-        const auto registry = loadRuntimeRegistryFromModuleLibrary (path);
-        if (registry.ok)
-            return registry.registry;
-    }
-
-    return {};
+    return loadRuntimeRegistryFromCandidates (defaultModuleLibraryPath()).registry;
 }
 }
 
@@ -374,6 +393,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
     const auto runtimeDryRunFile = dump->outputDirectory.getChildFile ("runtime_dry_run.json");
     const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
+    const auto missingRuntimeOpRegistryFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_registry.json");
+    const auto missingRuntimeOpDryRunFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_dry_run.json");
+    const auto missingRuntimeOpExecutionFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_execution.json");
     const auto runtimeRegistry = loadVisibleRuntimeRegistry();
     const auto runtimeDryRun = dryRunRuntimeRegistry (runtimeRegistry);
     RuntimeSyntheticAudioInput syntheticRuntimeInput;
@@ -384,6 +406,15 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     syntheticRuntimeInput.analysisGain = 1.5f;
     const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry,
                                                                             syntheticRuntimeInput);
+    const auto missingRuntimeOpRegistry = loadRuntimeRegistryFromCandidates (missingRuntimeOpModuleLibraryPath());
+    const auto missingRuntimeOpDryRun = missingRuntimeOpRegistry.ok
+                                            ? dryRunRuntimeRegistry (missingRuntimeOpRegistry.registry)
+                                            : RuntimeDryRunResult {};
+    const auto missingRuntimeOpExecution = missingRuntimeOpRegistry.ok
+                                               ? executeRuntimeRegistryWithSyntheticAudio (
+                                                   missingRuntimeOpRegistry.registry,
+                                                   syntheticRuntimeInput)
+                                               : RuntimeExecutionResult {};
 
     const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
     const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
@@ -404,6 +435,20 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeExecutionWritten = runtimeExecution.ok
                                              && writeTextFile (runtimeExecutionFile,
                                                                makeRuntimeExecutionJson (runtimeExecution.snapshot));
+    const auto missingRuntimeOpRegistryWritten = missingRuntimeOpRegistry.ok
+                                                     && writeTextFile (
+                                                         missingRuntimeOpRegistryFile,
+                                                         makeRuntimeRegistryJson (missingRuntimeOpRegistry.registry));
+    const auto missingRuntimeOpDryRunWritten = missingRuntimeOpRegistry.ok
+                                                   && ! missingRuntimeOpDryRun.ok
+                                                   && writeTextFile (
+                                                       missingRuntimeOpDryRunFile,
+                                                       makeRuntimeDryRunJson (missingRuntimeOpDryRun.snapshot));
+    const auto missingRuntimeOpExecutionWritten = missingRuntimeOpRegistry.ok
+                                                      && ! missingRuntimeOpExecution.ok
+                                                      && writeTextFile (
+                                                          missingRuntimeOpExecutionFile,
+                                                          makeRuntimeExecutionJson (missingRuntimeOpExecution.snapshot));
     const auto frameWritten = writePngFile (frameFile, frameImage);
 
     if (cookOrderWritten
@@ -412,6 +457,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
         && runtimeRegistryWritten
         && runtimeDryRunWritten
         && runtimeExecutionWritten
+        && missingRuntimeOpRegistryWritten
+        && missingRuntimeOpDryRunWritten
+        && missingRuntimeOpExecutionWritten
         && frameWritten)
     {
         reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
@@ -425,6 +473,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                   + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
                   + juce::String (runtimeDryRunWritten ? "" : "runtime_dry_run.json ")
                   + juce::String (runtimeExecutionWritten ? "" : "runtime_execution.json ")
+                  + juce::String (missingRuntimeOpRegistryWritten ? "" : "runtime_missing_runtimeop_registry.json ")
+                  + juce::String (missingRuntimeOpDryRunWritten ? "" : "runtime_missing_runtimeop_dry_run.json ")
+                  + juce::String (missingRuntimeOpExecutionWritten ? "" : "runtime_missing_runtimeop_execution.json ")
                   + juce::String (frameWritten ? "" : "frame.png"));
 }
 

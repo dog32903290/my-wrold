@@ -1,0 +1,36 @@
+{
+  "type": "compound.loudness.missing-runtimeop",
+  "displayName": "Loudness Missing RuntimeOp",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "analysis_gain", "type": "analyzer.analysis_gain", "role": "Calibrate measured energy" },
+    { "id": "pre_gate", "type": "analyzer.pre_gate", "role": "Reject untrusted near-silence" },
+    { "id": "output_smoother", "type": "signal.smoother", "role": "Shape output motion for live use" },
+    { "id": "loudness_out", "type": "analyzer.loudness_out", "role": "Publish public loudness ports" },
+    { "id": "unsupported_probe", "type": "debug.unsupported", "role": "Saved negative fixture for missing RuntimeOp proof" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "analysis_gain.input", "dataType": "signal.float" },
+    { "from": "analysis_gain.out", "to": "pre_gate.input", "dataType": "signal.float" },
+    { "from": "pre_gate.out", "to": "output_smoother.input", "dataType": "signal.float" },
+    { "from": "output_smoother.out", "to": "loudness_out.input", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "loudness_out.peak", "dataType": "signal.float" },
+    { "from": "pre_gate.confidence", "to": "loudness_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "out", "label": "Loudness", "dataType": "signal.float", "direction": "out", "mapsTo": "loudness_out.out" },
+    { "id": "rms", "label": "RMS", "dataType": "signal.float", "direction": "out", "mapsTo": "rms.rms" },
+    { "id": "peak", "label": "Peak", "dataType": "signal.float", "direction": "out", "mapsTo": "rms.peak" },
+    { "id": "gate", "label": "Gate", "dataType": "signal.float", "direction": "out", "mapsTo": "pre_gate.gate" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "pre_gate.confidence" }
+  ]
+}

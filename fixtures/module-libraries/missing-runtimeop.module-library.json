@@ -1,0 +1,8 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.missing-runtimeop",
+  "title": "Missing RuntimeOp Module Library",
+  "modulePackages": [
+    "modules/loudness-missing-runtimeop/module.json"
+  ]
+}
