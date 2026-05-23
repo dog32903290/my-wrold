@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 00:39 Asia/Taipei
+Date: 2026-05-24 00:52 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.16 coverage-gated module creation commit
+pending C1.17 explicit debug override commit
+29a9fda Gate module creation by RuntimeOp diagnostics
 bdab7fc Add visible RuntimeOp coverage diagnostics
 701aeb9 Add RuntimeOp catalog coverage proof
 fbc8a0c Add saved negative RuntimeOp fixture proof
@@ -50,6 +51,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.14 exists: the synthetic RuntimeOp table is exposed as `runtime_op_catalog.json`, registry coverage is reported before execution as `runtime_op_coverage.json`, and the saved negative fixture writes `runtime_missing_runtimeop_coverage.json` with supported vs missing child counts.
 - C1.15 exists: RuntimeOp coverage now has a UI-facing diagnostic contract, app proof dump writes `runtime_ui_diagnostics.json`, and the ImGui workspace shows `runtime ready` / `missing RuntimeOp` status in the browser/inspector/left rail without inventing UI-only truth.
 - C1.16 exists: RuntimeOp diagnostics now carry `create-enabled` / `create-blocked` affordance state, `InteractionContract` has a command-level `NodeCreationGate`, and the ImGui browser/create popup disables missing-runtime modules instead of letting UI-only confidence create them.
+- C1.17 exists: blocked modules can now be inserted only through explicit debug override commands with visible reason, stored debug params, distinct command log entries, and undo coverage.
 
 ## 試壓結果
 
@@ -58,6 +60,7 @@ cmake --build build
 ./build/my_world_storage_tests
 ./build/my_world_compound_module_tests
 ./build/my_world_runtime_registry_tests
+./build/my_world_t3_t5_command_tests
 ctest --test-dir build --output-on-failure
 ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 git diff --check
@@ -101,33 +104,37 @@ runtime registry tests record create-enabled/create-blocked diagnostics for posi
 t3-t5 command tests prove NodeCreationGate blocks compound.loudness.missing-runtimeop without mutating the graph and allows runtime-ready compound.loudness
 debug/v1-shader-proof/runtime_ui_diagnostics.json records creationStatus create-enabled for compound.loudness and create-blocked for compound.loudness.missing-runtimeop
 compile-first-semantic-porting C1.16 measurement records 0 compile repairs, 0 test repairs, and one UI-only gate risk moved into command-level NodeCreationGate
-latest accepted source commit before C1.16: bdab7fc
+t3-t5 command tests prove debug override creation requires a reason, writes debug.creationOverride params, logs create_node_debug_override, undo removes the inserted node, and create_node+connect_debug_override wires a repair node through a compatible audio source
+ImGui browser/create popup shows an explicit Override affordance for blocked diagnostics and routes it through the debug override command path
+compile-first-semantic-porting C1.17 measurement records 0 compile repairs, 1 test repair for compatible source typing, and one hidden-bypass risk moved into explicit override commands
+latest accepted source commit before C1.17: 29a9fda
 ```
 
 ## 還沒承重
 
 - Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, and coverage-gated creation are storage-backed/test-backed.
-- Missing-runtime modules are now blocked by command-level creation gates, but there is no explicit debug override path yet.
+- Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion now has explicit debug override commands.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
 - AI worker graph edits are still parked until saved commandGraph/module evidence is stronger.
+- Production canvas drag/drop for expanded vs collapsed compounds is still a proof gap.
 
 ## 下一根線
 
-C1.17 explicit debug override for blocked module creation:
+C1.18 compound expanded/collapsed canvas drag-drop proof:
 
 ```text
-create-blocked diagnostics
--> explicit debug override command
--> blocked module can be inserted only with visible reason
--> override state is logged and undoable
+loaded compound node
+-> collapsed view drag/move/select
+-> expanded child patcher navigation path
+-> roundtrip preserves state
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The normal creation path now reads RuntimeOp diagnostic state.
-The next weakness is deciding whether a blocked diagnostic is absolute or can be intentionally inserted for repair/debug with explicit evidence.
+The normal and override creation paths now both have command evidence.
+The next weakness is the lived compound editing surface: collapsed mother node and expanded patcher state still need production-grade gesture proof.
 ```

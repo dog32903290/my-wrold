@@ -25,6 +25,15 @@ const myworld::GraphNode* findNode (const myworld::GraphContract& graph, const s
 
     return nullptr;
 }
+
+std::string paramValue (const myworld::GraphNode& node, const std::string& paramId)
+{
+    for (const auto& param : node.params)
+        if (param.id == paramId)
+            return param.value;
+
+    return {};
+}
 }
 
 int main()
@@ -52,9 +61,15 @@ int main()
         { "compound.loudness", true, "" },
         { "compound.loudness.missing-runtimeop", false, "missing RuntimeOp: debug.unsupported" }
     };
+    auto gatedSpecs = myworld::makeSeedNodeSpecs();
+    auto missingRuntimeSpec = *myworld::findNodeSpec (gatedSpecs, "compound.loudness");
+    missingRuntimeSpec.type = "compound.loudness.missing-runtimeop";
+    missingRuntimeSpec.displayName = "Loudness Missing RuntimeOp";
+    gatedSpecs.push_back (missingRuntimeSpec);
+
     auto gatedSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
     const auto blockedCreate = myworld::createNode (gatedSession,
-                                                    myworld::makeSeedNodeSpecs(),
+                                                    gatedSpecs,
                                                     creationGates,
                                                     "compound.loudness.missing-runtimeop",
                                                     "blocked_loud1",
@@ -65,7 +80,7 @@ int main()
     expect (findNode (gatedSession.graph, "blocked_loud1") == nullptr, "blocked create does not mutate graph");
 
     const auto blockedConnect = myworld::createNodeAndConnect (gatedSession,
-                                                               myworld::makeSeedNodeSpecs(),
+                                                               gatedSpecs,
                                                                creationGates,
                                                                "shader1.output",
                                                                "compound.loudness.missing-runtimeop",
@@ -77,8 +92,68 @@ int main()
     expect (findNode (gatedSession.graph, "blocked_loud2") == nullptr,
             "blocked create-and-connect does not mutate graph");
 
+    const auto emptyOverride = myworld::createNodeWithDebugOverride (gatedSession,
+                                                                     gatedSpecs,
+                                                                     creationGates,
+                                                                     "compound.loudness.missing-runtimeop",
+                                                                     "override_empty",
+                                                                     { 220.0, 300.0 },
+                                                                     "");
+    expect (! emptyOverride.ok, "debug override requires a visible reason");
+    expect (findNode (gatedSession.graph, "override_empty") == nullptr,
+            "empty debug override does not mutate graph");
+
+    const auto overrideCreate = myworld::createNodeWithDebugOverride (gatedSession,
+                                                                      gatedSpecs,
+                                                                      creationGates,
+                                                                      "compound.loudness.missing-runtimeop",
+                                                                      "override_loud1",
+                                                                      { 220.0, 300.0 },
+                                                                      "repair missing RuntimeOp");
+    expect (overrideCreate.ok, "debug override create succeeds");
+    const auto* overrideNode = findNode (gatedSession.graph, "override_loud1");
+    expect (overrideNode != nullptr, "debug override node exists");
+    expect (paramValue (*overrideNode, "debug.creationOverride") == "true",
+            "debug override flag stored");
+    expect (paramValue (*overrideNode, "debug.creationOverrideReason") == "repair missing RuntimeOp",
+            "debug override reason stored");
+    expect (paramValue (*overrideNode, "debug.creationBlockedReason").find ("debug.unsupported") != std::string::npos,
+            "debug override blocked reason stored");
+    expect (gatedSession.commandLog.back() == "create_node_debug_override",
+            "debug override command logged");
+    expect (myworld::undo (gatedSession), "undo debug override create");
+    expect (findNode (gatedSession.graph, "override_loud1") == nullptr,
+            "undo removes debug override node");
+    expect (gatedSession.commandLog.back() == "undo:create_node_debug_override",
+            "undo debug override command logged");
+
+    expect (myworld::createNode (gatedSession,
+                                 gatedSpecs,
+                                 "audio.input",
+                                 "audio1",
+                                 { 80.0, 320.0 }).ok,
+            "create audio source for debug override connect");
+
+    const auto overrideConnect = myworld::createNodeAndConnectWithDebugOverride (gatedSession,
+                                                                                gatedSpecs,
+                                                                                creationGates,
+                                                                                "audio1.channels",
+                                                                                "compound.loudness.missing-runtimeop",
+                                                                                "override_loud2",
+                                                                                { 240.0, 320.0 },
+                                                                                "wire for RuntimeOp repair");
+    expect (overrideConnect.ok, "debug override create-and-connect succeeds");
+    const auto* overrideConnectNode = findNode (gatedSession.graph, "override_loud2");
+    expect (overrideConnectNode != nullptr, "debug override connected node exists");
+    expect (paramValue (*overrideConnectNode, "debug.creationOverrideReason") == "wire for RuntimeOp repair",
+            "debug override connect reason stored");
+    expect (gatedSession.graph.editorGraph.edges.back().to == "override_loud2.audio.in",
+            "debug override node connected");
+    expect (gatedSession.commandLog.back() == "create_node+connect_debug_override",
+            "debug override connect command logged");
+
     const auto gatedCreate = myworld::createNode (gatedSession,
-                                                  myworld::makeSeedNodeSpecs(),
+                                                  gatedSpecs,
                                                   creationGates,
                                                   "compound.loudness",
                                                   "gated_loud1",

@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <sstream>
+#include <utility>
 
 namespace myworld
 {
@@ -107,6 +108,34 @@ CommandResult checkCreationGate (const std::vector<NodeCreationGate>& creationGa
         return { true, "create allowed" };
 
     return { false, gate->reason.empty() ? "create blocked: " + nodeType : gate->reason };
+}
+
+bool isBlank (const std::string& text)
+{
+    return text.find_first_not_of (" \t\r\n") == std::string::npos;
+}
+
+CommandResult checkDebugOverrideGate (const std::vector<NodeCreationGate>& creationGates,
+                                      const std::string& nodeType,
+                                      const std::string& overrideReason)
+{
+    if (isBlank (overrideReason))
+        return { false, "debug override requires reason" };
+
+    const auto* gate = creationGateForNodeType (creationGates, nodeType);
+    if (gate == nullptr || gate->canCreate)
+        return { false, "debug override requires blocked node type: " + nodeType };
+
+    return { true, gate->reason };
+}
+
+void appendDebugOverrideParams (GraphNode& node,
+                                const std::string& overrideReason,
+                                const std::string& blockedReason)
+{
+    node.params.push_back ({ "debug.creationOverride", "true" });
+    node.params.push_back ({ "debug.creationOverrideReason", overrideReason });
+    node.params.push_back ({ "debug.creationBlockedReason", blockedReason });
 }
 
 GraphEdge makeEdge (const GraphContract& graph,
@@ -493,6 +522,32 @@ CommandResult createNode (GraphSession& session,
     return createNode (session, specs, nodeType, nodeId, position);
 }
 
+CommandResult createNodeWithDebugOverride (GraphSession& session,
+                                           const std::vector<NodeSpec>& specs,
+                                           const std::vector<NodeCreationGate>& creationGates,
+                                           const std::string& nodeType,
+                                           const std::string& nodeId,
+                                           CanvasPoint position,
+                                           const std::string& overrideReason)
+{
+    const auto gate = checkDebugOverrideGate (creationGates, nodeType, overrideReason);
+    if (! gate.ok)
+        return gate;
+
+    if (containsNode (session.graph, nodeId))
+        return { false, "duplicate node: " + nodeId };
+
+    if (findNodeSpec (specs, nodeType) == nullptr)
+        return { false, "unknown node type: " + nodeType };
+
+    const auto before = snapshotOf (session);
+    GraphNode node { nodeId, nodeType, {}, { position.x, position.y } };
+    appendDebugOverrideParams (node, overrideReason, gate.message);
+    session.graph.editorGraph.nodes.push_back (std::move (node));
+    session.selectedNodeIds = { nodeId };
+    return commitCommand (session, "create_node_debug_override", before);
+}
+
 CommandResult createNodeAndConnect (GraphSession& session,
                                     const std::string& sourceEndpoint,
                                     const std::string& nodeType,
@@ -548,6 +603,47 @@ CommandResult createNodeAndConnect (GraphSession& session,
         return gate;
 
     return createNodeAndConnect (session, specs, sourceEndpoint, nodeType, nodeId, position);
+}
+
+CommandResult createNodeAndConnectWithDebugOverride (GraphSession& session,
+                                                     const std::vector<NodeSpec>& specs,
+                                                     const std::vector<NodeCreationGate>& creationGates,
+                                                     const std::string& sourceEndpoint,
+                                                     const std::string& nodeType,
+                                                     const std::string& nodeId,
+                                                     CanvasPoint position,
+                                                     const std::string& overrideReason)
+{
+    const auto gate = checkDebugOverrideGate (creationGates, nodeType, overrideReason);
+    if (! gate.ok)
+        return gate;
+
+    if (containsNode (session.graph, nodeId))
+        return { false, "duplicate node: " + nodeId };
+
+    const auto* spec = findNodeSpec (specs, nodeType);
+    if (spec == nullptr)
+        return { false, "unknown node type: " + nodeType };
+
+    if (spec->inputs.empty())
+        return { false, "new node has no input" };
+
+    auto candidate = session.graph;
+    GraphNode node { nodeId, nodeType, {}, { position.x, position.y } };
+    appendDebugOverrideParams (node, overrideReason, gate.message);
+    candidate.editorGraph.nodes.push_back (std::move (node));
+    const auto targetEndpoint = nodeId + "." + spec->inputs.front().id;
+    candidate.editorGraph.edges.push_back (makeEdge (candidate, specs, sourceEndpoint, targetEndpoint));
+    syncRuntimeFromEditor (candidate);
+
+    const auto report = validateGraphInvariants (candidate, specs);
+    if (! report.ok)
+        return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    session.selectedNodeIds = { nodeId };
+    return commitCommand (session, "create_node+connect_debug_override", before);
 }
 
 CommandResult enterPatch (GraphSession& session, const std::string& nodeId)

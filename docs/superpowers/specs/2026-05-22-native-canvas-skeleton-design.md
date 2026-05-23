@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Explicit debug override, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Production expanded/collapsed compound drag-drop, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 00:39 Asia/Taipei.
+Date: 2026-05-24 00:52 Asia/Taipei.
 
 已鎖定:
 
@@ -47,22 +47,24 @@ Date: 2026-05-24 00:39 Asia/Taipei.
 - C1.14 RuntimeOp catalog coverage proof is implemented: `makeRuntimeOpCatalog()` exposes the seven supported synthetic RuntimeOps, `inspectRuntimeOpCoverage()` reports supported/missing child coverage before execution, and app proof dump writes `runtime_op_catalog.json`, `runtime_op_coverage.json`, and `runtime_missing_runtimeop_coverage.json`.
 - C1.15 visible RuntimeOp diagnostics proof is implemented: `makeRuntimeOpModuleDiagnostics()` turns coverage snapshots into browser/inspector labels, app proof dump writes `runtime_ui_diagnostics.json`, and the ImGui workspace shows `runtime ready` plus `missing RuntimeOp: debug.unsupported` in the left rail without UI-only status.
 - C1.16 coverage-gated module creation proof is implemented: RuntimeOp diagnostics now carry creation affordance state, `InteractionContract::NodeCreationGate` blocks missing-runtime module creation before graph mutation, and the ImGui browser/create popup passes those gates into the command path.
-- Latest C1.16 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
+- C1.17 explicit debug override proof is implemented: blocked module creation can now be intentionally inserted only through `create_node_debug_override` / `create_node+connect_debug_override`, with required reason, stored debug params, distinct command log entries, and undo coverage.
+- Latest C1.17 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether missing-runtime modules should have an explicit debug override path after the normal create path is blocked.
+- Whether expanded/collapsed compound editing needs a separate production drag/drop contract beyond the current command proof.
 
 還沒承重:
 
 - Module discovery, runtime registry snapshots, dry-run statuses, value handoff, public output maps, internal-edge routing evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, and coverage-gated normal creation are proven.
-- Missing-runtime modules are blocked by the normal create path, but an explicit debug override command does not exist yet.
+- Missing-runtime modules are blocked by the normal create path; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
+- Production canvas drag/drop for collapsed vs expanded compounds is still not proven.
 
 下一根線:
 
-- C1.17 explicit debug override: `create-blocked diagnostics -> explicit override command -> visible reason/log -> undoable debug insertion`.
+- C1.18 compound expanded/collapsed canvas drag-drop proof: `loaded compound node -> collapsed drag/move/select -> expanded patcher navigation -> state roundtrip`.
 
 ## First Stage Proofs
 
@@ -277,11 +279,12 @@ Contract:
 - Proven: RuntimeOp support is inspectable before execution: `runtime_op_catalog.json` lists the seven supported synthetic RuntimeOps, `runtime_op_coverage.json` reports the supported default loudness children, and `runtime_missing_runtimeop_coverage.json` names the saved `debug.unsupported` gap with supported/missing child counts.
 - Proven: RuntimeOp support is visible before create/execute: `runtime_ui_diagnostics.json` declares browser/inspector visibility, `compound.loudness` reads as `runtime ready`, the saved negative fixture reads as `missing RuntimeOp`, and the workspace left rail shows the same status without inventing separate UI truth.
 - Proven: normal module creation is coverage-gated: `runtime_ui_diagnostics.json` records `creationStatus` as `create-enabled` or `create-blocked`, `NodeCreationGate` blocks `compound.loudness.missing-runtimeop` without mutating the graph, and the ImGui browser/create popup passes diagnostics into the command path.
+- Proven: blocked module insertion has an explicit repair/debug path: `create_node_debug_override` and `create_node+connect_debug_override` require visible reasons, store `debug.creationOverride*` node params, and remain undoable.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
-- Not yet proven: explicit debug override creation for missing-runtime modules. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
+- Not yet proven: the live A1 analyzer still runs direct native analyzer code while exporting matching C1 evidence; it is not yet driven by the loaded compound runtime path.
 
 ## Architecture
 

@@ -144,6 +144,13 @@ const char* diagnosticCreationLabel (const RuntimeOpModuleDiagnostic& diagnostic
     return diagnostic.creationLabel.empty() ? diagnostic.browserLabel.c_str() : diagnostic.creationLabel.c_str();
 }
 
+std::string debugOverrideReasonFor (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    return diagnostic.creationBlockReason.empty()
+               ? "debug override: " + diagnostic.nodeType
+               : "debug override: " + diagnostic.creationBlockReason;
+}
+
 void drawRuntimeDiagnosticSummary (const RuntimeOpModuleDiagnostic& diagnostic)
 {
     ImGui::TextColored (diagnosticTextColour (diagnostic), "%s", diagnostic.browserLabel.c_str());
@@ -1229,6 +1236,30 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
         {
             ImGui::SameLine();
             ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnosticCreationLabel (*diagnostic));
+
+            if (! canCreate)
+            {
+                ImGui::SameLine();
+                const auto overrideLabel = "Override##connect-" + spec.type;
+
+                if (ImGui::SmallButton (overrideLabel.c_str()))
+                {
+                    const auto nodeId = makeUniqueNodeId (interactionSession.graph, spec.type);
+                    runInteractionCommand ("debug override " + spec.type,
+                                           createNodeAndConnectWithDebugOverride (
+                                               interactionSession,
+                                               nodeSpecs,
+                                               creationGates,
+                                               pendingCreateSourceEndpoint,
+                                               spec.type,
+                                               nodeId,
+                                               pendingCreatePosition,
+                                               debugOverrideReasonFor (*diagnostic)));
+                    pendingCreateSourceEndpoint.clear();
+                    pendingCreatePosition = {};
+                    ImGui::CloseCurrentPopup();
+                }
+            }
         }
     }
 
@@ -1300,6 +1331,28 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
         {
             ImGui::SameLine();
             ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnosticCreationLabel (*diagnostic));
+
+            if (! canCreate)
+            {
+                ImGui::SameLine();
+                const auto overrideLabel = "Override##workspace-" + spec.type;
+
+                if (ImGui::SmallButton (overrideLabel.c_str()))
+                {
+                    const auto nodeId = makeUniqueNodeId (interactionSession.graph, spec.type);
+                    runInteractionCommand ("debug override " + spec.type,
+                                           createNodeWithDebugOverride (
+                                               interactionSession,
+                                               nodeSpecs,
+                                               creationGates,
+                                               spec.type,
+                                               nodeId,
+                                               pendingCreatePosition,
+                                               debugOverrideReasonFor (*diagnostic)));
+                    nodeBrowserFilter.clear();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
         }
     }
 
