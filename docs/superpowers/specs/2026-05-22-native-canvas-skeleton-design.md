@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, production runtime registry for loaded compounds, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, executable RuntimeOp compilation for loaded compounds, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 09:12 Asia/Taipei.
+Date: 2026-05-23 09:33 Asia/Taipei.
 
 已鎖定:
 
@@ -35,21 +35,22 @@ Date: 2026-05-23 09:12 Asia/Taipei.
 - Tooll3 skin parity P0-P7 first pass is in place: flat dark shell, left rail, bottom strip, typed node colors, port strips, connection colors, selected-node shader source inspector, workspace browser/context menu, and transport/status strip.
 - C1.3 visible module registry proof is implemented: `fixtures/modules/loudness/module.json` loads into a merged visible `NodeSpec` registry, overrides the seed `compound.loudness` spec, feeds the ImGui node browser, and creates module-backed compound nodes through the command path.
 - C1.4 module-library index proof is implemented: `fixtures/module-libraries/default.module-library.json` lists module packages, storage parses `ModuleLibraryManifest`, `CompoundModule` loads a registry from that library, and the visible app startup uses the library index instead of a hardcoded module manifest path.
-- Latest C1.4 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
+- C1.5 loaded compound runtime-registry proof is implemented: `RuntimeRegistry` loads the default module library into runtime entries, records `compound.patch` execution kind, public ports, child counts, and cook order, and `--dump-proof-and-exit` writes `debug/v1-shader-proof/runtime_registry.json`.
+- Latest C1.5 verification before commit: `cmake --build build`, `./build/my_world_runtime_registry_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether loaded compound modules can produce a separate runtime registry / `RuntimeOp` proof instead of only editor/browser node creation.
+- Whether loaded compound modules can run a dry runtime cook over their child graph instead of only producing a registry snapshot.
 
 還沒承重:
 
-- Module discovery is storage-backed through a default `ModuleLibrary` index, but the runtime side still does not execute loaded compound child graphs as independent `RuntimeOp`s.
+- Module discovery and runtime registry snapshots are storage-backed, but the runtime side still does not execute loaded compound child graphs as independent `RuntimeOp`s.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
 
 下一根線:
 
-- C1.5 loaded compound runtime-registry proof: `module-library manifest -> loaded compound NodeSpec -> runtime registry snapshot -> debug proof that loaded compound execution is explicit instead of editor-only`.
+- C1.6 loaded compound dry-run execution proof: `module-library manifest -> runtime registry entry -> child cook dry-run -> per-child runtime status JSON`.
 
 ## First Stage Proofs
 
@@ -242,12 +243,13 @@ Contract:
 - Proven: `fixtures/modules/loudness/module.json` loads as `ModulePackageManifest`, points to the loudness compound fixture, produces a `NodeSpec` from public ports, and can create `compound.loudness` through a module registry overload of `createNode`.
 - Proven: `loadCompoundModuleNodeSpecs()` turns module manifests into a loaded registry, `mergeNodeSpecs()` lets loaded modules override seed specs by type, and the visible ImGui node browser now uses that passed registry when creating nodes.
 - Proven: `loadCompoundModuleNodeSpecsFromLibrary()` loads the default module library index, resolves listed package paths near the library, and produces the visible registry consumed by app startup.
+- Proven: `RuntimeRegistry` loads the same default module library into runtime entries and proof dumps now write `runtime_registry.json` with `compound.loudness`, `executionKind: compound.patch`, public ports, child counts, internal edge counts, and cook order.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
 - Not yet proven: compiling the compound child graph into independent `RuntimeOp` execution. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
-- Not yet proven: a runtime node registry sourced from saved module packages.
+- Not yet proven: executing a loaded compound child graph as `RuntimeOp` statuses. The current runtime registry is a snapshot/contract proof, not a full audio/render cook.
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. S8 full timeline editing, output pinning, live thumbnails, runtime registry for loaded modules, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.5 runtime registry proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, loaded-compound dry-run execution, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 09:12 Asia/Taipei.
+Date: 2026-05-23 09:33 Asia/Taipei.
 
 已鎖定:
 
@@ -18,21 +18,22 @@ Date: 2026-05-23 09:12 Asia/Taipei.
 - Delete is now part of Tooll3-style selection behavior: selected edge lowers to `disconnect`, selected node lowers to `delete_node`.
 - C1.3 visible module registry proof exists, so the skin now consumes loaded module specs instead of only seed specs when creating nodes.
 - C1.4 module-library index proof exists, so the browser registry is fed through the default saved `ModuleLibrary` index rather than an app-side loudness module path.
+- C1.5 runtime registry proof exists, so app proof dump can show loaded compounds as runtime entries instead of only browser/editor entries.
 
 正在試壓:
 
-- Whether loaded library modules can expose runtime status without becoming only a browser/editor skin feature.
+- Whether loaded library modules can expose per-child dry-run runtime status without pretending the full audio/render cook exists.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module-library discovery is wired, but the browser still needs deeper category/search ergonomics and runtime status once more modules exist.
+- Module-library discovery and runtime registry proof are wired, but the browser still needs deeper category/search ergonomics and runtime status once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
 
 下一根線:
 
-- Keep new skin surface area parked until loaded modules have runtime status/proof. The browser consumes a saved `ModuleLibrary` index now; next pressure is making loaded compounds explicit in runtime evidence.
+- Keep new skin surface area parked until loaded modules have per-child dry-run status. The browser consumes a saved `ModuleLibrary` index and proof dump records runtime entries now; next pressure is child runtime status, not more panel polish.
 
 ## Purpose
 

@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 09:12 Asia/Taipei
+Date: 2026-05-23 09:33 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.4 module-library index proof commit
+pending C1.5 loaded compound runtime-registry proof commit
+a9faa34 Add module library registry proof
 ec734b6 Wire visible module registry
 7b3ca79 Add loudness module package proof
 0d782b5 Add reloadable loudness compound fixture
@@ -26,6 +27,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.2 exists: `fixtures/modules/loudness/module.json` loads into `ModulePackageManifest`, produces a compound `NodeSpec`, and creates `compound.loudness` from a module registry command path.
 - C1.3 exists: module manifests load into a visible `NodeSpec` registry, override seed specs by type, feed the ImGui node browser, and create `compound.loudness` through the same command path.
 - C1.4 exists: `fixtures/module-libraries/default.module-library.json` lists module packages, storage parses that `ModuleLibrary` index, and visible app startup consumes the library index rather than a hardcoded module manifest path.
+- C1.5 exists: `RuntimeRegistry` loads the same module library into runtime entries and app proof dump writes `debug/v1-shader-proof/runtime_registry.json`.
 
 ## 試壓結果
 
@@ -33,6 +35,7 @@ d76e353 Add Tooll3 workspace browser and transport
 cmake --build build
 ./build/my_world_storage_tests
 ./build/my_world_compound_module_tests
+./build/my_world_runtime_registry_tests
 ctest --test-dir build --output-on-failure
 ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 git diff --check
@@ -47,12 +50,13 @@ debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches t
 fixtures/modules/loudness/module.json validated through storage and compound module tests
 visible registry creates module-backed `compound.loudness` through `create_node`
 fixtures/module-libraries/default.module-library.json feeds visible module registry
-latest accepted source commit before C1.4: ec734b6
+debug/v1-shader-proof/runtime_registry.json records compound.loudness as executionKind compound.patch
+latest accepted source commit before C1.5: a9faa34
 ```
 
 ## 還沒承重
 
-- Module discovery is storage-backed through the default `ModuleLibrary` index, but loaded compounds are still editor/browser `NodeSpec`s rather than independently executable `RuntimeOp`s.
+- Module discovery and runtime registry snapshots are storage-backed, but loaded compounds still do not run a child-graph dry cook with per-child runtime statuses.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -60,13 +64,13 @@ latest accepted source commit before C1.4: ec734b6
 
 ## 下一根線
 
-C1.5 loaded compound runtime-registry proof:
+C1.6 loaded compound dry-run execution proof:
 
 ```text
 module-library manifest
--> loaded compound NodeSpec
--> runtime registry snapshot
--> debug proof that loaded compound execution is explicit instead of editor-only
+-> runtime registry entry
+-> child cook dry-run
+-> per-child runtime status JSON
 -> run tests and proof dump
 ```
 
@@ -74,5 +78,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is runtime ownership. The visible workspace can discover saved modules through a library index, but the runtime still needs an explicit loaded-compound execution registry before AI worker edits or real module libraries can safely sit on this line.
+The next weakness is actual runtime stepping. The visible workspace can discover modules and produce runtime registry evidence, but it still needs a dry child-cook proof before claiming loaded compounds execute.
 ```

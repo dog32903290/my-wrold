@@ -1,6 +1,7 @@
 #include "OpenGLShaderPreview.h"
 
 #include "CompoundModule.h"
+#include "RuntimeRegistry.h"
 
 #include <atomic>
 #include <vector>
@@ -96,6 +97,18 @@ std::vector<NodeSpec> loadVisibleNodeSpecs()
     }
 
     return seedSpecs;
+}
+
+RuntimeRegistry loadVisibleRuntimeRegistry()
+{
+    for (const auto& path : moduleLibraryCandidatePaths())
+    {
+        const auto registry = loadRuntimeRegistryFromModuleLibrary (path);
+        if (registry.ok)
+            return registry.registry;
+    }
+
+    return {};
 }
 }
 
@@ -358,6 +371,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto cookOrderFile = dump->outputDirectory.getChildFile ("cook_order.json");
     const auto nodeStatsFile = dump->outputDirectory.getChildFile ("node_stats.json");
     const auto loudnessCompoundFile = dump->outputDirectory.getChildFile ("loudness_compound.json");
+    const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
 
     const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
     const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
@@ -370,9 +384,11 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                                                                     lastStatus.toStdString()));
     const auto loudnessCompoundWritten = writeTextFile (loudnessCompoundFile,
                                                         makeCompoundPatchJson (loudnessCompound));
+    const auto runtimeRegistryWritten = writeTextFile (runtimeRegistryFile,
+                                                       makeRuntimeRegistryJson (loadVisibleRuntimeRegistry()));
     const auto frameWritten = writePngFile (frameFile, frameImage);
 
-    if (cookOrderWritten && nodeStatsWritten && loudnessCompoundWritten && frameWritten)
+    if (cookOrderWritten && nodeStatsWritten && loudnessCompoundWritten && runtimeRegistryWritten && frameWritten)
     {
         reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
         return;
@@ -382,6 +398,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                   + juce::String (cookOrderWritten ? "" : "cook_order.json ")
                   + juce::String (nodeStatsWritten ? "" : "node_stats.json ")
                   + juce::String (loudnessCompoundWritten ? "" : "loudness_compound.json ")
+                  + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
                   + juce::String (frameWritten ? "" : "frame.png"));
 }
 

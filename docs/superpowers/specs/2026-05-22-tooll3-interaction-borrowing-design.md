@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, and an ImGui workspace wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in a runtime registry snapshot. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry evidence, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -66,6 +66,7 @@ Existing project facts this design must respect:
 - C1.2 adds a module-registry `createNode` overload so a loaded module `NodeSpec` can create a compound node without relying only on `makeSeedNodeSpecs()`.
 - C1.3 loads module manifests into a visible registry, merges that registry over seed specs by node type, and routes ImGui browser creation through the passed registry instead of a seed-only overload.
 - C1.4 loads module manifests through a saved `ModuleLibrary` index before feeding the visible registry, so the UI command path no longer names the loudness module package directly.
+- C1.5 adds a runtime registry snapshot for the same loaded module library, so proof evidence can name loaded compounds as `compound.patch` runtime entries even before full `RuntimeOp` execution exists.
 
 ## First Slice
 

@@ -102,6 +102,35 @@ target_link_libraries(my_world_compound_module
         my_world_storage
 )
 
+add_library(my_world_runtime_registry
+    source/core/RuntimeRegistry.cpp
+)
+
+target_include_directories(my_world_runtime_registry
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_runtime_registry
+    PUBLIC
+        my_world_compound_module
+)
+
+add_executable(my_world_runtime_registry_tests
+    tests/RuntimeRegistryTests.cpp
+)
+
+target_link_libraries(my_world_runtime_registry_tests
+    PRIVATE
+        my_world_runtime_registry
+)
+
+add_test(NAME runtime_registry COMMAND my_world_runtime_registry_tests)
+set_tests_properties(runtime_registry PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(my_world_compound_patch_tests
     tests/CompoundPatchTests.cpp
 )
@@ -434,8 +463,8 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_link_libraries(my-world
         PRIVATE
             my_world_audio
-            my_world_compound_module
             my_world_preferences
+            my_world_runtime_registry
             my_world_imgui
             juce::juce_audio_devices
             juce::juce_audio_utils
