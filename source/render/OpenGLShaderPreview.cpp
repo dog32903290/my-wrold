@@ -4,6 +4,7 @@
 #include "RuntimeRegistry.h"
 
 #include <atomic>
+#include <iterator>
 #include <vector>
 
 namespace myworld
@@ -111,6 +112,33 @@ RuntimeRegistryLoadResult loadRuntimeRegistryFromCandidates (const juce::String&
                                           : lastError };
 }
 
+void appendRuntimeOpModuleDiagnostics (std::vector<RuntimeOpModuleDiagnostic>& diagnostics,
+                                       const RuntimeOpCoverageResult& coverage)
+{
+    if (coverage.snapshot.entries.empty())
+        return;
+
+    auto nextDiagnostics = makeRuntimeOpModuleDiagnostics (coverage.snapshot);
+    diagnostics.insert (diagnostics.end(),
+                        std::make_move_iterator (nextDiagnostics.begin()),
+                        std::make_move_iterator (nextDiagnostics.end()));
+}
+
+std::vector<RuntimeOpModuleDiagnostic> loadRuntimeOpModuleDiagnostics()
+{
+    std::vector<RuntimeOpModuleDiagnostic> diagnostics;
+
+    const auto runtimeRegistry = loadRuntimeRegistryFromCandidates (defaultModuleLibraryPath());
+    if (runtimeRegistry.ok)
+        appendRuntimeOpModuleDiagnostics (diagnostics, inspectRuntimeOpCoverage (runtimeRegistry.registry));
+
+    const auto missingRuntimeOpRegistry = loadRuntimeRegistryFromCandidates (missingRuntimeOpModuleLibraryPath());
+    if (missingRuntimeOpRegistry.ok)
+        appendRuntimeOpModuleDiagnostics (diagnostics, inspectRuntimeOpCoverage (missingRuntimeOpRegistry.registry));
+
+    return diagnostics;
+}
+
 std::vector<NodeSpec> loadVisibleNodeSpecs()
 {
     const auto seedSpecs = makeSeedNodeSpecs();
@@ -204,6 +232,8 @@ void OpenGLShaderPreview::newOpenGLContextCreated()
     lastFrameSeconds = startTimeSeconds;
     frameIndex = 0;
     seedNodeSpecs = loadVisibleNodeSpecs();
+    runtimeOpDiagnostics = loadRuntimeOpModuleDiagnostics();
+    imguiOverlay.setRuntimeOpDiagnostics (runtimeOpDiagnostics);
     loudnessCompound = makeLoudnessCompoundPatchSpec();
     imguiOverlay.setShaderSource (pendingFragmentShader);
     imguiOverlay.initialise();
@@ -393,6 +423,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
     const auto runtimeOpCatalogFile = dump->outputDirectory.getChildFile ("runtime_op_catalog.json");
     const auto runtimeOpCoverageFile = dump->outputDirectory.getChildFile ("runtime_op_coverage.json");
+    const auto runtimeUiDiagnosticsFile = dump->outputDirectory.getChildFile ("runtime_ui_diagnostics.json");
     const auto runtimeDryRunFile = dump->outputDirectory.getChildFile ("runtime_dry_run.json");
     const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
     const auto missingRuntimeOpRegistryFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_registry.json");
@@ -415,6 +446,14 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto missingRuntimeOpCoverage = missingRuntimeOpRegistry.ok
                                               ? inspectRuntimeOpCoverage (missingRuntimeOpRegistry.registry)
                                               : RuntimeOpCoverageResult {};
+    auto runtimeUiDiagnostics = makeRuntimeOpModuleDiagnostics (runtimeOpCoverage.snapshot);
+    if (! missingRuntimeOpCoverage.snapshot.entries.empty())
+    {
+        auto missingDiagnostics = makeRuntimeOpModuleDiagnostics (missingRuntimeOpCoverage.snapshot);
+        runtimeUiDiagnostics.insert (runtimeUiDiagnostics.end(),
+                                     std::make_move_iterator (missingDiagnostics.begin()),
+                                     std::make_move_iterator (missingDiagnostics.end()));
+    }
     const auto missingRuntimeOpDryRun = missingRuntimeOpRegistry.ok
                                             ? dryRunRuntimeRegistry (missingRuntimeOpRegistry.registry)
                                             : RuntimeDryRunResult {};
@@ -443,6 +482,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                                               && writeTextFile (
                                                   runtimeOpCoverageFile,
                                                   makeRuntimeOpCoverageJson (runtimeOpCoverage.snapshot));
+    const auto runtimeUiDiagnosticsWritten = writeTextFile (
+        runtimeUiDiagnosticsFile,
+        makeRuntimeOpModuleDiagnosticsJson (runtimeUiDiagnostics));
     const auto runtimeDryRunWritten = runtimeDryRun.ok
                                           && writeTextFile (runtimeDryRunFile,
                                                             makeRuntimeDryRunJson (runtimeDryRun.snapshot));
@@ -476,6 +518,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
         && runtimeRegistryWritten
         && runtimeOpCatalogWritten
         && runtimeOpCoverageWritten
+        && runtimeUiDiagnosticsWritten
         && runtimeDryRunWritten
         && runtimeExecutionWritten
         && missingRuntimeOpRegistryWritten
@@ -495,6 +538,7 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                   + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
                   + juce::String (runtimeOpCatalogWritten ? "" : "runtime_op_catalog.json ")
                   + juce::String (runtimeOpCoverageWritten ? "" : "runtime_op_coverage.json ")
+                  + juce::String (runtimeUiDiagnosticsWritten ? "" : "runtime_ui_diagnostics.json ")
                   + juce::String (runtimeDryRunWritten ? "" : "runtime_dry_run.json ")
                   + juce::String (runtimeExecutionWritten ? "" : "runtime_execution.json ")
                   + juce::String (missingRuntimeOpRegistryWritten ? "" : "runtime_missing_runtimeop_registry.json ")

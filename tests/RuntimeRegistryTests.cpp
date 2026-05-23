@@ -164,6 +164,24 @@ int main()
                     "\"runtimeOp\": \"synthetic.analyzer.loudness_out\"",
                     "runtime coverage json");
 
+    const auto diagnostics = myworld::makeRuntimeOpModuleDiagnostics (coverage.snapshot);
+    expect (diagnostics.size() == 1, "runtime diagnostics count");
+    expectEqual (diagnostics.front().nodeType, "compound.loudness", "runtime diagnostic node type");
+    expectEqual (diagnostics.front().status, "runtime-op-ready", "runtime diagnostic status");
+    expectEqual (diagnostics.front().browserLabel, "runtime ready", "runtime diagnostic browser label");
+    expectContains (diagnostics.front().inspectorDetail,
+                    "7 RuntimeOps registered",
+                    "runtime diagnostic inspector detail");
+    expect (diagnostics.front().missingNodeTypes.empty(), "runtime diagnostic missing node types");
+
+    const auto diagnosticsJson = myworld::makeRuntimeOpModuleDiagnosticsJson (diagnostics);
+    expectContains (diagnosticsJson, "\"kind\": \"runtimeOpModuleDiagnostics\"", "runtime diagnostics json");
+    expectContains (diagnosticsJson,
+                    "\"visibleIn\": [\"browser\", \"inspector\", \"leftRail\"]",
+                    "runtime diagnostics json");
+    expectContains (diagnosticsJson, "\"browserLabel\": \"runtime ready\"", "runtime diagnostics json");
+    expectContains (diagnosticsJson, "\"nodeType\": \"compound.loudness\"", "runtime diagnostics json");
+
     const auto unsupportedRegistry = makeRegistryWithUnsupportedRuntimeOp (registryResult.registry);
     const auto unsupportedDryRun = myworld::dryRunRuntimeRegistry (unsupportedRegistry);
     expect (! unsupportedDryRun.ok, "unsupported dry-run should fail runtime op coverage");
@@ -325,6 +343,36 @@ int main()
     expectContains (savedNegativeCoverageJson,
                     "\"missingChildCount\": 1",
                     "saved negative coverage json");
+
+    const auto savedNegativeDiagnostics = myworld::makeRuntimeOpModuleDiagnostics (
+        savedNegativeCoverage.snapshot);
+    expect (savedNegativeDiagnostics.size() == 1, "saved negative diagnostics count");
+    expectEqual (savedNegativeDiagnostics.front().nodeType,
+                 "compound.loudness.missing-runtimeop",
+                 "saved negative diagnostic node type");
+    expectEqual (savedNegativeDiagnostics.front().status,
+                 "missing-runtime-op",
+                 "saved negative diagnostic status");
+    expectEqual (savedNegativeDiagnostics.front().browserLabel,
+                 "missing RuntimeOp",
+                 "saved negative diagnostic browser label");
+    expectContains (savedNegativeDiagnostics.front().inspectorDetail,
+                    "debug.unsupported",
+                    "saved negative diagnostic inspector detail");
+    expect (savedNegativeDiagnostics.front().missingNodeTypes.size() == 1,
+            "saved negative diagnostic missing count");
+    expectEqual (savedNegativeDiagnostics.front().missingNodeTypes.front(),
+                 "debug.unsupported",
+                 "saved negative diagnostic missing node type");
+
+    const auto savedNegativeDiagnosticsJson = myworld::makeRuntimeOpModuleDiagnosticsJson (
+        savedNegativeDiagnostics);
+    expectContains (savedNegativeDiagnosticsJson,
+                    "\"browserLabel\": \"missing RuntimeOp\"",
+                    "saved negative diagnostics json");
+    expectContains (savedNegativeDiagnosticsJson,
+                    "\"missingNodeTypes\": [\"debug.unsupported\"]",
+                    "saved negative diagnostics json");
 
     const auto execution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
                                                                               syntheticSamples,

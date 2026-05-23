@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.14 RuntimeOp catalog coverage proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, visible RuntimeOp diagnostics, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.15 RuntimeOp diagnostics are now visible from the same coverage contract used by proof JSON. S8 full timeline editing, output pinning, live thumbnails, coverage-gated browser creation, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 23:54 Asia/Taipei.
+Date: 2026-05-24 00:21 Asia/Taipei.
 
 已鎖定:
 
@@ -28,21 +28,22 @@ Date: 2026-05-23 23:54 Asia/Taipei.
 - C1.12 RuntimeOp coverage failure proof exists, so unsupported loaded child node types fail as `missing-runtime-op` instead of becoming false partial success.
 - C1.13 saved negative module fixture proof exists, so app proof dump persists `runtime_missing_runtimeop_*` JSON from storage-backed module files instead of only test-built registry mutation.
 - C1.14 RuntimeOp catalog coverage proof exists, so app proof dump can show supported and missing child nodeTypes before execution.
+- C1.15 visible RuntimeOp diagnostics proof exists, so the skin reads `runtime ready` and `missing RuntimeOp` status from coverage snapshots in the browser/inspector/left rail instead of making confidence up in ImGui.
 
 正在試壓:
 
-- Whether RuntimeOp coverage should be visible in the browser/inspector before adding more skin surface.
+- Whether missing-runtime module creation should be blocked or exposed behind an explicit debug override in the browser.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module-library discovery, runtime registry proof, dry-run status, computed runtime chain, public output map, source-route evidence, named dispatch-backed runtime output status, missing RuntimeOp failure, saved negative proof artifacts, and coverage report artifacts are wired, but the browser still needs deeper category/search ergonomics once more modules exist.
+- Module-library discovery, runtime registry proof, dry-run status, computed runtime chain, public output map, source-route evidence, named dispatch-backed runtime output status, missing RuntimeOp failure, saved negative proof artifacts, coverage report artifacts, and visible coverage diagnostics are wired, but the browser still needs deeper category/search ergonomics once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
 
 下一根線:
 
-- Keep new skin surface area parked until RuntimeOp coverage is visible as browser/inspector diagnostics. Positive and negative proof artifacts now exist; next pressure is workspace legibility, not more panel polish.
+- Keep new skin surface area parked until browser creation itself reads RuntimeOp diagnostic state. Status is now visible; next pressure is command affordance, not more panel polish.
 
 ## Purpose
 
@@ -406,7 +407,7 @@ Current proof:
 | Grid | Hidden/muted behind output background | Hidden/muted when output background active | No extra work until multiple background modes exist |
 | Panels | Left rail and bottom strip are unified ImGui workspace surfaces | Edge-attached Tooll3 panels | Collapse/resize persistence after storage path matures |
 | Timeline | Bottom strip shows real time/status plus non-editing playhead | Bottom strip with transport/time | Animation commandGraph contract before editing |
-| Module browser | Browser consumes a merged visible registry sourced from seed specs plus the default saved `ModuleLibrary` index | Saved module libraries feed search/create without app hardcoding | Runtime status and deeper browser ergonomics after more modules exist |
+| Module browser | Browser consumes a merged visible registry sourced from seed specs plus the default saved `ModuleLibrary` index; RuntimeOp coverage is visible as `runtime ready` / `missing RuntimeOp` diagnostics | Saved module libraries feed search/create without app hardcoding, with missing runtime support exposed before commit | Coverage-gated create/override behavior and deeper browser ergonomics after more modules exist |
 
 ## First Implementation Roadmap
 

@@ -58,6 +58,21 @@ void appendStringArray (std::ostringstream& out, const std::vector<std::string>&
     out << "]";
 }
 
+void appendCompactStringArray (std::ostringstream& out, const std::vector<std::string>& values)
+{
+    out << "[";
+
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        if (index != 0)
+            out << ", ";
+
+        out << "\"" << jsonEscaped (values[index]) << "\"";
+    }
+
+    out << "]";
+}
+
 void appendRuntimeOpCatalogArray (std::ostringstream& out, const std::vector<RuntimeOpCatalogEntry>& catalog)
 {
     out << "[\n";
@@ -551,6 +566,37 @@ std::string makeMissingRuntimeOpError (const std::string& phase,
     return phase + " missing RuntimeOp for " + entry.nodeType + ":" + child.id + " (" + child.nodeType + ")";
 }
 
+std::vector<std::string> missingNodeTypesFor (const RuntimeEntryCoverageStatus& entry)
+{
+    std::vector<std::string> missing;
+
+    for (const auto& child : entry.children)
+    {
+        if (child.status != "missing-runtime-op")
+            continue;
+
+        if (std::find (missing.begin(), missing.end(), child.nodeType) == missing.end())
+            missing.push_back (child.nodeType);
+    }
+
+    return missing;
+}
+
+std::string joinedNodeTypes (const std::vector<std::string>& nodeTypes)
+{
+    std::ostringstream text;
+
+    for (size_t index = 0; index < nodeTypes.size(); ++index)
+    {
+        if (index != 0)
+            text << ", ";
+
+        text << nodeTypes[index];
+    }
+
+    return text.str();
+}
+
 RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& module, const CompoundPatchSpec& compound)
 {
     RuntimeRegistryEntry entry;
@@ -677,6 +723,39 @@ RuntimeOpCoverageResult inspectRuntimeOpCoverage (const RuntimeRegistry& registr
     }
 
     return { ok, snapshot, ok ? std::string {} : firstError };
+}
+
+std::vector<RuntimeOpModuleDiagnostic> makeRuntimeOpModuleDiagnostics (const RuntimeOpCoverageSnapshot& snapshot)
+{
+    std::vector<RuntimeOpModuleDiagnostic> diagnostics;
+    diagnostics.reserve (snapshot.entries.size());
+
+    for (const auto& entry : snapshot.entries)
+    {
+        RuntimeOpModuleDiagnostic diagnostic;
+        diagnostic.nodeType = entry.nodeType;
+        diagnostic.supportedChildCount = entry.supportedChildCount;
+        diagnostic.missingChildCount = entry.missingChildCount;
+        diagnostic.missingNodeTypes = missingNodeTypesFor (entry);
+
+        if (entry.missingChildCount == 0)
+        {
+            diagnostic.status = "runtime-op-ready";
+            diagnostic.browserLabel = "runtime ready";
+            diagnostic.inspectorDetail = std::to_string (entry.supportedChildCount)
+                                       + " RuntimeOps registered; execution not run";
+        }
+        else
+        {
+            diagnostic.status = "missing-runtime-op";
+            diagnostic.browserLabel = "missing RuntimeOp";
+            diagnostic.inspectorDetail = "missing RuntimeOp: " + joinedNodeTypes (diagnostic.missingNodeTypes);
+        }
+
+        diagnostics.push_back (std::move (diagnostic));
+    }
+
+    return diagnostics;
 }
 
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry)
@@ -989,6 +1068,41 @@ std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot
         out << "    }";
 
         if (entryIndex + 1 < snapshot.entries.size())
+            out << ",";
+
+        out << "\n";
+    }
+
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeRuntimeOpModuleDiagnosticsJson (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"runtimeOpModuleDiagnostics\",\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"visibleIn\": [\"browser\", \"inspector\", \"leftRail\"],\n";
+    out << "  \"entries\": [\n";
+
+    for (size_t index = 0; index < diagnostics.size(); ++index)
+    {
+        const auto& diagnostic = diagnostics[index];
+        out << "    {\n";
+        out << "      \"nodeType\": \"" << jsonEscaped (diagnostic.nodeType) << "\",\n";
+        out << "      \"status\": \"" << jsonEscaped (diagnostic.status) << "\",\n";
+        out << "      \"browserLabel\": \"" << jsonEscaped (diagnostic.browserLabel) << "\",\n";
+        out << "      \"inspectorDetail\": \"" << jsonEscaped (diagnostic.inspectorDetail) << "\",\n";
+        out << "      \"supportedChildCount\": " << diagnostic.supportedChildCount << ",\n";
+        out << "      \"missingChildCount\": " << diagnostic.missingChildCount << ",\n";
+        out << "      \"missingNodeTypes\": ";
+        appendCompactStringArray (out, diagnostic.missingNodeTypes);
+        out << "\n";
+        out << "    }";
+
+        if (index + 1 < diagnostics.size())
             out << ",";
 
         out << "\n";

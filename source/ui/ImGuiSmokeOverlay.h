@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InteractionContract.h"
+#include "RuntimeRegistry.h"
 
 #include <functional>
 #include <string>
@@ -30,6 +31,7 @@ public:
     void setMouseButton (int buttonIndex, bool isDown);
     void addMouseWheel (float deltaY);
     void setShaderSource (std::string source);
+    void setRuntimeOpDiagnostics (std::vector<RuntimeOpModuleDiagnostic> diagnostics);
     void requestDeleteSelection();
 
     ShaderSourceCallback onShaderSourceSubmitted;
@@ -54,6 +56,7 @@ private:
     std::string shaderSourceDraft;
     std::string shaderSourceDraftNodeId;
     std::string nodeBrowserFilter;
+    std::vector<RuntimeOpModuleDiagnostic> runtimeOpDiagnostics;
     CanvasPoint dragCanvasDelta;
     CanvasPoint draggingConnectionPoint;
     CanvasPoint pendingCreatePosition;

@@ -182,9 +182,21 @@ struct RuntimeOpCoverageResult
     std::string error;
 };
 
+struct RuntimeOpModuleDiagnostic
+{
+    std::string nodeType;
+    std::string status;
+    std::string browserLabel;
+    std::string inspectorDetail;
+    size_t supportedChildCount = 0;
+    size_t missingChildCount = 0;
+    std::vector<std::string> missingNodeTypes;
+};
+
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath);
 std::vector<RuntimeOpCatalogEntry> makeRuntimeOpCatalog();
 RuntimeOpCoverageResult inspectRuntimeOpCoverage (const RuntimeRegistry& registry);
+std::vector<RuntimeOpModuleDiagnostic> makeRuntimeOpModuleDiagnostics (const RuntimeOpCoverageSnapshot& snapshot);
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const std::vector<float>& samples,
@@ -194,6 +206,7 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
 std::string makeRuntimeOpCatalogJson (const std::vector<RuntimeOpCatalogEntry>& catalog);
 std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot);
+std::string makeRuntimeOpModuleDiagnosticsJson (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics);
 std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
 std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot);
 }

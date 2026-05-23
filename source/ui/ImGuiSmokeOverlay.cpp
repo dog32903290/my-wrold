@@ -101,6 +101,40 @@ const NodeSpec* specForNode (const GraphContract& graph,
     return node == nullptr ? nullptr : findNodeSpec (specs, node->type);
 }
 
+const RuntimeOpModuleDiagnostic* diagnosticForNodeType (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics,
+                                                        const std::string& nodeType)
+{
+    const auto found = std::find_if (diagnostics.begin(), diagnostics.end(), [&nodeType] (const auto& diagnostic) {
+        return diagnostic.nodeType == nodeType;
+    });
+
+    return found == diagnostics.end() ? nullptr : &*found;
+}
+
+bool diagnosticIsReady (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    return diagnostic.status == "runtime-op-ready";
+}
+
+ImVec4 diagnosticTextColour (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    return diagnosticIsReady (diagnostic)
+               ? ImVec4 (0.55f, 0.82f, 0.66f, 1.0f)
+               : ImVec4 (1.0f, 0.70f, 0.42f, 1.0f);
+}
+
+void drawRuntimeDiagnosticSummary (const RuntimeOpModuleDiagnostic& diagnostic)
+{
+    ImGui::TextColored (diagnosticTextColour (diagnostic), "%s", diagnostic.browserLabel.c_str());
+    ImGui::Indent (12.0f);
+    ImGui::TextWrapped ("%s", diagnostic.nodeType.c_str());
+
+    if (! diagnosticIsReady (diagnostic))
+        ImGui::TextWrapped ("%s", diagnostic.inspectorDetail.c_str());
+
+    ImGui::Unindent (12.0f);
+}
+
 std::string nodeIdFromEndpoint (const std::string& endpoint)
 {
     const auto dot = endpoint.find ('.');
@@ -417,6 +451,11 @@ void ImGuiSmokeOverlay::setShaderSource (std::string source)
     shaderSourceDraftNodeId = selectedNodeId (interactionSession);
 }
 
+void ImGuiSmokeOverlay::setRuntimeOpDiagnostics (std::vector<RuntimeOpModuleDiagnostic> diagnostics)
+{
+    runtimeOpDiagnostics = std::move (diagnostics);
+}
+
 void ImGuiSmokeOverlay::requestDeleteSelection()
 {
     deleteSelectionRequested = true;
@@ -537,6 +576,14 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
 
                         for (size_t index = 0; index < std::min<size_t> (nodeSpecs.size(), 7); ++index)
                             ImGui::TextDisabled ("%s", nodeSpecs[index].type.c_str());
+
+                        if (! runtimeOpDiagnostics.empty())
+                        {
+                            ImGui::SeparatorText ("Runtime");
+
+                            for (const auto& diagnostic : runtimeOpDiagnostics)
+                                drawRuntimeDiagnosticSummary (diagnostic);
+                        }
                     }
 
                     ImGui::EndTabItem();
@@ -547,6 +594,14 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
 
             ImGui::Dummy (ImVec2 (0.0f, 14.0f));
             drawInspectorPanel (nodeSpecs, shaderStatus);
+
+            if (! runtimeOpDiagnostics.empty())
+            {
+                ImGui::SeparatorText ("Runtime Coverage");
+
+                for (const auto& diagnostic : runtimeOpDiagnostics)
+                    drawRuntimeDiagnosticSummary (diagnostic);
+            }
 
             ImGui::SeparatorText ("Shader");
             ImGui::TextWrapped ("%s", shaderStatus.c_str());
@@ -1137,6 +1192,12 @@ void ImGuiSmokeOverlay::drawCreateNodePopup (const std::vector<NodeSpec>& nodeSp
 
         ImGui::SameLine();
         ImGui::TextDisabled ("%s", spec.type.c_str());
+
+        if (const auto* diagnostic = diagnosticForNodeType (runtimeOpDiagnostics, spec.type))
+        {
+            ImGui::SameLine();
+            ImGui::TextColored (diagnosticTextColour (*diagnostic), "%s", diagnostic->browserLabel.c_str());
+        }
     }
 
     if (! showedCandidate)
@@ -1224,6 +1285,16 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     const auto policy = makeTooll3InspectorPolicy (node->type, true);
     ImGui::Text ("%s", node->id.c_str());
     ImGui::TextDisabled ("%s", node->type.c_str());
+
+    if (const auto* diagnostic = diagnosticForNodeType (runtimeOpDiagnostics, node->type))
+    {
+        ImGui::TextColored (diagnosticTextColour (*diagnostic), "runtime: %s", diagnostic->browserLabel.c_str());
+        ImGui::TextDisabled ("%s", diagnostic->inspectorDetail.c_str());
+    }
+    else
+    {
+        ImGui::TextDisabled ("runtime: not cataloged");
+    }
 
     if (spec->params.empty())
     {

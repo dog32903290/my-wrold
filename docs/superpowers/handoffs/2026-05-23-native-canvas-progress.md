@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 23:54 Asia/Taipei
+Date: 2026-05-24 00:21 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.14 RuntimeOp catalog coverage proof commit
+pending C1.15 visible RuntimeOp coverage diagnostics commit
+701aeb9 Add RuntimeOp catalog coverage proof
 fbc8a0c Add saved negative RuntimeOp fixture proof
 4cf4b77 Fail runtime execution on missing RuntimeOps
 0df9775 Dispatch loaded runtime nodes through named ops
@@ -46,6 +47,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.12 exists: unsupported loaded child node types now fail dry-run and execution as `missing-runtime-op`, preserve a serializable failure snapshot, and avoid publishing public outputs on coverage failure.
 - C1.13 exists: `fixtures/module-libraries/missing-runtimeop.module-library.json` loads a saved `compound.loudness.missing-runtimeop` module with `debug.unsupported`; runtime tests and app proof dump persist `runtime_missing_runtimeop_registry.json`, `runtime_missing_runtimeop_dry_run.json`, and `runtime_missing_runtimeop_execution.json`.
 - C1.14 exists: the synthetic RuntimeOp table is exposed as `runtime_op_catalog.json`, registry coverage is reported before execution as `runtime_op_coverage.json`, and the saved negative fixture writes `runtime_missing_runtimeop_coverage.json` with supported vs missing child counts.
+- C1.15 exists: RuntimeOp coverage now has a UI-facing diagnostic contract, app proof dump writes `runtime_ui_diagnostics.json`, and the ImGui workspace shows `runtime ready` / `missing RuntimeOp` status in the browser/inspector/left rail without inventing UI-only truth.
 
 ## 試壓結果
 
@@ -89,13 +91,17 @@ debug/v1-shader-proof/runtime_op_catalog.json records the supported synthetic Ru
 debug/v1-shader-proof/runtime_op_coverage.json records 7 supported children and 0 missing children
 debug/v1-shader-proof/runtime_missing_runtimeop_coverage.json records 7 supported children and 1 missing debug.unsupported child
 compile-first-semantic-porting C1.14 measurement records 0 compile repairs, 0 test repairs, and one author-feedback risk moved before execution
-latest accepted source commit before C1.14: fbc8a0c
+runtime registry tests produce UI-facing RuntimeOp module diagnostics for positive and saved negative registries
+debug/v1-shader-proof/runtime_ui_diagnostics.json records visibleIn ["browser", "inspector", "leftRail"], runtime ready for compound.loudness, and missing RuntimeOp: debug.unsupported for the saved negative fixture
+debug/v1-shader-proof/frame.png shows Runtime Coverage as readable workspace diagnostics in the left rail
+compile-first-semantic-porting C1.15 measurement records 0 compile repairs, 0 test repairs, and one skin-contract drift avoided by keeping diagnostics downstream of coverage snapshots
+latest accepted source commit before C1.15: 701aeb9
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, and saved negative proof export are storage-backed/test-backed.
-- RuntimeOp support is inspectable in proof JSON, but not yet visible in the node browser or inspector for future module authors.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, and visible RuntimeOp diagnostics are storage-backed/test-backed.
+- RuntimeOp support is now visible as author feedback, but module creation is not yet gated by coverage status.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -103,19 +109,19 @@ latest accepted source commit before C1.14: fbc8a0c
 
 ## 下一根線
 
-C1.15 visible RuntimeOp coverage diagnostics:
+C1.16 coverage-gated module creation:
 
 ```text
-module-library coverage report
--> visible browser/inspector diagnostics
--> supported modules read as runnable
--> missing child nodeTypes are named before create/execute
+runtime UI diagnostics
+-> node browser command affordance
+-> supported modules create normally
+-> missing RuntimeOp modules are blocked or require an explicit debug override
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The RuntimeOp support matrix now exists as headless proof.
-The next weakness is making that coverage legible in the workspace without turning it into fake UI confidence.
+The RuntimeOp support matrix is now visible in the workspace.
+The next weakness is that a missing-runtime module can still look selectable unless the command affordance itself reads the diagnostic state.
 ```

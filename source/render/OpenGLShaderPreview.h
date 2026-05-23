@@ -64,6 +64,7 @@ private:
     juce::CriticalSection shaderLock;
     juce::CriticalSection proofDumpLock;
     std::vector<NodeSpec> seedNodeSpecs;
+    std::vector<RuntimeOpModuleDiagnostic> runtimeOpDiagnostics;
     CompoundPatchSpec loudnessCompound;
 
     std::string pendingFragmentShader;
