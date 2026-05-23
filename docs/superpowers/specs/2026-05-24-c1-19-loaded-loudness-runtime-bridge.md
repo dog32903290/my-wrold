@@ -63,10 +63,10 @@ The live UI currently passes an empty runtime snapshot and therefore reports dir
 No JSON parsing, runtime graph mutation, file IO, logging, locking, or allocation was added to the audio callback.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.20 live-safe loudness sample-window runner:
+C1.20 live-safe loudness runtime proof is now implemented:
 AudioAnalyzerState/direct snapshot
 -> non-realtime prepared RuntimeSyntheticAudioInput window
 -> loaded compound runtime execution snapshot

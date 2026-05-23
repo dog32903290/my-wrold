@@ -959,6 +959,23 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
     return { true, snapshot, {} };
 }
 
+RuntimeSyntheticAudioInput makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot (const AudioAnalyzerSnapshot& snapshot,
+                                                                               const size_t sampleCount)
+{
+    RuntimeSyntheticAudioInput input;
+    input.analysisGain = 1.0f;
+
+    const auto safeSampleCount = std::max<size_t> (1, sampleCount);
+    input.channels.emplace_back (safeSampleCount, 0.0f);
+
+    const auto amplitude = std::isfinite (snapshot.rms) ? std::abs (snapshot.rms) : 0.0f;
+
+    for (size_t index = 0; index < safeSampleCount; ++index)
+        input.channels.back()[index] = (index % 2 == 0) ? amplitude : -amplitude;
+
+    return input;
+}
+
 static LoudnessRuntimeBridgeSnapshot makeLoudnessRuntimeFallbackSnapshot (const AudioAnalyzerSnapshot& fallbackSnapshot)
 {
     return {

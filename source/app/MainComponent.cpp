@@ -4,6 +4,8 @@
 #include "GraphContract.h"
 #include "RuntimeRegistry.h"
 
+#include <vector>
+
 namespace myworld
 {
 namespace
@@ -39,6 +41,47 @@ juce::File proofDumpDirectory()
 juce::File audioProofDumpDirectory()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("a1-audio-proof");
+}
+
+juce::File parentDirectory (juce::File file, const int levels)
+{
+    for (int i = 0; i < levels; ++i)
+        file = file.getParentDirectory();
+
+    return file;
+}
+
+juce::String defaultModuleLibraryPath()
+{
+    return "fixtures/module-libraries/default.module-library.json";
+}
+
+std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
+{
+    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+    const auto buildAppRepoRoot = parentDirectory (executableDir, 5);
+
+    return {
+        juce::File::getCurrentWorkingDirectory().getChildFile (libraryPath).getFullPathName().toStdString(),
+        buildAppRepoRoot.getChildFile (libraryPath).getFullPathName().toStdString()
+    };
+}
+
+RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
+{
+    std::string lastError;
+
+    for (const auto& path : moduleLibraryCandidatePaths (defaultModuleLibraryPath()))
+    {
+        const auto registry = loadRuntimeRegistryFromModuleLibrary (path);
+        if (registry.ok)
+            return registry;
+
+        lastError = registry.error;
+    }
+
+    return { false, {}, lastError.empty() ? "could not load module library: " + defaultModuleLibraryPath().toStdString()
+                                          : lastError };
 }
 }
 
@@ -197,9 +240,27 @@ void MainComponent::dumpAudioProof()
         return;
     }
 
-    const auto directSnapshot = audioInputAnalyzer.getSnapshot();
-    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, directSnapshot);
-    const auto& snapshot = bridge.analyzer;
+    const auto snapshot = audioInputAnalyzer.getSnapshot();
+    const auto runtimeRegistry = loadAudioProofRuntimeRegistry();
+
+    if (! runtimeRegistry.ok)
+    {
+        statusLabel.setText ("audio proof failed: " + juce::String (runtimeRegistry.error),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    const auto runtimeInput = makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot (snapshot, 64);
+    const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry.registry, runtimeInput);
+
+    if (! runtimeExecution.ok)
+    {
+        statusLabel.setText ("audio proof failed: " + juce::String (runtimeExecution.error),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (runtimeExecution.snapshot, snapshot);
     const auto json = juce::String()
         + "{\n"
         + "  \"sampleRate\": " + juce::String (audioInputAnalyzer.getSampleRate(), 0) + ",\n"
@@ -224,6 +285,7 @@ void MainComponent::dumpAudioProof()
 
     const auto audioStatsFile = directory.getChildFile ("audio_stats.json");
     const auto loudnessCompoundFile = directory.getChildFile ("loudness_compound.json");
+    const auto loudnessRuntimeExecutionFile = directory.getChildFile ("loudness_runtime_execution.json");
     const auto loudnessRuntimeBridgeFile = directory.getChildFile ("loudness_runtime_bridge.json");
 
     if (! audioStatsFile.replaceWithText (json, false, false, "\n"))
@@ -239,6 +301,18 @@ void MainComponent::dumpAudioProof()
                                                 "\n"))
     {
         statusLabel.setText ("audio proof failed: could not write " + loudnessCompoundFile.getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    const auto runtimeExecutionJson = makeRuntimeExecutionJson (runtimeExecution.snapshot);
+
+    if (! loudnessRuntimeExecutionFile.replaceWithText (juce::String::fromUTF8 (runtimeExecutionJson.c_str()),
+                                                        false,
+                                                        false,
+                                                        "\n"))
+    {
+        statusLabel.setText ("audio proof failed: could not write " + loudnessRuntimeExecutionFile.getFullPathName(),
                              juce::dontSendNotification);
         return;
     }

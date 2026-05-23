@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 01:58 Asia/Taipei
+Date: 2026-05-24 02:07 Asia/Taipei
 
 ## Current Head
 
 ```text
-C1.19 loaded loudness runtime bridge ready for commit
+C1 current: C1.20 live-safe loudness runtime proof ready for commit
+da04d84 Add loudness runtime bridge proof
 a81eba2 Add compound expanded canvas interaction proof
 29dc4b2 Add debug override module creation proof
 29a9fda Gate module creation by RuntimeOp diagnostics
@@ -56,6 +57,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.17 exists: blocked modules can now be inserted only through explicit debug override commands with visible reason, stored debug params, distinct command log entries, and undo coverage.
 - C1.18 exists: loaded compound nodes can be dragged/selected in collapsed root view, entered into a parent-qualified expanded child patcher graph, and roundtripped with child positions/internal edges.
 - C1.19 exists: `makeLoudnessRuntimeBridgeSnapshot()` prefers loaded runtime public outputs when available, falls back to direct analyzer snapshots with the same `out`, `rms`, `peak`, `gate`, and `confidence` vocabulary, and app audio proof dump writes `debug/a1-audio-proof/loudness_runtime_bridge.json`.
+- C1.20 exists: `makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot()` prepares a non-realtime snapshot-shaped input, app audio proof executes the loaded loudness runtime, writes `debug/a1-audio-proof/loudness_runtime_execution.json`, and bridge JSON now records `sourceMode: loaded-runtime-publicOutputs`.
 
 ## 試壓結果
 
@@ -118,35 +120,37 @@ compound interaction tests prove makeCompoundPatchInteractionGraph emits parent-
 interaction trace fixture now replays compound collapsed drag expanded roundtrip as create_node, collapse_compound, move_node, enter_patch, save_work:saved-and-committed
 ImGui canvas switches to the expanded child patcher graph while inside a compound patch instead of showing only the root graph/bullet list
 runtime registry tests prove the loudness bridge prefers loaded publicOutputs, preserves fallback sampleCounter, and emits serializable source/value JSON
-debug/a1-audio-proof/loudness_runtime_bridge.json records direct-analyzer-fallback with publicOutputs { out, rms, peak, gate, confidence } and field-level sources
-latest accepted source commit before C1.19: a81eba2
+runtime registry tests prove snapshot-shaped live proof input feeds loaded runtime execution and bridge sourceMode loaded-runtime-publicOutputs
+debug/a1-audio-proof/loudness_runtime_execution.json records seven loaded child RuntimeOps from snapshot-shaped input
+debug/a1-audio-proof/loudness_runtime_bridge.json records sourceMode loaded-runtime-publicOutputs with publicOutputs { out, rms, peak, gate, confidence } and field-level sources
+latest accepted source commit before C1.20: da04d84
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, and the loaded/fallback loudness bridge are storage-backed/test-backed.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, loaded/fallback loudness bridge, and app audio proof loaded runtime execution are storage-backed/test-backed.
 - Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
 - AI worker graph edits are still parked until saved commandGraph/module evidence is stronger.
-- The live A1 analyzer surface now reads through the C1 bridge vocabulary, but app runtime execution still receives an empty live runtime snapshot; loaded runtime publicOutputs are proven through synthetic runtime execution, not a live sample-window runner.
+- App audio proof now feeds the loaded runtime from a non-realtime snapshot-shaped input. It is not yet raw callback-buffer capture, and live UI timer still uses direct fallback unless a prepared runtime snapshot is cached.
 
 ## 下一根線
 
-C1.20 live-safe loudness sample-window runner:
+C1.21 compound public-port surface proof:
 
 ```text
-AudioAnalyzerState/direct snapshot or prepared sample window
--> non-realtime RuntimeSyntheticAudioInput
--> loaded compound runtime execution snapshot
--> bridge sourceMode loaded-runtime-publicOutputs during app proof
+collapsed compound node
+-> visible public input/output ports from loaded module
+-> connect/disconnect public ports through command path
+-> expanded child graph remains parent-qualified and roundtrippable
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The bridge now gives UI/debug one vocabulary for loaded runtime outputs and direct fallback.
-The next weakness is that the app proof still passes an empty runtime snapshot, so loaded runtime execution is not yet fed by a live-safe sample window.
+The runtime path can now publish loaded loudness outputs into A1 proof without touching the audio callback.
+The next visible C gap is collapsed compound port behavior: root-level compounds need to behave like real nodes with public ports, not only draggable boxes with hidden child graphs.
 ```

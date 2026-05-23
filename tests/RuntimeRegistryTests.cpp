@@ -611,6 +611,25 @@ int main()
     expectContains (bridgeJson, "\"publicOutputSources\": {", "bridge json");
     expectContains (bridgeJson, "\"out\": \"loudness_out.out\"", "bridge json");
 
+    const auto liveProofInput = myworld::makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot (fallbackSnapshot, 8);
+    expect (liveProofInput.channels.size() == 1, "live proof input channel count");
+    expect (liveProofInput.channels.at (0).size() == 8, "live proof input sample count");
+    expectNear (liveProofInput.channels.at (0).at (0), fallbackSnapshot.rms, 0.000001f, "live proof first sample");
+    expectNear (liveProofInput.channels.at (0).at (1), -fallbackSnapshot.rms, 0.000001f, "live proof second sample");
+    expectNear (liveProofInput.analysisGain, 1.0f, 0.000001f, "live proof keeps analyzed scale");
+
+    const auto liveProofExecution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
+                                                                                       liveProofInput);
+    expect (liveProofExecution.ok, "live proof runtime execution ok");
+    const auto liveProofBridge = myworld::makeLoudnessRuntimeBridgeSnapshot (liveProofExecution.snapshot,
+                                                                             fallbackSnapshot);
+    expect (liveProofBridge.usesLoadedRuntimeOutputs, "live proof bridge uses loaded runtime outputs");
+    expectEqual (liveProofBridge.sourceMode, "loaded-runtime-publicOutputs", "live proof source mode");
+    expectNear (liveProofBridge.analyzer.loudness, fallbackSnapshot.rms, 0.000001, "live proof bridge loudness");
+    expectNear (liveProofBridge.analyzer.rms, fallbackSnapshot.rms, 0.000001, "live proof bridge rms");
+    expect (liveProofBridge.analyzer.sampleCounter == fallbackSnapshot.sampleCounter,
+            "live proof bridge keeps direct sample counter");
+
     std::cout << "runtime registry ok\n";
     return 0;
 }

@@ -217,6 +217,8 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                                                                  float analysisGain);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const RuntimeSyntheticAudioInput& input);
+RuntimeSyntheticAudioInput makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot (const AudioAnalyzerSnapshot& snapshot,
+                                                                               size_t sampleCount);
 LoudnessRuntimeBridgeSnapshot makeLoudnessRuntimeBridgeSnapshot (const RuntimeExecutionSnapshot& runtimeSnapshot,
                                                                  const AudioAnalyzerSnapshot& fallbackSnapshot);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
