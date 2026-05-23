@@ -13,6 +13,19 @@ struct RuntimeRegistryChild
     std::string role;
 };
 
+struct RuntimeRegistryEdge
+{
+    std::string from;
+    std::string to;
+    std::string dataType;
+};
+
+struct RuntimeRegistryPublicOutputMapping
+{
+    std::string id;
+    std::string mapsTo;
+};
+
 struct RuntimeRegistryEntry
 {
     std::string nodeType;
@@ -23,8 +36,10 @@ struct RuntimeRegistryEntry
     std::vector<RuntimeRegistryChild> children;
     size_t childCount = 0;
     size_t internalEdgeCount = 0;
+    std::vector<RuntimeRegistryEdge> internalEdges;
     std::vector<std::string> publicInputs;
     std::vector<std::string> publicOutputs;
+    std::vector<RuntimeRegistryPublicOutputMapping> publicOutputMappings;
     std::vector<std::string> cookOrder;
 };
 
@@ -77,6 +92,7 @@ struct RuntimeOutputValue
 {
     std::string id;
     double value = 0.0;
+    std::string source;
 };
 
 struct RuntimeChildExecutionStatus

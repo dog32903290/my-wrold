@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 10:37 Asia/Taipei
+Date: 2026-05-23 10:46 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.9 loaded loudness public-output proof commit
+pending C1.10 loaded internal-edge value-bus proof commit
+918545b Publish loaded loudness runtime outputs
 b3a3a72 Add loaded loudness mini-chain execution proof
 81c10cb Add synthetic RMS runtime execution proof
 b5705f4 Add loaded compound dry run proof
@@ -36,6 +37,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.7 exists: `executeRuntimeRegistryWithSyntheticAudio()` executes the loaded `analyzer.rms` child over synthetic mono samples, records `rms=0.707107` and `peak=1.000000`, keeps unimplemented siblings explicit, and app proof dump writes `debug/v1-shader-proof/runtime_execution.json`.
 - C1.8 exists: `RuntimeSyntheticAudioInput` supports multi-channel synthetic fixtures, runtime execution records per-child `inputs` and `outputs`, and `audio.mono_mix -> analyzer.rms -> analyzer.analysis_gain` now passes values in cook order.
 - C1.9 exists: `pre_gate`, `output_smoother`, and `loudness_out` execute after `analysis_gain`; app proof dump writes entry-level `publicOutputs` for `out`, `rms`, `peak`, `gate`, and `confidence`.
+- C1.10 exists: runtime registry entries retain loaded `internalEdges` and `publicOutputMappings`; execution uses a `child.port` value bus and writes per-child `inputSources` plus entry `publicOutputSources`.
 
 ## 試壓結果
 
@@ -63,12 +65,14 @@ debug/v1-shader-proof/runtime_dry_run.json records seven dry-run-ready child sta
 debug/v1-shader-proof/runtime_execution.json records analyzer.rms as computed with rms/peak outputs
 debug/v1-shader-proof/runtime_execution.json records audio.mono_mix, analyzer.rms, and analyzer.analysis_gain as computed with input/output handoff evidence
 debug/v1-shader-proof/runtime_execution.json records publicOutputs { out, rms, peak, gate, confidence } and all seven children as computed
-latest accepted source commit before C1.9: b3a3a72
+debug/v1-shader-proof/runtime_registry.json records loaded internalEdges and publicOutputMappings
+debug/v1-shader-proof/runtime_execution.json records inputSources and publicOutputSources from loaded routes
+latest accepted source commit before C1.10: 918545b
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, and first public output map are storage-backed, but loaded compound execution still uses hardcoded local variables instead of loaded internal edges as the value bus.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, and internal-edge source evidence are storage-backed, but loaded compound execution still uses a single node-type branch ladder.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -76,15 +80,15 @@ latest accepted source commit before C1.9: b3a3a72
 
 ## 下一根線
 
-C1.10 loaded internal-edge value bus proof:
+C1.11 RuntimeOp dispatch-table proof:
 
 ```text
 module-library manifest
 -> runtime registry entry
--> loaded compound internalEdges
--> value bus keyed by child.port
--> RuntimeOp input lookup
--> same public output JSON without hardcoded handoff variables
+-> nodeType dispatch table
+-> named RuntimeOp function
+-> value bus in/out
+-> same public output JSON with smaller execution body
 -> per-child runtime status
 -> run tests and proof dump
 ```
@@ -93,5 +97,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is routing law. The loaded loudness compound now publishes values, but the runtime still hand-passes them in C++ locals instead of letting the loaded internal edge list own value flow.
+The next weakness is execution shape. The loaded routes now own value flow, but the node RuntimeOps are still branches inside one function instead of named dispatch units.
 ```

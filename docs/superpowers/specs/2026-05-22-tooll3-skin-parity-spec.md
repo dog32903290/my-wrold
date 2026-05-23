@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.9 loaded loudness public-output proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, edge-driven RuntimeOp chain execution, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.10 loaded internal-edge value-bus proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, RuntimeOp dispatch extraction, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 10:37 Asia/Taipei.
+Date: 2026-05-23 10:46 Asia/Taipei.
 
 已鎖定:
 
@@ -23,21 +23,22 @@ Date: 2026-05-23 10:37 Asia/Taipei.
 - C1.7 first executable child proof exists, so app proof dump can show `analyzer.rms` as a computed loaded child with `rms=0.707107` and `peak=1.000000`, while unimplemented siblings remain explicit.
 - C1.8 mini-chain proof exists, so app proof dump can show `audio.mono_mix`, `analyzer.rms`, and `analyzer.analysis_gain` as computed children with explicit `inputs` and `outputs`.
 - C1.9 public-output proof exists, so app proof dump can show all seven loaded loudness children as computed and entry-level `publicOutputs`.
+- C1.10 internal-edge value-bus proof exists, so app proof dump can show runtime values sourced from loaded `internalEdges` and `publicOutputMappings`.
 
 正在試壓:
 
-- Whether loaded library modules can route runtime values through stored internal edges without turning UI status into fake execution.
+- Whether loaded library modules can move node execution into named RuntimeOp dispatch units without turning UI status into fake execution.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module-library discovery, runtime registry proof, dry-run status, computed runtime chain, and first public output map are wired, but the browser still needs deeper category/search ergonomics and edge-driven runtime output status once more modules exist.
+- Module-library discovery, runtime registry proof, dry-run status, computed runtime chain, public output map, and source-route evidence are wired, but the browser still needs deeper category/search ergonomics and dispatch-backed runtime output status once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
 
 下一根線:
 
-- Keep new skin surface area parked until loaded modules route values from their saved internal edges. The proof dump records public outputs now; next pressure is routing law, not more panel polish.
+- Keep new skin surface area parked until loaded modules execute through named RuntimeOps. The proof dump records route sources now; next pressure is execution shape, not more panel polish.
 
 ## Purpose
 

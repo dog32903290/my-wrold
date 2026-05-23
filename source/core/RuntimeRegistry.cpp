@@ -8,6 +8,7 @@
 #include <cmath>
 #include <filesystem>
 #include <iomanip>
+#include <map>
 #include <sstream>
 
 namespace myworld
@@ -75,6 +76,37 @@ void appendValueObject (std::ostringstream& out, const std::vector<RuntimeOutput
     out << "}";
 }
 
+bool hasValueSources (const std::vector<RuntimeOutputValue>& values)
+{
+    return std::any_of (values.begin(), values.end(), [] (const auto& value) {
+        return ! value.source.empty();
+    });
+}
+
+void appendValueSourceObject (std::ostringstream& out, const std::vector<RuntimeOutputValue>& values)
+{
+    out << "{";
+
+    bool wroteAny = false;
+
+    for (const auto& value : values)
+    {
+        if (value.source.empty())
+            continue;
+
+        if (wroteAny)
+            out << ",";
+
+        out << " \"" << jsonEscaped (value.id) << "\": \"" << jsonEscaped (value.source) << "\"";
+        wroteAny = true;
+    }
+
+    if (wroteAny)
+        out << " ";
+
+    out << "}";
+}
+
 std::string fallback (const std::string& value, const std::string& fallbackValue)
 {
     return value.empty() ? fallbackValue : value;
@@ -128,6 +160,28 @@ std::vector<RuntimeRegistryChild> runtimeChildren (const CompoundPatchSpec& comp
     return children;
 }
 
+std::vector<RuntimeRegistryEdge> runtimeEdges (const CompoundPatchSpec& compound)
+{
+    std::vector<RuntimeRegistryEdge> edges;
+    edges.reserve (compound.internalEdges.size());
+
+    for (const auto& edge : compound.internalEdges)
+        edges.push_back ({ edge.from, edge.to, edge.dataType });
+
+    return edges;
+}
+
+std::vector<RuntimeRegistryPublicOutputMapping> runtimePublicOutputMappings (const CompoundPatchSpec& compound)
+{
+    std::vector<RuntimeRegistryPublicOutputMapping> mappings;
+    mappings.reserve (compound.publicOutputs.size());
+
+    for (const auto& port : compound.publicOutputs)
+        mappings.push_back ({ port.id, port.mapsTo });
+
+    return mappings;
+}
+
 const RuntimeRegistryChild* findRuntimeChild (const RuntimeRegistryEntry& entry, const std::string& childId)
 {
     const auto found = std::find_if (entry.children.begin(), entry.children.end(), [&childId] (const auto& child) {
@@ -135,6 +189,50 @@ const RuntimeRegistryChild* findRuntimeChild (const RuntimeRegistryEntry& entry,
     });
 
     return found == entry.children.end() ? nullptr : &(*found);
+}
+
+const RuntimeRegistryEdge* findInboundEdge (const RuntimeRegistryEntry& entry,
+                                            const std::string& childId,
+                                            const std::string& inputPort)
+{
+    const auto target = childId + "." + inputPort;
+    const auto found = std::find_if (entry.internalEdges.begin(), entry.internalEdges.end(), [&target] (const auto& edge) {
+        return edge.to == target;
+    });
+
+    return found == entry.internalEdges.end() ? nullptr : &(*found);
+}
+
+RuntimeOutputValue makeInputValue (const std::string& id,
+                                   const RuntimeRegistryEntry& entry,
+                                   const std::string& childId,
+                                   const std::string& inputPort,
+                                   const std::map<std::string, RuntimeOutputValue>& valueBus)
+{
+    const auto* edge = findInboundEdge (entry, childId, inputPort);
+
+    if (edge == nullptr)
+        return { id, 0.0, {} };
+
+    const auto found = valueBus.find (edge->from);
+    const auto value = found == valueBus.end() ? 0.0 : found->second.value;
+    return { id, value, edge->from };
+}
+
+void publishValue (std::map<std::string, RuntimeOutputValue>& valueBus,
+                   std::vector<RuntimeOutputValue>& outputs,
+                   const std::string& childId,
+                   const std::string& portId,
+                   double value)
+{
+    const RuntimeOutputValue output { portId, value, {} };
+    outputs.push_back (output);
+    valueBus[childId + "." + portId] = output;
+}
+
+bool hasValue (const std::map<std::string, RuntimeOutputValue>& valueBus, const std::string& key)
+{
+    return valueBus.find (key) != valueBus.end();
 }
 
 struct MonoMixResult
@@ -181,19 +279,21 @@ MonoMixResult mixToMono (const std::vector<std::vector<float>>& channels)
 
 RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& module, const CompoundPatchSpec& compound)
 {
-    return {
-        fallback (module.nodeType, compound.type),
-        fallback (module.title, compound.displayName),
-        fallback (module.runtimeDomain, "graph"),
-        "compound.patch",
-        fallback (module.previewPolicy, "none"),
-        runtimeChildren (compound),
-        compound.children.size(),
-        compound.internalEdges.size(),
-        portIds (compound.publicInputs),
-        portIds (compound.publicOutputs),
-        makeCompoundCookOrder (compound)
-    };
+    RuntimeRegistryEntry entry;
+    entry.nodeType = fallback (module.nodeType, compound.type);
+    entry.displayName = fallback (module.title, compound.displayName);
+    entry.runtimeDomain = fallback (module.runtimeDomain, "graph");
+    entry.executionKind = "compound.patch";
+    entry.previewPolicy = fallback (module.previewPolicy, "none");
+    entry.children = runtimeChildren (compound);
+    entry.childCount = compound.children.size();
+    entry.internalEdgeCount = compound.internalEdges.size();
+    entry.internalEdges = runtimeEdges (compound);
+    entry.publicInputs = portIds (compound.publicInputs);
+    entry.publicOutputs = portIds (compound.publicOutputs);
+    entry.publicOutputMappings = runtimePublicOutputMappings (compound);
+    entry.cookOrder = makeCompoundCookOrder (compound);
+    return entry;
 }
 }
 
@@ -306,20 +406,8 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
         entryStatus.status = "partial-execution";
         entryStatus.children.reserve (entry.cookOrder.size());
 
-        MonoMixResult monoMix;
-        bool hasAudioInput = false;
-        bool hasMonoMix = false;
-        bool hasRms = false;
-        bool hasAnalysisGain = false;
-        bool hasPreGate = false;
-        bool hasSmoother = false;
-        double rmsOutput = 0.0;
-        double peakOutput = 0.0;
-        double analysisGainOutput = 0.0;
-        double gateOutput = 0.0;
-        double gateValue = 0.0;
-        double confidenceValue = 0.0;
-        double smootherOutput = 0.0;
+        std::map<std::string, RuntimeOutputValue> valueBus;
+        std::map<std::string, std::vector<float>> sampleBus;
 
         for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
         {
@@ -342,32 +430,38 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
 
             if (child->nodeType == "audio.input")
             {
-                hasAudioInput = true;
                 childStatus.status = "computed";
                 childStatus.reason = "accepted synthetic audio channels";
-                childStatus.outputs = {
-                    { "channelCount", static_cast<double> (input.channels.size()) },
-                    { "sampleCount", static_cast<double> (sampleCount) }
-                };
+                publishValue (valueBus,
+                              childStatus.outputs,
+                              child->id,
+                              "channels",
+                              static_cast<double> (input.channels.size()));
+                publishValue (valueBus,
+                              childStatus.outputs,
+                              child->id,
+                              "sampleCount",
+                              static_cast<double> (sampleCount));
             }
             else if (child->nodeType == "audio.mono_mix")
             {
-                childStatus.inputs = {
-                    { "channelCount", static_cast<double> (input.channels.size()) },
-                    { "sampleCount", static_cast<double> (sampleCount) }
-                };
+                const auto audioInput = makeInputValue ("input", entry, child->id, "input", valueBus);
+                childStatus.inputs = { audioInput };
 
-                if (hasAudioInput)
+                if (hasValue (valueBus, audioInput.source))
                 {
-                    monoMix = mixToMono (input.channels);
-                    hasMonoMix = true;
+                    auto monoMix = mixToMono (input.channels);
+                    sampleBus[child->id + ".mono"] = monoMix.samples;
                     childStatus.status = "computed";
                     childStatus.reason = "averaged synthetic channels into mono samples";
-                    childStatus.outputs = {
-                        { "sampleCount", static_cast<double> (monoMix.samples.size()) },
-                        { "rms", monoMix.rms },
-                        { "peak", monoMix.peak }
-                    };
+                    publishValue (valueBus,
+                                  childStatus.outputs,
+                                  child->id,
+                                  "sampleCount",
+                                  static_cast<double> (monoMix.samples.size()));
+                    publishValue (valueBus, childStatus.outputs, child->id, "rms", monoMix.rms);
+                    publishValue (valueBus, childStatus.outputs, child->id, "peak", monoMix.peak);
+                    publishValue (valueBus, childStatus.outputs, child->id, "mono", monoMix.rms);
                 }
                 else
                 {
@@ -377,28 +471,30 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             }
             else if (child->nodeType == "analyzer.rms")
             {
-                childStatus.inputs = {
-                    { "sampleCount", static_cast<double> (monoMix.samples.size()) },
-                    { "sourceRms", monoMix.rms },
-                    { "sourcePeak", monoMix.peak }
-                };
+                const auto monoInput = makeInputValue ("input", entry, child->id, "input", valueBus);
+                childStatus.inputs = { monoInput };
+                const auto sampleSource = sampleBus.find (monoInput.source);
 
-                if (hasMonoMix)
+                if (sampleSource != sampleBus.end())
                 {
-                    const float* channels[] { monoMix.samples.data() };
+                    const auto& monoSamples = sampleSource->second;
+                    const float* channels[] { monoSamples.data() };
                     AudioAnalyzerState analyzer;
-                    analyzer.processBlock (channels, 1, static_cast<int> (monoMix.samples.size()), 1.0f);
+                    analyzer.processBlock (channels, 1, static_cast<int> (monoSamples.size()), 1.0f);
                     const auto analyzerSnapshot = analyzer.getSnapshot();
 
-                    hasRms = true;
-                    rmsOutput = static_cast<double> (analyzerSnapshot.rms);
-                    peakOutput = static_cast<double> (analyzerSnapshot.peak);
                     childStatus.status = "computed";
                     childStatus.reason = "computed rms/peak from audio.mono_mix output";
-                    childStatus.outputs = {
-                        { "rms", rmsOutput },
-                        { "peak", peakOutput }
-                    };
+                    publishValue (valueBus,
+                                  childStatus.outputs,
+                                  child->id,
+                                  "rms",
+                                  static_cast<double> (analyzerSnapshot.rms));
+                    publishValue (valueBus,
+                                  childStatus.outputs,
+                                  child->id,
+                                  "peak",
+                                  static_cast<double> (analyzerSnapshot.peak));
                 }
                 else
                 {
@@ -408,20 +504,18 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             }
             else if (child->nodeType == "analyzer.analysis_gain")
             {
+                const auto measuredInput = makeInputValue ("input", entry, child->id, "input", valueBus);
                 childStatus.inputs = {
-                    { "input", rmsOutput },
+                    measuredInput,
                     { "gain", static_cast<double> (input.analysisGain) }
                 };
 
-                if (hasRms)
+                if (hasValue (valueBus, measuredInput.source))
                 {
-                    hasAnalysisGain = true;
-                    analysisGainOutput = rmsOutput * static_cast<double> (input.analysisGain);
+                    const auto calibrated = measuredInput.value * static_cast<double> (input.analysisGain);
                     childStatus.status = "computed";
                     childStatus.reason = "calibrated analyzer.rms output with analysis gain";
-                    childStatus.outputs = {
-                        { "out", analysisGainOutput }
-                    };
+                    publishValue (valueBus, childStatus.outputs, child->id, "out", calibrated);
                 }
                 else
                 {
@@ -432,24 +526,22 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             else if (child->nodeType == "analyzer.pre_gate")
             {
                 constexpr double gateThreshold = 0.0001;
+                const auto calibratedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
                 childStatus.inputs = {
-                    { "input", analysisGainOutput },
+                    calibratedInput,
                     { "threshold", gateThreshold }
                 };
 
-                if (hasAnalysisGain)
+                if (hasValue (valueBus, calibratedInput.source))
                 {
-                    hasPreGate = true;
-                    gateValue = analysisGainOutput > gateThreshold ? 1.0 : 0.0;
-                    confidenceValue = gateValue;
-                    gateOutput = analysisGainOutput * gateValue;
+                    const auto gateValue = calibratedInput.value > gateThreshold ? 1.0 : 0.0;
+                    const auto confidenceValue = gateValue;
+                    const auto gateOutput = calibratedInput.value * gateValue;
                     childStatus.status = "computed";
                     childStatus.reason = "gated calibrated loudness with fixed first-proof threshold";
-                    childStatus.outputs = {
-                        { "out", gateOutput },
-                        { "gate", gateValue },
-                        { "confidence", confidenceValue }
-                    };
+                    publishValue (valueBus, childStatus.outputs, child->id, "out", gateOutput);
+                    publishValue (valueBus, childStatus.outputs, child->id, "gate", gateValue);
+                    publishValue (valueBus, childStatus.outputs, child->id, "confidence", confidenceValue);
                 }
                 else
                 {
@@ -459,19 +551,14 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             }
             else if (child->nodeType == "signal.smoother")
             {
-                childStatus.inputs = {
-                    { "input", gateOutput }
-                };
+                const auto gatedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
+                childStatus.inputs = { gatedInput };
 
-                if (hasPreGate)
+                if (hasValue (valueBus, gatedInput.source))
                 {
-                    hasSmoother = true;
-                    smootherOutput = gateOutput;
                     childStatus.status = "computed";
                     childStatus.reason = "first-proof pass-through smoother";
-                    childStatus.outputs = {
-                        { "out", smootherOutput }
-                    };
+                    publishValue (valueBus, childStatus.outputs, child->id, "out", gatedInput.value);
                 }
                 else
                 {
@@ -481,26 +568,46 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             }
             else if (child->nodeType == "analyzer.loudness_out")
             {
+                const auto smoothedInput = makeInputValue ("input", entry, child->id, "input", valueBus);
+                const auto rmsInput = RuntimeOutputValue { "rms",
+                                                           hasValue (valueBus, "rms.rms") ? valueBus.at ("rms.rms").value : 0.0,
+                                                           "rms.rms" };
+                const auto peakInput = makeInputValue ("peak", entry, child->id, "peak", valueBus);
+                const auto gateInput = RuntimeOutputValue { "gate",
+                                                            hasValue (valueBus, "pre_gate.gate")
+                                                                ? valueBus.at ("pre_gate.gate").value
+                                                                : 0.0,
+                                                            "pre_gate.gate" };
+                const auto confidenceInput = makeInputValue ("confidence",
+                                                             entry,
+                                                             child->id,
+                                                             "confidence",
+                                                             valueBus);
                 childStatus.inputs = {
-                    { "input", smootherOutput },
-                    { "rms", rmsOutput },
-                    { "peak", peakOutput },
-                    { "gate", gateValue },
-                    { "confidence", confidenceValue }
+                    smoothedInput,
+                    rmsInput,
+                    peakInput,
+                    gateInput,
+                    confidenceInput
                 };
 
-                if (hasSmoother)
+                if (hasValue (valueBus, smoothedInput.source)
+                    && hasValue (valueBus, rmsInput.source)
+                    && hasValue (valueBus, peakInput.source)
+                    && hasValue (valueBus, gateInput.source)
+                    && hasValue (valueBus, confidenceInput.source))
                 {
                     childStatus.status = "computed";
                     childStatus.reason = "published loaded compound public outputs";
-                    childStatus.outputs = {
-                        { "out", smootherOutput },
-                        { "rms", rmsOutput },
-                        { "peak", peakOutput },
-                        { "gate", gateValue },
-                        { "confidence", confidenceValue }
-                    };
-                    entryStatus.publicOutputs = childStatus.outputs;
+                    publishValue (valueBus, childStatus.outputs, child->id, "out", smoothedInput.value);
+                    publishValue (valueBus, childStatus.outputs, child->id, "rms", rmsInput.value);
+                    publishValue (valueBus, childStatus.outputs, child->id, "peak", peakInput.value);
+                    publishValue (valueBus, childStatus.outputs, child->id, "gate", gateInput.value);
+                    publishValue (valueBus,
+                                  childStatus.outputs,
+                                  child->id,
+                                  "confidence",
+                                  confidenceInput.value);
                 }
                 else
                 {
@@ -512,7 +619,16 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
             entryStatus.children.push_back (childStatus);
         }
 
+        for (const auto& mapping : entry.publicOutputMappings)
+        {
+            const auto found = valueBus.find (mapping.mapsTo);
+
+            if (found != valueBus.end())
+                entryStatus.publicOutputs.push_back ({ mapping.id, found->second.value, mapping.mapsTo });
+        }
+
         if (! entryStatus.publicOutputs.empty()
+            && entryStatus.publicOutputs.size() == entry.publicOutputMappings.size()
             && std::all_of (entryStatus.children.begin(), entryStatus.children.end(), [] (const auto& child) {
                 return child.status == "computed";
             }))
@@ -561,12 +677,43 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
         }
 
         out << "      ],\n";
+        out << "      \"internalEdges\": [\n";
+
+        for (size_t edgeIndex = 0; edgeIndex < entry.internalEdges.size(); ++edgeIndex)
+        {
+            const auto& edge = entry.internalEdges[edgeIndex];
+            out << "        { \"from\": \"" << jsonEscaped (edge.from)
+                << "\", \"to\": \"" << jsonEscaped (edge.to)
+                << "\", \"dataType\": \"" << jsonEscaped (edge.dataType) << "\" }";
+
+            if (edgeIndex + 1 < entry.internalEdges.size())
+                out << ",";
+
+            out << "\n";
+        }
+
+        out << "      ],\n";
         out << "      \"publicInputs\": ";
         appendStringArray (out, entry.publicInputs);
         out << ",\n";
         out << "      \"publicOutputs\": ";
         appendStringArray (out, entry.publicOutputs);
         out << ",\n";
+        out << "      \"publicOutputMappings\": [\n";
+
+        for (size_t mappingIndex = 0; mappingIndex < entry.publicOutputMappings.size(); ++mappingIndex)
+        {
+            const auto& mapping = entry.publicOutputMappings[mappingIndex];
+            out << "        { \"id\": \"" << jsonEscaped (mapping.id)
+                << "\", \"mapsTo\": \"" << jsonEscaped (mapping.mapsTo) << "\" }";
+
+            if (mappingIndex + 1 < entry.publicOutputMappings.size())
+                out << ",";
+
+            out << "\n";
+        }
+
+        out << "      ],\n";
         out << "      \"cookOrder\": ";
         appendStringArray (out, entry.cookOrder);
         out << "\n";
@@ -653,6 +800,9 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
         out << "      \"publicOutputs\": ";
         appendValueObject (out, entry.publicOutputs);
         out << ",\n";
+        out << "      \"publicOutputSources\": ";
+        appendValueSourceObject (out, entry.publicOutputs);
+        out << ",\n";
         out << "      \"children\": [\n";
 
         for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)
@@ -667,6 +817,9 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
             out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\",\n";
             out << "          \"inputs\": ";
             appendValueObject (out, child.inputs);
+            out << ",\n";
+            out << "          \"inputSources\": ";
+            appendValueSourceObject (out, child.inputs);
             out << ",\n";
             out << "          \"outputs\": ";
             appendValueObject (out, child.outputs);

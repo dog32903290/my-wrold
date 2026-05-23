@@ -48,8 +48,15 @@ int main()
     expectEqual (entry.executionKind, "compound.patch", "runtime entry execution kind");
     expect (entry.childCount == 7, "runtime entry child count");
     expect (entry.internalEdgeCount == 9, "runtime entry internal edge count");
+    expect (entry.internalEdges.size() == 9, "runtime entry internal edge metadata count");
+    expectEqual (entry.internalEdges.at (2).from, "mono_mix.mono", "runtime internal edge from");
+    expectEqual (entry.internalEdges.at (2).to, "rms.input", "runtime internal edge to");
+    expectEqual (entry.internalEdges.at (2).dataType, "audio.mono", "runtime internal edge data type");
     expect (entry.publicInputs.size() == 1, "runtime entry public input count");
     expect (entry.publicOutputs.size() == 5, "runtime entry public output count");
+    expect (entry.publicOutputMappings.size() == 5, "runtime entry public output mapping count");
+    expectEqual (entry.publicOutputMappings.at (0).id, "out", "runtime public output mapping id");
+    expectEqual (entry.publicOutputMappings.at (0).mapsTo, "loudness_out.out", "runtime public output mapping target");
     expect (entry.children.size() == 7, "runtime entry child metadata count");
     expectEqual (entry.children.front().id, "audio_in", "runtime entry first child id");
     expectEqual (entry.children.front().nodeType, "audio.input", "runtime entry first child type");
@@ -71,6 +78,11 @@ int main()
     expectContains (json, "\"kind\": \"runtimeRegistry\"", "runtime registry json");
     expectContains (json, "\"nodeType\": \"compound.loudness\"", "runtime registry json");
     expectContains (json, "\"executionKind\": \"compound.patch\"", "runtime registry json");
+    expectContains (json, "\"internalEdges\"", "runtime registry json");
+    expectContains (json, "\"from\": \"mono_mix.mono\"", "runtime registry json");
+    expectContains (json, "\"to\": \"rms.input\"", "runtime registry json");
+    expectContains (json, "\"publicOutputMappings\"", "runtime registry json");
+    expectContains (json, "\"mapsTo\": \"loudness_out.out\"", "runtime registry json");
     expectContains (json, "\"cookOrder\"", "runtime registry json");
     expectContains (json, "\"loudness_out\"", "runtime registry json");
 
@@ -114,9 +126,10 @@ int main()
     expectEqual (rmsChild.childId, "rms", "executed child id");
     expectEqual (rmsChild.nodeType, "analyzer.rms", "executed child type");
     expectEqual (rmsChild.status, "computed", "executed child status");
-    expect (rmsChild.inputs.size() == 3, "executed child input count");
-    expectEqual (rmsChild.inputs.at (1).id, "sourceRms", "rms input source id");
-    expectNear (rmsChild.inputs.at (1).value, std::sqrt (0.5), 0.000001, "rms input source value");
+    expect (rmsChild.inputs.size() == 1, "executed child input count");
+    expectEqual (rmsChild.inputs.front().id, "input", "rms input id");
+    expectEqual (rmsChild.inputs.front().source, "mono_mix.mono", "rms input source port");
+    expectNear (rmsChild.inputs.front().value, std::sqrt (0.5), 0.000001, "rms input source value");
     expect (rmsChild.outputs.size() == 2, "executed child output count");
     expectEqual (rmsChild.outputs.at (0).id, "rms", "rms output id");
     expectNear (rmsChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "rms output value");
@@ -128,6 +141,7 @@ int main()
     expectEqual (analysisGainChild.status, "computed", "analysis gain child status");
     expect (analysisGainChild.inputs.size() == 2, "analysis gain input count");
     expectEqual (analysisGainChild.inputs.at (0).id, "input", "analysis gain input id");
+    expectEqual (analysisGainChild.inputs.at (0).source, "rms.rms", "analysis gain input source");
     expectNear (analysisGainChild.inputs.at (0).value, std::sqrt (0.5), 0.000001, "analysis gain input value");
     expectEqual (analysisGainChild.inputs.at (1).id, "gain", "analysis gain gain input id");
     expectNear (analysisGainChild.inputs.at (1).value, 1.0, 0.000001, "analysis gain gain input value");
@@ -139,6 +153,7 @@ int main()
     expectEqual (gatedChild.childId, "pre_gate", "pre gate child id");
     expectEqual (gatedChild.status, "computed", "pre gate child status");
     expectEqual (gatedChild.inputs.at (0).id, "input", "pre gate input id");
+    expectEqual (gatedChild.inputs.at (0).source, "analysis_gain.out", "pre gate input source");
     expectNear (gatedChild.inputs.at (0).value, std::sqrt (0.5), 0.000001, "pre gate input value");
     expectEqual (gatedChild.outputs.at (0).id, "out", "pre gate output id");
     expectNear (gatedChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "pre gate output value");
@@ -150,12 +165,16 @@ int main()
     const auto& smootherChild = execution.snapshot.entries.front().children.at (5);
     expectEqual (smootherChild.childId, "output_smoother", "smoother child id");
     expectEqual (smootherChild.status, "computed", "smoother child status");
+    expectEqual (smootherChild.inputs.at (0).source, "pre_gate.out", "smoother input source");
     expectEqual (smootherChild.outputs.at (0).id, "out", "smoother output id");
     expectNear (smootherChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "smoother output value");
 
     const auto& loudnessOutChild = execution.snapshot.entries.front().children.at (6);
     expectEqual (loudnessOutChild.childId, "loudness_out", "loudness out child id");
     expectEqual (loudnessOutChild.status, "computed", "loudness out child status");
+    expectEqual (loudnessOutChild.inputs.at (0).source, "output_smoother.out", "loudness out input source");
+    expectEqual (loudnessOutChild.inputs.at (2).source, "rms.peak", "loudness out peak source");
+    expectEqual (loudnessOutChild.inputs.at (4).source, "pre_gate.confidence", "loudness out confidence source");
     expect (loudnessOutChild.outputs.size() == 5, "loudness out output count");
     expectEqual (loudnessOutChild.outputs.at (0).id, "out", "loudness out output id");
     expectNear (loudnessOutChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "loudness out output value");
@@ -170,6 +189,12 @@ int main()
 
     expect (execution.snapshot.entries.front().publicOutputs.size() == 5, "entry public output count");
     expectEqual (execution.snapshot.entries.front().publicOutputs.at (0).id, "out", "entry public out id");
+    expectEqual (execution.snapshot.entries.front().publicOutputs.at (0).source,
+                 "loudness_out.out",
+                 "entry public out source");
+    expectEqual (execution.snapshot.entries.front().publicOutputs.at (3).source,
+                 "pre_gate.gate",
+                 "entry public gate source");
     expectNear (execution.snapshot.entries.front().publicOutputs.at (0).value,
                 std::sqrt (0.5),
                 0.000001,
@@ -234,6 +259,10 @@ int main()
     expectContains (executionJson, "\"mode\": \"synthetic-audio\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"mono_mix\"", "runtime execution json");
     expectContains (executionJson, "\"inputs\": {", "runtime execution json");
+    expectContains (executionJson, "\"inputSources\": {", "runtime execution json");
+    expectContains (executionJson, "\"publicOutputSources\": {", "runtime execution json");
+    expectContains (executionJson, "\"input\": \"rms.rms\"", "runtime execution json");
+    expectContains (executionJson, "\"out\": \"loudness_out.out\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"rms\"", "runtime execution json");
     expectContains (executionJson, "\"status\": \"computed\"", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"analysis_gain\"", "runtime execution json");
