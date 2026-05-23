@@ -43,6 +43,11 @@ int main()
     expect (entry.internalEdgeCount == 9, "runtime entry internal edge count");
     expect (entry.publicInputs.size() == 1, "runtime entry public input count");
     expect (entry.publicOutputs.size() == 5, "runtime entry public output count");
+    expect (entry.children.size() == 7, "runtime entry child metadata count");
+    expectEqual (entry.children.front().id, "audio_in", "runtime entry first child id");
+    expectEqual (entry.children.front().nodeType, "audio.input", "runtime entry first child type");
+    expectEqual (entry.children.back().id, "loudness_out", "runtime entry last child id");
+    expectEqual (entry.children.back().nodeType, "analyzer.loudness_out", "runtime entry last child type");
 
     const std::vector<std::string> expectedCookOrder {
         "audio_in",
@@ -61,6 +66,26 @@ int main()
     expectContains (json, "\"executionKind\": \"compound.patch\"", "runtime registry json");
     expectContains (json, "\"cookOrder\"", "runtime registry json");
     expectContains (json, "\"loudness_out\"", "runtime registry json");
+
+    const auto dryRun = myworld::dryRunRuntimeRegistry (registryResult.registry);
+    expect (dryRun.ok, dryRun.error);
+    expect (dryRun.snapshot.entries.size() == 1, "dry-run entry count");
+    expectEqual (dryRun.snapshot.entries.front().nodeType, "compound.loudness", "dry-run entry node type");
+    expectEqual (dryRun.snapshot.entries.front().status, "dry-run-ready", "dry-run entry status");
+    expect (dryRun.snapshot.entries.front().children.size() == 7, "dry-run child count");
+    expectEqual (dryRun.snapshot.entries.front().children.front().childId, "audio_in", "dry-run first child id");
+    expectEqual (dryRun.snapshot.entries.front().children.front().nodeType, "audio.input", "dry-run first child type");
+    expectEqual (dryRun.snapshot.entries.front().children.front().status, "dry-run-ready", "dry-run first child status");
+    expect (dryRun.snapshot.entries.front().children.back().cookIndex == 6, "dry-run last child cook index");
+    expectEqual (dryRun.snapshot.entries.front().children.back().childId, "loudness_out", "dry-run last child id");
+
+    const auto dryRunJson = myworld::makeRuntimeDryRunJson (dryRun.snapshot);
+    expectContains (dryRunJson, "\"kind\": \"runtimeDryRun\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"nodeType\": \"compound.loudness\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"status\": \"dry-run-ready\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"childId\": \"audio_in\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"nodeType\": \"audio.input\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
 
     std::cout << "runtime registry ok\n";
     return 0;

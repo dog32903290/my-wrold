@@ -6,6 +6,13 @@
 
 namespace myworld
 {
+struct RuntimeRegistryChild
+{
+    std::string id;
+    std::string nodeType;
+    std::string role;
+};
+
 struct RuntimeRegistryEntry
 {
     std::string nodeType;
@@ -13,6 +20,7 @@ struct RuntimeRegistryEntry
     std::string runtimeDomain;
     std::string executionKind;
     std::string previewPolicy;
+    std::vector<RuntimeRegistryChild> children;
     size_t childCount = 0;
     size_t internalEdgeCount = 0;
     std::vector<std::string> publicInputs;
@@ -33,6 +41,40 @@ struct RuntimeRegistryLoadResult
     std::string error;
 };
 
+struct RuntimeChildDryRunStatus
+{
+    size_t cookIndex = 0;
+    std::string childId;
+    std::string nodeType;
+    std::string role;
+    std::string status;
+    std::string reason;
+};
+
+struct RuntimeEntryDryRunStatus
+{
+    std::string nodeType;
+    std::string executionKind;
+    std::string status;
+    std::vector<RuntimeChildDryRunStatus> children;
+};
+
+struct RuntimeDryRunSnapshot
+{
+    int version = 1;
+    std::string mode = "dry-run";
+    std::vector<RuntimeEntryDryRunStatus> entries;
+};
+
+struct RuntimeDryRunResult
+{
+    bool ok = false;
+    RuntimeDryRunSnapshot snapshot;
+    std::string error;
+};
+
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath);
+RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
+std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
 }
