@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.7 first executable child RuntimeOp proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, full RuntimeOp chain execution, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.8 loaded loudness mini-chain value-handoff proof exists for loaded modules. S8 full timeline editing, output pinning, live thumbnails, full RuntimeOp chain execution, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 09:59 Asia/Taipei.
+Date: 2026-05-23 10:18 Asia/Taipei.
 
 已鎖定:
 
@@ -21,21 +21,22 @@ Date: 2026-05-23 09:59 Asia/Taipei.
 - C1.5 runtime registry proof exists, so app proof dump can show loaded compounds as runtime entries instead of only browser/editor entries.
 - C1.6 dry-run proof exists, so app proof dump can show per-child loaded-compound runtime status without claiming full computation.
 - C1.7 first executable child proof exists, so app proof dump can show `analyzer.rms` as a computed loaded child with `rms=0.707107` and `peak=1.000000`, while unimplemented siblings remain explicit.
+- C1.8 mini-chain proof exists, so app proof dump can show `audio.mono_mix`, `analyzer.rms`, and `analyzer.analysis_gain` as computed children with explicit `inputs` and `outputs`.
 
 正在試壓:
 
-- Whether loaded library modules can pass computed values across adjacent child RuntimeOps without turning UI status into fake execution.
+- Whether loaded library modules can publish gate/smoothing/public-output values without turning UI status into fake execution.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module-library discovery, runtime registry proof, dry-run status, and the first computed runtime child are wired, but the browser still needs deeper category/search ergonomics and full runtime output status once more modules exist.
+- Module-library discovery, runtime registry proof, dry-run status, and the first computed runtime mini-chain are wired, but the browser still needs deeper category/search ergonomics and full runtime output status once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
 
 下一根線:
 
-- Keep new skin surface area parked until loaded modules can pass values through a small RuntimeOp chain. The proof dump records one computed child output now; next pressure is value handoff, not more panel polish.
+- Keep new skin surface area parked until loaded modules can publish a full public output map. The proof dump records the first value handoff now; next pressure is publication, not more panel polish.
 
 ## Purpose
 

@@ -105,24 +105,77 @@ int main()
     expect (execution.snapshot.entries.front().children.size() == 7, "execution child count");
 
     const auto& rmsChild = execution.snapshot.entries.front().children.at (2);
+    expectEqual (execution.snapshot.entries.front().children.at (0).status,
+                 "computed",
+                 "audio input child status");
+    expectEqual (execution.snapshot.entries.front().children.at (1).status,
+                 "computed",
+                 "mono mix child status");
     expectEqual (rmsChild.childId, "rms", "executed child id");
     expectEqual (rmsChild.nodeType, "analyzer.rms", "executed child type");
     expectEqual (rmsChild.status, "computed", "executed child status");
+    expect (rmsChild.inputs.size() == 3, "executed child input count");
+    expectEqual (rmsChild.inputs.at (1).id, "sourceRms", "rms input source id");
+    expectNear (rmsChild.inputs.at (1).value, std::sqrt (0.5), 0.000001, "rms input source value");
     expect (rmsChild.outputs.size() == 2, "executed child output count");
     expectEqual (rmsChild.outputs.at (0).id, "rms", "rms output id");
     expectNear (rmsChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "rms output value");
     expectEqual (rmsChild.outputs.at (1).id, "peak", "peak output id");
     expectNear (rmsChild.outputs.at (1).value, 1.0, 0.000001, "peak output value");
 
-    const auto& firstChild = execution.snapshot.entries.front().children.front();
-    expectEqual (firstChild.status, "not-executed", "non-rms child status");
-    expectContains (firstChild.reason, "RuntimeOp not implemented", "non-rms child reason");
+    const auto& analysisGainChild = execution.snapshot.entries.front().children.at (3);
+    expectEqual (analysisGainChild.childId, "analysis_gain", "analysis gain child id");
+    expectEqual (analysisGainChild.status, "computed", "analysis gain child status");
+    expect (analysisGainChild.inputs.size() == 2, "analysis gain input count");
+    expectEqual (analysisGainChild.inputs.at (0).id, "input", "analysis gain input id");
+    expectNear (analysisGainChild.inputs.at (0).value, std::sqrt (0.5), 0.000001, "analysis gain input value");
+    expectEqual (analysisGainChild.inputs.at (1).id, "gain", "analysis gain gain input id");
+    expectNear (analysisGainChild.inputs.at (1).value, 1.0, 0.000001, "analysis gain gain input value");
+    expect (analysisGainChild.outputs.size() == 1, "analysis gain output count");
+    expectEqual (analysisGainChild.outputs.at (0).id, "out", "analysis gain output id");
+    expectNear (analysisGainChild.outputs.at (0).value, std::sqrt (0.5), 0.000001, "analysis gain output value");
+
+    const auto& gatedChild = execution.snapshot.entries.front().children.at (4);
+    expectEqual (gatedChild.status, "not-executed", "first parked child status");
+    expectContains (gatedChild.reason, "RuntimeOp not implemented", "first parked child reason");
+
+    myworld::RuntimeSyntheticAudioInput stereoExecutionInput;
+    stereoExecutionInput.channels = {
+        { 0.0f, 1.0f, -1.0f, 0.0f },
+        { 0.0f, 0.5f, -0.5f, 0.0f }
+    };
+    stereoExecutionInput.analysisGain = 1.5f;
+
+    const auto stereoExecution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
+                                                                                    stereoExecutionInput);
+    expect (stereoExecution.ok, stereoExecution.error);
+    const auto& stereoMonoMix = stereoExecution.snapshot.entries.front().children.at (1);
+    expectEqual (stereoMonoMix.status, "computed", "stereo mono mix status");
+    expectEqual (stereoMonoMix.outputs.at (1).id, "rms", "stereo mono mix rms id");
+    expectNear (stereoMonoMix.outputs.at (1).value, std::sqrt (0.28125), 0.000001, "stereo mono mix rms value");
+    expectEqual (stereoMonoMix.outputs.at (2).id, "peak", "stereo mono mix peak id");
+    expectNear (stereoMonoMix.outputs.at (2).value, 0.75, 0.000001, "stereo mono mix peak value");
+
+    const auto& stereoAnalysisGain = stereoExecution.snapshot.entries.front().children.at (3);
+    expectEqual (stereoAnalysisGain.status, "computed", "stereo analysis gain status");
+    expectNear (stereoAnalysisGain.inputs.at (0).value,
+                stereoExecution.snapshot.entries.front().children.at (2).outputs.at (0).value,
+                0.000001,
+                "stereo analysis gain receives rms output");
+    expectNear (stereoAnalysisGain.outputs.at (0).value,
+                std::sqrt (0.28125) * 1.5,
+                0.000001,
+                "stereo analysis gain output value");
 
     const auto executionJson = myworld::makeRuntimeExecutionJson (execution.snapshot);
     expectContains (executionJson, "\"kind\": \"runtimeExecution\"", "runtime execution json");
     expectContains (executionJson, "\"mode\": \"synthetic-audio\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"mono_mix\"", "runtime execution json");
+    expectContains (executionJson, "\"inputs\": {", "runtime execution json");
     expectContains (executionJson, "\"childId\": \"rms\"", "runtime execution json");
     expectContains (executionJson, "\"status\": \"computed\"", "runtime execution json");
+    expectContains (executionJson, "\"childId\": \"analysis_gain\"", "runtime execution json");
+    expectContains (executionJson, "\"out\": 0.707107", "runtime execution json");
     expectContains (executionJson, "\"rms\": 0.707107", "runtime execution json");
     expectContains (executionJson, "\"peak\": 1.000000", "runtime execution json");
 

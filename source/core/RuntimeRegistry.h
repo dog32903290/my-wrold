@@ -87,6 +87,7 @@ struct RuntimeChildExecutionStatus
     std::string role;
     std::string status;
     std::string reason;
+    std::vector<RuntimeOutputValue> inputs;
     std::vector<RuntimeOutputValue> outputs;
 };
 
@@ -112,11 +113,19 @@ struct RuntimeExecutionResult
     std::string error;
 };
 
+struct RuntimeSyntheticAudioInput
+{
+    std::vector<std::vector<float>> channels;
+    float analysisGain = 1.0f;
+};
+
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath);
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const std::vector<float>& samples,
                                                                  float analysisGain);
+RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
+                                                                 const RuntimeSyntheticAudioInput& input);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
 std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
 std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot);

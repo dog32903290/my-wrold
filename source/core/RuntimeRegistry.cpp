@@ -5,6 +5,7 @@
 #include "StorageContract.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <iomanip>
 #include <sstream>
@@ -54,6 +55,24 @@ void appendStringArray (std::ostringstream& out, const std::vector<std::string>&
     }
 
     out << "]";
+}
+
+void appendValueObject (std::ostringstream& out, const std::vector<RuntimeOutputValue>& values)
+{
+    out << "{";
+
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        if (index != 0)
+            out << ",";
+
+        out << " \"" << jsonEscaped (values[index].id) << "\": " << values[index].value;
+    }
+
+    if (! values.empty())
+        out << " ";
+
+    out << "}";
 }
 
 std::string fallback (const std::string& value, const std::string& fallbackValue)
@@ -116,6 +135,48 @@ const RuntimeRegistryChild* findRuntimeChild (const RuntimeRegistryEntry& entry,
     });
 
     return found == entry.children.end() ? nullptr : &(*found);
+}
+
+struct MonoMixResult
+{
+    std::vector<float> samples;
+    double rms = 0.0;
+    double peak = 0.0;
+};
+
+MonoMixResult mixToMono (const std::vector<std::vector<float>>& channels)
+{
+    MonoMixResult result;
+
+    if (channels.empty() || channels.front().empty())
+        return result;
+
+    const auto sampleCount = channels.front().size();
+    result.samples.resize (sampleCount, 0.0f);
+
+    for (size_t sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex)
+    {
+        double mono = 0.0;
+
+        for (const auto& channel : channels)
+            mono += static_cast<double> (channel[sampleIndex]);
+
+        result.samples[sampleIndex] = static_cast<float> (mono / static_cast<double> (channels.size()));
+    }
+
+    double sumSquares = 0.0;
+    double peak = 0.0;
+
+    for (const auto sample : result.samples)
+    {
+        const auto value = static_cast<double> (sample);
+        sumSquares += value * value;
+        peak = std::max (peak, std::abs (value));
+    }
+
+    result.rms = std::sqrt (sumSquares / static_cast<double> (sampleCount));
+    result.peak = peak;
+    return result;
 }
 
 RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& module, const CompoundPatchSpec& compound)
@@ -208,8 +269,31 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                                                                  const std::vector<float>& samples,
                                                                  const float analysisGain)
 {
-    if (samples.empty())
+    RuntimeSyntheticAudioInput input;
+    input.channels.push_back (samples);
+    input.analysisGain = analysisGain;
+    return executeRuntimeRegistryWithSyntheticAudio (registry, input);
+}
+
+RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
+                                                                 const RuntimeSyntheticAudioInput& input)
+{
+    if (input.channels.empty())
+        return { false, {}, "synthetic audio execution requires at least one channel" };
+
+    const auto sampleCount = input.channels.front().size();
+
+    if (sampleCount == 0)
         return { false, {}, "synthetic audio execution requires at least one sample" };
+
+    if (! std::isfinite (input.analysisGain))
+        return { false, {}, "synthetic audio execution requires a finite analysis gain" };
+
+    for (const auto& channel : input.channels)
+    {
+        if (channel.size() != sampleCount)
+            return { false, {}, "synthetic audio execution requires equal channel lengths" };
+    }
 
     RuntimeExecutionSnapshot snapshot;
     snapshot.version = registry.version;
@@ -221,6 +305,12 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
         entryStatus.executionKind = entry.executionKind;
         entryStatus.status = "partial-execution";
         entryStatus.children.reserve (entry.cookOrder.size());
+
+        MonoMixResult monoMix;
+        bool hasAudioInput = false;
+        bool hasMonoMix = false;
+        bool hasRms = false;
+        double rmsOutput = 0.0;
 
         for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
         {
@@ -237,22 +327,95 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                 child->role,
                 "not-executed",
                 "RuntimeOp not implemented for " + child->nodeType,
+                {},
                 {}
             };
 
-            if (child->nodeType == "analyzer.rms")
+            if (child->nodeType == "audio.input")
             {
-                const float* channels[] { samples.data() };
-                AudioAnalyzerState analyzer;
-                analyzer.processBlock (channels, 1, static_cast<int> (samples.size()), analysisGain);
-                const auto analyzerSnapshot = analyzer.getSnapshot();
-
+                hasAudioInput = true;
                 childStatus.status = "computed";
-                childStatus.reason = "executed analyzer.rms over synthetic mono samples";
+                childStatus.reason = "accepted synthetic audio channels";
                 childStatus.outputs = {
-                    { "rms", static_cast<double> (analyzerSnapshot.rms) },
-                    { "peak", static_cast<double> (analyzerSnapshot.peak) }
+                    { "channelCount", static_cast<double> (input.channels.size()) },
+                    { "sampleCount", static_cast<double> (sampleCount) }
                 };
+            }
+            else if (child->nodeType == "audio.mono_mix")
+            {
+                childStatus.inputs = {
+                    { "channelCount", static_cast<double> (input.channels.size()) },
+                    { "sampleCount", static_cast<double> (sampleCount) }
+                };
+
+                if (hasAudioInput)
+                {
+                    monoMix = mixToMono (input.channels);
+                    hasMonoMix = true;
+                    childStatus.status = "computed";
+                    childStatus.reason = "averaged synthetic channels into mono samples";
+                    childStatus.outputs = {
+                        { "sampleCount", static_cast<double> (monoMix.samples.size()) },
+                        { "rms", monoMix.rms },
+                        { "peak", monoMix.peak }
+                    };
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for audio.input output";
+                }
+            }
+            else if (child->nodeType == "analyzer.rms")
+            {
+                childStatus.inputs = {
+                    { "sampleCount", static_cast<double> (monoMix.samples.size()) },
+                    { "sourceRms", monoMix.rms },
+                    { "sourcePeak", monoMix.peak }
+                };
+
+                if (hasMonoMix)
+                {
+                    const float* channels[] { monoMix.samples.data() };
+                    AudioAnalyzerState analyzer;
+                    analyzer.processBlock (channels, 1, static_cast<int> (monoMix.samples.size()), 1.0f);
+                    const auto analyzerSnapshot = analyzer.getSnapshot();
+
+                    hasRms = true;
+                    rmsOutput = static_cast<double> (analyzerSnapshot.rms);
+                    childStatus.status = "computed";
+                    childStatus.reason = "computed rms/peak from audio.mono_mix output";
+                    childStatus.outputs = {
+                        { "rms", rmsOutput },
+                        { "peak", static_cast<double> (analyzerSnapshot.peak) }
+                    };
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for audio.mono_mix output";
+                }
+            }
+            else if (child->nodeType == "analyzer.analysis_gain")
+            {
+                childStatus.inputs = {
+                    { "input", rmsOutput },
+                    { "gain", static_cast<double> (input.analysisGain) }
+                };
+
+                if (hasRms)
+                {
+                    childStatus.status = "computed";
+                    childStatus.reason = "calibrated analyzer.rms output with analysis gain";
+                    childStatus.outputs = {
+                        { "out", rmsOutput * static_cast<double> (input.analysisGain) }
+                    };
+                }
+                else
+                {
+                    childStatus.status = "blocked";
+                    childStatus.reason = "waiting for analyzer.rms output";
+                }
             }
 
             entryStatus.children.push_back (childStatus);
@@ -400,22 +563,12 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
             out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
             out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
             out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\",\n";
-            out << "          \"outputs\": {";
-
-            for (size_t outputIndex = 0; outputIndex < child.outputs.size(); ++outputIndex)
-            {
-                const auto& output = child.outputs[outputIndex];
-
-                if (outputIndex != 0)
-                    out << ",";
-
-                out << " \"" << jsonEscaped (output.id) << "\": " << output.value;
-            }
-
-            if (! child.outputs.empty())
-                out << " ";
-
-            out << "}\n";
+            out << "          \"inputs\": ";
+            appendValueObject (out, child.inputs);
+            out << ",\n";
+            out << "          \"outputs\": ";
+            appendValueObject (out, child.outputs);
+            out << "\n";
             out << "        }";
 
             if (childIndex + 1 < entry.children.size())

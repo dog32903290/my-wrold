@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 09:59 Asia/Taipei
+Date: 2026-05-23 10:18 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.7 synthetic RMS runtime execution proof commit
+pending C1.8 loaded loudness mini-chain value-handoff proof commit
+81c10cb Add synthetic RMS runtime execution proof
 b5705f4 Add loaded compound dry run proof
 a1eef36 Add loaded compound runtime registry proof
 a9faa34 Add module library registry proof
@@ -32,6 +33,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.5 exists: `RuntimeRegistry` loads the same module library into runtime entries and app proof dump writes `debug/v1-shader-proof/runtime_registry.json`.
 - C1.6 exists: runtime registry entries include child metadata, `dryRunRuntimeRegistry()` walks loaded compound cook order, and app proof dump writes `debug/v1-shader-proof/runtime_dry_run.json`.
 - C1.7 exists: `executeRuntimeRegistryWithSyntheticAudio()` executes the loaded `analyzer.rms` child over synthetic mono samples, records `rms=0.707107` and `peak=1.000000`, keeps unimplemented siblings explicit, and app proof dump writes `debug/v1-shader-proof/runtime_execution.json`.
+- C1.8 exists: `RuntimeSyntheticAudioInput` supports multi-channel synthetic fixtures, runtime execution records per-child `inputs` and `outputs`, and `audio.mono_mix -> analyzer.rms -> analyzer.analysis_gain` now passes values in cook order.
 
 ## 試壓結果
 
@@ -57,12 +59,13 @@ fixtures/module-libraries/default.module-library.json feeds visible module regis
 debug/v1-shader-proof/runtime_registry.json records compound.loudness as executionKind compound.patch
 debug/v1-shader-proof/runtime_dry_run.json records seven dry-run-ready child statuses
 debug/v1-shader-proof/runtime_execution.json records analyzer.rms as computed with rms/peak outputs
-latest accepted source commit before C1.7: b5705f4
+debug/v1-shader-proof/runtime_execution.json records audio.mono_mix, analyzer.rms, and analyzer.analysis_gain as computed with input/output handoff evidence
+latest accepted source commit before C1.8: 81c10cb
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, and the first computed child output are storage-backed, but loaded compounds still do not execute a full value-handoff chain through real `RuntimeOp`s.
+- Module discovery, runtime registry snapshots, child dry-run statuses, and the first value-handoff mini-chain are storage-backed, but loaded compounds still do not publish the full public output map through real `RuntimeOp`s.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -70,14 +73,14 @@ latest accepted source commit before C1.7: b5705f4
 
 ## 下一根線
 
-C1.8 loaded loudness mini-chain proof:
+C1.9 gate/publish mini-chain proof:
 
 ```text
 module-library manifest
 -> runtime registry entry
--> audio.mono_mix / analyzer.rms / analysis_gain children
--> explicit value handoff
--> calibrated output JSON
+-> analysis_gain / pre_gate / output_smoother / loudness_out children
+-> gate and smoothing value handoff
+-> public output JSON
 -> per-child runtime status
 -> run tests and proof dump
 ```
@@ -86,5 +89,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is value flow. One loaded child can now compute over synthetic data, but the runtime still needs adjacent children to pass values before claiming loaded compounds execute as chains.
+The next weakness is publication. The first adjacent RuntimeOps now pass values, but the runtime still needs gate/smoothing/output publication before claiming the loudness compound has a full public result.
 ```

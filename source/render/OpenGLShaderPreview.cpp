@@ -376,10 +376,14 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
     const auto runtimeRegistry = loadVisibleRuntimeRegistry();
     const auto runtimeDryRun = dryRunRuntimeRegistry (runtimeRegistry);
-    const std::vector<float> syntheticRuntimeSamples { 0.0f, 1.0f, -1.0f, 0.0f };
+    RuntimeSyntheticAudioInput syntheticRuntimeInput;
+    syntheticRuntimeInput.channels = {
+        { 0.0f, 1.0f, -1.0f, 0.0f },
+        { 0.0f, 0.5f, -0.5f, 0.0f }
+    };
+    syntheticRuntimeInput.analysisGain = 1.5f;
     const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry,
-                                                                            syntheticRuntimeSamples,
-                                                                            1.0f);
+                                                                            syntheticRuntimeInput);
 
     const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
     const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
