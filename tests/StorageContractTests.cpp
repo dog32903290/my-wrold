@@ -44,8 +44,20 @@ int main()
     const auto module = myworld::makeModulePackage ("module.loudness", "Loudness Module", "patches/loudness.patch.json");
     const auto moduleJson = myworld::toJson (module);
     expectContains (moduleJson, "\"kind\": \"modulePackage\"", "module json");
+    expectContains (moduleJson, "\"nodeType\"", "module json");
+    expectContains (moduleJson, "\"category\"", "module json");
     expectContains (moduleJson, "\"publicPorts\"", "module json");
     expectContains (moduleJson, "\"humanDocPath\"", "module json");
+
+    const auto parsedModule = myworld::parseModulePackageManifest (moduleJson);
+    expect (parsedModule.ok, parsedModule.error);
+    expect (parsedModule.manifest.id == module.id, "module json parses id");
+    expect (parsedModule.manifest.patchPath == module.patchPath, "module json parses patch path");
+
+    const auto loadedModule = myworld::loadModulePackageManifest ("fixtures/modules/loudness/module.json");
+    expect (loadedModule.ok, loadedModule.error);
+    expect (loadedModule.manifest.nodeType == "compound.loudness", "module fixture node type");
+    expect (loadedModule.manifest.publicPorts.size() == 6, "module fixture public ports");
 
     expect (myworld::isKnownSaveStatus ("saved-and-committed"), "saved-and-committed status");
     expect (myworld::isKnownSaveStatus ("save-ok commit-pending"), "commit-pending status");

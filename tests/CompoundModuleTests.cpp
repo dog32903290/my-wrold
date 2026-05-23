@@ -1,5 +1,7 @@
+#include "CompoundModule.h"
 #include "CompoundPatch.h"
 #include "InteractionContract.h"
+#include "StorageContract.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -70,6 +72,35 @@ int main()
     const auto* restoredLoudness = findNode (restored.graph, "loud1");
     expect (restoredLoudness != nullptr, "loaded compound survives interaction roundtrip");
     expect (restoredLoudness->collapsed == loudness.collapsedByDefault, "loaded collapse state survives roundtrip");
+
+    const auto module = myworld::loadModulePackageManifest ("fixtures/modules/loudness/module.json");
+    expect (module.ok, module.error);
+    expectEqual (module.manifest.id, "module.loudness", "module id");
+    expectEqual (module.manifest.nodeType, "compound.loudness", "module node type");
+    expectEqual (module.manifest.patchPath, "fixtures/compounds/loudness.compound.json", "module patch path");
+    expect (module.manifest.publicPorts.size() == 6, "module public port list includes input and outputs");
+
+    const auto moduleSpec = myworld::makeCompoundModuleNodeSpec (module.manifest, loudness);
+    expectEqual (moduleSpec.type, "compound.loudness", "module node spec type");
+    expectEqual (moduleSpec.category, "compound", "module node spec category");
+    expect (moduleSpec.inputs.size() == 1, "module node spec input count");
+    expect (moduleSpec.outputs.size() == 5, "module node spec output count");
+    expectEqual (moduleSpec.inputs.front().id, "audio.in", "module node input id");
+    expectEqual (moduleSpec.outputs.front().id, "out", "module node output id");
+
+    auto limitedManifest = module.manifest;
+    limitedManifest.publicPorts = { "confidence", "audio.in" };
+    const auto limitedSpec = myworld::makeCompoundModuleNodeSpec (limitedManifest, loudness);
+    expect (limitedSpec.inputs.size() == 1, "limited module keeps requested input");
+    expect (limitedSpec.outputs.size() == 1, "limited module exposes requested output only");
+    expectEqual (limitedSpec.outputs.front().id, "confidence", "limited module output follows manifest");
+
+    const std::vector<myworld::NodeSpec> moduleRegistry { moduleSpec };
+    auto moduleSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (moduleSession, moduleRegistry, moduleSpec.type, "loud_module1", { 220.0, 280.0 }).ok,
+            "create compound from module registry");
+    expect (findNode (moduleSession.graph, "loud_module1") != nullptr, "module-created compound node exists");
+    expect (myworld::enterPatch (moduleSession, "loud_module1").ok, "enter module-created compound");
 
     std::cout << "compound module fixture ok\n";
     return 0;

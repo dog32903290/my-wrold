@@ -28,9 +28,21 @@ struct ModulePackageManifest
 {
     std::string id;
     std::string title;
+    std::string nodeType;
     std::string patchPath;
     std::string humanDocPath;
+    std::string category;
+    std::string subcategory;
+    std::string runtimeDomain;
+    std::string previewPolicy;
     std::vector<std::string> publicPorts;
+};
+
+struct ModulePackageLoadResult
+{
+    bool ok = false;
+    ModulePackageManifest manifest;
+    std::string error;
 };
 
 WorkProjectManifest makeMinimalWorkProject (const std::string& id, const std::string& title);
@@ -40,5 +52,7 @@ ModulePackageManifest makeModulePackage (const std::string& id, const std::strin
 std::string toJson (const WorkProjectManifest& manifest);
 std::string toJson (const PatchDocumentManifest& manifest);
 std::string toJson (const ModulePackageManifest& manifest);
+ModulePackageLoadResult parseModulePackageManifest (const std::string& text);
+ModulePackageLoadResult loadModulePackageManifest (const std::string& path);
 bool isKnownSaveStatus (const std::string& status);
 }

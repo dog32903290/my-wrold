@@ -1,0 +1,20 @@
+{
+  "kind": "modulePackage",
+  "id": "module.loudness",
+  "title": "Loudness",
+  "nodeType": "compound.loudness",
+  "patchPath": "fixtures/compounds/loudness.compound.json",
+  "humanDocPath": "docs/nodes/compound.loudness.md",
+  "category": "compound",
+  "subcategory": "feature",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "out",
+    "rms",
+    "peak",
+    "gate",
+    "confidence"
+  ]
+}

@@ -89,6 +89,11 @@ CommandResult deleteNode (GraphSession& session, const std::string& nodeId);
 CommandResult connectPorts (GraphSession& session, const std::string& from, const std::string& to);
 CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId);
 CommandResult createNode (GraphSession& session, const std::string& nodeType, const std::string& nodeId, CanvasPoint position);
+CommandResult createNode (GraphSession& session,
+                          const std::vector<NodeSpec>& specs,
+                          const std::string& nodeType,
+                          const std::string& nodeId,
+                          CanvasPoint position);
 CommandResult createNodeAndConnect (GraphSession& session,
                                     const std::string& sourceEndpoint,
                                     const std::string& nodeType,

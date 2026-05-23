@@ -21,6 +21,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - Delete now follows selected-object behavior. Selected edge uses `disconnect`; selected node uses `delete_node` and clears incident edges.
 - Tooll3 skin parity P0-P7 first pass exists: dark flat shell, typed node skin, inspector source editing, left rail tabs, right-click browser, and bottom transport/status strip.
 - C1.1 exists: `fixtures/compounds/loudness.compound.json` loads into `CompoundPatchSpec`, validates, and can be created/entered/collapsed through `InteractionContract`.
+- C1.2 exists: `fixtures/modules/loudness/module.json` loads into `ModulePackageManifest`, produces a compound `NodeSpec`, and creates `compound.loudness` from a module registry command path.
 
 ## 試壓結果
 
@@ -37,11 +38,12 @@ Latest accepted result:
 18/18 tests passed
 debug/v1-shader-proof/frame.png regenerated
 debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches the reloadable fixture shape
+fixtures/modules/loudness/module.json validated through storage and compound module tests
 ```
 
 ## 還沒承重
 
-- `compound.loudness` is reloadable from a fixture, but it is not yet published through a module package/library registry.
+- `compound.loudness` is reloadable from a fixture and module package, but visible node browser/module-library integration is not wired yet.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -49,13 +51,13 @@ debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches t
 
 ## 下一根線
 
-C1.2 compound module package proof:
+C1.3 visible module registry proof:
 
 ```text
 fixtures/modules/loudness/module.json
--> points to fixtures/compounds/loudness.compound.json
--> loaded module exposes NodeSpec/public ports
--> create compound from module registry
+-> loaded module registry
+-> visible node browser / command path
+-> create compound in workspace from registry source
 -> save/load evidence
 -> run tests and proof dump
 ```
@@ -63,6 +65,6 @@ fixtures/modules/loudness/module.json
 Reason:
 
 ```text
-The Tooll3-like UI skin and first reloadable compound fixture now bear weight.
-The next weakness is whether that fixture can become a real module/library item instead of a loose file.
+The Tooll3-like UI skin and first module package now bear weight.
+The next weakness is whether the visible workspace can consume module registries instead of only the compiled seed node list.
 ```

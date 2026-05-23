@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, storage-backed module publication, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, visible module-browser integration, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -33,21 +33,21 @@ Date: 2026-05-23 08:12 Asia/Taipei.
 - Tooll3-like interaction T0-T7 is command-backed: pan/zoom, select/move, connect/disconnect, create-and-connect, compound enter/exit/collapse, inspector param/binding, dirty/save state, and behavior trace replay.
 - Delete now follows selected-object behavior. A selected edge lowers to `disconnect`; a selected node lowers to `delete_node`, removes incident edges, syncs `runtimeGraph`, and preserves undo/redo.
 - Tooll3 skin parity P0-P7 first pass is in place: flat dark shell, left rail, bottom strip, typed node colors, port strips, connection colors, selected-node shader source inspector, workspace browser/context menu, and transport/status strip.
-- Latest C1.1 verification: `cmake --build build`, `ctest --test-dir build --output-on-failure` with 18/18 tests passing, `--dump-proof-and-exit`, and `git diff --check`.
+- Latest C1.2 verification: `cmake --build build`, `ctest --test-dir build --output-on-failure` with 18/18 tests passing, `--dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether reloadable compound fixtures can become storage-backed module packages and eventually AI-worker-editable patch material.
+- Whether storage-backed module packages can feed the visible node browser/module registry and eventually AI-worker-editable patch material.
 
 還沒承重:
 
-- `compound.loudness` now loads from a saved fixture, but it is not yet published through a module package/library registry.
+- `compound.loudness` now loads from a saved fixture and module package manifest, but the visible node browser still uses the in-process seed registry.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
 
 下一根線:
 
-- C1.2 compound module package proof: `module manifest -> compound fixture path -> loaded NodeSpec/public ports -> create compound from module registry -> save/load evidence`.
+- C1.3 visible module registry proof: `module manifest -> loaded NodeSpec registry -> node browser/command path -> create module compound in the visible workspace`.
 
 ## First Stage Proofs
 
@@ -236,12 +236,13 @@ Contract:
 - Proven: child patchers are also standalone module-library node specs, so `audio.mono_mix`, `analyzer.rms`, `analyzer.analysis_gain`, `analyzer.pre_gate`, `signal.smoother`, and `analyzer.loudness_out` can be called directly outside the mother patch.
 - Proven: `makeCompoundPatchJson()` creates proof evidence, and both V1/A1 proof dumps write `loudness_compound.json`.
 - Proven: `fixtures/compounds/loudness.compound.json` is reloadable into `CompoundPatchSpec`, validates the same child/internal/public port contract, and shares the same JSON proof shape as generated `debug/v1-shader-proof/loudness_compound.json`.
+- Proven: `fixtures/modules/loudness/module.json` loads as `ModulePackageManifest`, points to the loudness compound fixture, produces a `NodeSpec` from public ports, and can create `compound.loudness` through a module registry overload of `createNode`.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
 - Not yet proven: compiling the compound child graph into independent `RuntimeOp` execution. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
-- Not yet proven: publishing a compound patch into a module package/library registry.
+- Not yet proven: feeding module package registries into the visible node browser and runtime node registry.
 
 ## Architecture
 

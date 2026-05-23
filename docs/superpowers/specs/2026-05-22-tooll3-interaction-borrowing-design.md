@@ -63,6 +63,7 @@ Existing project facts this design must respect:
 - `NodeSpec` already defines seed node contracts, including shader, analyzer, compound, audio, and MIDI nodes.
 - `StorageContract` already names work projects, patch documents, module packages, and save statuses.
 - The default proof graph is `shader1.output -> out1.input`.
+- C1.2 adds a module-registry `createNode` overload so a loaded module `NodeSpec` can create a compound node without relying only on `makeSeedNodeSpecs()`.
 
 ## First Slice
 

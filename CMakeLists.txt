@@ -85,6 +85,23 @@ target_include_directories(my_world_compound
         ${CMAKE_CURRENT_SOURCE_DIR}/source/core
 )
 
+add_library(my_world_compound_module
+    source/core/CompoundModule.cpp
+)
+
+target_include_directories(my_world_compound_module
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_compound_module
+    PUBLIC
+        my_world_compound
+        my_world_node_specs
+        my_world_storage
+)
+
 add_executable(my_world_compound_patch_tests
     tests/CompoundPatchTests.cpp
 )
@@ -138,8 +155,9 @@ add_executable(my_world_compound_module_tests
 
 target_link_libraries(my_world_compound_module_tests
     PRIVATE
-        my_world_compound
+        my_world_compound_module
         my_world_interaction
+        my_world_storage
 )
 
 add_test(NAME compound_module COMMAND my_world_compound_module_tests)

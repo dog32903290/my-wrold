@@ -437,12 +437,15 @@ CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId)
     return commitCommand (session, "disconnect", before);
 }
 
-CommandResult createNode (GraphSession& session, const std::string& nodeType, const std::string& nodeId, CanvasPoint position)
+CommandResult createNode (GraphSession& session,
+                          const std::vector<NodeSpec>& specs,
+                          const std::string& nodeType,
+                          const std::string& nodeId,
+                          CanvasPoint position)
 {
     if (containsNode (session.graph, nodeId))
         return { false, "duplicate node: " + nodeId };
 
-    const auto specs = makeSeedNodeSpecs();
     if (findNodeSpec (specs, nodeType) == nullptr)
         return { false, "unknown node type: " + nodeType };
 
@@ -450,6 +453,11 @@ CommandResult createNode (GraphSession& session, const std::string& nodeType, co
     session.graph.editorGraph.nodes.push_back ({ nodeId, nodeType, {}, { position.x, position.y } });
     session.selectedNodeIds = { nodeId };
     return commitCommand (session, "create_node", before);
+}
+
+CommandResult createNode (GraphSession& session, const std::string& nodeType, const std::string& nodeId, CanvasPoint position)
+{
+    return createNode (session, makeSeedNodeSpecs(), nodeType, nodeId, position);
 }
 
 CommandResult createNodeAndConnect (GraphSession& session,

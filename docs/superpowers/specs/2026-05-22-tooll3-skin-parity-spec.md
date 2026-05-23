@@ -29,7 +29,7 @@ Date: 2026-05-23 08:12 Asia/Taipei.
 
 下一根線:
 
-- Keep skin surface area parked for one more step. Promote the now-reloadable `compound.loudness` fixture into a module/package registry item before adding timeline or thumbnail polish.
+- Keep skin surface area parked until the visible workspace can consume module registries. The module package proof exists; next pressure is feeding that registry into node browser creation without bypassing commandGraph.
 
 ## Purpose
 
