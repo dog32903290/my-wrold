@@ -1,16 +1,16 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 08:12 Asia/Taipei
+Date: 2026-05-23 08:53 Asia/Taipei
 
 ## Current Head
 
 ```text
+7b3ca79 Add loudness module package proof
+0d782b5 Add reloadable loudness compound fixture
+6838957 Document current native canvas progress
 b594a73 Add command-backed node deletion
 d76e353 Add Tooll3 workspace browser and transport
 07b2db9 Move shader source into Tooll3 inspector
-3de4790 Add Tooll3 typed node skin
-3831b25 Apply Tooll3 skin parity shell
-0428eb8 Promote node canvas workspace
 ```
 
 ## 已鎖定
@@ -22,6 +22,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - Tooll3 skin parity P0-P7 first pass exists: dark flat shell, typed node skin, inspector source editing, left rail tabs, right-click browser, and bottom transport/status strip.
 - C1.1 exists: `fixtures/compounds/loudness.compound.json` loads into `CompoundPatchSpec`, validates, and can be created/entered/collapsed through `InteractionContract`.
 - C1.2 exists: `fixtures/modules/loudness/module.json` loads into `ModulePackageManifest`, produces a compound `NodeSpec`, and creates `compound.loudness` from a module registry command path.
+- Current head `7b3ca79` records the module package proof.
 
 ## 試壓結果
 
@@ -39,6 +40,7 @@ Latest accepted result:
 debug/v1-shader-proof/frame.png regenerated
 debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches the reloadable fixture shape
 fixtures/modules/loudness/module.json validated through storage and compound module tests
+latest accepted commit: 7b3ca79
 ```
 
 ## 還沒承重

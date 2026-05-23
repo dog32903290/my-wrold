@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 08:12 Asia/Taipei.
+Date: 2026-05-23 08:53 Asia/Taipei.
 
 已鎖定:
 
@@ -33,7 +33,7 @@ Date: 2026-05-23 08:12 Asia/Taipei.
 - Tooll3-like interaction T0-T7 is command-backed: pan/zoom, select/move, connect/disconnect, create-and-connect, compound enter/exit/collapse, inspector param/binding, dirty/save state, and behavior trace replay.
 - Delete now follows selected-object behavior. A selected edge lowers to `disconnect`; a selected node lowers to `delete_node`, removes incident edges, syncs `runtimeGraph`, and preserves undo/redo.
 - Tooll3 skin parity P0-P7 first pass is in place: flat dark shell, left rail, bottom strip, typed node colors, port strips, connection colors, selected-node shader source inspector, workspace browser/context menu, and transport/status strip.
-- Latest C1.2 verification: `cmake --build build`, `ctest --test-dir build --output-on-failure` with 18/18 tests passing, `--dump-proof-and-exit`, and `git diff --check`.
+- Latest C1.2 verification at `7b3ca79`: `cmake --build build`, `ctest --test-dir build --output-on-failure` with 18/18 tests passing, `--dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 

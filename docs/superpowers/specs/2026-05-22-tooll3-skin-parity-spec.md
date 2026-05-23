@@ -9,13 +9,14 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 08:12 Asia/Taipei.
+Date: 2026-05-23 08:53 Asia/Taipei.
 
 已鎖定:
 
 - The app no longer reads as `shader editor + separate preview`; the main read is now `live output workspace + graph overlay + edge panels`.
 - P0-P7 skin parity first pass is implemented and proof-backed by tests and proof dump.
 - Delete is now part of Tooll3-style selection behavior: selected edge lowers to `disconnect`, selected node lowers to `delete_node`.
+- C1.2 module package proof exists, so the next skin pressure is no longer more panel polish but feeding loaded module registries into visible creation.
 
 正在試壓:
 
