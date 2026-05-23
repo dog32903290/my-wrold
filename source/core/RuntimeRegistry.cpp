@@ -58,6 +58,25 @@ void appendStringArray (std::ostringstream& out, const std::vector<std::string>&
     out << "]";
 }
 
+void appendRuntimeOpCatalogArray (std::ostringstream& out, const std::vector<RuntimeOpCatalogEntry>& catalog)
+{
+    out << "[\n";
+
+    for (size_t index = 0; index < catalog.size(); ++index)
+    {
+        const auto& entry = catalog[index];
+        out << "    { \"nodeType\": \"" << jsonEscaped (entry.nodeType)
+            << "\", \"runtimeOp\": \"" << jsonEscaped (entry.runtimeOp) << "\" }";
+
+        if (index + 1 < catalog.size())
+            out << ",";
+
+        out << "\n";
+    }
+
+    out << "  ]";
+}
+
 void appendValueObject (std::ostringstream& out, const std::vector<RuntimeOutputValue>& values)
 {
     out << "{";
@@ -582,6 +601,84 @@ RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::strin
     return { true, registry, {} };
 }
 
+std::vector<RuntimeOpCatalogEntry> makeRuntimeOpCatalog()
+{
+    std::vector<RuntimeOpCatalogEntry> catalog;
+    catalog.reserve (syntheticRuntimeOps().size());
+
+    for (const auto& op : syntheticRuntimeOps())
+        catalog.push_back ({ op.nodeType, op.id });
+
+    return catalog;
+}
+
+RuntimeOpCoverageResult inspectRuntimeOpCoverage (const RuntimeRegistry& registry)
+{
+    RuntimeOpCoverageSnapshot snapshot;
+    snapshot.version = registry.version;
+    snapshot.catalog = makeRuntimeOpCatalog();
+
+    bool ok = true;
+    std::string firstError;
+
+    for (const auto& entry : registry.entries)
+    {
+        RuntimeEntryCoverageStatus entryStatus;
+        entryStatus.nodeType = entry.nodeType;
+        entryStatus.executionKind = entry.executionKind;
+        entryStatus.status = "runtime-op-covered";
+        entryStatus.children.reserve (entry.cookOrder.size());
+
+        for (size_t cookIndex = 0; cookIndex < entry.cookOrder.size(); ++cookIndex)
+        {
+            const auto& childId = entry.cookOrder[cookIndex];
+            const auto* child = findRuntimeChild (entry, childId);
+
+            if (child == nullptr)
+                return { false, snapshot, "coverage missing child metadata for " + entry.nodeType + ":" + childId };
+
+            const auto* runtimeOp = findSyntheticRuntimeOp (child->nodeType);
+
+            if (runtimeOp == nullptr)
+            {
+                ok = false;
+                entryStatus.status = "missing-runtime-op";
+                ++entryStatus.missingChildCount;
+                ++snapshot.missingChildCount;
+
+                if (firstError.empty())
+                    firstError = makeMissingRuntimeOpError ("coverage", entry, *child);
+
+                entryStatus.children.push_back ({ cookIndex,
+                                                  child->id,
+                                                  child->nodeType,
+                                                  child->role,
+                                                  {},
+                                                  "missing-runtime-op",
+                                                  makeMissingRuntimeOpReason (child->nodeType) });
+                continue;
+            }
+
+            ++entryStatus.supportedChildCount;
+            ++snapshot.supportedChildCount;
+            entryStatus.children.push_back ({ cookIndex,
+                                              child->id,
+                                              child->nodeType,
+                                              child->role,
+                                              runtimeOp->id,
+                                              "supported-runtime-op",
+                                              "RuntimeOp is registered; execution not run" });
+        }
+
+        if (entryStatus.children.size() != entry.childCount)
+            return { false, snapshot, "coverage child count mismatch for " + entry.nodeType };
+
+        snapshot.entries.push_back (entryStatus);
+    }
+
+    return { ok, snapshot, ok ? std::string {} : firstError };
+}
+
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry)
 {
     RuntimeDryRunSnapshot snapshot;
@@ -821,6 +918,77 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
         out << "    }";
 
         if (index + 1 < registry.entries.size())
+            out << ",";
+
+        out << "\n";
+    }
+
+    out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeRuntimeOpCatalogJson (const std::vector<RuntimeOpCatalogEntry>& catalog)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"runtimeOpCatalog\",\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"entries\": ";
+    appendRuntimeOpCatalogArray (out, catalog);
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"runtimeOpCoverage\",\n";
+    out << "  \"version\": " << snapshot.version << ",\n";
+    out << "  \"mode\": \"" << jsonEscaped (snapshot.mode) << "\",\n";
+    out << "  \"supportedChildCount\": " << snapshot.supportedChildCount << ",\n";
+    out << "  \"missingChildCount\": " << snapshot.missingChildCount << ",\n";
+    out << "  \"catalog\": ";
+    appendRuntimeOpCatalogArray (out, snapshot.catalog);
+    out << ",\n";
+    out << "  \"entries\": [\n";
+
+    for (size_t entryIndex = 0; entryIndex < snapshot.entries.size(); ++entryIndex)
+    {
+        const auto& entry = snapshot.entries[entryIndex];
+        out << "    {\n";
+        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
+        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
+        out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"supportedChildCount\": " << entry.supportedChildCount << ",\n";
+        out << "      \"missingChildCount\": " << entry.missingChildCount << ",\n";
+        out << "      \"children\": [\n";
+
+        for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)
+        {
+            const auto& child = entry.children[childIndex];
+            out << "        {\n";
+            out << "          \"cookIndex\": " << child.cookIndex << ",\n";
+            out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
+            out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
+            out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
+            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
+            out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
+            out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\"\n";
+            out << "        }";
+
+            if (childIndex + 1 < entry.children.size())
+                out << ",";
+
+            out << "\n";
+        }
+
+        out << "      ]\n";
+        out << "    }";
+
+        if (entryIndex + 1 < snapshot.entries.size())
             out << ",";
 
         out << "\n";

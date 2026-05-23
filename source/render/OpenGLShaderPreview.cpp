@@ -391,12 +391,17 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto nodeStatsFile = dump->outputDirectory.getChildFile ("node_stats.json");
     const auto loudnessCompoundFile = dump->outputDirectory.getChildFile ("loudness_compound.json");
     const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
+    const auto runtimeOpCatalogFile = dump->outputDirectory.getChildFile ("runtime_op_catalog.json");
+    const auto runtimeOpCoverageFile = dump->outputDirectory.getChildFile ("runtime_op_coverage.json");
     const auto runtimeDryRunFile = dump->outputDirectory.getChildFile ("runtime_dry_run.json");
     const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
     const auto missingRuntimeOpRegistryFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_registry.json");
+    const auto missingRuntimeOpCoverageFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_coverage.json");
     const auto missingRuntimeOpDryRunFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_dry_run.json");
     const auto missingRuntimeOpExecutionFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_execution.json");
     const auto runtimeRegistry = loadVisibleRuntimeRegistry();
+    const auto runtimeOpCatalog = makeRuntimeOpCatalog();
+    const auto runtimeOpCoverage = inspectRuntimeOpCoverage (runtimeRegistry);
     const auto runtimeDryRun = dryRunRuntimeRegistry (runtimeRegistry);
     RuntimeSyntheticAudioInput syntheticRuntimeInput;
     syntheticRuntimeInput.channels = {
@@ -407,6 +412,9 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry,
                                                                             syntheticRuntimeInput);
     const auto missingRuntimeOpRegistry = loadRuntimeRegistryFromCandidates (missingRuntimeOpModuleLibraryPath());
+    const auto missingRuntimeOpCoverage = missingRuntimeOpRegistry.ok
+                                              ? inspectRuntimeOpCoverage (missingRuntimeOpRegistry.registry)
+                                              : RuntimeOpCoverageResult {};
     const auto missingRuntimeOpDryRun = missingRuntimeOpRegistry.ok
                                             ? dryRunRuntimeRegistry (missingRuntimeOpRegistry.registry)
                                             : RuntimeDryRunResult {};
@@ -429,6 +437,12 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                                                         makeCompoundPatchJson (loudnessCompound));
     const auto runtimeRegistryWritten = writeTextFile (runtimeRegistryFile,
                                                        makeRuntimeRegistryJson (runtimeRegistry));
+    const auto runtimeOpCatalogWritten = writeTextFile (runtimeOpCatalogFile,
+                                                        makeRuntimeOpCatalogJson (runtimeOpCatalog));
+    const auto runtimeOpCoverageWritten = runtimeOpCoverage.ok
+                                              && writeTextFile (
+                                                  runtimeOpCoverageFile,
+                                                  makeRuntimeOpCoverageJson (runtimeOpCoverage.snapshot));
     const auto runtimeDryRunWritten = runtimeDryRun.ok
                                           && writeTextFile (runtimeDryRunFile,
                                                             makeRuntimeDryRunJson (runtimeDryRun.snapshot));
@@ -439,6 +453,11 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                                                      && writeTextFile (
                                                          missingRuntimeOpRegistryFile,
                                                          makeRuntimeRegistryJson (missingRuntimeOpRegistry.registry));
+    const auto missingRuntimeOpCoverageWritten = missingRuntimeOpRegistry.ok
+                                                     && ! missingRuntimeOpCoverage.ok
+                                                     && writeTextFile (
+                                                         missingRuntimeOpCoverageFile,
+                                                         makeRuntimeOpCoverageJson (missingRuntimeOpCoverage.snapshot));
     const auto missingRuntimeOpDryRunWritten = missingRuntimeOpRegistry.ok
                                                    && ! missingRuntimeOpDryRun.ok
                                                    && writeTextFile (
@@ -455,9 +474,12 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
         && nodeStatsWritten
         && loudnessCompoundWritten
         && runtimeRegistryWritten
+        && runtimeOpCatalogWritten
+        && runtimeOpCoverageWritten
         && runtimeDryRunWritten
         && runtimeExecutionWritten
         && missingRuntimeOpRegistryWritten
+        && missingRuntimeOpCoverageWritten
         && missingRuntimeOpDryRunWritten
         && missingRuntimeOpExecutionWritten
         && frameWritten)
@@ -471,9 +493,12 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
                   + juce::String (nodeStatsWritten ? "" : "node_stats.json ")
                   + juce::String (loudnessCompoundWritten ? "" : "loudness_compound.json ")
                   + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
+                  + juce::String (runtimeOpCatalogWritten ? "" : "runtime_op_catalog.json ")
+                  + juce::String (runtimeOpCoverageWritten ? "" : "runtime_op_coverage.json ")
                   + juce::String (runtimeDryRunWritten ? "" : "runtime_dry_run.json ")
                   + juce::String (runtimeExecutionWritten ? "" : "runtime_execution.json ")
                   + juce::String (missingRuntimeOpRegistryWritten ? "" : "runtime_missing_runtimeop_registry.json ")
+                  + juce::String (missingRuntimeOpCoverageWritten ? "" : "runtime_missing_runtimeop_coverage.json ")
                   + juce::String (missingRuntimeOpDryRunWritten ? "" : "runtime_missing_runtimeop_dry_run.json ")
                   + juce::String (missingRuntimeOpExecutionWritten ? "" : "runtime_missing_runtimeop_execution.json ")
                   + juce::String (frameWritten ? "" : "frame.png"));

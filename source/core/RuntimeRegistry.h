@@ -138,7 +138,53 @@ struct RuntimeSyntheticAudioInput
     float analysisGain = 1.0f;
 };
 
+struct RuntimeOpCatalogEntry
+{
+    std::string nodeType;
+    std::string runtimeOp;
+};
+
+struct RuntimeChildCoverageStatus
+{
+    size_t cookIndex = 0;
+    std::string childId;
+    std::string nodeType;
+    std::string role;
+    std::string runtimeOp;
+    std::string status;
+    std::string reason;
+};
+
+struct RuntimeEntryCoverageStatus
+{
+    std::string nodeType;
+    std::string executionKind;
+    std::string status;
+    size_t supportedChildCount = 0;
+    size_t missingChildCount = 0;
+    std::vector<RuntimeChildCoverageStatus> children;
+};
+
+struct RuntimeOpCoverageSnapshot
+{
+    int version = 1;
+    std::string mode = "runtime-op-coverage";
+    std::vector<RuntimeOpCatalogEntry> catalog;
+    size_t supportedChildCount = 0;
+    size_t missingChildCount = 0;
+    std::vector<RuntimeEntryCoverageStatus> entries;
+};
+
+struct RuntimeOpCoverageResult
+{
+    bool ok = false;
+    RuntimeOpCoverageSnapshot snapshot;
+    std::string error;
+};
+
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath);
+std::vector<RuntimeOpCatalogEntry> makeRuntimeOpCatalog();
+RuntimeOpCoverageResult inspectRuntimeOpCoverage (const RuntimeRegistry& registry);
 RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const std::vector<float>& samples,
@@ -146,6 +192,8 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const RuntimeSyntheticAudioInput& input);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
+std::string makeRuntimeOpCatalogJson (const std::vector<RuntimeOpCatalogEntry>& catalog);
+std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot);
 std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
 std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot);
 }

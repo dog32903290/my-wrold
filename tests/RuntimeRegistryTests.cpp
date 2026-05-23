@@ -119,6 +119,51 @@ int main()
     expectContains (dryRunJson, "\"runtimeOp\": \"synthetic.analyzer.rms\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
 
+    const auto runtimeOpCatalog = myworld::makeRuntimeOpCatalog();
+    expect (runtimeOpCatalog.size() == 7, "runtime op catalog count");
+    expectEqual (runtimeOpCatalog.front().nodeType, "audio.input", "runtime op catalog first node type");
+    expectEqual (runtimeOpCatalog.front().runtimeOp, "synthetic.audio.input", "runtime op catalog first id");
+    expectEqual (runtimeOpCatalog.back().nodeType,
+                 "analyzer.loudness_out",
+                 "runtime op catalog last node type");
+    expectEqual (runtimeOpCatalog.back().runtimeOp,
+                 "synthetic.analyzer.loudness_out",
+                 "runtime op catalog last id");
+
+    const auto runtimeOpCatalogJson = myworld::makeRuntimeOpCatalogJson (runtimeOpCatalog);
+    expectContains (runtimeOpCatalogJson, "\"kind\": \"runtimeOpCatalog\"", "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson, "\"nodeType\": \"audio.input\"", "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.signal.smoother\"",
+                    "runtime op catalog json");
+
+    const auto coverage = myworld::inspectRuntimeOpCoverage (registryResult.registry);
+    expect (coverage.ok, coverage.error);
+    expect (coverage.snapshot.catalog.size() == runtimeOpCatalog.size(), "runtime coverage catalog count");
+    expect (coverage.snapshot.entries.size() == 1, "runtime coverage entry count");
+    expect (coverage.snapshot.supportedChildCount == 7, "runtime coverage supported count");
+    expect (coverage.snapshot.missingChildCount == 0, "runtime coverage missing count");
+    expectEqual (coverage.snapshot.entries.front().status,
+                 "runtime-op-covered",
+                 "runtime coverage entry status");
+    expectEqual (coverage.snapshot.entries.front().children.front().status,
+                 "supported-runtime-op",
+                 "runtime coverage first child status");
+    expectEqual (coverage.snapshot.entries.front().children.front().runtimeOp,
+                 "synthetic.audio.input",
+                 "runtime coverage first child runtime op");
+
+    const auto coverageJson = myworld::makeRuntimeOpCoverageJson (coverage.snapshot);
+    expectContains (coverageJson, "\"kind\": \"runtimeOpCoverage\"", "runtime coverage json");
+    expectContains (coverageJson, "\"mode\": \"runtime-op-coverage\"", "runtime coverage json");
+    expectContains (coverageJson, "\"catalog\": [", "runtime coverage json");
+    expectContains (coverageJson, "\"supportedChildCount\": 7", "runtime coverage json");
+    expectContains (coverageJson, "\"missingChildCount\": 0", "runtime coverage json");
+    expectContains (coverageJson, "\"status\": \"supported-runtime-op\"", "runtime coverage json");
+    expectContains (coverageJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.loudness_out\"",
+                    "runtime coverage json");
+
     const auto unsupportedRegistry = makeRegistryWithUnsupportedRuntimeOp (registryResult.registry);
     const auto unsupportedDryRun = myworld::dryRunRuntimeRegistry (unsupportedRegistry);
     expect (! unsupportedDryRun.ok, "unsupported dry-run should fail runtime op coverage");
@@ -241,6 +286,45 @@ int main()
     expectContains (savedNegativeExecutionJson,
                     "\"nodeType\": \"debug.unsupported\"",
                     "saved negative execution json");
+
+    const auto savedNegativeCoverage = myworld::inspectRuntimeOpCoverage (savedNegativeRegistry.registry);
+    expect (! savedNegativeCoverage.ok, "saved negative coverage should fail runtime op coverage");
+    expectContains (savedNegativeCoverage.error, "missing RuntimeOp", "saved negative coverage error");
+    expect (savedNegativeCoverage.snapshot.entries.size() == 1, "saved negative coverage entry count");
+    expect (savedNegativeCoverage.snapshot.supportedChildCount == 7,
+            "saved negative coverage supported count");
+    expect (savedNegativeCoverage.snapshot.missingChildCount == 1,
+            "saved negative coverage missing count");
+    expectEqual (savedNegativeCoverage.snapshot.entries.front().status,
+                 "missing-runtime-op",
+                 "saved negative coverage entry status");
+    expectEqual (savedNegativeCoverage.snapshot.entries.front().children.back().childId,
+                 "unsupported_probe",
+                 "saved negative coverage child id");
+    expectEqual (savedNegativeCoverage.snapshot.entries.front().children.back().nodeType,
+                 "debug.unsupported",
+                 "saved negative coverage child type");
+    expectEqual (savedNegativeCoverage.snapshot.entries.front().children.back().runtimeOp,
+                 "",
+                 "saved negative coverage child runtime op");
+    expectEqual (savedNegativeCoverage.snapshot.entries.front().children.back().status,
+                 "missing-runtime-op",
+                 "saved negative coverage child status");
+
+    const auto savedNegativeCoverageJson = myworld::makeRuntimeOpCoverageJson (
+        savedNegativeCoverage.snapshot);
+    expectContains (savedNegativeCoverageJson,
+                    "\"kind\": \"runtimeOpCoverage\"",
+                    "saved negative coverage json");
+    expectContains (savedNegativeCoverageJson,
+                    "\"nodeType\": \"debug.unsupported\"",
+                    "saved negative coverage json");
+    expectContains (savedNegativeCoverageJson,
+                    "\"status\": \"missing-runtime-op\"",
+                    "saved negative coverage json");
+    expectContains (savedNegativeCoverageJson,
+                    "\"missingChildCount\": 1",
+                    "saved negative coverage json");
 
     const auto execution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
                                                                               syntheticSamples,
