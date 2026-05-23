@@ -1,11 +1,35 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, and workspace tabs/context-menu/transport grammar now exist. S8/S9 full timeline editing and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, and Delete follows selected-object command behavior. S8 full timeline editing, output pinning, live thumbnails, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
 License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this project copies source code, style constants, icon data, or substantial implementation structure, preserve the MIT notice and attribution. This spec's preferred route is to borrow the interface grammar and reimplement it in `我的世界`'s C++/JUCE/ImGui body.
+
+## Current Progress Snapshot
+
+Date: 2026-05-23 08:12 Asia/Taipei.
+
+已鎖定:
+
+- The app no longer reads as `shader editor + separate preview`; the main read is now `live output workspace + graph overlay + edge panels`.
+- P0-P7 skin parity first pass is implemented and proof-backed by tests and proof dump.
+- Delete is now part of Tooll3-style selection behavior: selected edge lowers to `disconnect`, selected node lowers to `delete_node`.
+
+正在試壓:
+
+- Whether the current skin can support real saved compounds/modules without becoming UI-only state.
+
+還沒承重:
+
+- S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
+- S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
+- Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
+
+下一根線:
+
+- Stop adding skin surface area for one step. Make `compound.loudness` reloadable from a fixture/module and prove it through the same commandGraph/storage path.
 
 ## Purpose
 
@@ -360,15 +384,15 @@ Current proof:
 
 ## Current UI Gap Table
 
-| Surface | Current Native State | Tooll3 Parity Target | First Fix |
+| Surface | Current Native State | Tooll3 Parity Target | Next Pressure |
 | --- | --- | --- | --- |
-| Main visual | Node canvas inside OpenGL/ImGui window, shader visible behind it | Output is the workspace background | Render `out1` into full workspace, draw nodes over it |
-| Shader editor | Always visible JUCE side panel | Node-specific inspector panel | Hide by default, reveal on selected shader node |
-| Output preview | Empty framed side panel plus background shader leak | Background is primary output, preview panel is secondary/pinned | Make `out1` background authoritative |
-| Nodes | Generic dark rounded-ish boxes | Flat typed operator rectangles | Implement type color and port strips |
-| Grid | Strong separate canvas grid | Hidden/muted when output background active | Conditional grid opacity |
-| Panels | JUCE preferences + ImGui side panel | Edge-attached Tooll3 panels | Create unified ImGui skin shell |
-| Timeline | None | Bottom strip with transport/time | Add bottom strip contract |
+| Main visual | `out1` output owns the center workspace and nodes float over it | Output is the workspace background | Output pinning and multi-output selection |
+| Shader editor | Shader source lives in selected-node ImGui inspector; legacy JUCE plumbing is hidden from the main read | Node-specific inspector panel | Formalize inspector state and compile errors as selected-node data |
+| Output preview | Background is authoritative for the first output proof | Background is primary output, preview panel is secondary/pinned | Pinned/secondary output workflow |
+| Nodes | Flat typed rectangles with type colors, port strips, selection outline, and connection colors | Flat typed operator rectangles | Live thumbnails and compact inline value affordances after `RenderBackend` |
+| Grid | Hidden/muted behind output background | Hidden/muted when output background active | No extra work until multiple background modes exist |
+| Panels | Left rail and bottom strip are unified ImGui workspace surfaces | Edge-attached Tooll3 panels | Collapse/resize persistence after storage path matures |
+| Timeline | Bottom strip shows real time/status plus non-editing playhead | Bottom strip with transport/time | Animation commandGraph contract before editing |
 
 ## First Implementation Roadmap
 

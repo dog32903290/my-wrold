@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Production ImGui node editor styling is still parked; the proven layer is C++ graph, command, hit-test, storage, behavior trace logic, and a smoke UI wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -81,9 +81,9 @@ T7 behavior trace compatibility suite
 
 Parked:
 
-- Production visual node editor drawing and Tooll3-like panel rhythm.
-- Production node search UI and insert-node-between-edge menu.
-- Parameter inspector widgets.
+- Production-level node editor polish beyond the current Tooll3 skin first pass.
+- Insert-node-between-edge menu.
+- Rich parameter widgets beyond current command-backed inspector rows.
 - AI worker graph edits.
 - Timeline / animation.
 - Production Metal backend.
@@ -127,12 +127,12 @@ No slice is accepted from visuals alone.
 | --- | --- | --- | --- | --- |
 | T0 | Canvas navigation | pan/zoom -> view state -> stable hit-tests | Proven in core tests | Transform and hit-test tests pass |
 | T1 | Node selection / movement | hit node -> select/move command -> persisted position | Proven in core tests | Move undo/redo and save/load pass |
-| T2 | Connection create / delete | drag port -> connect/disconnect command -> valid graph | Proven in core tests | Connect/delete undo/redo, invariants, trace pass |
+| T2 | Connection create / delete | drag port -> connect/disconnect/delete_node command -> valid graph | Proven in core tests and UI command path | Connect/delete undo/redo, invariants, trace pass |
 | T3 | Node search / insert | drag to empty edge/canvas -> create node + connect | Proven as create-and-connect command; UI search parked | T0-T2 command stack and port validation proven |
 | T4 | Compound navigation | enter/exit/collapse/expand -> patch path + public ports | Proven as command/storage state; visual compound UI parked | T3 can create/connect nodes without UI-only state |
 | T5 | Inspector / parameter binding | edit value/connect override -> param or port binding command | Proven as command/storage state; inspector widgets parked | T4 proves patch path and selected node identity |
 | T6 | Global undo / redo / dirty state | user action group -> command stack -> dirty/save status | Proven in command and storage tests | T0-T5 commands have stable Do/Undo/Redo semantics |
-| T7 | Behavior trace compatibility suite | Tooll3 traces -> replay runner -> graph and storage evidence | Proven with v1 trace fixture | Enough T0-T6 traces exist to justify a suite |
+| T7 | Behavior trace compatibility suite | Tooll3 traces -> replay runner -> graph and storage evidence | Proven with current 8-trace fixture | Enough T0-T6 traces exist to justify a suite |
 
 ### Detail Promotion Rule
 
@@ -531,6 +531,8 @@ Implemented core proof files:
 ```text
 source/core/InteractionContract.h
 source/core/InteractionContract.cpp
+source/render/OpenGLShaderPreview.h
+source/render/OpenGLShaderPreview.cpp
 source/ui/ImGuiSmokeOverlay.h
 source/ui/ImGuiSmokeOverlay.cpp
 fixtures/interaction/tooll3-t0-t7.behavior.json
@@ -554,7 +556,7 @@ ctest --test-dir build --output-on-failure
 Final result:
 
 ```text
-15/15 tests passed
+17/17 tests passed
 ```
 
 Visible gesture status:
@@ -569,6 +571,7 @@ release on empty canvas -> compatible node popup
 select popup candidate -> create_node+connect command
 edge click -> selected edge state
 Disconnect with selected edge -> disconnect command
+Delete with selected node -> delete_node command and incident-edge cleanup
 Add Loudness -> create compound.loudness command
 selected compound Enter/Exit -> patch path command
 selected compound Collapse/Expand -> collapsed editor state command
@@ -652,7 +655,7 @@ Internal consistency:
 Scope check:
 
 - The detailed written contract remains deepest for T0-T2.
-- T3-T7 are implemented as core command/storage/trace proof, while production UI drawing, inspector widgets, AI worker edits, and styling are parked.
+- T3-T7 are implemented as core command/storage/trace proof, and the current ImGui workspace proves the first visible operation surface. Production-level polish, AI worker edits, timeline editing, and Metal rendering are still parked.
 
 Ambiguity check:
 

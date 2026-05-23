@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, Tooll3 T0-T7 interaction core, and visible T0-T7 canvas workspace implemented. RenderBackend extraction, production node previews/styling, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RenderBackend extraction, reloadable compound modules, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -22,6 +22,32 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 - Old Web canvas works are migration fixtures, not the native graph law.
 - Tooll3 / TiXL is the primary reference for ImGui canvas style, Symbol/Instance separation, JSON graph shape, parameter override behavior, and panel rhythm. It is not a codebase to fork into this repo.
 - CodeGraph is a local development index for C++ symbol, caller/callee, and impact lookup. `.codegraph/` is ignored and must not become source or graph contract data.
+
+## Current Progress Snapshot
+
+Date: 2026-05-23 08:12 Asia/Taipei.
+
+已鎖定:
+
+- The node canvas is now the primary workspace surface, with `out1` rendered as the workspace background and nodes floating over it.
+- Tooll3-like interaction T0-T7 is command-backed: pan/zoom, select/move, connect/disconnect, create-and-connect, compound enter/exit/collapse, inspector param/binding, dirty/save state, and behavior trace replay.
+- Delete now follows selected-object behavior. A selected edge lowers to `disconnect`; a selected node lowers to `delete_node`, removes incident edges, syncs `runtimeGraph`, and preserves undo/redo.
+- Tooll3 skin parity P0-P7 first pass is in place: flat dark shell, left rail, bottom strip, typed node colors, port strips, connection colors, selected-node shader source inspector, workspace browser/context menu, and transport/status strip.
+- Latest verification for commit `b594a73`: `cmake --build build`, `ctest --test-dir build --output-on-failure` with 17/17 tests passing, `--dump-proof-and-exit`, and `git diff --check`.
+
+正在試壓:
+
+- Whether this Tooll3-like workspace can become a real saved patch/module system rather than a strong in-memory UI proof.
+
+還沒承重:
+
+- `compound.loudness` is still produced by C++ contract/debug dump, not loaded as a saved compound/module fixture.
+- `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
+- Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
+
+下一根線:
+
+- C1.1 reloadable compound proof: `fixtures/compounds/loudness.compound.json -> parse/validate CompoundPatchSpec -> create/select/enter/collapse via command path -> dump the same proof shape as debug loudness evidence`.
 
 ## First Stage Proofs
 
