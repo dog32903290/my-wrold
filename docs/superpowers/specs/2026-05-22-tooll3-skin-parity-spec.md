@@ -29,7 +29,7 @@ Date: 2026-05-23 08:12 Asia/Taipei.
 
 下一根線:
 
-- Stop adding skin surface area for one step. Make `compound.loudness` reloadable from a fixture/module and prove it through the same commandGraph/storage path.
+- Keep skin surface area parked for one more step. Promote the now-reloadable `compound.loudness` fixture into a module/package registry item before adding timeline or thumbnail polish.
 
 ## Purpose
 

@@ -79,8 +79,18 @@ int main()
     expectContains (json, "\"type\": \"compound.loudness\"", "compound json");
     expectContains (json, "\"children\"", "compound json");
     expectContains (json, "\"audio.mono_mix\"", "compound json");
+    expectContains (json, "\"publicInputs\"", "compound json");
+    expectContains (json, "\"Audio In\"", "compound json");
     expectContains (json, "\"publicOutputs\"", "compound json");
+    expectContains (json, "\"label\": \"Loudness\"", "compound json");
     expectContains (json, "\"loudness_out.out\"", "compound json");
+
+    const auto parsed = myworld::parseCompoundPatchJson (json);
+    expect (parsed.ok, parsed.error);
+    expectEqual (parsed.spec.type, loudness.type, "generated json parses type");
+    expect (parsed.spec.publicInputs.size() == 1, "generated json parses public inputs");
+    expect (parsed.spec.publicOutputs.size() == 5, "generated json parses public outputs");
+    expectEqual (parsed.spec.publicInputs.front().mapsTo, "audio_in.input", "generated json parses input mapping");
 
     std::cout << "compound patch contract ok\n";
     return 0;

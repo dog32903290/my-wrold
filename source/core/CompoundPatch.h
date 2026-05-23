@@ -39,10 +39,19 @@ struct CompoundPatchSpec
     std::vector<CompoundPublicPort> publicOutputs;
 };
 
+struct CompoundPatchLoadResult
+{
+    bool ok = false;
+    CompoundPatchSpec spec;
+    std::string error;
+};
+
 CompoundPatchSpec makeLoudnessCompoundPatchSpec();
 const CompoundChildNode* findCompoundChild (const CompoundPatchSpec& spec, const std::string& childId);
 const CompoundPublicPort* findCompoundPublicOutput (const CompoundPatchSpec& spec, const std::string& outputId);
 std::vector<std::string> makeCompoundCookOrder (const CompoundPatchSpec& spec);
 bool isValidCompoundPatchSpec (const CompoundPatchSpec& spec);
 std::string makeCompoundPatchJson (const CompoundPatchSpec& spec);
+CompoundPatchLoadResult parseCompoundPatchJson (const std::string& text);
+CompoundPatchLoadResult loadCompoundPatchSpec (const std::string& path);
 }

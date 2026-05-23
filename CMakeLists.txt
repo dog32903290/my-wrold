@@ -132,6 +132,21 @@ target_link_libraries(my_world_interaction
         my_world_node_specs
 )
 
+add_executable(my_world_compound_module_tests
+    tests/CompoundModuleTests.cpp
+)
+
+target_link_libraries(my_world_compound_module_tests
+    PRIVATE
+        my_world_compound
+        my_world_interaction
+)
+
+add_test(NAME compound_module COMMAND my_world_compound_module_tests)
+set_tests_properties(compound_module PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(my_world_canvas_view_state_tests
     tests/CanvasViewStateTests.cpp
 )

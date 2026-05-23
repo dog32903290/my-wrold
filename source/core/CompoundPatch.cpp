@@ -1,6 +1,9 @@
 #include "CompoundPatch.h"
 
 #include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <map>
 #include <set>
 #include <sstream>
 
@@ -39,6 +42,309 @@ std::string portOwner (const std::string& portPath)
 bool hasChild (const CompoundPatchSpec& spec, const std::string& childId)
 {
     return findCompoundChild (spec, childId) != nullptr;
+}
+
+struct JsonValue
+{
+    enum class Kind
+    {
+        nullValue,
+        string,
+        boolean,
+        array,
+        object
+    };
+
+    Kind kind = Kind::nullValue;
+    std::string stringValue;
+    bool boolValue = false;
+    std::vector<JsonValue> arrayValue;
+    std::map<std::string, JsonValue> objectValue;
+};
+
+class JsonParser
+{
+public:
+    explicit JsonParser (const std::string& sourceText)
+        : source (sourceText)
+    {
+    }
+
+    JsonValue parse()
+    {
+        auto value = parseValue();
+        skipWhitespace();
+
+        if (! failed && position != source.size())
+            fail ("trailing characters");
+
+        return value;
+    }
+
+    bool ok() const
+    {
+        return ! failed;
+    }
+
+    std::string error() const
+    {
+        return errorMessage;
+    }
+
+private:
+    JsonValue parseValue()
+    {
+        skipWhitespace();
+
+        if (position >= source.size())
+            return fail ("unexpected end of json");
+
+        const auto current = source[position];
+        if (current == '"')
+            return parseString();
+
+        if (current == '{')
+            return parseObject();
+
+        if (current == '[')
+            return parseArray();
+
+        if (source.compare (position, 4, "true") == 0)
+        {
+            position += 4;
+            JsonValue value;
+            value.kind = JsonValue::Kind::boolean;
+            value.boolValue = true;
+            return value;
+        }
+
+        if (source.compare (position, 5, "false") == 0)
+        {
+            position += 5;
+            JsonValue value;
+            value.kind = JsonValue::Kind::boolean;
+            value.boolValue = false;
+            return value;
+        }
+
+        return fail ("unsupported json value");
+    }
+
+    JsonValue parseString()
+    {
+        JsonValue value;
+        value.kind = JsonValue::Kind::string;
+
+        if (! consume ('"'))
+            return fail ("expected string");
+
+        while (position < source.size())
+        {
+            const auto current = source[position++];
+
+            if (current == '"')
+                return value;
+
+            if (current == '\\')
+            {
+                if (position >= source.size())
+                    return fail ("unterminated escape");
+
+                const auto escaped = source[position++];
+                switch (escaped)
+                {
+                    case '"':  value.stringValue.push_back ('"'); break;
+                    case '\\': value.stringValue.push_back ('\\'); break;
+                    case '/':  value.stringValue.push_back ('/'); break;
+                    case 'b':  value.stringValue.push_back ('\b'); break;
+                    case 'f':  value.stringValue.push_back ('\f'); break;
+                    case 'n':  value.stringValue.push_back ('\n'); break;
+                    case 'r':  value.stringValue.push_back ('\r'); break;
+                    case 't':  value.stringValue.push_back ('\t'); break;
+                    default:   return fail ("unsupported string escape");
+                }
+            }
+            else
+            {
+                value.stringValue.push_back (current);
+            }
+        }
+
+        return fail ("unterminated string");
+    }
+
+    JsonValue parseObject()
+    {
+        JsonValue value;
+        value.kind = JsonValue::Kind::object;
+
+        if (! consume ('{'))
+            return fail ("expected object");
+
+        skipWhitespace();
+        if (consume ('}'))
+            return value;
+
+        while (! failed)
+        {
+            auto key = parseString();
+            if (key.kind != JsonValue::Kind::string)
+                return fail ("expected object key");
+
+            skipWhitespace();
+            if (! consume (':'))
+                return fail ("expected ':' after object key");
+
+            value.objectValue[key.stringValue] = parseValue();
+            skipWhitespace();
+
+            if (consume ('}'))
+                return value;
+
+            if (! consume (','))
+                return fail ("expected ',' between object members");
+        }
+
+        return value;
+    }
+
+    JsonValue parseArray()
+    {
+        JsonValue value;
+        value.kind = JsonValue::Kind::array;
+
+        if (! consume ('['))
+            return fail ("expected array");
+
+        skipWhitespace();
+        if (consume (']'))
+            return value;
+
+        while (! failed)
+        {
+            value.arrayValue.push_back (parseValue());
+            skipWhitespace();
+
+            if (consume (']'))
+                return value;
+
+            if (! consume (','))
+                return fail ("expected ',' between array items");
+        }
+
+        return value;
+    }
+
+    void skipWhitespace()
+    {
+        while (position < source.size() && std::isspace (static_cast<unsigned char> (source[position])) != 0)
+            ++position;
+    }
+
+    bool consume (char expected)
+    {
+        skipWhitespace();
+
+        if (position < source.size() && source[position] == expected)
+        {
+            ++position;
+            return true;
+        }
+
+        return false;
+    }
+
+    JsonValue fail (const std::string& message)
+    {
+        failed = true;
+        errorMessage = message;
+        return {};
+    }
+
+    const std::string& source;
+    size_t position = 0;
+    bool failed = false;
+    std::string errorMessage;
+};
+
+const JsonValue* member (const JsonValue& value, const std::string& name)
+{
+    if (value.kind != JsonValue::Kind::object)
+        return nullptr;
+
+    const auto found = value.objectValue.find (name);
+    return found == value.objectValue.end() ? nullptr : &found->second;
+}
+
+std::string stringMember (const JsonValue& value, const std::string& name)
+{
+    const auto* found = member (value, name);
+    return found != nullptr && found->kind == JsonValue::Kind::string ? found->stringValue : std::string {};
+}
+
+bool boolMember (const JsonValue& value, const std::string& name, bool fallback)
+{
+    const auto* found = member (value, name);
+    return found != nullptr && found->kind == JsonValue::Kind::boolean ? found->boolValue : fallback;
+}
+
+bool appendChildren (CompoundPatchSpec& spec, const JsonValue& root)
+{
+    const auto* children = member (root, "children");
+    if (children == nullptr || children->kind != JsonValue::Kind::array)
+        return false;
+
+    for (const auto& child : children->arrayValue)
+    {
+        if (child.kind != JsonValue::Kind::object)
+            return false;
+
+        spec.children.push_back ({ stringMember (child, "id"),
+                                   stringMember (child, "type"),
+                                   stringMember (child, "role") });
+    }
+
+    return true;
+}
+
+bool appendInternalEdges (CompoundPatchSpec& spec, const JsonValue& root)
+{
+    const auto* edges = member (root, "internalEdges");
+    if (edges == nullptr || edges->kind != JsonValue::Kind::array)
+        return false;
+
+    for (const auto& edge : edges->arrayValue)
+    {
+        if (edge.kind != JsonValue::Kind::object)
+            return false;
+
+        spec.internalEdges.push_back ({ stringMember (edge, "from"),
+                                        stringMember (edge, "to"),
+                                        stringMember (edge, "dataType") });
+    }
+
+    return true;
+}
+
+bool appendPublicPorts (std::vector<CompoundPublicPort>& ports, const JsonValue& root, const std::string& arrayName)
+{
+    const auto* array = member (root, arrayName);
+    if (array == nullptr || array->kind != JsonValue::Kind::array)
+        return false;
+
+    for (const auto& port : array->arrayValue)
+    {
+        if (port.kind != JsonValue::Kind::object)
+            return false;
+
+        ports.push_back ({ stringMember (port, "id"),
+                           stringMember (port, "label"),
+                           stringMember (port, "dataType"),
+                           stringMember (port, "direction"),
+                           stringMember (port, "mapsTo") });
+    }
+
+    return true;
 }
 }
 
@@ -147,9 +453,23 @@ bool isValidCompoundPatchSpec (const CompoundPatchSpec& spec)
             return false;
     }
 
+    for (const auto& input : spec.publicInputs)
+    {
+        if (input.id.empty() || input.label.empty() || input.dataType.empty() || input.direction != "in" || input.mapsTo.empty())
+            return false;
+
+        if (! hasChild (spec, portOwner (input.mapsTo)))
+            return false;
+    }
+
     for (const auto& output : spec.publicOutputs)
+    {
+        if (output.id.empty() || output.label.empty() || output.dataType.empty() || output.direction != "out" || output.mapsTo.empty())
+            return false;
+
         if (! hasChild (spec, portOwner (output.mapsTo)))
             return false;
+    }
 
     return true;
 }
@@ -192,12 +512,31 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
     }
     out << "  ],\n";
 
+    out << "  \"publicInputs\": [\n";
+    for (size_t index = 0; index < spec.publicInputs.size(); ++index)
+    {
+        const auto& port = spec.publicInputs[index];
+        out << "    { \"id\": \"" << jsonEscaped (port.id)
+            << "\", \"label\": \"" << jsonEscaped (port.label)
+            << "\", \"dataType\": \"" << jsonEscaped (port.dataType)
+            << "\", \"direction\": \"" << jsonEscaped (port.direction)
+            << "\", \"mapsTo\": \"" << jsonEscaped (port.mapsTo) << "\" }";
+
+        if (index + 1 < spec.publicInputs.size())
+            out << ",";
+
+        out << "\n";
+    }
+    out << "  ],\n";
+
     out << "  \"publicOutputs\": [\n";
     for (size_t index = 0; index < spec.publicOutputs.size(); ++index)
     {
         const auto& port = spec.publicOutputs[index];
         out << "    { \"id\": \"" << jsonEscaped (port.id)
+            << "\", \"label\": \"" << jsonEscaped (port.label)
             << "\", \"dataType\": \"" << jsonEscaped (port.dataType)
+            << "\", \"direction\": \"" << jsonEscaped (port.direction)
             << "\", \"mapsTo\": \"" << jsonEscaped (port.mapsTo) << "\" }";
 
         if (index + 1 < spec.publicOutputs.size())
@@ -208,5 +547,50 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
     out << "  ]\n";
     out << "}\n";
     return out.str();
+}
+
+CompoundPatchLoadResult parseCompoundPatchJson (const std::string& text)
+{
+    JsonParser parser (text);
+    const auto root = parser.parse();
+
+    if (! parser.ok())
+        return { false, {}, parser.error() };
+
+    if (root.kind != JsonValue::Kind::object)
+        return { false, {}, "compound json root must be an object" };
+
+    CompoundPatchSpec spec;
+    spec.type = stringMember (root, "type");
+    spec.displayName = stringMember (root, "displayName");
+    spec.collapsedByDefault = boolMember (root, "collapsedByDefault", true);
+
+    if (! appendChildren (spec, root))
+        return { false, {}, "invalid children array" };
+
+    if (! appendInternalEdges (spec, root))
+        return { false, {}, "invalid internalEdges array" };
+
+    if (! appendPublicPorts (spec.publicInputs, root, "publicInputs"))
+        return { false, {}, "invalid publicInputs array" };
+
+    if (! appendPublicPorts (spec.publicOutputs, root, "publicOutputs"))
+        return { false, {}, "invalid publicOutputs array" };
+
+    if (! isValidCompoundPatchSpec (spec))
+        return { false, {}, "compound patch failed validation" };
+
+    return { true, spec, {} };
+}
+
+CompoundPatchLoadResult loadCompoundPatchSpec (const std::string& path)
+{
+    std::ifstream input (path);
+    if (! input)
+        return { false, {}, "could not open compound patch: " + path };
+
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    return parseCompoundPatchJson (buffer.str());
 }
 }

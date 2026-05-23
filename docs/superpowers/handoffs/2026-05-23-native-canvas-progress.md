@@ -20,6 +20,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - T0-T7 interaction is command-backed: canvas navigation, select/move, connect/disconnect, create-and-connect, compound enter/exit/collapse, inspector param/binding, dirty/save state, and behavior trace replay.
 - Delete now follows selected-object behavior. Selected edge uses `disconnect`; selected node uses `delete_node` and clears incident edges.
 - Tooll3 skin parity P0-P7 first pass exists: dark flat shell, typed node skin, inspector source editing, left rail tabs, right-click browser, and bottom transport/status strip.
+- C1.1 exists: `fixtures/compounds/loudness.compound.json` loads into `CompoundPatchSpec`, validates, and can be created/entered/collapsed through `InteractionContract`.
 
 ## 試壓結果
 
@@ -33,13 +34,14 @@ git diff --check
 Latest accepted result:
 
 ```text
-17/17 tests passed
+18/18 tests passed
 debug/v1-shader-proof/frame.png regenerated
+debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches the reloadable fixture shape
 ```
 
 ## 還沒承重
 
-- `compound.loudness` is still created from C++ contract/debug JSON, not loaded from a saved compound/module fixture.
+- `compound.loudness` is reloadable from a fixture, but it is not yet published through a module package/library registry.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -47,20 +49,20 @@ debug/v1-shader-proof/frame.png regenerated
 
 ## 下一根線
 
-C1.1 reloadable compound proof:
+C1.2 compound module package proof:
 
 ```text
-fixtures/compounds/loudness.compound.json
--> parse/validate CompoundPatchSpec
--> create/select/enter/collapse through InteractionContract
--> save/load or dump equivalent proof evidence
+fixtures/modules/loudness/module.json
+-> points to fixtures/compounds/loudness.compound.json
+-> loaded module exposes NodeSpec/public ports
+-> create compound from module registry
+-> save/load evidence
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The Tooll3-like UI skin now has enough load-bearing structure.
-The next weakness is not more surface polish; it is whether a compound node can become saved/reloadable project material.
+The Tooll3-like UI skin and first reloadable compound fixture now bear weight.
+The next weakness is whether that fixture can become a real module/library item instead of a loose file.
 ```
-
