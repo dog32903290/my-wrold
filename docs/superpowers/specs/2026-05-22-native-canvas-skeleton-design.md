@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, C1.18 expanded/collapsed compound drag-drop proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Loaded runtime-to-live analyzer bridge, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, C1.18 expanded/collapsed compound drag-drop proof, C1.19 loaded loudness runtime bridge proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Live sample-window runtime execution, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 01:45 Asia/Taipei.
+Date: 2026-05-24 01:58 Asia/Taipei.
 
 已鎖定:
 
@@ -49,11 +49,12 @@ Date: 2026-05-24 01:45 Asia/Taipei.
 - C1.16 coverage-gated module creation proof is implemented: RuntimeOp diagnostics now carry creation affordance state, `InteractionContract::NodeCreationGate` blocks missing-runtime module creation before graph mutation, and the ImGui browser/create popup passes those gates into the command path.
 - C1.17 explicit debug override proof is implemented: blocked module creation can now be intentionally inserted only through `create_node_debug_override` / `create_node+connect_debug_override`, with required reason, stored debug params, distinct command log entries, and undo coverage.
 - C1.18 expanded/collapsed compound drag-drop proof is implemented: `makeCompoundPatchInteractionGraph()` creates parent-qualified child patcher view graphs, CanvasHands tests drag collapsed loaded compounds and expanded child nodes, behavior traces record the roundtrip, and the ImGui canvas switches to the child graph while inside a compound.
-- Latest C1.18 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `./build/my_world_compound_interaction_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
+- C1.19 loaded loudness runtime bridge proof is implemented: `makeLoudnessRuntimeBridgeSnapshot()` consumes loaded runtime public outputs when present, falls back to direct `AudioAnalyzerSnapshot` values with the same public vocabulary, and audio proof dump writes `debug/a1-audio-proof/loudness_runtime_bridge.json`.
+- Latest C1.19 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `./build/my_world_compound_interaction_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether the live A1 analyzer/debug surface should consume loaded compound runtime public outputs as the main C1 truth.
+- How to feed a live-safe sample window into loaded runtime execution without moving parsing/allocation/runtime graph mutation into the audio callback.
 
 還沒承重:
 
@@ -61,11 +62,11 @@ Date: 2026-05-24 01:45 Asia/Taipei.
 - Missing-runtime modules are blocked by the normal create path; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
-- The live A1 analyzer still runs direct native analyzer code while exporting matching C1 evidence; it is not yet driven by the loaded compound runtime path.
+- The live A1 analyzer surface reads through the C1 loudness bridge vocabulary, but app runtime execution still receives an empty live runtime snapshot; loaded public outputs are proven through synthetic runtime execution.
 
 下一根線:
 
-- C1.19 loaded loudness runtime bridge: `loaded compound runtime publicOutputs -> live analyzer/debug surface reads the same loudness output vocabulary -> direct A1 analyzer path becomes fallback`.
+- C1.20 live-safe loudness sample-window runner: `AudioAnalyzerState/direct snapshot or prepared sample window -> non-realtime RuntimeSyntheticAudioInput -> loaded compound runtime execution snapshot -> bridge sourceMode loaded-runtime-publicOutputs during app proof`.
 
 ## First Stage Proofs
 
@@ -237,8 +238,8 @@ Contract:
 - Proven: preferences include audio input device, channel/mono mix, sample rate, buffer size, analysis gain, and analyzer profile.
 - Proven: pure realtime-safe analyzer state can calculate rms, peak, loudness, active, and sampleCounter from input buffers.
 - Proven: JUCE audio callback bridge exists and only writes bounded analyzer state plus output silence.
-- Proven: UI reads analyzer snapshots outside the realtime callback and displays `rms`, `peak`, and `loudness` meter rows.
-- Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json` and `debug/a1-audio-proof/loudness_compound.json` from `--dump-audio-proof-and-exit`.
+- Proven: UI reads analyzer values outside the realtime callback through the C1 loudness runtime bridge and displays `rms`, `peak`, and `loudness` meter rows.
+- Proven: A1 can dump `debug/a1-audio-proof/audio_stats.json`, `debug/a1-audio-proof/loudness_compound.json`, and `debug/a1-audio-proof/loudness_runtime_bridge.json` from `--dump-audio-proof-and-exit`.
 - Proven: live input was observed on this Mac in the current A1 proof dump (`48000Hz`, `512` samples, `sampleCounter` greater than `0`, `active: true`).
 - Proven: analyzer `loudness` snapshots are wired into shader uniform `u_loudness`; V1 proof `node_stats.json` records `u_loudness` as a system uniform.
 - Proven: analyzer snapshot now exposes `rms`, `peak`, `loudness`, `gate`, `confidence`, `active`, and `sampleCounter`.
@@ -281,11 +282,12 @@ Contract:
 - Proven: RuntimeOp support is visible before create/execute: `runtime_ui_diagnostics.json` declares browser/inspector visibility, `compound.loudness` reads as `runtime ready`, the saved negative fixture reads as `missing RuntimeOp`, and the workspace left rail shows the same status without inventing separate UI truth.
 - Proven: normal module creation is coverage-gated: `runtime_ui_diagnostics.json` records `creationStatus` as `create-enabled` or `create-blocked`, `NodeCreationGate` blocks `compound.loudness.missing-runtimeop` without mutating the graph, and the ImGui browser/create popup passes diagnostics into the command path.
 - Proven: blocked module insertion has an explicit repair/debug path: `create_node_debug_override` and `create_node+connect_debug_override` require visible reasons, store `debug.creationOverride*` node params, and remain undoable.
+- Proven: loaded runtime public outputs can feed a live/debug-facing loudness bridge: `makeLoudnessRuntimeBridgeSnapshot()` prefers `out`, `rms`, `peak`, `gate`, and `confidence` from `RuntimeExecutionSnapshot`, falls back to direct analyzer values with the same ids, and serializes value/source evidence to `loudness_runtime_bridge.json`.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Proven: production canvas drag/drop for collapsed vs expanded compounds has first evidence: loaded compounds drag/select as collapsed root nodes, expanded child patcher graphs are generated from `CompoundPatchSpec`, child nodes/edges are parent-qualified, and root/expanded interaction states roundtrip.
-- Not yet proven: the live A1 analyzer still runs direct native analyzer code while exporting matching C1 evidence; it is not yet driven by the loaded compound runtime path.
+- Not yet proven: app proof runtime execution still receives an empty live runtime snapshot; loaded runtime public outputs are proven through synthetic runtime execution, not a live sample-window runner.
 
 ## Architecture
 

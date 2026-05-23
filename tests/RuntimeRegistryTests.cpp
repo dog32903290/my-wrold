@@ -570,6 +570,47 @@ int main()
     expectContains (executionJson, "\"rms\": 0.707107", "runtime execution json");
     expectContains (executionJson, "\"peak\": 1.000000", "runtime execution json");
 
+    myworld::AudioAnalyzerSnapshot fallbackSnapshot;
+    fallbackSnapshot.rms = 0.25f;
+    fallbackSnapshot.peak = 0.50f;
+    fallbackSnapshot.loudness = 0.20f;
+    fallbackSnapshot.gate = 1.0f;
+    fallbackSnapshot.confidence = 0.75f;
+    fallbackSnapshot.active = true;
+    fallbackSnapshot.sampleCounter = 512;
+
+    const auto bridge = myworld::makeLoudnessRuntimeBridgeSnapshot (execution.snapshot, fallbackSnapshot);
+    expect (bridge.usesLoadedRuntimeOutputs, "bridge uses loaded runtime outputs");
+    expectEqual (bridge.sourceMode, "loaded-runtime-publicOutputs", "bridge source mode");
+    expect (bridge.publicOutputs.size() == 5, "bridge public output count");
+    expectEqual (bridge.publicOutputs.at (0).id, "out", "bridge out id");
+    expectNear (bridge.publicOutputs.at (0).value, std::sqrt (0.5), 0.000001, "bridge out value");
+    expectEqual (bridge.publicOutputs.at (0).source, "loudness_out.out", "bridge out source");
+    expectNear (bridge.analyzer.rms, std::sqrt (0.5), 0.000001, "bridge analyzer rms");
+    expectNear (bridge.analyzer.loudness, std::sqrt (0.5), 0.000001, "bridge analyzer loudness");
+    expectNear (bridge.analyzer.gate, 1.0, 0.000001, "bridge analyzer gate");
+    expect (bridge.analyzer.active, "bridge analyzer active");
+    expect (bridge.analyzer.sampleCounter == fallbackSnapshot.sampleCounter, "bridge keeps sample counter");
+
+    const myworld::RuntimeExecutionSnapshot emptyRuntimeSnapshot;
+    const auto fallbackBridge = myworld::makeLoudnessRuntimeBridgeSnapshot (emptyRuntimeSnapshot, fallbackSnapshot);
+    expect (! fallbackBridge.usesLoadedRuntimeOutputs, "fallback bridge marks direct analyzer source");
+    expectEqual (fallbackBridge.sourceMode, "direct-analyzer-fallback", "fallback bridge source mode");
+    expect (fallbackBridge.publicOutputs.size() == 5, "fallback bridge public output count");
+    expectEqual (fallbackBridge.publicOutputs.at (0).id, "out", "fallback out id");
+    expectNear (fallbackBridge.publicOutputs.at (0).value, 0.20, 0.000001, "fallback out value");
+    expectEqual (fallbackBridge.publicOutputs.at (0).source, "audioInputAnalyzer.loudness", "fallback out source");
+    expectNear (fallbackBridge.analyzer.confidence, 0.75, 0.000001, "fallback confidence");
+
+    const auto bridgeJson = myworld::makeLoudnessRuntimeBridgeJson (bridge);
+    expectContains (bridgeJson, "\"kind\": \"loudnessRuntimeBridge\"", "bridge json");
+    expectContains (bridgeJson, "\"sourceMode\": \"loaded-runtime-publicOutputs\"", "bridge json");
+    expectContains (bridgeJson, "\"usesLoadedRuntimeOutputs\": true", "bridge json");
+    expectContains (bridgeJson, "\"publicOutputs\": {", "bridge json");
+    expectContains (bridgeJson, "\"out\": 0.707107", "bridge json");
+    expectContains (bridgeJson, "\"publicOutputSources\": {", "bridge json");
+    expectContains (bridgeJson, "\"out\": \"loudness_out.out\"", "bridge json");
+
     std::cout << "runtime registry ok\n";
     return 0;
 }

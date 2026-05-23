@@ -2,6 +2,7 @@
 
 #include "CompoundPatch.h"
 #include "GraphContract.h"
+#include "RuntimeRegistry.h"
 
 namespace myworld
 {
@@ -196,7 +197,9 @@ void MainComponent::dumpAudioProof()
         return;
     }
 
-    const auto snapshot = audioInputAnalyzer.getSnapshot();
+    const auto directSnapshot = audioInputAnalyzer.getSnapshot();
+    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, directSnapshot);
+    const auto& snapshot = bridge.analyzer;
     const auto json = juce::String()
         + "{\n"
         + "  \"sampleRate\": " + juce::String (audioInputAnalyzer.getSampleRate(), 0) + ",\n"
@@ -221,6 +224,7 @@ void MainComponent::dumpAudioProof()
 
     const auto audioStatsFile = directory.getChildFile ("audio_stats.json");
     const auto loudnessCompoundFile = directory.getChildFile ("loudness_compound.json");
+    const auto loudnessRuntimeBridgeFile = directory.getChildFile ("loudness_runtime_bridge.json");
 
     if (! audioStatsFile.replaceWithText (json, false, false, "\n"))
     {
@@ -235,6 +239,15 @@ void MainComponent::dumpAudioProof()
                                                 "\n"))
     {
         statusLabel.setText ("audio proof failed: could not write " + loudnessCompoundFile.getFullPathName(),
+                             juce::dontSendNotification);
+        return;
+    }
+
+    const auto runtimeBridgeJson = makeLoudnessRuntimeBridgeJson (bridge);
+
+    if (! loudnessRuntimeBridgeFile.replaceWithText (juce::String::fromUTF8 (runtimeBridgeJson.c_str()), false, false, "\n"))
+    {
+        statusLabel.setText ("audio proof failed: could not write " + loudnessRuntimeBridgeFile.getFullPathName(),
                              juce::dontSendNotification);
         return;
     }
@@ -284,7 +297,8 @@ void MainComponent::startAudioInput()
 
 void MainComponent::updateAudioMeters()
 {
-    const auto snapshot = audioInputAnalyzer.getSnapshot();
+    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, audioInputAnalyzer.getSnapshot());
+    const auto& snapshot = bridge.analyzer;
 
     rmsLabel.setText ("rms " + juce::String (snapshot.rms, 4), juce::dontSendNotification);
     peakLabel.setText ("peak " + juce::String (snapshot.peak, 4), juce::dontSendNotification);

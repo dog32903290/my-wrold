@@ -435,6 +435,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             ${imgui_SOURCE_DIR}
             ${imgui_SOURCE_DIR}/backends
             ${CMAKE_CURRENT_SOURCE_DIR}/source/ui
+            ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
     )
 
     target_link_libraries(my_world_imgui
@@ -479,7 +480,6 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     target_link_libraries(my-world
         PRIVATE
-            my_world_audio
             my_world_preferences
             my_world_runtime_registry
             my_world_imgui

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "AudioAnalyzerState.h"
+
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -132,6 +134,14 @@ struct RuntimeExecutionResult
     std::string error;
 };
 
+struct LoudnessRuntimeBridgeSnapshot
+{
+    bool usesLoadedRuntimeOutputs = false;
+    std::string sourceMode;
+    std::vector<RuntimeOutputValue> publicOutputs;
+    AudioAnalyzerSnapshot analyzer;
+};
+
 struct RuntimeSyntheticAudioInput
 {
     std::vector<std::vector<float>> channels;
@@ -207,10 +217,13 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                                                                  float analysisGain);
 RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRegistry& registry,
                                                                  const RuntimeSyntheticAudioInput& input);
+LoudnessRuntimeBridgeSnapshot makeLoudnessRuntimeBridgeSnapshot (const RuntimeExecutionSnapshot& runtimeSnapshot,
+                                                                 const AudioAnalyzerSnapshot& fallbackSnapshot);
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry);
 std::string makeRuntimeOpCatalogJson (const std::vector<RuntimeOpCatalogEntry>& catalog);
 std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot);
 std::string makeRuntimeOpModuleDiagnosticsJson (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics);
 std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot);
 std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot);
+std::string makeLoudnessRuntimeBridgeJson (const LoudnessRuntimeBridgeSnapshot& snapshot);
 }

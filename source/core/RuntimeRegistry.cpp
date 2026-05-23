@@ -141,6 +141,36 @@ void appendValueSourceObject (std::ostringstream& out, const std::vector<Runtime
     out << "}";
 }
 
+const RuntimeOutputValue* findOutputValue (const std::vector<RuntimeOutputValue>& values, const std::string& id)
+{
+    const auto found = std::find_if (values.begin(), values.end(), [&id] (const auto& value) {
+        return value.id == id;
+    });
+
+    return found == values.end() ? nullptr : &*found;
+}
+
+bool hasLoudnessPublicOutputs (const RuntimeEntryExecutionStatus& entry)
+{
+    return findOutputValue (entry.publicOutputs, "out") != nullptr
+           && findOutputValue (entry.publicOutputs, "rms") != nullptr
+           && findOutputValue (entry.publicOutputs, "peak") != nullptr
+           && findOutputValue (entry.publicOutputs, "gate") != nullptr
+           && findOutputValue (entry.publicOutputs, "confidence") != nullptr;
+}
+
+std::vector<RuntimeOutputValue> orderedLoudnessPublicOutputs (const std::vector<RuntimeOutputValue>& values)
+{
+    std::vector<RuntimeOutputValue> ordered;
+    ordered.reserve (5);
+
+    for (const auto& id : { "out", "rms", "peak", "gate", "confidence" })
+        if (const auto* value = findOutputValue (values, id))
+            ordered.push_back (*value);
+
+    return ordered;
+}
+
 std::string fallback (const std::string& value, const std::string& fallbackValue)
 {
     return value.empty() ? fallbackValue : value;
@@ -929,6 +959,54 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
     return { true, snapshot, {} };
 }
 
+static LoudnessRuntimeBridgeSnapshot makeLoudnessRuntimeFallbackSnapshot (const AudioAnalyzerSnapshot& fallbackSnapshot)
+{
+    return {
+        false,
+        "direct-analyzer-fallback",
+        {
+            { "out", static_cast<double> (fallbackSnapshot.loudness), "audioInputAnalyzer.loudness" },
+            { "rms", static_cast<double> (fallbackSnapshot.rms), "audioInputAnalyzer.rms" },
+            { "peak", static_cast<double> (fallbackSnapshot.peak), "audioInputAnalyzer.peak" },
+            { "gate", static_cast<double> (fallbackSnapshot.gate), "audioInputAnalyzer.gate" },
+            { "confidence", static_cast<double> (fallbackSnapshot.confidence), "audioInputAnalyzer.confidence" }
+        },
+        fallbackSnapshot
+    };
+}
+
+LoudnessRuntimeBridgeSnapshot makeLoudnessRuntimeBridgeSnapshot (const RuntimeExecutionSnapshot& runtimeSnapshot,
+                                                                 const AudioAnalyzerSnapshot& fallbackSnapshot)
+{
+    for (const auto& entry : runtimeSnapshot.entries)
+    {
+        if (entry.status != "computed" || ! hasLoudnessPublicOutputs (entry))
+            continue;
+
+        auto bridge = makeLoudnessRuntimeFallbackSnapshot (fallbackSnapshot);
+        bridge.usesLoadedRuntimeOutputs = true;
+        bridge.sourceMode = "loaded-runtime-publicOutputs";
+        bridge.publicOutputs = orderedLoudnessPublicOutputs (entry.publicOutputs);
+
+        const auto* out = findOutputValue (bridge.publicOutputs, "out");
+        const auto* rms = findOutputValue (bridge.publicOutputs, "rms");
+        const auto* peak = findOutputValue (bridge.publicOutputs, "peak");
+        const auto* gate = findOutputValue (bridge.publicOutputs, "gate");
+        const auto* confidence = findOutputValue (bridge.publicOutputs, "confidence");
+
+        bridge.analyzer.loudness = out == nullptr ? fallbackSnapshot.loudness : static_cast<float> (out->value);
+        bridge.analyzer.rms = rms == nullptr ? fallbackSnapshot.rms : static_cast<float> (rms->value);
+        bridge.analyzer.peak = peak == nullptr ? fallbackSnapshot.peak : static_cast<float> (peak->value);
+        bridge.analyzer.gate = gate == nullptr ? fallbackSnapshot.gate : static_cast<float> (gate->value);
+        bridge.analyzer.confidence = confidence == nullptr ? fallbackSnapshot.confidence : static_cast<float> (confidence->value);
+        bridge.analyzer.active = bridge.analyzer.gate > 0.0f;
+        bridge.analyzer.sampleCounter = fallbackSnapshot.sampleCounter;
+        return bridge;
+    }
+
+    return makeLoudnessRuntimeFallbackSnapshot (fallbackSnapshot);
+}
+
 std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
 {
     std::ostringstream out;
@@ -1240,6 +1318,33 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
     }
 
     out << "  ]\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeLoudnessRuntimeBridgeJson (const LoudnessRuntimeBridgeSnapshot& snapshot)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"loudnessRuntimeBridge\",\n";
+    out << "  \"sourceMode\": \"" << jsonEscaped (snapshot.sourceMode) << "\",\n";
+    out << "  \"usesLoadedRuntimeOutputs\": " << (snapshot.usesLoadedRuntimeOutputs ? "true" : "false") << ",\n";
+    out << "  \"publicOutputs\": ";
+    appendValueObject (out, snapshot.publicOutputs);
+    out << ",\n";
+    out << "  \"publicOutputSources\": ";
+    appendValueSourceObject (out, snapshot.publicOutputs);
+    out << ",\n";
+    out << "  \"analyzer\": {\n";
+    out << "    \"rms\": " << snapshot.analyzer.rms << ",\n";
+    out << "    \"peak\": " << snapshot.analyzer.peak << ",\n";
+    out << "    \"loudness\": " << snapshot.analyzer.loudness << ",\n";
+    out << "    \"gate\": " << snapshot.analyzer.gate << ",\n";
+    out << "    \"confidence\": " << snapshot.analyzer.confidence << ",\n";
+    out << "    \"active\": " << (snapshot.analyzer.active ? "true" : "false") << ",\n";
+    out << "    \"sampleCounter\": " << snapshot.analyzer.sampleCounter << "\n";
+    out << "  }\n";
     out << "}\n";
     return out.str();
 }

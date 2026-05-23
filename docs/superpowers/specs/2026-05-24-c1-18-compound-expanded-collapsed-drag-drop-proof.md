@@ -64,10 +64,10 @@ Expanded patcher create-node search is parked; C1.18 only proves child graph vis
 The live A1 analyzer still runs direct analyzer code while exporting matching C1 runtime evidence.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.19 loaded loudness runtime bridge:
+C1.19 loaded loudness runtime bridge is now implemented:
 loaded compound runtime publicOutputs
 -> live analyzer/debug surface reads the same loudness output vocabulary
 -> direct A1 analyzer path remains a fallback, not the only truth
