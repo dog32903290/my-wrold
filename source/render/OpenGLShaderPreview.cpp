@@ -1,5 +1,7 @@
 #include "OpenGLShaderPreview.h"
 
+#include "CompoundModule.h"
+
 #include <atomic>
 #include <vector>
 
@@ -60,6 +62,40 @@ int mouseButtonIndex (const juce::MouseEvent& event)
         return 2;
 
     return 0;
+}
+
+juce::File parentDirectory (juce::File file, const int levels)
+{
+    for (int i = 0; i < levels; ++i)
+        file = file.getParentDirectory();
+
+    return file;
+}
+
+std::vector<std::string> moduleManifestCandidatePaths()
+{
+    const auto manifestPath = juce::String ("fixtures/modules/loudness/module.json");
+    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+    const auto buildAppRepoRoot = parentDirectory (executableDir, 5);
+
+    return {
+        juce::File::getCurrentWorkingDirectory().getChildFile (manifestPath).getFullPathName().toStdString(),
+        buildAppRepoRoot.getChildFile (manifestPath).getFullPathName().toStdString()
+    };
+}
+
+std::vector<NodeSpec> loadVisibleNodeSpecs()
+{
+    const auto seedSpecs = makeSeedNodeSpecs();
+
+    for (const auto& path : moduleManifestCandidatePaths())
+    {
+        const auto modules = loadCompoundModuleNodeSpecs ({ path });
+        if (modules.ok)
+            return mergeNodeSpecs (seedSpecs, modules.specs);
+    }
+
+    return seedSpecs;
 }
 }
 
@@ -135,7 +171,7 @@ void OpenGLShaderPreview::newOpenGLContextCreated()
     startTimeSeconds = juce::Time::getMillisecondCounterHiRes() * 0.001;
     lastFrameSeconds = startTimeSeconds;
     frameIndex = 0;
-    seedNodeSpecs = makeSeedNodeSpecs();
+    seedNodeSpecs = loadVisibleNodeSpecs();
     loudnessCompound = makeLoudnessCompoundPatchSpec();
     imguiOverlay.setShaderSource (pendingFragmentShader);
     imguiOverlay.initialise();

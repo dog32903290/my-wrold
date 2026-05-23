@@ -434,6 +434,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_link_libraries(my-world
         PRIVATE
             my_world_audio
+            my_world_compound_module
             my_world_preferences
             my_world_imgui
             juce::juce_audio_devices

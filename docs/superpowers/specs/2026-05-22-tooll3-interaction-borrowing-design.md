@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, and an ImGui workspace wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry when creating nodes. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -64,6 +64,7 @@ Existing project facts this design must respect:
 - `StorageContract` already names work projects, patch documents, module packages, and save statuses.
 - The default proof graph is `shader1.output -> out1.input`.
 - C1.2 adds a module-registry `createNode` overload so a loaded module `NodeSpec` can create a compound node without relying only on `makeSeedNodeSpecs()`.
+- C1.3 loads module manifests into a visible registry, merges that registry over seed specs by node type, and routes ImGui browser creation through the passed registry instead of a seed-only overload.
 
 ## First Slice
 

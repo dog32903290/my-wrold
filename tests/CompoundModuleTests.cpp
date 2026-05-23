@@ -102,6 +102,27 @@ int main()
     expect (findNode (moduleSession.graph, "loud_module1") != nullptr, "module-created compound node exists");
     expect (myworld::enterPatch (moduleSession, "loud_module1").ok, "enter module-created compound");
 
+    const auto loadedRegistry = myworld::loadCompoundModuleNodeSpecs ({ "fixtures/modules/loudness/module.json" });
+    expect (loadedRegistry.ok, loadedRegistry.error);
+    expect (loadedRegistry.specs.size() == 1, "loaded module registry count");
+    expectEqual (loadedRegistry.specs.front().displayName, "Loudness", "loaded module registry display name");
+
+    const auto visibleRegistry = myworld::mergeNodeSpecs (myworld::makeSeedNodeSpecs(), loadedRegistry.specs);
+    const auto* visibleLoudness = myworld::findNodeSpec (visibleRegistry, "compound.loudness");
+    expect (visibleLoudness != nullptr, "visible registry contains module loudness");
+    expectEqual (visibleLoudness->displayName, "Loudness", "module registry overrides seed display name");
+    expect (visibleLoudness->inputs.size() == 1, "visible module registry input count");
+    expect (visibleLoudness->outputs.size() == 5, "visible module registry output count");
+
+    auto visibleSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    const auto visibleCreate = myworld::createNode (visibleSession,
+                                                    visibleRegistry,
+                                                    "compound.loudness",
+                                                    "visible_loud1",
+                                                    { 260.0, 300.0 });
+    expect (visibleCreate.ok, "visible registry creates module compound");
+    expect (visibleSession.commandLog.back() == "create_node", "visible registry create command logged");
+
     std::cout << "compound module fixture ok\n";
     return 0;
 }

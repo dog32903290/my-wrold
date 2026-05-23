@@ -1,5 +1,7 @@
 #include "CompoundModule.h"
 
+#include <algorithm>
+
 namespace myworld
 {
 namespace
@@ -63,5 +65,47 @@ NodeSpec makeCompoundModuleNodeSpec (const ModulePackageManifest& manifest, cons
         toOutputPortSpecs (manifest, compound),
         {}
     };
+}
+
+CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecs (const std::vector<std::string>& manifestPaths)
+{
+    CompoundModuleNodeSpecsResult result;
+
+    for (const auto& manifestPath : manifestPaths)
+    {
+        const auto module = loadModulePackageManifest (manifestPath);
+        if (! module.ok)
+            return { false, {}, module.error };
+
+        const auto compound = loadCompoundPatchSpec (module.manifest.patchPath);
+        if (! compound.ok)
+            return { false, {}, compound.error };
+
+        result.specs.push_back (makeCompoundModuleNodeSpec (module.manifest, compound.spec));
+    }
+
+    result.ok = true;
+    return result;
+}
+
+std::vector<NodeSpec> mergeNodeSpecs (std::vector<NodeSpec> baseSpecs, const std::vector<NodeSpec>& overrideSpecs)
+{
+    for (const auto& spec : overrideSpecs)
+    {
+        const auto found = std::find_if (baseSpecs.begin(), baseSpecs.end(), [&spec] (const auto& existing) {
+            return existing.type == spec.type;
+        });
+
+        if (found == baseSpecs.end())
+        {
+            baseSpecs.push_back (spec);
+        }
+        else
+        {
+            *found = spec;
+        }
+    }
+
+    return baseSpecs;
 }
 }

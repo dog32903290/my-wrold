@@ -1,10 +1,11 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 08:53 Asia/Taipei
+Date: 2026-05-23 09:05 Asia/Taipei
 
 ## Current Head
 
 ```text
+pending C1.3 visible module registry proof commit
 7b3ca79 Add loudness module package proof
 0d782b5 Add reloadable loudness compound fixture
 6838957 Document current native canvas progress
@@ -22,12 +23,13 @@ d76e353 Add Tooll3 workspace browser and transport
 - Tooll3 skin parity P0-P7 first pass exists: dark flat shell, typed node skin, inspector source editing, left rail tabs, right-click browser, and bottom transport/status strip.
 - C1.1 exists: `fixtures/compounds/loudness.compound.json` loads into `CompoundPatchSpec`, validates, and can be created/entered/collapsed through `InteractionContract`.
 - C1.2 exists: `fixtures/modules/loudness/module.json` loads into `ModulePackageManifest`, produces a compound `NodeSpec`, and creates `compound.loudness` from a module registry command path.
-- Current head `7b3ca79` records the module package proof.
+- C1.3 exists: module manifests load into a visible `NodeSpec` registry, override seed specs by type, feed the ImGui node browser, and create `compound.loudness` through the same command path.
 
 ## 試壓結果
 
 ```text
 cmake --build build
+./build/my_world_compound_module_tests
 ctest --test-dir build --output-on-failure
 ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 git diff --check
@@ -40,12 +42,13 @@ Latest accepted result:
 debug/v1-shader-proof/frame.png regenerated
 debug/v1-shader-proof/loudness_compound.json includes publicInputs and matches the reloadable fixture shape
 fixtures/modules/loudness/module.json validated through storage and compound module tests
-latest accepted commit: 7b3ca79
+visible registry creates module-backed `compound.loudness` through `create_node`
+latest accepted source commit before C1.3: 7b3ca79
 ```
 
 ## 還沒承重
 
-- `compound.loudness` is reloadable from a fixture and module package, but visible node browser/module-library integration is not wired yet.
+- Visible node browser/module-registry integration is wired, but module discovery still uses app-side candidate manifest paths instead of a saved `ModuleLibrary` index.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -53,14 +56,14 @@ latest accepted commit: 7b3ca79
 
 ## 下一根線
 
-C1.3 visible module registry proof:
+C1.4 module-library index proof:
 
 ```text
-fixtures/modules/loudness/module.json
--> loaded module registry
+module-library manifest
+-> list module packages
+-> load visible module registry
 -> visible node browser / command path
--> create compound in workspace from registry source
--> save/load evidence
+-> create compound in workspace without hardcoded app paths
 -> run tests and proof dump
 ```
 
@@ -68,5 +71,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is whether the visible workspace can consume module registries instead of only the compiled seed node list.
+The next weakness is module discovery. The visible workspace can consume module registries, but it still needs a storage-backed library index before AI worker edits or user module libraries can safely sit on this line.
 ```

@@ -1182,6 +1182,7 @@ void ImGuiSmokeOverlay::drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& n
             const auto nodeId = makeUniqueNodeId (interactionSession.graph, spec.type);
             runInteractionCommand ("create " + spec.type,
                                    createNode (interactionSession,
+                                               nodeSpecs,
                                                spec.type,
                                                nodeId,
                                                pendingCreatePosition));
