@@ -62,6 +62,7 @@ struct RuntimeChildDryRunStatus
     std::string childId;
     std::string nodeType;
     std::string role;
+    std::string runtimeOp;
     std::string status;
     std::string reason;
 };

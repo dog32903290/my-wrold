@@ -32,6 +32,15 @@ void expectContains (const std::string& text, const std::string& expected, const
 {
     expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
 }
+
+myworld::RuntimeRegistry makeRegistryWithUnsupportedRuntimeOp (myworld::RuntimeRegistry registry)
+{
+    auto& entry = registry.entries.front();
+    entry.children.push_back ({ "unsupported_probe", "debug.unsupported", "Missing RuntimeOp fixture" });
+    entry.cookOrder.push_back ("unsupported_probe");
+    entry.childCount = entry.children.size();
+    return registry;
+}
 }
 
 int main()
@@ -94,6 +103,9 @@ int main()
     expect (dryRun.snapshot.entries.front().children.size() == 7, "dry-run child count");
     expectEqual (dryRun.snapshot.entries.front().children.front().childId, "audio_in", "dry-run first child id");
     expectEqual (dryRun.snapshot.entries.front().children.front().nodeType, "audio.input", "dry-run first child type");
+    expectEqual (dryRun.snapshot.entries.front().children.front().runtimeOp,
+                 "synthetic.audio.input",
+                 "dry-run first child runtime op");
     expectEqual (dryRun.snapshot.entries.front().children.front().status, "dry-run-ready", "dry-run first child status");
     expect (dryRun.snapshot.entries.front().children.back().cookIndex == 6, "dry-run last child cook index");
     expectEqual (dryRun.snapshot.entries.front().children.back().childId, "loudness_out", "dry-run last child id");
@@ -104,9 +116,59 @@ int main()
     expectContains (dryRunJson, "\"status\": \"dry-run-ready\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"childId\": \"audio_in\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"nodeType\": \"audio.input\"", "runtime dry-run json");
+    expectContains (dryRunJson, "\"runtimeOp\": \"synthetic.analyzer.rms\"", "runtime dry-run json");
     expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
 
+    const auto unsupportedRegistry = makeRegistryWithUnsupportedRuntimeOp (registryResult.registry);
+    const auto unsupportedDryRun = myworld::dryRunRuntimeRegistry (unsupportedRegistry);
+    expect (! unsupportedDryRun.ok, "unsupported dry-run should fail runtime op coverage");
+    expectContains (unsupportedDryRun.error, "missing RuntimeOp", "unsupported dry-run error");
+    expect (unsupportedDryRun.snapshot.entries.size() == 1, "unsupported dry-run entry count");
+    expectEqual (unsupportedDryRun.snapshot.entries.front().status,
+                 "missing-runtime-op",
+                 "unsupported dry-run entry status");
+    expectEqual (unsupportedDryRun.snapshot.entries.front().children.back().childId,
+                 "unsupported_probe",
+                 "unsupported dry-run child id");
+    expectEqual (unsupportedDryRun.snapshot.entries.front().children.back().nodeType,
+                 "debug.unsupported",
+                 "unsupported dry-run child type");
+    expectEqual (unsupportedDryRun.snapshot.entries.front().children.back().runtimeOp,
+                 "",
+                 "unsupported dry-run runtime op");
+    expectEqual (unsupportedDryRun.snapshot.entries.front().children.back().status,
+                 "missing-runtime-op",
+                 "unsupported dry-run child status");
+
+    const auto unsupportedDryRunJson = myworld::makeRuntimeDryRunJson (unsupportedDryRun.snapshot);
+    expectContains (unsupportedDryRunJson, "\"status\": \"missing-runtime-op\"", "unsupported dry-run json");
+    expectContains (unsupportedDryRunJson, "\"nodeType\": \"debug.unsupported\"", "unsupported dry-run json");
+
     const std::vector<float> syntheticSamples { 0.0f, 1.0f, -1.0f, 0.0f };
+    const auto unsupportedExecution = myworld::executeRuntimeRegistryWithSyntheticAudio (unsupportedRegistry,
+                                                                                        syntheticSamples,
+                                                                                        1.0f);
+    expect (! unsupportedExecution.ok, "unsupported execution should fail runtime op coverage");
+    expectContains (unsupportedExecution.error, "missing RuntimeOp", "unsupported execution error");
+    expectEqual (unsupportedExecution.snapshot.entries.front().status,
+                 "missing-runtime-op",
+                 "unsupported execution entry status");
+    expectEqual (unsupportedExecution.snapshot.entries.front().children.back().childId,
+                 "unsupported_probe",
+                 "unsupported execution child id");
+    expectEqual (unsupportedExecution.snapshot.entries.front().children.back().runtimeOp,
+                 "",
+                 "unsupported execution runtime op");
+    expectEqual (unsupportedExecution.snapshot.entries.front().children.back().status,
+                 "missing-runtime-op",
+                 "unsupported execution child status");
+    expect (unsupportedExecution.snapshot.entries.front().publicOutputs.empty(),
+            "unsupported execution should not publish public outputs");
+
+    const auto unsupportedExecutionJson = myworld::makeRuntimeExecutionJson (unsupportedExecution.snapshot);
+    expectContains (unsupportedExecutionJson, "\"status\": \"missing-runtime-op\"", "unsupported execution json");
+    expectContains (unsupportedExecutionJson, "\"nodeType\": \"debug.unsupported\"", "unsupported execution json");
+
     const auto execution = myworld::executeRuntimeRegistryWithSyntheticAudio (registryResult.registry,
                                                                               syntheticSamples,
                                                                               1.0f);

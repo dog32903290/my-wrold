@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. RuntimeOp coverage validation, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Saved negative module fixture proof, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are still parked.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-23 18:13 Asia/Taipei.
+Date: 2026-05-23 23:01 Asia/Taipei.
 
 已鎖定:
 
@@ -42,21 +42,22 @@ Date: 2026-05-23 18:13 Asia/Taipei.
 - C1.9 loaded loudness public-output proof is implemented: `pre_gate`, `output_smoother`, and `loudness_out` now execute after `analysis_gain`, entry status becomes `computed`, and `runtime_execution.json` records `publicOutputs` with `out`, `rms`, `peak`, `gate`, and `confidence`.
 - C1.10 loaded internal-edge value-bus proof is implemented: runtime registry entries now store loaded `internalEdges` and `publicOutputMappings`, runtime execution uses `child.port` bus keys for input lookup, and proof JSON records `inputSources` plus `publicOutputSources`.
 - C1.11 RuntimeOp dispatch-table proof is implemented: loaded-compound execution now resolves each child `nodeType` through a named synthetic RuntimeOp function, and `runtime_execution.json` records each executed child's `runtimeOp` id.
-- Latest C1.11 verification before commit: `cmake --build build`, `./build/my_world_runtime_registry_tests`, `ctest --test-dir build --output-on-failure` with 19/19 tests passing, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
+- C1.12 RuntimeOp coverage failure proof is implemented: unsupported loaded child node types fail dry-run and execution as `missing-runtime-op`, keep serializable failure snapshots, and do not publish public outputs on coverage failure.
+- Latest C1.12 verification before commit: `cmake --build build`, `./build/my_world_runtime_registry_tests`, `ctest --test-dir build --output-on-failure` with 19/19 tests passing, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, and `git diff --check`.
 
 正在試壓:
 
-- Whether loaded compound modules can fail explicitly when a child node type has no RuntimeOp coverage.
+- Whether the negative RuntimeOp coverage case should become a saved module fixture/proof artifact instead of only a test-built registry mutation.
 
 還沒承重:
 
-- Module discovery, runtime registry snapshots, dry-run statuses, value handoff, public output maps, internal-edge routing evidence, and named RuntimeOp dispatch are storage-backed, but missing RuntimeOp coverage is not yet a dedicated validation failure.
+- Module discovery, runtime registry snapshots, dry-run statuses, value handoff, public output maps, internal-edge routing evidence, named RuntimeOp dispatch, and missing RuntimeOp coverage failure are proven, but the negative coverage case is not yet represented as a saved module fixture.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
 
 下一根線:
 
-- C1.12 RuntimeOp coverage failure proof: `runtime registry -> unsupported child nodeType -> explicit missing RuntimeOp status/error -> proof JSON evidence`.
+- C1.13 saved negative module fixture proof: `unsupported child nodeType fixture -> registry load -> missing-runtime-op dry-run/execution -> persisted negative proof JSON`.
 
 ## First Stage Proofs
 
@@ -259,11 +260,12 @@ Contract:
 - Proven: the first loaded public-output proof exists: `pre_gate`, `output_smoother`, and `loudness_out` execute in cook order, silent synthetic fixtures close gate/confidence, and `runtime_execution.json` records entry-level `publicOutputs`.
 - Proven: loaded compound internal edges now participate in runtime execution: `runtime_registry.json` records `internalEdges` and `publicOutputMappings`, while `runtime_execution.json` records `inputSources` and `publicOutputSources` derived from those loaded routes.
 - Proven: loaded compound children now execute through named synthetic RuntimeOps selected by node type, and `runtime_execution.json` records the `runtimeOp` id for each executed child.
+- Proven: unsupported loaded child node types now fail dry-run and execution as `missing-runtime-op`, keep serializable failure snapshots, and do not publish public outputs on coverage failure.
 - Proven: the ImGui smoke overlay has a C1 debug view that shows collapsed/expanded loudness compound structure.
 - Proven: the interaction command layer can create `compound.loudness`, enter/exit its patch path, collapse it, and roundtrip that editor state.
 - Proven: a loaded `compound.loudness` fixture can be created as a graph node through `InteractionContract`, entered/exited, collapsed to its loaded default, and preserved through interaction state roundtrip.
 - Not yet proven: production canvas drag/drop for collapsed vs expanded compounds.
-- Not yet proven: failing unsupported child node types through a dedicated RuntimeOp coverage validator. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
+- Not yet proven: a saved negative module fixture that proves missing RuntimeOp coverage from storage-backed module files. The live A1 analyzer still runs direct native analyzer code and exports matching C1 evidence.
 
 ## Architecture
 

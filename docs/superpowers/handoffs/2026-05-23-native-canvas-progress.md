@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-23 18:13 Asia/Taipei
+Date: 2026-05-23 23:01 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.11 RuntimeOp dispatch-table proof commit
+pending C1.12 RuntimeOp coverage failure proof commit
+0df9775 Dispatch loaded runtime nodes through named ops
 c47a59c Route loaded runtime values through internal edges
 918545b Publish loaded loudness runtime outputs
 b3a3a72 Add loaded loudness mini-chain execution proof
@@ -40,6 +41,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.9 exists: `pre_gate`, `output_smoother`, and `loudness_out` execute after `analysis_gain`; app proof dump writes entry-level `publicOutputs` for `out`, `rms`, `peak`, `gate`, and `confidence`.
 - C1.10 exists: runtime registry entries retain loaded `internalEdges` and `publicOutputMappings`; execution uses a `child.port` value bus and writes per-child `inputSources` plus entry `publicOutputSources`.
 - C1.11 exists: synthetic loaded-compound execution dispatches child node types through named RuntimeOp functions and writes each executed child's `runtimeOp` id into `runtime_execution.json`.
+- C1.12 exists: unsupported loaded child node types now fail dry-run and execution as `missing-runtime-op`, preserve a serializable failure snapshot, and avoid publishing public outputs on coverage failure.
 
 ## 試壓結果
 
@@ -70,12 +72,14 @@ debug/v1-shader-proof/runtime_execution.json records publicOutputs { out, rms, p
 debug/v1-shader-proof/runtime_registry.json records loaded internalEdges and publicOutputMappings
 debug/v1-shader-proof/runtime_execution.json records inputSources and publicOutputSources from loaded routes
 debug/v1-shader-proof/runtime_execution.json records named runtimeOp ids for executed children
-latest accepted source commit before C1.11: c47a59c
+runtime registry tests record unsupported child nodeType failure as missing-runtime-op for dry-run and execution
+compile-first-semantic-porting C1.12 measurement records 0 compile repairs, 0 test repairs, and 1 prevented coverage-honesty bug
+latest accepted source commit before C1.12: 0df9775
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, and named RuntimeOp dispatch are storage-backed, but missing RuntimeOp coverage is not yet validated as a first-class failure.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, and missing RuntimeOp coverage failure are storage-backed/test-backed, but no saved negative module fixture is exported yet.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
@@ -83,15 +87,14 @@ latest accepted source commit before C1.11: c47a59c
 
 ## 下一根線
 
-C1.12 RuntimeOp coverage failure proof:
+C1.13 saved negative module fixture proof:
 
 ```text
 module-library manifest
--> runtime registry entry
--> RuntimeOp coverage check
--> missing child nodeType fixture
--> explicit dry-run/execution failure reason
--> proof JSON records missing runtimeOp
+-> unsupported child nodeType in saved fixture
+-> registry load succeeds
+-> dry-run/execution fail with missing-runtime-op
+-> persisted negative proof JSON
 -> run tests and proof dump
 ```
 
@@ -99,5 +102,5 @@ Reason:
 
 ```text
 The Tooll3-like UI skin and first module package now bear weight.
-The next weakness is runtime coverage law. The loaded routes and named RuntimeOps now execute, but a module can still contain an unsupported child node without a dedicated validation proof.
+The next weakness is fixture-level evidence. The runtime coverage law exists in tests, but the negative case is not yet represented as a saved module fixture/artifact.
 ```

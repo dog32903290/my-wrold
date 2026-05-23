@@ -520,6 +520,18 @@ const SyntheticRuntimeOpDefinition* findSyntheticRuntimeOp (const std::string& n
     return found == ops.end() ? nullptr : &(*found);
 }
 
+std::string makeMissingRuntimeOpReason (const std::string& nodeType)
+{
+    return "missing RuntimeOp for " + nodeType;
+}
+
+std::string makeMissingRuntimeOpError (const std::string& phase,
+                                       const RuntimeRegistryEntry& entry,
+                                       const RuntimeRegistryChild& child)
+{
+    return phase + " missing RuntimeOp for " + entry.nodeType + ":" + child.id + " (" + child.nodeType + ")";
+}
+
 RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& module, const CompoundPatchSpec& compound)
 {
     RuntimeRegistryEntry entry;
@@ -591,12 +603,29 @@ RuntimeDryRunResult dryRunRuntimeRegistry (const RuntimeRegistry& registry)
             if (child == nullptr)
                 return { false, {}, "dry-run missing child metadata for " + entry.nodeType + ":" + childId };
 
+            const auto* runtimeOp = findSyntheticRuntimeOp (child->nodeType);
+
+            if (runtimeOp == nullptr)
+            {
+                entryStatus.status = "missing-runtime-op";
+                entryStatus.children.push_back ({ cookIndex,
+                                                 child->id,
+                                                 child->nodeType,
+                                                 child->role,
+                                                 {},
+                                                 "missing-runtime-op",
+                                                 makeMissingRuntimeOpReason (child->nodeType) });
+                snapshot.entries.push_back (entryStatus);
+                return { false, snapshot, makeMissingRuntimeOpError ("dry-run", entry, *child) };
+            }
+
             entryStatus.children.push_back ({ cookIndex,
                                              child->id,
                                              child->nodeType,
                                              child->role,
+                                             runtimeOp->id,
                                              "dry-run-ready",
-                                             "validated child order; RuntimeOp not executed" });
+                                             "validated child order and RuntimeOp coverage; RuntimeOp not executed" });
         }
 
         if (entryStatus.children.size() != entry.childCount)
@@ -672,12 +701,21 @@ RuntimeExecutionResult executeRuntimeRegistryWithSyntheticAudio (const RuntimeRe
                 {}
             };
 
-            if (const auto* runtimeOp = findSyntheticRuntimeOp (child->nodeType))
+            const auto* runtimeOp = findSyntheticRuntimeOp (child->nodeType);
+
+            if (runtimeOp == nullptr)
             {
-                childStatus.runtimeOp = runtimeOp->id;
-                SyntheticRuntimeOpContext context { entry, *child, input, sampleCount, valueBus, sampleBus };
-                runtimeOp->execute (context, childStatus);
+                childStatus.status = "missing-runtime-op";
+                childStatus.reason = makeMissingRuntimeOpReason (child->nodeType);
+                entryStatus.status = "missing-runtime-op";
+                entryStatus.children.push_back (childStatus);
+                snapshot.entries.push_back (entryStatus);
+                return { false, snapshot, makeMissingRuntimeOpError ("execution", entry, *child) };
             }
+
+            childStatus.runtimeOp = runtimeOp->id;
+            SyntheticRuntimeOpContext context { entry, *child, input, sampleCount, valueBus, sampleBus };
+            runtimeOp->execute (context, childStatus);
 
             entryStatus.children.push_back (childStatus);
         }
@@ -819,6 +857,7 @@ std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot)
             out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
             out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
             out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
+            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
             out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
             out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\"\n";
             out << "        }";
