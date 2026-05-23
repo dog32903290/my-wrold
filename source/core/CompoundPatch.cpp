@@ -39,9 +39,25 @@ std::string portOwner (const std::string& portPath)
     return dot == std::string::npos ? portPath : portPath.substr (0, dot);
 }
 
+std::string portName (const std::string& portPath)
+{
+    const auto dot = portPath.find ('.');
+    return dot == std::string::npos ? std::string {} : portPath.substr (dot + 1);
+}
+
 bool hasChild (const CompoundPatchSpec& spec, const std::string& childId)
 {
     return findCompoundChild (spec, childId) != nullptr;
+}
+
+std::string qualifiedEndpoint (const std::string& parentNodeId, const std::string& endpoint)
+{
+    return compoundPatchChildNodeId (parentNodeId, portOwner (endpoint)) + "." + portName (endpoint);
+}
+
+std::string edgeIdFor (const std::string& from, const std::string& to)
+{
+    return "edge." + from + "." + to;
 }
 
 struct JsonValue
@@ -592,5 +608,47 @@ CompoundPatchLoadResult loadCompoundPatchSpec (const std::string& path)
     std::ostringstream buffer;
     buffer << input.rdbuf();
     return parseCompoundPatchJson (buffer.str());
+}
+
+std::string compoundPatchChildNodeId (const std::string& parentNodeId, const std::string& childId)
+{
+    return parentNodeId + "/" + childId;
+}
+
+GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec, const std::string& parentNodeId)
+{
+    GraphContract graph;
+    graph.version = 1;
+
+    constexpr double startX = 100.0;
+    constexpr double startY = 110.0;
+    constexpr double columnWidth = 210.0;
+    constexpr double rowHeight = 120.0;
+    constexpr int columns = 3;
+
+    for (size_t index = 0; index < spec.children.size(); ++index)
+    {
+        const auto& child = spec.children[index];
+        graph.editorGraph.nodes.push_back ({ compoundPatchChildNodeId (parentNodeId, child.id),
+                                             child.nodeType,
+                                             {},
+                                             { startX + static_cast<double> (index % columns) * columnWidth,
+                                               startY + static_cast<double> (index / columns) * rowHeight },
+                                             false });
+    }
+
+    for (const auto& edge : spec.internalEdges)
+    {
+        if (! hasChild (spec, portOwner (edge.from)) || ! hasChild (spec, portOwner (edge.to)))
+            continue;
+
+        const auto from = qualifiedEndpoint (parentNodeId, edge.from);
+        const auto to = qualifiedEndpoint (parentNodeId, edge.to);
+        graph.editorGraph.edges.push_back ({ from, to, edgeIdFor (from, to), edge.dataType, "continuous" });
+    }
+
+    graph.runtimeGraph.nodes = graph.editorGraph.nodes;
+    graph.runtimeGraph.edges = graph.editorGraph.edges;
+    return graph;
 }
 }

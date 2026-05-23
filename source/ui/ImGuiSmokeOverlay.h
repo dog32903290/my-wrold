@@ -37,7 +37,10 @@ public:
     ShaderSourceCallback onShaderSourceSubmitted;
 
 private:
-    void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs, float canvasWidth, float canvasHeight);
+    void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,
+                                const CompoundPatchSpec& loudnessCompound,
+                                float canvasWidth,
+                                float canvasHeight);
     void drawInteractionControls();
     void drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs);
     void drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& nodeSpecs);
@@ -50,6 +53,7 @@ private:
     float smokeValue = 0.35f;
     bool loudnessExpanded = false;
     GraphSession interactionSession;
+    GraphSession expandedPatchSession;
     std::string draggingNodeId;
     std::string draggingConnectionEndpoint;
     std::string pendingCreateSourceEndpoint;
@@ -65,7 +69,9 @@ private:
     std::string savedInteractionState;
     BehaviorTraceReport lastTraceReport;
     std::string lastInteractionMessage = "ready";
+    std::string expandedPatchParentId;
     bool interactionViewReady = false;
+    bool expandedPatchViewReady = false;
     bool panningCanvas = false;
     bool hasTraceReport = false;
     bool deleteSelectionRequested = false;

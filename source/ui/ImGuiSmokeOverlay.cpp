@@ -658,6 +658,7 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
 
         ImGui::SetCursorScreenPos (rectMin (layout.outputSurface));
         drawInteractionCanvas (nodeSpecs,
+                               loudnessCompound,
                                static_cast<float> (layout.outputSurface.width),
                                static_cast<float> (layout.outputSurface.height));
 
@@ -676,7 +677,9 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             if (ImGui::Button ("Reset"))
             {
                 interactionSession = makeDefaultOverlaySession();
+                expandedPatchSession = {};
                 interactionViewReady = false;
+                expandedPatchViewReady = false;
                 draggingNodeId.clear();
                 draggingConnectionEndpoint.clear();
                 pendingCreateSourceEndpoint.clear();
@@ -687,6 +690,7 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                 savedInteractionState.clear();
                 hasTraceReport = false;
                 panningCanvas = false;
+                expandedPatchParentId.clear();
                 lastInteractionMessage = "reset";
             }
             ImGui::SameLine();
@@ -751,8 +755,10 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Reset"))
     {
         interactionSession = makeGraphSession (makeDefaultShaderOutputGraph());
+        expandedPatchSession = {};
         interactionSession.selectedNodeIds = { "shader1" };
         interactionViewReady = false;
+        expandedPatchViewReady = false;
         draggingNodeId.clear();
         draggingConnectionEndpoint.clear();
         pendingCreateSourceEndpoint.clear();
@@ -763,6 +769,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
         savedInteractionState.clear();
         hasTraceReport = false;
         panningCanvas = false;
+        expandedPatchParentId.clear();
         lastInteractionMessage = "reset";
     }
 
@@ -860,6 +867,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
 }
 
 void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,
+                                               const CompoundPatchSpec& loudnessCompound,
                                                float canvasWidth,
                                                float canvasHeight)
 {
@@ -868,11 +876,35 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         std::max (240.0f, canvasHeight)
     };
 
-    if (! interactionViewReady)
+    const auto insidePatch = ! interactionSession.currentPatchPath.empty();
+    if (insidePatch)
     {
-        interactionSession.view = defaultInteractionView (canvasSize);
-        interactionViewReady = true;
+        const auto parentNodeId = interactionSession.currentPatchPath.back();
+        if (expandedPatchParentId != parentNodeId)
+        {
+            expandedPatchSession = makeGraphSession (makeCompoundPatchInteractionGraph (loudnessCompound, parentNodeId));
+            expandedPatchParentId = parentNodeId;
+            expandedPatchViewReady = false;
+        }
+
+        if (! expandedPatchViewReady)
+        {
+            expandedPatchSession.view = defaultInteractionView (canvasSize);
+            expandedPatchViewReady = true;
+        }
     }
+    else
+    {
+        expandedPatchParentId.clear();
+
+        if (! interactionViewReady)
+        {
+            interactionSession.view = defaultInteractionView (canvasSize);
+            interactionViewReady = true;
+        }
+    }
+
+    auto& canvasSession = insidePatch ? expandedPatchSession : interactionSession;
 
     const auto origin = ImGui::GetCursorScreenPos();
     ImGui::InvisibleButton ("interaction-canvas",
@@ -885,9 +917,9 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     if (hovered && wheel != 0.0f && draggingNodeId.empty() && draggingConnectionEndpoint.empty())
     {
         const auto mouse = ImGui::GetMousePos();
-        interactionSession.view = zoomViewAround (interactionSession.view,
-                                                  wheel > 0.0f ? 1.10 : 0.90,
-                                                  { mouse.x - origin.x, mouse.y - origin.y });
+        canvasSession.view = zoomViewAround (canvasSession.view,
+                                             wheel > 0.0f ? 1.10 : 0.90,
+                                             { mouse.x - origin.x, mouse.y - origin.y });
         lastInteractionMessage = "zoom canvas";
     }
 
@@ -897,12 +929,12 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                             IM_COL32 (0, 0, 0, 36),
                             0.0f);
 
-    const auto gridStep = static_cast<float> (48.0 * interactionSession.view.scale);
+    const auto gridStep = static_cast<float> (48.0 * canvasSession.view.scale);
     if (gridStep > 8.0f)
     {
         const auto gridColour = IM_COL32 (255, 255, 255, 18);
-        const auto startX = std::fmod (static_cast<float> (interactionSession.view.scrollX), gridStep);
-        const auto startY = std::fmod (static_cast<float> (interactionSession.view.scrollY), gridStep);
+        const auto startX = std::fmod (static_cast<float> (canvasSession.view.scrollX), gridStep);
+        const auto startY = std::fmod (static_cast<float> (canvasSession.view.scrollY), gridStep);
 
         for (auto x = startX; x < canvasSize.x; x += gridStep)
             drawList.AddLine ({ origin.x + x, origin.y },
@@ -931,36 +963,38 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     if (hovered && ImGui::IsMouseClicked (ImGuiMouseButton_Left))
     {
         const auto mouse = ImGui::GetMousePos();
-        const auto hit = hitTestGraph (interactionSession.graph,
+        const auto hit = hitTestGraph (canvasSession.graph,
                                        nodeSpecs,
-                                       interactionSession.view,
+                                       canvasSession.view,
                                        { mouse.x - origin.x, mouse.y - origin.y });
 
-        interactionSession.selectedEdgeIds.clear();
+        canvasSession.selectedEdgeIds.clear();
 
         if (hit.kind == HitTestKind::outputPort)
         {
             draggingConnectionEndpoint = hit.endpoint;
-            draggingConnectionPoint = canvasPointFromMouse (interactionSession.view, origin);
+            draggingConnectionPoint = canvasPointFromMouse (canvasSession.view, origin);
             lastInteractionMessage = "drag connection: " + hit.endpoint;
         }
         else if (hit.kind == HitTestKind::nodeBody)
         {
             draggingNodeId = hit.nodeId;
-            interactionSession.selectedNodeIds = { hit.nodeId };
+            canvasSession.selectedNodeIds = { hit.nodeId };
 
-            if (ImGui::IsMouseDoubleClicked (ImGuiMouseButton_Left) && nodeIsCompound (interactionSession.graph, hit.nodeId))
+            if (! insidePatch
+                && ImGui::IsMouseDoubleClicked (ImGuiMouseButton_Left)
+                && nodeIsCompound (interactionSession.graph, hit.nodeId))
                 runInteractionCommand ("enter patch", enterPatch (interactionSession, hit.nodeId));
         }
         else if (hit.kind == HitTestKind::edge)
         {
-            interactionSession.selectedNodeIds.clear();
-            interactionSession.selectedEdgeIds = { hit.edgeId };
+            canvasSession.selectedNodeIds.clear();
+            canvasSession.selectedEdgeIds = { hit.edgeId };
             lastInteractionMessage = "selected edge: " + hit.edgeId;
         }
         else
         {
-            interactionSession.selectedNodeIds.clear();
+            canvasSession.selectedNodeIds.clear();
             panningCanvas = true;
             previousPanDrag = {};
             lastInteractionMessage = "pan canvas";
@@ -970,57 +1004,72 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     if (hovered && ImGui::IsMouseClicked (ImGuiMouseButton_Right))
     {
         const auto mouse = ImGui::GetMousePos();
-        const auto hit = hitTestGraph (interactionSession.graph,
+        const auto hit = hitTestGraph (canvasSession.graph,
                                        nodeSpecs,
-                                       interactionSession.view,
+                                       canvasSession.view,
                                        { mouse.x - origin.x, mouse.y - origin.y });
 
-        if (hit.kind == HitTestKind::none)
+        if (hit.kind == HitTestKind::none && ! insidePatch)
         {
             pendingCreateSourceEndpoint.clear();
-            pendingCreatePosition = canvasPointFromMouse (interactionSession.view, origin);
+            pendingCreatePosition = canvasPointFromMouse (canvasSession.view, origin);
             nodeBrowserScreenPosition = { mouse.x, mouse.y };
             nodeBrowserFilter.clear();
             ImGui::OpenPopup ("workspace-node-browser");
             lastInteractionMessage = "node browser";
         }
+        else if (hit.kind == HitTestKind::none)
+        {
+            pendingCreateSourceEndpoint.clear();
+            pendingCreatePosition = {};
+            lastInteractionMessage = "expanded patch: creation parked";
+        }
     }
 
     if (! draggingConnectionEndpoint.empty() && active)
     {
-        draggingConnectionPoint = canvasPointFromMouse (interactionSession.view, origin);
+        draggingConnectionPoint = canvasPointFromMouse (canvasSession.view, origin);
     }
     else if (panningCanvas && active && ImGui::IsMouseDragging (ImGuiMouseButton_Left))
     {
         const auto drag = ImGui::GetMouseDragDelta (ImGuiMouseButton_Left);
         const auto deltaX = static_cast<double> (drag.x) - previousPanDrag.x;
         const auto deltaY = static_cast<double> (drag.y) - previousPanDrag.y;
-        interactionSession.view = panView (interactionSession.view, deltaX, deltaY);
+        canvasSession.view = panView (canvasSession.view, deltaX, deltaY);
         previousPanDrag = { drag.x, drag.y };
     }
     else if (! draggingNodeId.empty() && active && ImGui::IsMouseDragging (ImGuiMouseButton_Left))
     {
         const auto drag = ImGui::GetMouseDragDelta (ImGuiMouseButton_Left);
-        dragCanvasDelta = { drag.x / interactionSession.view.scale,
-                            drag.y / interactionSession.view.scale };
+        dragCanvasDelta = { drag.x / canvasSession.view.scale,
+                            drag.y / canvasSession.view.scale };
     }
 
     if (! draggingConnectionEndpoint.empty() && ImGui::IsMouseReleased (ImGuiMouseButton_Left))
     {
         const auto mouse = ImGui::GetMousePos();
-        const auto hit = hitTestGraph (interactionSession.graph,
+        const auto hit = hitTestGraph (canvasSession.graph,
                                        nodeSpecs,
-                                       interactionSession.view,
+                                       canvasSession.view,
                                        { mouse.x - origin.x, mouse.y - origin.y });
 
         if (hit.kind == HitTestKind::inputPort)
-            runInteractionCommand ("connect gesture", connectPorts (interactionSession, draggingConnectionEndpoint, hit.endpoint));
+            runInteractionCommand ("connect gesture", connectPorts (canvasSession, draggingConnectionEndpoint, hit.endpoint));
         else
         {
-            pendingCreateSourceEndpoint = draggingConnectionEndpoint;
-            pendingCreatePosition = canvasPointFromMouse (interactionSession.view, origin);
-            ImGui::OpenPopup ("create-compatible-node");
-            lastInteractionMessage = "create node search";
+            if (! insidePatch)
+            {
+                pendingCreateSourceEndpoint = draggingConnectionEndpoint;
+                pendingCreatePosition = canvasPointFromMouse (canvasSession.view, origin);
+                ImGui::OpenPopup ("create-compatible-node");
+                lastInteractionMessage = "create node search";
+            }
+            else
+            {
+                pendingCreateSourceEndpoint.clear();
+                pendingCreatePosition = {};
+                lastInteractionMessage = "expanded patch: create search parked";
+            }
         }
 
         draggingConnectionEndpoint.clear();
@@ -1035,27 +1084,27 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     {
         if (std::abs (dragCanvasDelta.x) > 0.5 || std::abs (dragCanvasDelta.y) > 0.5)
             runInteractionCommand ("drag " + draggingNodeId,
-                                   moveNode (interactionSession, draggingNodeId, dragCanvasDelta.x, dragCanvasDelta.y));
+                                   moveNode (canvasSession, draggingNodeId, dragCanvasDelta.x, dragCanvasDelta.y));
 
         draggingNodeId.clear();
         dragCanvasDelta = {};
     }
 
-    for (const auto& edge : interactionSession.graph.editorGraph.edges)
+    for (const auto& edge : canvasSession.graph.editorGraph.edges)
     {
-        const auto from = portCenter (interactionSession.graph, nodeSpecs, edge.from);
-        const auto to = portCenter (interactionSession.graph, nodeSpecs, edge.to);
+        const auto from = portCenter (canvasSession.graph, nodeSpecs, edge.from);
+        const auto to = portCenter (canvasSession.graph, nodeSpecs, edge.to);
 
         if (! from.ok || ! to.ok)
             continue;
 
-        const auto p1 = toImVec (from.point, interactionSession.view, origin);
-        const auto p2 = toImVec (to.point, interactionSession.view, origin);
+        const auto p1 = toImVec (from.point, canvasSession.view, origin);
+        const auto p2 = toImVec (to.point, canvasSession.view, origin);
         const auto c1 = ImVec2 (p1.x + 58.0f, p1.y);
         const auto c2 = ImVec2 (p2.x - 58.0f, p2.y);
-        const auto selected = std::find (interactionSession.selectedEdgeIds.begin(),
-                                         interactionSession.selectedEdgeIds.end(),
-                                         edge.id) != interactionSession.selectedEdgeIds.end();
+        const auto selected = std::find (canvasSession.selectedEdgeIds.begin(),
+                                         canvasSession.selectedEdgeIds.end(),
+                                         edge.id) != canvasSession.selectedEdgeIds.end();
         const auto skin = makeTooll3ConnectionSkin (edge.dataType, selected, true);
         drawList.AddBezierCubic (p1,
                                  c1,
@@ -1068,13 +1117,13 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
 
     if (! draggingConnectionEndpoint.empty())
     {
-        const auto from = portCenter (interactionSession.graph, nodeSpecs, draggingConnectionEndpoint);
+        const auto from = portCenter (canvasSession.graph, nodeSpecs, draggingConnectionEndpoint);
 
         if (from.ok)
         {
-            const auto p1 = toImVec (from.point, interactionSession.view, origin);
-            const auto p2 = toImVec (draggingConnectionPoint, interactionSession.view, origin);
-            const auto sourceDataType = outputDataTypeForEndpoint (interactionSession.graph,
+            const auto p1 = toImVec (from.point, canvasSession.view, origin);
+            const auto p2 = toImVec (draggingConnectionPoint, canvasSession.view, origin);
+            const auto sourceDataType = outputDataTypeForEndpoint (canvasSession.graph,
                                                                    nodeSpecs,
                                                                    draggingConnectionEndpoint);
             const auto skin = makeTooll3ConnectionSkin (sourceDataType, false, true);
@@ -1089,27 +1138,27 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     }
 
     const auto mousePosition = ImGui::GetMousePos();
-    const auto hoverHit = hovered ? hitTestGraph (interactionSession.graph,
+    const auto hoverHit = hovered ? hitTestGraph (canvasSession.graph,
                                                   nodeSpecs,
-                                                  interactionSession.view,
+                                                  canvasSession.view,
                                                   { mousePosition.x - origin.x, mousePosition.y - origin.y })
                                   : HitTestResult {};
     const auto sourceDataType = draggingConnectionEndpoint.empty()
                                     ? std::string {}
-                                    : outputDataTypeForEndpoint (interactionSession.graph,
+                                    : outputDataTypeForEndpoint (canvasSession.graph,
                                                                  nodeSpecs,
                                                                  draggingConnectionEndpoint);
 
-    for (const auto& node : interactionSession.graph.editorGraph.nodes)
+    for (const auto& node : canvasSession.graph.editorGraph.nodes)
     {
         const auto position = displayedPosition (node, draggingNodeId, dragCanvasDelta);
-        const auto topLeft = toImVec (position, interactionSession.view, origin);
+        const auto topLeft = toImVec (position, canvasSession.view, origin);
         const auto bottomRight = ImVec2 (topLeft.x + nodeWidth, topLeft.y + nodeHeight);
         const auto* spec = findNodeSpec (nodeSpecs, node.type);
         const auto primaryDataType = primaryDataTypeForSpec (spec);
-        const auto selected = std::find (interactionSession.selectedNodeIds.begin(),
-                                         interactionSession.selectedNodeIds.end(),
-                                         node.id) != interactionSession.selectedNodeIds.end();
+        const auto selected = std::find (canvasSession.selectedNodeIds.begin(),
+                                         canvasSession.selectedNodeIds.end(),
+                                         node.id) != canvasSession.selectedNodeIds.end();
         const auto activeNode = selected || node.id == draggingNodeId;
         const auto hoveredNode = hoverHit.kind == HitTestKind::nodeBody && hoverHit.nodeId == node.id;
         const auto skin = makeTooll3NodeSkin (node.type, primaryDataType, activeNode, hoveredNode);
@@ -1143,7 +1192,7 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                            { topLeft.x + static_cast<float> (portSkin.stripWidth), centerY + 7.0f },
                            portSkin);
 
-            if (interactionSession.view.scale >= 0.80)
+            if (canvasSession.view.scale >= 0.80)
                 drawList.AddText ({ topLeft.x + 10.0f, centerY - 7.0f },
                                   rgba (portSkin.label),
                                   spec->inputs[index].id.c_str());
@@ -1160,7 +1209,7 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                            { bottomRight.x, centerY + 7.0f },
                            portSkin);
 
-            if (interactionSession.view.scale >= 0.80)
+            if (canvasSession.view.scale >= 0.80)
             {
                 const auto labelSize = ImGui::CalcTextSize (spec->outputs[index].id.c_str());
                 drawList.AddText ({ bottomRight.x - labelSize.x - 10.0f, centerY - 7.0f },

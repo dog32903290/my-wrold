@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 00:52 Asia/Taipei
+Date: 2026-05-24 01:45 Asia/Taipei
 
 ## Current Head
 
 ```text
-pending C1.17 explicit debug override commit
+pending C1.18 compound expanded/collapsed drag-drop commit
+29dc4b2 Add debug override module creation proof
 29a9fda Gate module creation by RuntimeOp diagnostics
 bdab7fc Add visible RuntimeOp coverage diagnostics
 701aeb9 Add RuntimeOp catalog coverage proof
@@ -52,6 +53,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.15 exists: RuntimeOp coverage now has a UI-facing diagnostic contract, app proof dump writes `runtime_ui_diagnostics.json`, and the ImGui workspace shows `runtime ready` / `missing RuntimeOp` status in the browser/inspector/left rail without inventing UI-only truth.
 - C1.16 exists: RuntimeOp diagnostics now carry `create-enabled` / `create-blocked` affordance state, `InteractionContract` has a command-level `NodeCreationGate`, and the ImGui browser/create popup disables missing-runtime modules instead of letting UI-only confidence create them.
 - C1.17 exists: blocked modules can now be inserted only through explicit debug override commands with visible reason, stored debug params, distinct command log entries, and undo coverage.
+- C1.18 exists: loaded compound nodes can be dragged/selected in collapsed root view, entered into a parent-qualified expanded child patcher graph, and roundtripped with child positions/internal edges.
 
 ## 試壓結果
 
@@ -61,6 +63,7 @@ cmake --build build
 ./build/my_world_compound_module_tests
 ./build/my_world_runtime_registry_tests
 ./build/my_world_t3_t5_command_tests
+./build/my_world_compound_interaction_tests
 ctest --test-dir build --output-on-failure
 ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 git diff --check
@@ -107,34 +110,37 @@ compile-first-semantic-porting C1.16 measurement records 0 compile repairs, 0 te
 t3-t5 command tests prove debug override creation requires a reason, writes debug.creationOverride params, logs create_node_debug_override, undo removes the inserted node, and create_node+connect_debug_override wires a repair node through a compatible audio source
 ImGui browser/create popup shows an explicit Override affordance for blocked diagnostics and routes it through the debug override command path
 compile-first-semantic-porting C1.17 measurement records 0 compile repairs, 1 test repair for compatible source typing, and one hidden-bypass risk moved into explicit override commands
-latest accepted source commit before C1.17: 29a9fda
+compound interaction tests prove collapsed loaded-compound drag logs move_node, preserves selection/collapsed state, enters patch path, and roundtrips root state
+compound interaction tests prove makeCompoundPatchInteractionGraph emits parent-qualified child nodes/edges, validates against seed NodeSpecs, supports CanvasHands child drag, and roundtrips expanded child graph state
+interaction trace fixture now replays compound collapsed drag expanded roundtrip as create_node, collapse_compound, move_node, enter_patch, save_work:saved-and-committed
+ImGui canvas switches to the expanded child patcher graph while inside a compound patch instead of showing only the root graph/bullet list
+latest accepted source commit before C1.18: 29dc4b2
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, and coverage-gated creation are storage-backed/test-backed.
-- Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion now has explicit debug override commands.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, and expanded/collapsed compound interaction are storage-backed/test-backed.
+- Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
 - AI worker graph edits are still parked until saved commandGraph/module evidence is stronger.
-- Production canvas drag/drop for expanded vs collapsed compounds is still a proof gap.
+- The live A1 analyzer still runs direct native analyzer code while exporting matching C1 evidence; it is not yet driven by the loaded compound runtime path.
 
 ## 下一根線
 
-C1.18 compound expanded/collapsed canvas drag-drop proof:
+C1.19 loaded loudness runtime bridge:
 
 ```text
-loaded compound node
--> collapsed view drag/move/select
--> expanded child patcher navigation path
--> roundtrip preserves state
+loaded compound runtime publicOutputs
+-> live analyzer/debug surface reads the same loudness output vocabulary
+-> direct A1 analyzer path remains a fallback, not the only truth
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The normal and override creation paths now both have command evidence.
-The next weakness is the lived compound editing surface: collapsed mother node and expanded patcher state still need production-grade gesture proof.
+The compound editor surface now has collapsed root and expanded child-patcher interaction proof.
+The next weakness is that live A1 display still comes from direct analyzer state instead of consuming loaded compound runtime evidence as the main C1 truth.
 ```

@@ -302,6 +302,21 @@ target_link_libraries(my_world_canvas_hands_tests
 
 add_test(NAME canvas_hands COMMAND my_world_canvas_hands_tests)
 
+add_executable(my_world_compound_interaction_tests
+    tests/CompoundInteractionTests.cpp
+)
+
+target_link_libraries(my_world_compound_interaction_tests
+    PRIVATE
+        my_world_canvas_hands
+        my_world_compound_module
+)
+
+add_test(NAME compound_interaction COMMAND my_world_compound_interaction_tests)
+set_tests_properties(compound_interaction PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_tooll3_skin
     source/core/Tooll3SkinContract.cpp
 )

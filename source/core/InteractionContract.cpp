@@ -1014,6 +1014,28 @@ BehaviorTraceReport runBehaviorTraceFixture (const std::string& path)
                   expectCommandOk (report, name, setCollapsed (session, "loud1", true));
               });
 
+    runTrace ("compound collapsed drag expanded roundtrip",
+              { "create_node", "collapse_compound", "move_node", "enter_patch", "save_work:saved-and-committed" },
+              [&] (const auto& name, auto& session) {
+                  expectCommandOk (report, name, createNode (session, "compound.loudness", "loud1", { 180.0, 260.0 }));
+                  expectCommandOk (report, name, setCollapsed (session, "loud1", true));
+                  expectCommandOk (report, name, moveNode (session, "loud1", 96.0, 32.0));
+                  expectCommandOk (report, name, enterPatch (session, "loud1"));
+                  markSavedAndCommitted (session);
+
+                  const auto restored = deserializeInteractionState (serializeInteractionState (session));
+                  expectBoolOk (report,
+                                name,
+                                restored.currentPatchPath.size() == 1 && restored.currentPatchPath.front() == "loud1",
+                                "patch path did not roundtrip");
+
+                  const auto* restoredNode = findEditorNode (restored.graph, "loud1");
+                  expectBoolOk (report,
+                                name,
+                                restoredNode != nullptr && restoredNode->collapsed,
+                                "collapsed compound did not roundtrip");
+              });
+
     runTrace ("inspector param and binding", { "set_param", "set_port_binding" }, [&] (const auto& name, auto& session) {
         expectCommandOk (report, name, setParam (session, "shader1", "fragmentSource", "void main(){}"));
         expectCommandOk (report,

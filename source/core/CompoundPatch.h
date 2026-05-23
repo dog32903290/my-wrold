@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GraphContract.h"
+
 #include <string>
 #include <vector>
 
@@ -54,4 +56,6 @@ bool isValidCompoundPatchSpec (const CompoundPatchSpec& spec);
 std::string makeCompoundPatchJson (const CompoundPatchSpec& spec);
 CompoundPatchLoadResult parseCompoundPatchJson (const std::string& text);
 CompoundPatchLoadResult loadCompoundPatchSpec (const std::string& path);
+std::string compoundPatchChildNodeId (const std::string& parentNodeId, const std::string& childId);
+GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec, const std::string& parentNodeId);
 }
