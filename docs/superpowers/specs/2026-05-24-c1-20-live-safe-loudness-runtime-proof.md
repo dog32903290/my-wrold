@@ -55,10 +55,10 @@ Peak in loaded runtime proof equals the snapshot-shaped rms amplitude; audio_sta
 The realtime audio callback still has no JSON parsing, file IO, graph mutation, or runtime execution.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.21 compound public-port surface proof:
+C1.21 compound public-port surface proof is now implemented:
 collapsed compound node
 -> visible public input/output ports from loaded module
 -> connect/disconnect public ports through command path

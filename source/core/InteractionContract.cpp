@@ -454,10 +454,18 @@ CommandResult deleteNode (GraphSession& session, const std::string& nodeId)
 
 CommandResult connectPorts (GraphSession& session, const std::string& from, const std::string& to)
 {
+    return connectPorts (session, makeSeedNodeSpecs(), from, to);
+}
+
+CommandResult connectPorts (GraphSession& session,
+                            const std::vector<NodeSpec>& specs,
+                            const std::string& from,
+                            const std::string& to)
+{
     if (hasEdge (session.graph.editorGraph.edges, from, to))
         return { false, "duplicate edge" };
 
-    const auto edge = makeEdge (session.graph, makeSeedNodeSpecs(), from, to);
+    const auto edge = makeEdge (session.graph, specs, from, to);
     if (edge.dataType.empty())
         return { false, "missing source port" };
 
@@ -465,7 +473,7 @@ CommandResult connectPorts (GraphSession& session, const std::string& from, cons
     candidate.editorGraph.edges.push_back (edge);
     syncRuntimeFromEditor (candidate);
 
-    const auto report = validateGraphInvariants (candidate, makeSeedNodeSpecs());
+    const auto report = validateGraphInvariants (candidate, specs);
     if (! report.ok)
         return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
 

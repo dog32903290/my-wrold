@@ -369,7 +369,7 @@ CanvasHandReport runCanvasHandTrace (GraphSession& session,
             {
                 appendCommandResult (report,
                                      "drag connection",
-                                     connectPorts (session, from.hit.endpoint, to.hit.endpoint),
+                                     connectPorts (session, specs, from.hit.endpoint, to.hit.endpoint),
                                      session,
                                      specs);
             }

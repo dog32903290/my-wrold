@@ -69,6 +69,41 @@ int main()
     expect (movedCompound != nullptr, "moved compound exists");
     expect (movedCompound->collapsed, "collapsed flag survives drag");
     expect (movedCompound->position.x > 300.0, "collapsed compound x moved");
+    const auto movedCompoundX = movedCompound->position.x;
+
+    expect (myworld::createNode (rootSession,
+                                 visibleRegistry,
+                                 "audio.input",
+                                 "live_audio",
+                                 { 80.0, 260.0 }).ok,
+            "create audio input for compound public input");
+    expect (myworld::createNode (rootSession,
+                                 visibleRegistry,
+                                 "io.midi.cc_out",
+                                 "midi_loudness",
+                                 { 560.0, 280.0 }).ok,
+            "create midi output for compound public output");
+    const auto publicInput = myworld::portCenter (rootSession.graph, visibleRegistry, "library_loud1.audio.in");
+    const auto publicOutput = myworld::portCenter (rootSession.graph, visibleRegistry, "library_loud1.out");
+    expect (publicInput.ok, "collapsed compound public input has port center");
+    expect (publicOutput.ok, "collapsed compound public output has port center");
+
+    const auto connectPublicInput = myworld::connectPorts (rootSession,
+                                                           visibleRegistry,
+                                                           "live_audio.channels",
+                                                           "library_loud1.audio.in");
+    expect (connectPublicInput.ok, connectPublicInput.message);
+    const auto connectPublicOutput = myworld::connectPorts (rootSession,
+                                                            visibleRegistry,
+                                                            "library_loud1.out",
+                                                            "midi_loudness.value");
+    expect (connectPublicOutput.ok, connectPublicOutput.message);
+    expect (contains (rootSession.commandLog, "connect"), "compound public port connect logs command");
+    expect (rootSession.graph.editorGraph.edges.size() >= 2, "compound public port edges inserted");
+    expect (rootSession.graph.editorGraph.edges[rootSession.graph.editorGraph.edges.size() - 2].dataType == "audio.channels",
+            "compound public input edge keeps audio channel type");
+    expect (rootSession.graph.editorGraph.edges.back().dataType == "signal.float",
+            "compound public output edge keeps signal type");
 
     expect (myworld::enterPatch (rootSession, "library_loud1").ok, "enter loaded compound patch");
     expect (rootSession.currentPatchPath.size() == 1 && rootSession.currentPatchPath.front() == "library_loud1",
@@ -79,7 +114,7 @@ int main()
     const auto* restoredCompound = findNode (restoredRoot.graph, "library_loud1");
     expect (restoredCompound != nullptr, "root compound survives roundtrip");
     expect (restoredCompound->collapsed, "root collapsed state survives roundtrip");
-    expect (restoredCompound->position.x == movedCompound->position.x, "root compound x roundtrips");
+    expect (restoredCompound->position.x == movedCompoundX, "root compound x roundtrips");
     expect (restoredRoot.currentPatchPath.size() == 1 && restoredRoot.currentPatchPath.front() == "library_loud1",
             "root patch path roundtrips");
 

@@ -1054,7 +1054,8 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                                        { mouse.x - origin.x, mouse.y - origin.y });
 
         if (hit.kind == HitTestKind::inputPort)
-            runInteractionCommand ("connect gesture", connectPorts (canvasSession, draggingConnectionEndpoint, hit.endpoint));
+            runInteractionCommand ("connect gesture",
+                                   connectPorts (canvasSession, nodeSpecs, draggingConnectionEndpoint, hit.endpoint));
         else
         {
             if (! insidePatch)

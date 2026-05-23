@@ -1,11 +1,12 @@
 # Native Canvas Progress
 
-Date: 2026-05-24 02:07 Asia/Taipei
+Date: 2026-05-24 02:13 Asia/Taipei
 
 ## Current Head
 
 ```text
-C1 current: C1.20 live-safe loudness runtime proof ready for commit
+C1 current: C1.21 compound public-port surface proof ready for commit
+809215e Add live-safe loudness runtime proof
 da04d84 Add loudness runtime bridge proof
 a81eba2 Add compound expanded canvas interaction proof
 29dc4b2 Add debug override module creation proof
@@ -58,6 +59,7 @@ d76e353 Add Tooll3 workspace browser and transport
 - C1.18 exists: loaded compound nodes can be dragged/selected in collapsed root view, entered into a parent-qualified expanded child patcher graph, and roundtripped with child positions/internal edges.
 - C1.19 exists: `makeLoudnessRuntimeBridgeSnapshot()` prefers loaded runtime public outputs when available, falls back to direct analyzer snapshots with the same `out`, `rms`, `peak`, `gate`, and `confidence` vocabulary, and app audio proof dump writes `debug/a1-audio-proof/loudness_runtime_bridge.json`.
 - C1.20 exists: `makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot()` prepares a non-realtime snapshot-shaped input, app audio proof executes the loaded loudness runtime, writes `debug/a1-audio-proof/loudness_runtime_execution.json`, and bridge JSON now records `sourceMode: loaded-runtime-publicOutputs`.
+- C1.21 exists: `connectPorts(session, specs, from, to)` validates public ports through the loaded visible `NodeSpec` registry, CanvasHands/ImGui connection gestures use that registry, and collapsed `compound.loudness` public input/output ports connect at root level.
 
 ## 試壓結果
 
@@ -123,34 +125,37 @@ runtime registry tests prove the loudness bridge prefers loaded publicOutputs, p
 runtime registry tests prove snapshot-shaped live proof input feeds loaded runtime execution and bridge sourceMode loaded-runtime-publicOutputs
 debug/a1-audio-proof/loudness_runtime_execution.json records seven loaded child RuntimeOps from snapshot-shaped input
 debug/a1-audio-proof/loudness_runtime_bridge.json records sourceMode loaded-runtime-publicOutputs with publicOutputs { out, rms, peak, gate, confidence } and field-level sources
-latest accepted source commit before C1.20: da04d84
+compound interaction tests prove collapsed compound public ports have port centers and can connect live_audio.channels -> library_loud1.audio.in and library_loud1.out -> midi_loudness.value through the loaded registry
+CanvasHands and ImGui connection gestures now call the spec-aware connectPorts overload instead of seed-only validation
+latest accepted source commit before C1.21: 809215e
 ```
 
 ## 還沒承重
 
-- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, loaded/fallback loudness bridge, and app audio proof loaded runtime execution are storage-backed/test-backed.
+- Module discovery, runtime registry snapshots, child dry-run statuses, value handoff, first public output map, internal-edge source evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated creation, debug override insertion, expanded/collapsed compound interaction, loaded/fallback loudness bridge, app audio proof loaded runtime execution, and collapsed compound public-port connection are storage-backed/test-backed.
 - Missing-runtime modules are blocked by command-level creation gates; intentional repair insertion has explicit debug override commands.
 - `RenderBackend` has not been extracted; Metal remains the production direction but is still parked.
 - Timeline editing is visual/status only; animation commandGraph does not exist yet.
 - Output pinning, multi-output workflow, and live node thumbnails are not proven.
 - AI worker graph edits are still parked until saved commandGraph/module evidence is stronger.
 - App audio proof now feeds the loaded runtime from a non-realtime snapshot-shaped input. It is not yet raw callback-buffer capture, and live UI timer still uses direct fallback unless a prepared runtime snapshot is cached.
+- Collapsed compound ports are command/hit-test backed; deeper label grouping and mapping-editor polish remain skin/tooling work.
 
 ## 下一根線
 
-C1.21 compound public-port surface proof:
+C1.22 compound public-port persistence proof:
 
 ```text
-collapsed compound node
--> visible public input/output ports from loaded module
--> connect/disconnect public ports through command path
--> expanded child graph remains parent-qualified and roundtrippable
+root compound public-port edges
+-> serialize/deserialize interaction state
+-> runtimeGraph preserves the same public endpoints
+-> undo/redo disconnect keeps expanded child graph intact
 -> run tests and proof dump
 ```
 
 Reason:
 
 ```text
-The runtime path can now publish loaded loudness outputs into A1 proof without touching the audio callback.
-The next visible C gap is collapsed compound port behavior: root-level compounds need to behave like real nodes with public ports, not only draggable boxes with hidden child graphs.
+Collapsed compound ports now behave like real root-level ports through the command path.
+The next weakness is persistence and undo pressure on those public-port edges after save/load and disconnect/reconnect.
 ```
