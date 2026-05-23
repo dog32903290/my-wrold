@@ -411,7 +411,7 @@ Current proof:
 | Panels | Left rail and bottom strip are unified ImGui workspace surfaces | Edge-attached Tooll3 panels | Collapse/resize persistence after storage path matures |
 | Timeline | Bottom strip shows real time/status plus non-editing playhead | Bottom strip with transport/time | Animation commandGraph contract before editing |
 | Module browser | Browser consumes a merged visible registry sourced from seed specs plus the default saved `ModuleLibrary` index; RuntimeOp coverage is visible, normal creation is gated, and blocked rows have explicit debug override affordances | Saved module libraries feed search/create without app hardcoding, with missing runtime support exposed before commit | Deeper browser ergonomics after more modules exist |
-| Compound canvas | Root view shows draggable collapsed loaded compounds; entered compounds switch to parent-qualified child patcher graphs | Collapsed mother node and expanded child graph are both canvas-native surfaces | Persist user-edited child layout per compound instance |
+| Compound canvas | Root view shows draggable collapsed loaded compounds with public-port connections; entered compounds switch to parent-qualified child patcher graphs and persist moved child positions per instance | Collapsed mother node and expanded child graph are both canvas-native surfaces | Port label grouping and mapping-editor polish |
 
 ## First Implementation Roadmap
 

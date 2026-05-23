@@ -147,6 +147,9 @@ CommandResult createNodeAndConnect (GraphSession& session,
 CommandResult enterPatch (GraphSession& session, const std::string& nodeId);
 CommandResult exitPatch (GraphSession& session);
 CommandResult setCollapsed (GraphSession& session, const std::string& nodeId, bool collapsed);
+CommandResult storeExpandedPatchLayout (GraphSession& session,
+                                        const std::string& parentNodeId,
+                                        const GraphContract& expandedGraph);
 CommandResult setParam (GraphSession& session, const std::string& nodeId, const std::string& paramId, const std::string& value);
 CommandResult setPortBinding (GraphSession& session,
                               const std::string& nodeId,

@@ -826,7 +826,28 @@ void ImGuiSmokeOverlay::drawInteractionControls()
 
     ImGui::SameLine();
     if (ImGui::Button ("Exit"))
-        runInteractionCommand ("exit patch", exitPatch (interactionSession));
+    {
+        bool canExit = true;
+
+        if (! interactionSession.currentPatchPath.empty() && ! expandedPatchParentId.empty())
+        {
+            const auto parentNodeId = interactionSession.currentPatchPath.back();
+            const auto storeResult = storeExpandedPatchLayout (interactionSession,
+                                                               parentNodeId,
+                                                               expandedPatchSession.graph);
+
+            if (storeResult.ok)
+                runInteractionCommand ("store expanded layout", storeResult);
+            else
+            {
+                lastInteractionMessage = "store expanded layout: " + storeResult.message;
+                canExit = false;
+            }
+        }
+
+        if (canExit)
+            runInteractionCommand ("exit patch", exitPatch (interactionSession));
+    }
 
     if (ImGui::Button ("Collapse/Expand"))
     {
@@ -882,7 +903,9 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         const auto parentNodeId = interactionSession.currentPatchPath.back();
         if (expandedPatchParentId != parentNodeId)
         {
-            expandedPatchSession = makeGraphSession (makeCompoundPatchInteractionGraph (loudnessCompound, parentNodeId));
+            expandedPatchSession = makeGraphSession (makeCompoundPatchInteractionGraph (loudnessCompound,
+                                                                                        parentNodeId,
+                                                                                        interactionSession.graph));
             expandedPatchParentId = parentNodeId;
             expandedPatchViewReady = false;
         }
@@ -905,6 +928,29 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     }
 
     auto& canvasSession = insidePatch ? expandedPatchSession : interactionSession;
+    const auto storeExpandedLayoutAndExit = [this]
+    {
+        bool canExit = true;
+
+        if (! interactionSession.currentPatchPath.empty() && ! expandedPatchParentId.empty())
+        {
+            const auto parentNodeId = interactionSession.currentPatchPath.back();
+            const auto storeResult = storeExpandedPatchLayout (interactionSession,
+                                                               parentNodeId,
+                                                               expandedPatchSession.graph);
+
+            if (storeResult.ok)
+                runInteractionCommand ("store expanded layout", storeResult);
+            else
+            {
+                lastInteractionMessage = "store expanded layout: " + storeResult.message;
+                canExit = false;
+            }
+        }
+
+        if (canExit)
+            runInteractionCommand ("exit patch", exitPatch (interactionSession));
+    };
 
     const auto origin = ImGui::GetCursorScreenPos();
     ImGui::InvisibleButton ("interaction-canvas",
@@ -954,6 +1000,11 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         drawList.AddText ({ origin.x + 16.0f, origin.y + 14.0f },
                           IM_COL32 (250, 214, 112, 255),
                           ("inside " + patchPathText (interactionSession)).c_str());
+        ImGui::SetCursorScreenPos ({ origin.x + 16.0f, origin.y + 34.0f });
+        ImGui::PushID ("expanded-patch-exit");
+        if (ImGui::SmallButton ("Exit"))
+            storeExpandedLayoutAndExit();
+        ImGui::PopID();
     }
 
     drawList.PushClipRect (origin,

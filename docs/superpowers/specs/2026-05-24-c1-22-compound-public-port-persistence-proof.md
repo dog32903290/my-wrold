@@ -45,10 +45,10 @@ It uses the current interaction state serializer, not the future project patch d
 Visual port grouping and mapping-editor affordances remain parked.
 ```
 
-## Next Line
+## Follow-On
 
 ```text
-C1.23 expanded child layout persistence proof:
+C1.23 expanded child layout persistence proof is now implemented:
 user-moved expanded child node
 -> per compound instance layout snapshot
 -> exit/re-enter expanded patch keeps child position

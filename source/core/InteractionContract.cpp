@@ -1,5 +1,7 @@
 #include "InteractionContract.h"
 
+#include "CompoundPatch.h"
+
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -690,6 +692,20 @@ CommandResult setCollapsed (GraphSession& session, const std::string& nodeId, bo
     const auto before = snapshotOf (session);
     node->collapsed = collapsed;
     return commitCommand (session, collapsed ? "collapse_compound" : "expand_compound", before);
+}
+
+CommandResult storeExpandedPatchLayout (GraphSession& session,
+                                        const std::string& parentNodeId,
+                                        const GraphContract& expandedGraph)
+{
+    auto candidate = session.graph;
+
+    if (! storeCompoundPatchInteractionLayout (candidate, parentNodeId, expandedGraph))
+        return { false, "missing compound node: " + parentNodeId };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    return commitCommand (session, "store_expanded_patch_layout", before);
 }
 
 CommandResult setParam (GraphSession& session,

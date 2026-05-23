@@ -178,6 +178,7 @@ target_link_libraries(my_world_interaction
         my_world_core
         my_world_graph_language
         my_world_node_specs
+        my_world_compound
 )
 
 add_executable(my_world_compound_module_tests

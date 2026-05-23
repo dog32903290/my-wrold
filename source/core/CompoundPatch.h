@@ -58,4 +58,10 @@ CompoundPatchLoadResult parseCompoundPatchJson (const std::string& text);
 CompoundPatchLoadResult loadCompoundPatchSpec (const std::string& path);
 std::string compoundPatchChildNodeId (const std::string& parentNodeId, const std::string& childId);
 GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec, const std::string& parentNodeId);
+GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec,
+                                                 const std::string& parentNodeId,
+                                                 const GraphContract& rootGraph);
+bool storeCompoundPatchInteractionLayout (GraphContract& rootGraph,
+                                          const std::string& parentNodeId,
+                                          const GraphContract& expandedGraph);
 }

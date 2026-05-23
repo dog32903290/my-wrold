@@ -60,6 +60,82 @@ std::string edgeIdFor (const std::string& from, const std::string& to)
     return "edge." + from + "." + to;
 }
 
+bool startsWith (const std::string& text, const std::string& prefix)
+{
+    return text.rfind (prefix, 0) == 0;
+}
+
+std::string layoutParamPrefix()
+{
+    return "compound.childLayout.";
+}
+
+std::string layoutParamId (const std::string& childId, const std::string& axis)
+{
+    return layoutParamPrefix() + childId + "." + axis;
+}
+
+std::string numberText (const double value)
+{
+    std::ostringstream out;
+    out << value;
+    return out.str();
+}
+
+GraphNode* findGraphNode (std::vector<GraphNode>& nodes, const std::string& nodeId)
+{
+    for (auto& node : nodes)
+        if (node.id == nodeId)
+            return &node;
+
+    return nullptr;
+}
+
+const GraphNode* findGraphNode (const std::vector<GraphNode>& nodes, const std::string& nodeId)
+{
+    for (const auto& node : nodes)
+        if (node.id == nodeId)
+            return &node;
+
+    return nullptr;
+}
+
+bool readLayoutValue (const GraphNode& parentNode,
+                      const std::string& childId,
+                      const std::string& axis,
+                      double& value)
+{
+    const auto id = layoutParamId (childId, axis);
+
+    for (const auto& param : parentNode.params)
+    {
+        if (param.id != id)
+            continue;
+
+        try
+        {
+            value = std::stod (param.value);
+            return true;
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+std::string childIdFromExpandedNode (const std::string& parentNodeId, const std::string& expandedNodeId)
+{
+    const auto prefix = parentNodeId + "/";
+
+    if (! startsWith (expandedNodeId, prefix))
+        return {};
+
+    return expandedNodeId.substr (prefix.size());
+}
+
 struct JsonValue
 {
     enum class Kind
@@ -650,5 +726,65 @@ GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec, 
     graph.runtimeGraph.nodes = graph.editorGraph.nodes;
     graph.runtimeGraph.edges = graph.editorGraph.edges;
     return graph;
+}
+
+GraphContract makeCompoundPatchInteractionGraph (const CompoundPatchSpec& spec,
+                                                 const std::string& parentNodeId,
+                                                 const GraphContract& rootGraph)
+{
+    auto graph = makeCompoundPatchInteractionGraph (spec, parentNodeId);
+    const auto* parentNode = findGraphNode (rootGraph.editorGraph.nodes, parentNodeId);
+
+    if (parentNode == nullptr)
+        return graph;
+
+    for (auto& node : graph.editorGraph.nodes)
+    {
+        const auto childId = childIdFromExpandedNode (parentNodeId, node.id);
+        double x = node.position.x;
+        double y = node.position.y;
+
+        if (readLayoutValue (*parentNode, childId, "x", x))
+            node.position.x = x;
+
+        if (readLayoutValue (*parentNode, childId, "y", y))
+            node.position.y = y;
+    }
+
+    graph.runtimeGraph.nodes = graph.editorGraph.nodes;
+    graph.runtimeGraph.edges = graph.editorGraph.edges;
+    return graph;
+}
+
+bool storeCompoundPatchInteractionLayout (GraphContract& rootGraph,
+                                          const std::string& parentNodeId,
+                                          const GraphContract& expandedGraph)
+{
+    auto* parentNode = findGraphNode (rootGraph.editorGraph.nodes, parentNodeId);
+
+    if (parentNode == nullptr)
+        return false;
+
+    parentNode->params.erase (std::remove_if (parentNode->params.begin(),
+                                             parentNode->params.end(),
+                                             [] (const auto& param) {
+                                                 return startsWith (param.id, layoutParamPrefix());
+                                             }),
+                              parentNode->params.end());
+
+    for (const auto& childNode : expandedGraph.editorGraph.nodes)
+    {
+        const auto childId = childIdFromExpandedNode (parentNodeId, childNode.id);
+
+        if (childId.empty())
+            continue;
+
+        parentNode->params.push_back ({ layoutParamId (childId, "x"), numberText (childNode.position.x) });
+        parentNode->params.push_back ({ layoutParamId (childId, "y"), numberText (childNode.position.y) });
+    }
+
+    rootGraph.runtimeGraph.nodes = rootGraph.editorGraph.nodes;
+    rootGraph.runtimeGraph.edges = rootGraph.editorGraph.edges;
+    return true;
 }
 }

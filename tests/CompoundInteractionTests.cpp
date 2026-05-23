@@ -100,6 +100,8 @@ int main()
     expect (connectPublicOutput.ok, connectPublicOutput.message);
     expect (contains (rootSession.commandLog, "connect"), "compound public port connect logs command");
     expect (rootSession.graph.editorGraph.edges.size() >= 2, "compound public port edges inserted");
+    const auto publicInputEdge = rootSession.graph.editorGraph.edges[rootSession.graph.editorGraph.edges.size() - 2];
+    const auto publicOutputEdge = rootSession.graph.editorGraph.edges.back();
     expect (rootSession.graph.editorGraph.edges[rootSession.graph.editorGraph.edges.size() - 2].dataType == "audio.channels",
             "compound public input edge keeps audio channel type");
     expect (rootSession.graph.editorGraph.edges.back().dataType == "signal.float",
@@ -152,6 +154,34 @@ int main()
             "expanded child x roundtrips");
     expect (restoredExpanded.graph.editorGraph.edges.size() == expandedSession.graph.editorGraph.edges.size(),
             "expanded internal edges roundtrip");
+
+    const auto storeLayout = myworld::storeExpandedPatchLayout (rootSession,
+                                                                "library_loud1",
+                                                                expandedSession.graph);
+    expect (storeLayout.ok, storeLayout.message);
+    const auto restoredLayoutRoot = myworld::deserializeInteractionState (myworld::serializeInteractionState (rootSession));
+    const auto relayoutGraph = myworld::makeCompoundPatchInteractionGraph (loaded.spec,
+                                                                           "library_loud1",
+                                                                           restoredLayoutRoot.graph);
+    const auto* relayoutMonoMix = findNode (relayoutGraph, "library_loud1/mono_mix");
+    expect (relayoutMonoMix != nullptr, "relayout mono_mix exists");
+    expect (relayoutMonoMix->position.x == findNode (expandedSession.graph, "library_loud1/mono_mix")->position.x,
+            "expanded child layout x persists per compound instance");
+    expect (relayoutMonoMix->position.y == findNode (expandedSession.graph, "library_loud1/mono_mix")->position.y,
+            "expanded child layout y persists per compound instance");
+    expect (contains (rootSession.commandLog, "store_expanded_patch_layout"), "layout store logs command");
+    expect (std::find_if (restoredLayoutRoot.graph.editorGraph.edges.begin(),
+                          restoredLayoutRoot.graph.editorGraph.edges.end(),
+                          [&] (const auto& edge) {
+                              return edge.id == publicInputEdge.id;
+                          }) != restoredLayoutRoot.graph.editorGraph.edges.end(),
+            "public input edge survives layout store");
+    expect (std::find_if (restoredLayoutRoot.graph.editorGraph.edges.begin(),
+                          restoredLayoutRoot.graph.editorGraph.edges.end(),
+                          [&] (const auto& edge) {
+                              return edge.id == publicOutputEdge.id;
+                          }) != restoredLayoutRoot.graph.editorGraph.edges.end(),
+            "public output edge survives layout store");
 
     std::cout << "compound interaction ok\n";
     return 0;
