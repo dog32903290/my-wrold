@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 
+#include "C3SaveWorkProofRunner.h"
 #include "C4AIWorkerSaveWorkProofRunner.h"
 #include "C6AIRepairLoopProofRunner.h"
 #include "C6AnalyzerFamilyProofRunner.h"
@@ -18,7 +19,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <filesystem>
 #include <utility>
 #include <vector>
@@ -79,7 +79,7 @@ juce::File c2StorageProofDumpDirectory()
 
 juce::File c3SaveWorkProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("c3-save-work-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (c3SaveWorkProofDirectoryName());
 }
 
 juce::File c4AIWorkerSaveWorkProofDumpDirectory()
@@ -194,22 +194,9 @@ bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
                         });
 }
 
-bool nearlyEqual (double lhs, double rhs)
-{
-    return std::abs (lhs - rhs) < 0.000001;
-}
-
 bool writeTextFile (const juce::File& file, const std::string& text)
 {
     return file.replaceWithText (juce::String::fromUTF8 (text.c_str()), false, false, "\n");
-}
-
-std::string clearDirectoryIfExists (const juce::File& directory)
-{
-    if (directory.exists() && ! directory.deleteRecursively())
-        return "could not clear " + directory.getFullPathName().toStdString();
-
-    return {};
 }
 
 std::string createDirectoryIfMissing (const juce::File& directory)
@@ -911,192 +898,21 @@ void MainComponent::dumpC2StorageProof()
 void MainComponent::dumpC3SaveWorkProof()
 {
     const auto directory = c3SaveWorkProofDumpDirectory();
-    const auto workDirectory = directory.getChildFile ("work");
-    const auto patchDirectory = workDirectory.getChildFile ("patches");
-    const auto reportFile = directory.getChildFile ("save_work_report.json");
-    const auto workManifestFile = workDirectory.getChildFile ("myworld.work.json");
-    const auto savedPatchFile = patchDirectory.getChildFile ("main.patch.json");
 
-    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
-    {
-        statusLabel.setText ("c3 save_work proof failed: " + juce::String (error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
+    C3SaveWorkProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
 
-    if (const auto error = createDirectoryIfMissing (patchDirectory); ! error.empty())
-    {
-        statusLabel.setText ("c3 save_work proof failed: " + juce::String (error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
+    const auto result = runC3SaveWorkProof (request);
+    const auto displayNameString = juce::String (c3SaveWorkProofDisplayName());
 
-    std::string lastError;
-    bool copiedFixture = false;
-    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
-    {
-        const auto sourceManifest = juce::File (candidate);
-        const auto sourcePatch = sourceManifest.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
-        copiedFixture = copyTextFile (sourceManifest, workManifestFile) && copyTextFile (sourcePatch, savedPatchFile);
-        if (copiedFixture)
-            break;
-
-        lastError = "could not copy C2 work fixture from " + candidate;
-    }
-
-    if (! copiedFixture)
-    {
-        const SaveLogLoadResult emptySaveLog;
-        const auto report = makeC3SaveWorkReportJson (false,
-                                                      workManifestFile.getFullPathName().toStdString(),
-                                                      savedPatchFile.getFullPathName().toStdString(),
-                                                      {},
-                                                      {},
-                                                      {},
-                                                      emptySaveLog,
-                                                      makeGraphSession (GraphContract {}),
-                                                      false,
-                                                      false,
-                                                      false,
-                                                      0.0,
-                                                      0.0,
-                                                      lastError.empty() ? "could not copy C3 work fixture" : lastError);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c3 save_work proof failed: " + juce::String (lastError), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    const auto loadedPatch = loadMainPatchDocumentForWork (workManifestFile.getFullPathName().toStdString());
-    if (! loadedPatch.ok)
-    {
-        const SaveLogLoadResult emptySaveLog;
-        const auto report = makeC3SaveWorkReportJson (false,
-                                                      workManifestFile.getFullPathName().toStdString(),
-                                                      savedPatchFile.getFullPathName().toStdString(),
-                                                      {},
-                                                      {},
-                                                      {},
-                                                      emptySaveLog,
-                                                      makeGraphSession (GraphContract {}),
-                                                      false,
-                                                      false,
-                                                      false,
-                                                      0.0,
-                                                      0.0,
-                                                      loadedPatch.error);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c3 save_work proof failed: " + juce::String (loadedPatch.error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    auto activeSession = makeGraphSession (loadedPatch.document.graph);
-    const auto moveResult = moveNode (activeSession, "library_loud1", 13.0, 7.0);
-    if (! moveResult.ok)
-    {
-        const SaveLogLoadResult emptySaveLog;
-        const auto report = makeC3SaveWorkReportJson (false,
-                                                      workManifestFile.getFullPathName().toStdString(),
-                                                      savedPatchFile.getFullPathName().toStdString(),
-                                                      {},
-                                                      {},
-                                                      {},
-                                                      emptySaveLog,
-                                                      activeSession,
-                                                      false,
-                                                      false,
-                                                      false,
-                                                      0.0,
-                                                      0.0,
-                                                      moveResult.message);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c3 save_work proof failed: " + juce::String (moveResult.message), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    const auto saveResult = saveWork (activeSession, workManifestFile.getFullPathName().toStdString());
-    const auto reloadedPatch = loadPatchDocument (savedPatchFile.getFullPathName().toStdString());
-    const auto saveLog = loadSaveLog (saveResult.saveLogPath);
-    auto reloadedSession = reloadedPatch.ok ? makeGraphSession (reloadedPatch.document.graph) : makeGraphSession (GraphContract {});
-
-    CompoundPatchLoadResult loadedCompound;
-    for (const auto& candidate : repoCandidatePaths ("fixtures/compounds/loudness.compound.json"))
-    {
-        const auto loaded = loadCompoundPatchSpec (candidate);
-        if (loaded.ok)
-        {
-            loadedCompound = loaded;
-            break;
-        }
-
-        lastError = loaded.error;
-    }
-
-    const auto relayoutGraph = loadedCompound.ok
-        ? makeCompoundPatchInteractionGraph (loadedCompound.spec, "library_loud1", reloadedSession.graph)
-        : GraphContract {};
-    const auto* monoMix = findEditorNode (relayoutGraph, "library_loud1/mono_mix");
-    const auto monoMixX = monoMix == nullptr ? 0.0 : monoMix->position.x;
-    const auto monoMixY = monoMix == nullptr ? 0.0 : monoMix->position.y;
-    const auto publicInputEdge = hasEdgeId (reloadedSession.graph, "edge.live_audio.channels.library_loud1.audio.in");
-    const auto publicOutputEdge = hasEdgeId (reloadedSession.graph, "edge.library_loud1.out.midi_loudness.value");
-    const auto monoMixLayout = monoMix != nullptr && monoMixX == 358.0 && monoMixY == 146.0;
-    const auto graphCountsMatch = reloadedSession.graph.editorGraph.edges.size()
-                                  == reloadedSession.graph.runtimeGraph.edges.size();
-    const auto commandLogStatus = activeSession.commandLog.empty() ? std::string {} : activeSession.commandLog.back();
-    const auto saveLogStatus = saveLog.entries.empty() ? std::string {} : saveLog.entries.back().status;
-    const auto saveLogCommitStatus = saveLog.entries.empty() ? std::string {} : saveLog.entries.back().commitStatus;
-    const auto ok = saveResult.ok
-                    && reloadedPatch.ok
-                    && saveLog.ok
-                    && commandLogStatus == "save_work:save-ok commit-pending"
-                    && saveLogStatus == "save-ok commit-pending"
-                    && saveLogCommitStatus == "not-started"
-                    && publicInputEdge
-                    && publicOutputEdge
-                    && monoMixLayout
-                    && graphCountsMatch;
-    const auto error = ok ? std::string {}
-                          : ! saveResult.ok ? saveResult.error
-                          : ! reloadedPatch.ok ? reloadedPatch.error
-                          : ! saveLog.ok ? saveLog.error
-                          : ! loadedCompound.ok ? lastError
-                          : "C3 save_work proof did not match expected command/storage evidence";
-
-    const auto report = makeC3SaveWorkReportJson (ok,
-                                                  workManifestFile.getFullPathName().toStdString(),
-                                                  savedPatchFile.getFullPathName().toStdString(),
-                                                  saveResult.saveLogPath,
-                                                  saveResult.status,
-                                                  commandLogStatus,
-                                                  saveLog,
-                                                  reloadedSession,
-                                                  publicInputEdge,
-                                                  publicOutputEdge,
-                                                  monoMixLayout,
-                                                  monoMixX,
-                                                  monoMixY,
-                                                  error);
-
-    if (! writeTextFile (reportFile, report))
-    {
-        statusLabel.setText ("c3 save_work proof failed: could not write " + reportFile.getFullPathName(),
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    statusLabel.setText ((ok ? "c3 save_work proof dumped: " : "c3 save_work proof mismatch: ")
-                             + directory.getFullPathName(),
-                         juce::dontSendNotification);
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
+                             juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
