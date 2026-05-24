@@ -117,9 +117,10 @@ Commit only the contract test, `RenderBackend.h`, `CMakeLists.txt`, and this pla
 - Create: `tests/OpenGLRenderBackendTests.cpp`
 - Modify: `source/render/OpenGLShaderPreview.h`
 - Modify: `source/render/OpenGLShaderPreview.cpp`
+- Modify: `source/app/MainComponent.cpp`
 - Modify: `CMakeLists.txt`
 
-- [ ] **Step 1: Write the failing OpenGL backend smoke test**
+- [x] **Step 1: Write the failing OpenGL backend smoke test**
 
 Create `tests/OpenGLRenderBackendTests.cpp` that constructs `juce::OpenGLContext`, constructs `OpenGLRenderBackend`, and asserts:
 
@@ -128,7 +129,7 @@ backend.backendName() == "OpenGL"
 backend.lastStatus() == "waiting for GL context"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -138,7 +139,7 @@ cmake --build build --target my_world_opengl_render_backend_tests
 
 Expected: fail because `OpenGLRenderBackend.h` and the test target do not exist yet.
 
-- [ ] **Step 3: Implement OpenGL backend**
+- [x] **Step 3: Implement OpenGL backend**
 
 Move these responsibilities from `OpenGLShaderPreview` into `OpenGLRenderBackend`:
 
@@ -162,7 +163,9 @@ save_work and publish_module callbacks
 proof dump scheduling and file writing
 ```
 
-- [ ] **Step 4: Run GREEN and R1 app proof**
+`MainComponent` keeps proof artifacts inside the local repo when the app is launched from the repo working directory, so the post-iCloud-move proof run does not create a Desktop shadow project.
+
+- [x] **Step 4: Run GREEN and R1 app proof**
 
 Run:
 
@@ -178,20 +181,31 @@ rg -n "\"renderer\": \"OpenGL\"" debug/v1-shader-proof/node_stats.json
 
 Expected: test prints `opengl render backend ok`; proof artifacts exist and keep renderer `OpenGL`.
 
-- [ ] **Step 5: Nearby regression gate**
+- [x] **Step 5: Nearby regression gate**
 
 Run:
 
 ```bash
+cmake --build build
 ctest --test-dir build --output-on-failure
 git diff --check
 ```
 
 Expected: all configured tests pass and diff check is clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Commit only R1 extraction files, this plan checkbox update, and corresponding master/spec status updates.
+
+Evidence:
+
+```text
+RED: cmake --build build --target my_world_opengl_render_backend_tests failed before OpenGLRenderBackend existed.
+GREEN: my_world_opengl_render_backend_tests printed "opengl render backend ok".
+V1 proof: --dump-proof-and-exit wrote debug/v1-shader-proof/{frame.png,cook_order.json,node_stats.json}; node_stats.json keeps "renderer": "OpenGL".
+Local repo guard: the same proof run from /Users/chenbaiwei/Projects/我的世界 did not recreate /Users/chenbaiwei/Desktop/我的世界.
+Regression: cmake --build build; ctest --test-dir build --output-on-failure => 32/32 passed; git diff --check clean.
+```
 
 ## Task 3: R2 Headless image.constant Runtime
 

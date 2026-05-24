@@ -676,6 +676,25 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             juce::juce_opengl
     )
 
+    add_executable(my_world_opengl_render_backend_tests
+        source/render/OpenGLRenderBackend.cpp
+        tests/OpenGLRenderBackendTests.cpp
+    )
+
+    target_include_directories(my_world_opengl_render_backend_tests
+        PRIVATE
+            source/render
+    )
+
+    target_link_libraries(my_world_opengl_render_backend_tests
+        PRIVATE
+            juce::juce_opengl
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags
+    )
+
+    add_test(NAME opengl_render_backend COMMAND my_world_opengl_render_backend_tests)
+
     juce_add_gui_app(my-world
         PRODUCT_NAME "${MY_WORLD_DISPLAY_NAME}"
         COMPANY_NAME "Chen Po-Wei"
@@ -690,6 +709,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             source/app/MainComponent.cpp
             source/app/ProofReports.cpp
             source/app/PreferencesPanel.cpp
+            source/render/OpenGLRenderBackend.cpp
             source/render/OpenGLShaderPreview.cpp
     )
 

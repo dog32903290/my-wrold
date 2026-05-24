@@ -125,7 +125,7 @@ For the first R runtime fixture, `image.constant` only needs texture metadata an
 | Slice | Status | One-line proof | Files likely touched | Verification |
 | --- | --- | --- | --- | --- |
 | R0 roadmap | closed by this spec | master plan routes R lane | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md`, master progress | `git diff --check` |
-| R1 OpenGL backend extraction | next | default shader graph -> OpenGLRenderBackend -> V1 proof artifacts unchanged | `source/render/RenderBackend.h`, new `source/render/OpenGLRenderBackend.*`, `source/render/OpenGLShaderPreview.*`, `CMakeLists.txt` | build app, `--dump-proof-and-exit`, check `frame.png`, `cook_order.json`, `node_stats.json`, `git diff --check` |
+| R1 OpenGL backend extraction | closed | default shader graph -> OpenGLRenderBackend -> V1 proof artifacts unchanged | `source/render/RenderBackend.h`, new `source/render/OpenGLRenderBackend.*`, `source/render/OpenGLShaderPreview.*`, `source/app/MainComponent.cpp`, `CMakeLists.txt` | backend test, build app, `--dump-proof-and-exit`, check `frame.png`, `cook_order.json`, `node_stats.json`, `ctest`, `git diff --check` |
 | R2 headless texture summary runtime | queued | `top_constant_to_output.graph.json` -> `texture_summary.json` | new render/runtime core files, fixture if current one needs tightening, focused tests | new runtime test target, headless dump command or test fixture, `ctest`, `git diff --check` |
 | R3 runtime/render proof unification | queued | runtimeGraph render status -> shared proof JSON fields | `GraphContract.*`, render proof helpers, app proof command code | V1 proof plus R2 headless proof both write compatible `cook_order` and `node_stats` evidence |
 | R4 Metal readiness gate | parked | OpenGL backend interface audit -> Metal first-slice decision | spec only until R1-R3 close | no Metal code before the audit names the smallest frame-producing slice |
@@ -147,15 +147,19 @@ No Metal, node thumbnails, analyzer detector semantics, or storage schema work e
 Suggested R1 verification:
 
 ```text
-cmake --build build --target my-world
+cmake --build build --target my_world_opengl_render_backend_tests my-world
+./build/my_world_opengl_render_backend_tests
 ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit
 test -s debug/v1-shader-proof/frame.png
 test -s debug/v1-shader-proof/cook_order.json
 test -s debug/v1-shader-proof/node_stats.json
 rg -n "\"renderer\": \"OpenGL\"" debug/v1-shader-proof/node_stats.json
+cmake --build build
 ctest --test-dir build --output-on-failure
 git diff --check
 ```
+
+R1 closed evidence on 2026-05-24: `my_world_opengl_render_backend_tests` printed `opengl render backend ok`; `node_stats.json` kept `"renderer": "OpenGL"`; the app proof stayed inside `/Users/chenbaiwei/Projects/我的世界` and did not recreate `/Users/chenbaiwei/Desktop/我的世界`; full `ctest` passed 32/32.
 
 ## R2 Acceptance Contract
 

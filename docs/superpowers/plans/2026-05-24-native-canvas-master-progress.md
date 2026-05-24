@@ -207,7 +207,7 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | active | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md` and `docs/superpowers/plans/2026-05-24-r-segment-implementation.md` | R1 OpenGL proof backend extraction behind `RenderBackend` |
+| R runtime/render backbone | active | R1 closed: OpenGL proof now runs behind `RenderBackend`; `--dump-proof-and-exit` writes local repo proof artifacts; `ctest` 32/32 | Stop after R1; resume with R2 only when explicitly started |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
 ## Active Lane Protocol

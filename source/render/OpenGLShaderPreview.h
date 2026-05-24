@@ -4,6 +4,7 @@
 #include "GraphContract.h"
 #include "ImGuiSmokeOverlay.h"
 #include "NodeSpec.h"
+#include "OpenGLRenderBackend.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
@@ -56,14 +57,13 @@ private:
 
     void compilePendingShader();
     void handlePendingProofDump (int width, int height, double timeSeconds, juce::uint32 currentFrameIndex);
-    juce::Image readCurrentFrameBuffer (int width, int height) const;
+    juce::Image capturedFrameToImage (const CapturedFrame& frame) const;
     void releaseGLObjects();
     void reportStatus (juce::String message);
     void updateImGuiMousePosition (const juce::MouseEvent& event);
 
-    static juce::String vertexShaderSource();
-
     juce::OpenGLContext openGLContext;
+    OpenGLRenderBackend renderBackend;
     ImGuiSmokeOverlay imguiOverlay;
     juce::CriticalSection shaderLock;
     juce::CriticalSection proofDumpLock;
@@ -75,16 +75,7 @@ private:
     bool compileRequested = true;
     std::unique_ptr<PendingProofDump> pendingProofDump;
 
-    std::unique_ptr<juce::OpenGLShaderProgram> shaderProgram;
-    std::unique_ptr<juce::OpenGLShaderProgram::Attribute> positionAttribute;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> timeUniform;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> resolutionUniform;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> frameUniform;
-    std::unique_ptr<juce::OpenGLShaderProgram::Uniform> loudnessUniform;
-
     std::atomic<float> loudness { 0.0f };
-    juce::uint32 vertexArray = 0;
-    juce::uint32 vertexBuffer = 0;
     juce::uint32 frameIndex = 0;
     double startTimeSeconds = 0.0;
     double lastFrameSeconds = 0.0;

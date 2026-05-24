@@ -27,6 +27,13 @@ juce::Font monoFont (float height)
     return juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), height, juce::Font::plain));
 }
 
+bool looksLikeProjectDirectory (const juce::File& directory)
+{
+    return directory.getChildFile ("CMakeLists.txt").existsAsFile()
+           && directory.getChildFile ("source").isDirectory()
+           && directory.getChildFile ("fixtures").isDirectory();
+}
+
 void configureMeterLabel (juce::Label& label, juce::String text)
 {
     label.setText (std::move (text), juce::dontSendNotification);
@@ -40,6 +47,11 @@ juce::File projectDirectory()
 
     if (environmentPath.isNotEmpty())
         return juce::File (environmentPath);
+
+    const auto workingDirectory = juce::File::getCurrentWorkingDirectory();
+
+    if (looksLikeProjectDirectory (workingDirectory))
+        return workingDirectory;
 
     return juce::File::getSpecialLocation (juce::File::userDesktopDirectory)
         .getChildFile (juce::String::fromUTF8 ("\xe6\x88\x91\xe7\x9a\x84\xe4\xb8\x96\xe7\x95\x8c"));
