@@ -169,6 +169,14 @@ OpenGLShaderPreview::OpenGLShaderPreview()
         setFragmentShader (source);
     };
 
+    imguiOverlay.onSaveWorkRequested = [this] (GraphSession& session)
+    {
+        if (onSaveWorkRequested == nullptr)
+            return CommandResult { false, "no active work" };
+
+        return onSaveWorkRequested (session);
+    };
+
     openGLContext.setOpenGLVersionRequired (juce::OpenGLContext::openGL3_2);
     openGLContext.setRenderer (this);
     openGLContext.setContinuousRepainting (false);
@@ -350,6 +358,13 @@ bool OpenGLShaderPreview::keyPressed (const juce::KeyPress& key)
     if (key == juce::KeyPress::deleteKey || key == juce::KeyPress::backspaceKey)
     {
         imguiOverlay.requestDeleteSelection();
+        openGLContext.triggerRepaint();
+        return true;
+    }
+
+    if (key == juce::KeyPress ('s', juce::ModifierKeys::commandModifier, 0))
+    {
+        imguiOverlay.requestSaveWork();
         openGLContext.triggerRepaint();
         return true;
     }

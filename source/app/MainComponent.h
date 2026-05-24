@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AudioInputAnalyzer.h"
+#include "InteractionContract.h"
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
@@ -30,6 +31,7 @@ private:
     void dumpAudioProof();
     void dumpC2StorageProof();
     void dumpC3SaveWorkProof();
+    CommandResult saveActiveWork (GraphSession& session);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();

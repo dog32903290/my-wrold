@@ -16,6 +16,7 @@ class ImGuiSmokeOverlay
 {
 public:
     using ShaderSourceCallback = std::function<void (const std::string&)>;
+    using SaveWorkCallback = std::function<CommandResult (GraphSession&)>;
 
     ImGuiSmokeOverlay();
 
@@ -33,8 +34,10 @@ public:
     void setShaderSource (std::string source);
     void setRuntimeOpDiagnostics (std::vector<RuntimeOpModuleDiagnostic> diagnostics);
     void requestDeleteSelection();
+    void requestSaveWork();
 
     ShaderSourceCallback onShaderSourceSubmitted;
+    SaveWorkCallback onSaveWorkRequested;
 
 private:
     void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,
@@ -66,7 +69,6 @@ private:
     CanvasPoint pendingCreatePosition;
     ScreenPoint nodeBrowserScreenPosition;
     ScreenPoint previousPanDrag;
-    std::string savedInteractionState;
     BehaviorTraceReport lastTraceReport;
     std::string lastInteractionMessage = "ready";
     std::string expandedPatchParentId;

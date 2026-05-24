@@ -374,6 +374,19 @@ void ImGuiSmokeOverlay::requestDeleteSelection()
     deleteSelectionRequested = true;
 }
 
+void ImGuiSmokeOverlay::requestSaveWork()
+{
+    if (onSaveWorkRequested == nullptr)
+    {
+        lastInteractionMessage = "save_work: no active work";
+        return;
+    }
+
+    const auto result = onSaveWorkRequested (interactionSession);
+    lastInteractionMessage = result.ok ? "save_work: " + result.message
+                                       : "save_work failed: " + result.message;
+}
+
 void ImGuiSmokeOverlay::shutdown()
 {
     if (! initialised)
@@ -572,7 +585,6 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                 draggingConnectionPoint = {};
                 pendingCreatePosition = {};
                 previousPanDrag = {};
-                savedInteractionState.clear();
                 hasTraceReport = false;
                 panningCanvas = false;
                 expandedPatchParentId.clear();
@@ -608,9 +620,9 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
             }
 
             if (transportPolicy.hasCommandStrip)
-                ImGui::TextDisabled ("last: %s   saved bytes %d",
+                ImGui::TextDisabled ("last: %s   commands %d",
                                      lastInteractionMessage.c_str(),
-                                     static_cast<int> (savedInteractionState.size()));
+                                     static_cast<int> (interactionSession.commandLog.size()));
 
             if (transportPolicy.timelineEditingParked)
             {
@@ -651,7 +663,6 @@ void ImGuiSmokeOverlay::drawInteractionControls()
         draggingConnectionPoint = {};
         pendingCreatePosition = {};
         previousPanDrag = {};
-        savedInteractionState.clear();
         hasTraceReport = false;
         panningCanvas = false;
         expandedPatchParentId.clear();
@@ -749,27 +760,9 @@ void ImGuiSmokeOverlay::drawInteractionControls()
         runInteractionCommand ("set param", setParam (interactionSession, "shader1", "fragmentSource", "void main(){}"));
 
     ImGui::SameLine();
-    if (ImGui::Button ("Save State"))
-    {
-        lastInteractionMessage = markSavedAndCommitted (interactionSession);
-        savedInteractionState = serializeInteractionState (interactionSession);
-    }
-
     ImGui::SameLine();
-    if (ImGui::Button ("Reload State"))
-    {
-        if (savedInteractionState.empty())
-        {
-            lastInteractionMessage = "reload state: no saved state";
-        }
-        else
-        {
-            const auto view = interactionSession.view;
-            interactionSession = deserializeInteractionState (savedInteractionState);
-            interactionSession.view = view;
-            lastInteractionMessage = "reload state: ok";
-        }
-    }
+    if (ImGui::Button ("Save Work"))
+        requestSaveWork();
 }
 
 void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,

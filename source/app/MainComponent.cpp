@@ -60,6 +60,21 @@ juce::File c3SaveWorkProofDumpDirectory()
     return projectDirectory().getChildFile ("debug").getChildFile ("c3-save-work-proof");
 }
 
+juce::File defaultActiveWorkManifestFile()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c3-active-work").getChildFile ("myworld.work.json");
+}
+
+juce::File activeWorkManifestFile()
+{
+    const auto environmentPath = juce::SystemStats::getEnvironmentVariable ("MY_WORLD_ACTIVE_WORK_MANIFEST", {});
+
+    if (environmentPath.isNotEmpty())
+        return juce::File (environmentPath);
+
+    return defaultActiveWorkManifestFile();
+}
+
 juce::File parentDirectory (juce::File file, const int levels)
 {
     for (int i = 0; i < levels; ++i)
@@ -112,6 +127,30 @@ bool copyTextFile (const juce::File& source, const juce::File& target)
         return false;
 
     return source.copyFileTo (target);
+}
+
+bool prepareDefaultActiveWorkProject (const juce::File& workManifestFile, std::string& error)
+{
+    if (workManifestFile.existsAsFile())
+        return true;
+
+    const auto patchFile = workManifestFile.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
+
+    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    {
+        const auto sourceManifest = juce::File (candidate);
+        const auto sourcePatch = sourceManifest.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
+
+        if (copyTextFile (sourceManifest, workManifestFile) && copyTextFile (sourcePatch, patchFile))
+            return true;
+
+        error = "could not copy active work fixture from " + candidate;
+    }
+
+    if (error.empty())
+        error = "could not prepare default active work";
+
+    return false;
 }
 
 std::string makeC2StorageReportJson (bool ok,
@@ -294,6 +333,13 @@ MainComponent::MainComponent (bool dumpProofOnStart,
             if (safe != nullptr)
                 safe->setShaderStatus (statusMessage);
         });
+    };
+    preview.onSaveWorkRequested = [safe = juce::Component::SafePointer<MainComponent> (this)] (GraphSession& session)
+    {
+        if (safe == nullptr)
+            return CommandResult { false, "main component is gone" };
+
+        return safe->saveActiveWork (session);
     };
     addAndMakeVisible (preview);
 
@@ -859,6 +905,26 @@ void MainComponent::dumpC3SaveWorkProof()
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
+}
+
+CommandResult MainComponent::saveActiveWork (GraphSession& session)
+{
+    const auto manifestFile = activeWorkManifestFile();
+    std::string error;
+
+    if (manifestFile == defaultActiveWorkManifestFile()
+        && ! prepareDefaultActiveWorkProject (manifestFile, error))
+    {
+        statusLabel.setText ("save_work failed: " + juce::String (error), juce::dontSendNotification);
+        return { false, error };
+    }
+
+    const auto result = saveWork (session, manifestFile.getFullPathName().toStdString());
+    const auto message = result.ok ? result.status : result.error;
+    statusLabel.setText ((result.ok ? "save_work: " : "save_work failed: ") + juce::String (message),
+                         juce::dontSendNotification);
+
+    return { result.ok, message };
 }
 
 void MainComponent::timerCallback()
