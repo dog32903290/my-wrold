@@ -16,6 +16,7 @@
 #include <cmath>
 #include <filesystem>
 #include <sstream>
+#include <utility>
 #include <vector>
 
 namespace myworld
@@ -566,6 +567,66 @@ std::string runtimeOutputSourceOrEmpty (const std::vector<RuntimeOutputValue>& o
     return output == nullptr ? std::string {} : output->source;
 }
 
+constexpr const char* c6RawEnergyNodeType = "compound.raw-energy";
+constexpr const char* c6LoudnessNodeType = "compound.loudness";
+constexpr const char* c6RawEnergyNodeId = "raw_energy1";
+constexpr const char* c6RmsOutputId = "rms";
+constexpr const char* c6PeakOutputId = "peak";
+constexpr const char* c6SampleCountOutputId = "sampleCount";
+constexpr const char* c6RepairWorkerId = "ai-worker-proof";
+constexpr const char* c6RepairId = "c6.2-ai-repair-loop";
+constexpr const char* c6RepairMissingNodeId = "missing_loudness";
+constexpr const char* c6RepairTargetNodeId = "library_loud1";
+constexpr double c6RepairDeltaX = 17.0;
+constexpr double c6RepairDeltaY = 5.0;
+constexpr double c6UnusedRepairDelta = 100.0;
+
+AIWorkerCommandRequest makeMoveNodeRepairAttempt (std::string commandId,
+                                                  std::string workerId,
+                                                  std::string intent,
+                                                  std::string nodeId,
+                                                  double deltaX,
+                                                  double deltaY)
+{
+    AIWorkerCommandRequest request;
+    request.commandId = std::move (commandId);
+    request.workerId = std::move (workerId);
+    request.operation = "move_node";
+    request.intent = std::move (intent);
+    request.nodeId = std::move (nodeId);
+    request.deltaX = deltaX;
+    request.deltaY = deltaY;
+    return request;
+}
+
+AIWorkerRepairPlan makeC6AIRepairLoopProofPlan()
+{
+    const auto failedAttempt = makeMoveNodeRepairAttempt ("c6.2-move-missing-node",
+                                                         c6RepairWorkerId,
+                                                         "First repair attempt intentionally targets a missing node",
+                                                         c6RepairMissingNodeId,
+                                                         c6RepairDeltaX,
+                                                         c6RepairDeltaY);
+    const auto repairedAttempt = makeMoveNodeRepairAttempt ("c6.2-move-library-loudness",
+                                                           c6RepairWorkerId,
+                                                           "Second repair attempt targets the loaded loudness node",
+                                                           c6RepairTargetNodeId,
+                                                           c6RepairDeltaX,
+                                                           c6RepairDeltaY);
+    auto unusedAttempt = repairedAttempt;
+    unusedAttempt.commandId = "c6.2-unused-attempt";
+    unusedAttempt.deltaX = c6UnusedRepairDelta;
+    unusedAttempt.deltaY = c6UnusedRepairDelta;
+
+    AIWorkerRepairPlan repairPlan;
+    repairPlan.repairId = c6RepairId;
+    repairPlan.workerId = c6RepairWorkerId;
+    repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
+    repairPlan.maxAttempts = 3;
+    repairPlan.attempts = { failedAttempt, repairedAttempt, unusedAttempt };
+    return repairPlan;
+}
+
 std::string makeC6AnalyzerFamilyReportJson (bool ok,
                                             const std::string& libraryPath,
                                             size_t familyEntryCount,
@@ -591,14 +652,15 @@ std::string makeC6AnalyzerFamilyReportJson (bool ok,
     out << "  \"createdRawEnergyNode\": " << (createdRawEnergyNode ? "true" : "false") << ",\n";
     out << "  \"graphCommandLogStatus\": " << jsonQuoted (graphCommandLogStatus) << ",\n";
     out << "  \"rawEnergyPublicOutputs\": {\n";
-    out << "    \"rms\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "rms") << ",\n";
-    out << "    \"peak\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "peak") << ",\n";
-    out << "    \"sampleCount\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "sampleCount") << "\n";
+    out << "    \"rms\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6RmsOutputId) << ",\n";
+    out << "    \"peak\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6PeakOutputId) << ",\n";
+    out << "    \"sampleCount\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6SampleCountOutputId) << "\n";
     out << "  },\n";
     out << "  \"rawEnergyPublicOutputSources\": {\n";
-    out << "    \"rms\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "rms")) << ",\n";
-    out << "    \"peak\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "peak")) << ",\n";
-    out << "    \"sampleCount\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "sampleCount")) << "\n";
+    out << "    \"rms\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, c6RmsOutputId)) << ",\n";
+    out << "    \"peak\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, c6PeakOutputId)) << ",\n";
+    out << "    \"sampleCount\": "
+        << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, c6SampleCountOutputId)) << "\n";
     out << "  },\n";
     out << "  \"loudnessStillPresent\": " << (loudnessStillPresent ? "true" : "false") << ",\n";
     out << "  \"usesInteractionState\": false,\n";
@@ -638,7 +700,7 @@ std::string makeC6AIRepairLoopReportJson (bool ok,
     out << "  \"collaborationLogEntries\": " << collaborationLogEntries << ",\n";
     out << "  \"usesInteractionState\": " << (usesInteractionState ? "true" : "false") << ",\n";
     out << "  \"finalNode\": {\n";
-    out << "    \"nodeId\": \"library_loud1\",\n";
+    out << "    \"nodeId\": " << jsonQuoted (c6RepairTargetNodeId) << ",\n";
     out << "    \"x\": " << finalNodeX << ",\n";
     out << "    \"y\": " << finalNodeY << "\n";
     out << "  },\n";
@@ -2094,16 +2156,16 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
     const auto loadedSpecs = loadCompoundModuleNodeSpecsFromLibrary (libraryPath);
     const auto familyEntryCount = loadedSpecs.ok ? loadedSpecs.specs.size() : 0;
     const auto visibleRegistryContainsRawEnergy = loadedSpecs.ok
-        && findNodeSpec (loadedSpecs.specs, "compound.raw-energy") != nullptr;
+        && findNodeSpec (loadedSpecs.specs, c6RawEnergyNodeType) != nullptr;
     const auto loudnessStillPresent = loadedSpecs.ok
-        && findNodeSpec (loadedSpecs.specs, "compound.loudness") != nullptr;
+        && findNodeSpec (loadedSpecs.specs, c6LoudnessNodeType) != nullptr;
 
     const auto runtime = loadRuntimeRegistryFromModuleLibrary (libraryPath);
     const auto runtimeRegistryContainsRawEnergy = runtime.ok
         && std::any_of (runtime.registry.entries.begin(),
                         runtime.registry.entries.end(),
                         [] (const auto& entry) {
-                            return entry.nodeType == "compound.raw-energy";
+                            return entry.nodeType == c6RawEnergyNodeType;
                         });
     const auto coverage = runtime.ok ? inspectRuntimeOpCoverage (runtime.registry) : RuntimeOpCoverageResult {};
     const auto diagnostics = coverage.snapshot.entries.empty()
@@ -2113,7 +2175,7 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
     {
         for (const auto& diagnostic : diagnostics)
         {
-            if (diagnostic.nodeType != "compound.raw-energy")
+            if (diagnostic.nodeType != c6RawEnergyNodeType)
                 continue;
 
             return diagnostic.status == "runtime-op-ready" ? std::string { "ready" } : diagnostic.status;
@@ -2138,7 +2200,7 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
     {
         for (const auto& entry : execution.snapshot.entries)
         {
-            if (entry.nodeType != "compound.raw-energy")
+            if (entry.nodeType != c6RawEnergyNodeType)
                 continue;
 
             rawEnergyExecutionStatus = entry.status;
@@ -2148,12 +2210,12 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
     }
 
     const auto rawOutputsOk = rawEnergyExecutionStatus == "computed"
-        && findRuntimeOutput (rawEnergyPublicOutputs, "rms") != nullptr
-        && findRuntimeOutput (rawEnergyPublicOutputs, "peak") != nullptr
-        && findRuntimeOutput (rawEnergyPublicOutputs, "sampleCount") != nullptr
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "rms"), std::sqrt (0.28125))
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "peak"), 0.75)
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "sampleCount"), 4.0);
+        && findRuntimeOutput (rawEnergyPublicOutputs, c6RmsOutputId) != nullptr
+        && findRuntimeOutput (rawEnergyPublicOutputs, c6PeakOutputId) != nullptr
+        && findRuntimeOutput (rawEnergyPublicOutputs, c6SampleCountOutputId) != nullptr
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6RmsOutputId), std::sqrt (0.28125))
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6PeakOutputId), 0.75)
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6SampleCountOutputId), 4.0);
 
     auto session = makeGraphSession (makeDefaultShaderOutputGraph());
     CommandResult createResult { false, "raw-energy node spec not loaded" };
@@ -2162,8 +2224,8 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
         const auto visibleRegistry = mergeNodeSpecs (makeSeedNodeSpecs(), loadedSpecs.specs);
         createResult = createNode (session,
                                    visibleRegistry,
-                                   "compound.raw-energy",
-                                   "raw_energy1",
+                                   c6RawEnergyNodeType,
+                                   c6RawEnergyNodeId,
                                    { 300.0, 320.0 });
     }
 
@@ -2275,38 +2337,10 @@ void MainComponent::dumpC6AIRepairLoopProof()
 
     auto session = makeGraphSession (loadedPatch.document.graph);
 
-    AIWorkerCommandRequest failedAttempt;
-    failedAttempt.commandId = "c6.2-move-missing-node";
-    failedAttempt.workerId = "ai-worker-proof";
-    failedAttempt.operation = "move_node";
-    failedAttempt.intent = "First repair attempt intentionally targets a missing node";
-    failedAttempt.nodeId = "missing_loudness";
-    failedAttempt.deltaX = 17.0;
-    failedAttempt.deltaY = 5.0;
-
-    AIWorkerCommandRequest repairedAttempt;
-    repairedAttempt.commandId = "c6.2-move-library-loudness";
-    repairedAttempt.workerId = "ai-worker-proof";
-    repairedAttempt.operation = "move_node";
-    repairedAttempt.intent = "Second repair attempt targets the loaded loudness node";
-    repairedAttempt.nodeId = "library_loud1";
-    repairedAttempt.deltaX = 17.0;
-    repairedAttempt.deltaY = 5.0;
-
-    AIWorkerCommandRequest unusedAttempt = repairedAttempt;
-    unusedAttempt.commandId = "c6.2-unused-attempt";
-    unusedAttempt.deltaX = 100.0;
-    unusedAttempt.deltaY = 100.0;
-
-    AIWorkerRepairPlan repairPlan;
-    repairPlan.repairId = "c6.2-ai-repair-loop";
-    repairPlan.workerId = "ai-worker-proof";
-    repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
-    repairPlan.maxAttempts = 3;
-    repairPlan.attempts = { failedAttempt, repairedAttempt, unusedAttempt };
+    const auto repairPlan = makeC6AIRepairLoopProofPlan();
 
     const auto repairResult = executeAIWorkerRepairLoop (session, repairPlan);
-    const auto* finalNode = findEditorNode (session.graph, "library_loud1");
+    const auto* finalNode = findEditorNode (session.graph, c6RepairTargetNodeId);
     const auto finalNodeX = finalNode == nullptr ? 0.0 : finalNode->position.x;
     const auto finalNodeY = finalNode == nullptr ? 0.0 : finalNode->position.y;
     const auto graphMutationApplied = ! repairResult.attempts.empty()

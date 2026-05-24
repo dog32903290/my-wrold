@@ -13,6 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace
 {
@@ -28,6 +29,24 @@ void expect (bool condition, const std::string& message)
 bool contains (const std::vector<std::string>& values, const std::string& value)
 {
     return std::find (values.begin(), values.end(), value) != values.end();
+}
+
+myworld::AIWorkerCommandRequest makeMoveNodeRequest (std::string commandId,
+                                                     std::string workerId,
+                                                     std::string intent,
+                                                     std::string nodeId,
+                                                     double deltaX,
+                                                     double deltaY)
+{
+    myworld::AIWorkerCommandRequest request;
+    request.commandId = std::move (commandId);
+    request.workerId = std::move (workerId);
+    request.operation = "move_node";
+    request.intent = std::move (intent);
+    request.nodeId = std::move (nodeId);
+    request.deltaX = deltaX;
+    request.deltaY = deltaY;
+    return request;
 }
 
 bool hasEdgeId (const myworld::GraphContract& graph, const std::string& edgeId)
@@ -83,14 +102,12 @@ int main()
     const auto initialMoveX = initialMoveNode->position.x;
     const auto initialMoveY = initialMoveNode->position.y;
 
-    myworld::AIWorkerCommandRequest moveRequest;
-    moveRequest.commandId = "c4.2-move-node";
-    moveRequest.workerId = "ai-worker-test";
-    moveRequest.operation = "move_node";
-    moveRequest.intent = "Move the loaded loudness compound through the shared interaction command path";
-    moveRequest.nodeId = "library_loud1";
-    moveRequest.deltaX = 21.0;
-    moveRequest.deltaY = 9.0;
+    const auto moveRequest = makeMoveNodeRequest ("c4.2-move-node",
+                                                  "ai-worker-test",
+                                                  "Move the loaded loudness compound through the shared interaction command path",
+                                                  "library_loud1",
+                                                  21.0,
+                                                  9.0);
 
     const auto moveResult = myworld::executeAIWorkerCommand (moveSession, moveRequest);
     expect (moveResult.ok, moveResult.error);
@@ -284,23 +301,19 @@ int main()
     repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
     repairPlan.maxAttempts = 3;
 
-    myworld::AIWorkerCommandRequest failedAttempt;
-    failedAttempt.commandId = "c6.2-move-missing-node";
-    failedAttempt.workerId = repairPlan.workerId;
-    failedAttempt.operation = "move_node";
-    failedAttempt.intent = "First repair attempt intentionally targets a missing node";
-    failedAttempt.nodeId = "missing_loudness";
-    failedAttempt.deltaX = 17.0;
-    failedAttempt.deltaY = 5.0;
+    const auto failedAttempt = makeMoveNodeRequest ("c6.2-move-missing-node",
+                                                    repairPlan.workerId,
+                                                    "First repair attempt intentionally targets a missing node",
+                                                    "missing_loudness",
+                                                    17.0,
+                                                    5.0);
 
-    myworld::AIWorkerCommandRequest repairedAttempt;
-    repairedAttempt.commandId = "c6.2-move-library-loudness";
-    repairedAttempt.workerId = repairPlan.workerId;
-    repairedAttempt.operation = "move_node";
-    repairedAttempt.intent = "Second repair attempt targets the loaded loudness node";
-    repairedAttempt.nodeId = "library_loud1";
-    repairedAttempt.deltaX = 17.0;
-    repairedAttempt.deltaY = 5.0;
+    const auto repairedAttempt = makeMoveNodeRequest ("c6.2-move-library-loudness",
+                                                      repairPlan.workerId,
+                                                      "Second repair attempt targets the loaded loudness node",
+                                                      "library_loud1",
+                                                      17.0,
+                                                      5.0);
 
     myworld::AIWorkerCommandRequest unusedAttempt = repairedAttempt;
     unusedAttempt.commandId = "c6.2-unused-attempt";

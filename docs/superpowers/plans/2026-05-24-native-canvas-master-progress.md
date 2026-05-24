@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 13:28 Asia/Taipei.
+Date: 2026-05-24 14:13 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,8 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+cdb35da Tidy C6 repair loop closure
+6939992 Close C6 analyzer family and repair loop
 0754301 Close C5.3 visible module publish
 9b48941 Add C5.2 AI worker module publish
 73ce3f0 Close C5.1 module publish proof
@@ -120,6 +122,9 @@ Current C6 note:
 C6.1 analyzer compound family seed is closed in this slice.
 C6.2 AI repair loop closure is closed in this slice.
 C6 is closed. It did not add natural-language parsing and did not reopen C5.
+C6 post-close hygiene stays contract-neutral:
+- cdb35da extracts repair-loop terminal logging/proof closure and adds rejected-branch tests.
+- current cleanup pass keeps C6 app proof fixtures local, with no node/runtime/schema change.
 C6 spec:
 - docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
 C6.1 evidence is in:
