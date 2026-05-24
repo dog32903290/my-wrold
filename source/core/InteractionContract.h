@@ -59,6 +59,18 @@ struct BehaviorTraceReport
     std::vector<std::string> errors;
 };
 
+struct CollaborationLogEntry
+{
+    std::string actor;
+    std::string commandId;
+    std::string operation;
+    std::string intent;
+    std::string status;
+    std::string result;
+    std::string proofEvidence;
+    std::string error;
+};
+
 struct GraphSession
 {
     GraphContract graph;
@@ -67,6 +79,7 @@ struct GraphSession
     std::vector<std::string> selectedEdgeIds;
     std::vector<std::string> currentPatchPath;
     std::vector<std::string> commandLog;
+    std::vector<CollaborationLogEntry> collaborationLog;
     bool dirty = false;
 
     struct Snapshot

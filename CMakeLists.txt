@@ -545,6 +545,36 @@ set_tests_properties(save_work_command PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_ai_worker
+    source/ai/AIWorkerCommand.cpp
+)
+
+target_include_directories(my_world_ai_worker
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/ai
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_ai_worker
+    PUBLIC
+        my_world_storage_command
+)
+
+add_executable(my_world_ai_worker_command_tests
+    tests/AIWorkerCommandTests.cpp
+)
+
+target_link_libraries(my_world_ai_worker_command_tests
+    PRIVATE
+        my_world_ai_worker
+)
+
+add_test(NAME ai_worker_command COMMAND my_world_ai_worker_command_tests)
+set_tests_properties(ai_worker_command PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 
@@ -612,6 +642,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             source/app
             source/core
+            source/ai
             source/preferences
             source/storage
             source/ui
@@ -628,6 +659,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_preferences
             my_world_runtime_registry
+            my_world_ai_worker
             my_world_storage_command
             my_world_imgui
             juce::juce_audio_devices

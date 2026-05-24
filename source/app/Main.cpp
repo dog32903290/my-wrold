@@ -25,14 +25,16 @@ public:
         const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and-exit");
         const auto dumpC2StorageProofAndExit = commandLine.contains ("--dump-c2-storage-proof-and-exit");
         const auto dumpC3SaveWorkProofAndExit = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
+        const auto dumpC4AIWorkerSaveWorkProofAndExit = commandLine.contains ("--dump-c4-ai-worker-save-work-proof-and-exit");
         const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
-                                          || dumpC3SaveWorkProofAndExit;
+                                          || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
                                                    dumpAudioProofAndExit,
                                                    dumpC2StorageProofAndExit,
                                                    dumpC3SaveWorkProofAndExit,
+                                                   dumpC4AIWorkerSaveWorkProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -55,6 +57,7 @@ private:
                     bool dumpAudioProofAndExit,
                     bool dumpC2StorageProofAndExit,
                     bool dumpC3SaveWorkProofAndExit,
+                    bool dumpC4AIWorkerSaveWorkProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -65,6 +68,7 @@ private:
                                                 dumpAudioProofAndExit,
                                                 dumpC2StorageProofAndExit,
                                                 dumpC3SaveWorkProofAndExit,
+                                                dumpC4AIWorkerSaveWorkProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

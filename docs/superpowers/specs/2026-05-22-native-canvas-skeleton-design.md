@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, and C3.1-C3.5 storage command path closure are implemented and verified. Raw callback-buffer runtime execution, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, remote sync, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as later high-risk work.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, C3.1-C3.5 storage command path closure, and C4.1 AI worker save_work command contract skeleton are implemented and verified. Raw callback-buffer runtime execution, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker graph mutation/repair loop, remote sync, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as later high-risk work.
 
 ## Purpose
 
@@ -25,7 +25,7 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 10:50 Asia/Taipei.
+Date: 2026-05-24 11:24 Asia/Taipei.
 
 目前工程切面:
 
@@ -40,6 +40,7 @@ C3.2 save proof     proven through structured save log readback + app proof dump
 C3.3 visible hand    proven through Save Work button / Command+S callback path
 C3.4 local commit    proven through opt-in background git worker success path
 C3.5 commit failure  proven through save-ok commit-failed save log readback
+C4.1 AI save_work    proven through AIWorkerCommand -> StorageCommand::saveWork + collaboration evidence
 ```
 
 已鎖定:
@@ -80,28 +81,30 @@ C3.5 commit failure  proven through save-ok commit-failed save log readback
 - C3.3 visible save_work hand is implemented: the ImGui command strip exposes `Save Work`, `Command+S` triggers the same path, `MainComponent::saveActiveWork()` calls `saveWork()` on the active `GraphSession`, and the visible save hand no longer writes `interaction-state-v1`.
 - C3.4 background local git commit success path is implemented: `SaveWorkOptions::startLocalGitCommit` makes `saveWork()` return `commit-pending` plus a `SaveWorkCommitJob`, the worker commits only the active work repo files, and the save log records the final `saved-and-committed` status plus commit id.
 - C3.5 commit failure path is implemented: when the worker cannot commit, `saveWork()` still preserves the successful PatchDocument write, the commit job returns `save-ok commit-failed`, and the save log records final failure status plus error.
+- C4.1 AI worker command contract skeleton is implemented: `AIWorkerCommandRequest`/`AIWorkerCommandResult` define the minimal save_work caller shape, `allowedAIWorkerOperations()` admits `save_work`, `executeAIWorkerCommand()` records intent/result/proof evidence, calls `StorageCommand::saveWork()` for the actual save, and `--dump-c4-ai-worker-save-work-proof-and-exit` writes `debug/c4-ai-worker-save-work-proof/ai_worker_save_work_report.json`.
 - Latest C2 verification: `cmake --build build --target my-world my_world_patch_document_tests`, `./build/my_world_patch_document_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`.
 - Latest C3.5 verification: `cmake --build build --target my_world_save_work_command_tests` and `./build/my_world_save_work_command_tests`.
+- Latest C4.1 verification: `cmake --build build --target my-world my_world_ai_worker_command_tests`, `./build/my_world_ai_worker_command_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c4-ai-worker-save-work-proof-and-exit`.
 
 正在試壓:
 
-- Whether C4 should start from AI worker `save_work` caller or first add a user-facing commit preference for the visible save hand.
+- Whether C4.2 should add the first AI worker graph mutation command or persist collaboration log evidence as `.myworld/collaboration_log.jsonl`.
 - Whether P-SEARCH1 browser/search work should wait for the patch-document boundary, now that `NodeSpecQueries` exists as the small shared query helper.
 
 還沒承重:
 
 - True module discovery beyond the default saved `ModuleLibrary` index is not implemented.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
-- Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
+- Timeline editing, output pinning, live node thumbnails, and AI worker graph edits beyond save_work do not yet have commandGraph/storage contracts.
 - App audio proof feeds loaded runtime execution from a non-realtime snapshot-shaped input; raw callback-buffer capture and live UI cached runtime snapshots are still parked.
 - Collapsed compound ports are command/hit-test backed and persist through interaction state; deeper visual grouping is still parked.
 - Expanded child node positions persist per compound instance; expanded view pan/zoom is still session-local.
-- C3.1-C3.5 close the storage command path. AI worker caller, remote sync, and user-facing commit preference remain parked outside C3.
+- C3.1-C3.5 close the storage command path. C4.1 proves the first AI worker save_work caller; AI graph mutation, repair loop, remote sync, and user-facing commit preference remain parked.
 - High-risk cleanup is intentionally parked: no full ImGui component split, graph schema rewrite, JSON library swap, enum/hash migration, or ownership model rewrite until a proof line requires it.
 
 下一根線:
 
-- C4 candidate: `AI worker save_work caller -> same StorageCommand boundary -> proof evidence and repair loop`.
+- C4.2 candidate: `AI worker graph mutation command -> InteractionContract command path -> save_work proof still reloads PatchDocument`.
 
 ## First Stage Proofs
 
@@ -140,6 +143,7 @@ Contract:
 - Proven: C3.3 replaces the visible temporary interaction-state save buttons with `Save Work`, wires `Command+S`, and routes both through the same active-work `saveWork()` callback.
 - Proven: C3.4 adds an opt-in background local git worker that commits the active work repository and records final committed status in the save log.
 - Proven: C3.5 adds the commit-failed path: successful PatchDocument save remains valid, background commit failure returns `save-ok commit-failed`, and the error is readable from the save log.
+- Proven: C4.1 adds the first AI worker save_work caller: `executeAIWorkerCommand()` records AI intent/result evidence in `commandLog` and `collaborationLog`, then calls `StorageCommand::saveWork()` so the saved file remains a reloadable `PatchDocument`.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:
@@ -165,6 +169,7 @@ Contract:
 - Planned: edges carry `dataType` and `streamKind`, not only `from` / `to`.
 - Planned: graph validation produces a typed graph IR / AST before runtime execution or code generation.
 - Planned: AI worker mutates graph state only through typed commands such as `create_node`, `create_region`, `connect`, `set_param`, `publish_module`, and `save_work`.
+- Proven: the first AI worker allowed-operation skeleton exists for `save_work`, with request/result shape and command/collaboration evidence. Natural language parsing and graph mutation commands are not part of C4.1.
 - Planned: future compiler workers may consume graph IR and generate GLSL, C++, validation reports, migration output, or documentation.
 - Planned: file-based `graphIR.json` / `validation_report.json` exchange is only for batch fixtures, CI, and proof dumps. A live C# compiler worker needs an explicit interactive bridge such as named pipes, gRPC, ZeroMQ, or shared memory before it can support drag-time feedback.
 - Proven: G0 first graph language contract has region types, TypeSpec including `audio.channels`, StreamKind, PortBinding modes, typed edges, Tooll3-inspired command names, AI-safe mutation rules, and C# external compiler worker boundary.
@@ -751,6 +756,18 @@ natural language task
 ```
 
 The first skeleton does not need full AI UI, but it must not design graph mutation paths that AI cannot use later. Batch file exchange is acceptable for proof dumps; live editor feedback cannot depend on filesystem polling once compiler workers become interactive.
+
+C4.1 proves the first non-chat AI worker caller:
+
+```text
+AIWorkerCommandRequest(save_work)
+-> allowed operation check
+-> StorageCommand::saveWork()
+-> commandLog + collaborationLog evidence
+-> PatchDocument reload + save log readback
+```
+
+This is intentionally not a natural-language planner or repair loop yet. The only C4.1 operation is `save_work`, and the actual file write remains owned by `StorageCommand`.
 
 ## Non-Goals For First Skeleton
 

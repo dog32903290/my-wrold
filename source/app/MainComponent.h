@@ -19,6 +19,7 @@ public:
                    bool dumpAudioProofOnStart = false,
                    bool dumpC2StorageProofOnStart = false,
                    bool dumpC3SaveWorkProofOnStart = false,
+                   bool dumpC4AIWorkerSaveWorkProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -31,6 +32,7 @@ private:
     void dumpAudioProof();
     void dumpC2StorageProof();
     void dumpC3SaveWorkProof();
+    void dumpC4AIWorkerSaveWorkProof();
     CommandResult saveActiveWork (GraphSession& session);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
