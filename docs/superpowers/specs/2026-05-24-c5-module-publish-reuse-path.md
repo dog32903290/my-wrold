@@ -239,6 +239,85 @@ debug/c5-ai-worker-module-publish-proof/ai_worker_module_publish_report.json ok:
 git diff --check passed
 ```
 
+## C5.3 Target
+
+```text
+visible selected compound node
+-> ImGui Publish Module button / OpenGLShaderPreview callback
+-> MainComponent publishSelectedModule()
+-> StorageCommand::publishModule()
+-> package/library reload evidence
+-> visible registry creates published node
+-> app proof dump can read back evidence
+```
+
+## C5.3 Closed Slice
+
+```text
+GraphSession with selected visible compound node loud1
+-> publishSelectedModuleResult()
+-> publishModule()
+-> debug/c5-visible-module-publish/modules/loud1/module.json
+-> debug/c5-visible-module-publish/modules/loud1/compound.compound.json
+-> debug/c5-visible-module-publish/module-libraries/visible.module-library.json
+-> loadCompoundModuleNodeSpecsFromLibrary()
+-> createNode(visibleRegistry, compound.visible-loud1)
+-> debug/c5-visible-module-publish-proof/visible_module_publish_report.json
+```
+
+## C5.3 Evidence
+
+- `ImGuiSmokeOverlay` exposes a `Publish Module` control that only fires when a compound node is selected.
+- `OpenGLShaderPreview` forwards the visible publish request through `onPublishModuleRequested`.
+- `MainComponent::publishSelectedModule()` calls `StorageCommand::publishModule()` and returns command status to the visible overlay.
+- Default visible publish proof uses the repo C2 work fixture as the source-law anchor; explicit `MY_WORLD_ACTIVE_WORK_MANIFEST` still routes to the caller's active work manifest.
+- `--dump-c5-visible-module-publish-proof-and-exit` writes `debug/c5-visible-module-publish-proof/visible_module_publish_report.json`.
+
+## C5.3 Proof Report Must Say
+
+```text
+ok: true
+operation: publish_module
+source: PatchDocument
+sourceNodeId: loud1
+sourceNodeType: compound.loudness
+publishedModuleId: module.visible-loud1
+publishedNodeType: compound.visible-loud1
+status: published
+packageReloaded: true
+libraryReloaded: true
+visibleRegistryContainsPublishedNode: true
+createdPublishedNode: true
+graphCommandLogStatus: create_node
+usesInteractionState: false
+```
+
+Latest C5.3 proof report says:
+
+```text
+ok: true
+operation: publish_module
+sourceNodeId: loud1
+sourceNodeType: compound.loudness
+publishedNodeType: compound.visible-loud1
+status: published
+packageReloaded: true
+libraryReloaded: true
+visibleRegistryContainsPublishedNode: true
+createdPublishedNode: true
+graphCommandLogStatus: create_node
+usesInteractionState: false
+```
+
+## C5.3 Verification Run
+
+```text
+cmake --build build --target my-world
+./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-visible-module-publish-proof-and-exit
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
 ## C5 Closed Target
 
 ```text
@@ -251,6 +330,16 @@ selected compound source
 ```
 
 C5.1 closes this C5 target for one selected compound source. Broader publishing UX and arbitrary graph extraction remain parked outside C5.1.
+
+Final C5 closure is split across:
+
+```text
+C5.1 command/storage/runtime publish proof
+C5.2 AI worker publish_module command path
+C5.3 visible Publish Module hand
+```
+
+Together these prove the same selected compound source can be published through the shared storage command path from command tests, AI worker, and visible UI, then reloaded into visible/runtime registries as evidence instead of a separate JSON-writing side path.
 
 ## Next Line
 

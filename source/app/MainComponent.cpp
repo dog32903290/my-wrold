@@ -12,7 +12,9 @@
 #include "StorageContract.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <filesystem>
 #include <sstream>
 #include <vector>
 
@@ -76,6 +78,16 @@ juce::File c5ModulePublishProofDumpDirectory()
 juce::File c5AIWorkerModulePublishProofDumpDirectory()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("c5-ai-worker-module-publish-proof");
+}
+
+juce::File c5VisibleModulePublishDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c5-visible-module-publish");
+}
+
+juce::File c5VisibleModulePublishProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c5-visible-module-publish-proof");
 }
 
 juce::File defaultActiveWorkManifestFile()
@@ -152,28 +164,75 @@ bool copyTextFile (const juce::File& source, const juce::File& target)
     return source.copyFileTo (target);
 }
 
-bool prepareDefaultActiveWorkProject (const juce::File& workManifestFile, std::string& error)
+bool copyFirstRepoCandidate (const juce::String& relativePath, const juce::File& target, std::string& error)
 {
-    if (workManifestFile.existsAsFile())
-        return true;
-
-    const auto patchFile = workManifestFile.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
-
-    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    for (const auto& candidate : repoCandidatePaths (relativePath))
     {
-        const auto sourceManifest = juce::File (candidate);
-        const auto sourcePatch = sourceManifest.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
-
-        if (copyTextFile (sourceManifest, workManifestFile) && copyTextFile (sourcePatch, patchFile))
+        const auto source = juce::File (candidate);
+        if (copyTextFile (source, target))
             return true;
 
-        error = "could not copy active work fixture from " + candidate;
+        error = "could not copy " + relativePath.toStdString() + " from " + candidate;
     }
 
     if (error.empty())
-        error = "could not prepare default active work";
+        error = "could not copy " + relativePath.toStdString();
 
     return false;
+}
+
+bool prepareDefaultActiveWorkProject (const juce::File& workManifestFile, std::string& error)
+{
+    const auto patchFile = workManifestFile.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
+    const auto debugDirectory = workManifestFile.getParentDirectory().getParentDirectory();
+    const auto moduleLibraryFile = debugDirectory.getChildFile ("module-libraries").getChildFile ("default.module-library.json");
+    const auto moduleManifestFile = debugDirectory.getChildFile ("module-libraries")
+                                          .getChildFile ("modules")
+                                          .getChildFile ("loudness")
+                                          .getChildFile ("module.json");
+
+    if (! workManifestFile.existsAsFile()
+        && ! copyFirstRepoCandidate ("fixtures/storage/c2-compound-work/myworld.work.json", workManifestFile, error))
+    {
+        return false;
+    }
+
+    if (! patchFile.existsAsFile()
+        && ! copyFirstRepoCandidate ("fixtures/storage/c2-compound-work/patches/main.patch.json", patchFile, error))
+    {
+        return false;
+    }
+
+    if (! moduleLibraryFile.existsAsFile()
+        && ! copyFirstRepoCandidate ("fixtures/module-libraries/default.module-library.json", moduleLibraryFile, error))
+    {
+        return false;
+    }
+
+    if (! moduleManifestFile.existsAsFile()
+        && ! copyFirstRepoCandidate ("fixtures/modules/loudness/module.json", moduleManifestFile, error))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+std::string safeIdentifier (const std::string& text)
+{
+    std::string result;
+    result.reserve (text.size());
+
+    for (const auto character : text)
+    {
+        const auto byte = static_cast<unsigned char> (character);
+        if (std::isalnum (byte) != 0 || character == '-' || character == '_')
+            result.push_back (static_cast<char> (std::tolower (byte)));
+        else
+            result.push_back ('-');
+    }
+
+    return result.empty() ? "module" : result;
 }
 
 std::string makeC2StorageReportJson (bool ok,
@@ -437,6 +496,40 @@ std::string makeC5AIWorkerModulePublishReportJson (bool ok,
     return out.str();
 }
 
+std::string makeC5VisibleModulePublishReportJson (bool ok,
+                                                  const PublishModuleResult& publish,
+                                                  bool packageReloaded,
+                                                  bool libraryReloaded,
+                                                  bool visibleRegistryContainsPublishedNode,
+                                                  bool createdPublishedNode,
+                                                  const std::string& graphCommandLogStatus,
+                                                  const std::string& error)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c5VisibleModulePublishProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"operation\": " << jsonQuoted (publish.operation) << ",\n";
+    out << "  \"source\": \"PatchDocument\",\n";
+    out << "  \"sourceNodeId\": " << jsonQuoted (publish.sourceNodeId) << ",\n";
+    out << "  \"sourceNodeType\": " << jsonQuoted (publish.sourceNodeType) << ",\n";
+    out << "  \"publishedModuleId\": " << jsonQuoted (publish.moduleId) << ",\n";
+    out << "  \"publishedNodeType\": " << jsonQuoted (publish.publishedNodeType) << ",\n";
+    out << "  \"moduleManifestPath\": " << jsonQuoted (publish.moduleManifestPath) << ",\n";
+    out << "  \"compoundPatchPath\": " << jsonQuoted (publish.compoundPatchPath) << ",\n";
+    out << "  \"targetLibraryPath\": " << jsonQuoted (publish.targetLibraryPath) << ",\n";
+    out << "  \"status\": " << jsonQuoted (publish.status) << ",\n";
+    out << "  \"packageReloaded\": " << (packageReloaded ? "true" : "false") << ",\n";
+    out << "  \"libraryReloaded\": " << (libraryReloaded ? "true" : "false") << ",\n";
+    out << "  \"visibleRegistryContainsPublishedNode\": " << (visibleRegistryContainsPublishedNode ? "true" : "false") << ",\n";
+    out << "  \"createdPublishedNode\": " << (createdPublishedNode ? "true" : "false") << ",\n";
+    out << "  \"graphCommandLogStatus\": " << jsonQuoted (graphCommandLogStatus) << ",\n";
+    out << "  \"usesInteractionState\": false,\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 {
     std::string lastError;
@@ -462,6 +555,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpC4AIWorkerSaveWorkProofOnStart,
                               bool dumpC5ModulePublishProofOnStart,
                               bool dumpC5AIWorkerModulePublishProofOnStart,
+                              bool dumpC5VisibleModulePublishProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -538,6 +632,14 @@ MainComponent::MainComponent (bool dumpProofOnStart,
 
         return safe->saveActiveWork (session);
     };
+    preview.onPublishModuleRequested = [safe = juce::Component::SafePointer<MainComponent> (this)] (GraphSession& session,
+                                                                                                   const std::string& sourceNodeId)
+    {
+        if (safe == nullptr)
+            return CommandResult { false, "main component is gone" };
+
+        return safe->publishSelectedModule (session, sourceNodeId);
+    };
     addAndMakeVisible (preview);
 
     startAudioInput();
@@ -605,6 +707,15 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC5AIWorkerModulePublishProof();
+        });
+    }
+
+    if (dumpC5VisibleModulePublishProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC5VisibleModulePublishProof();
         });
     }
 
@@ -1685,6 +1796,125 @@ void MainComponent::dumpC5AIWorkerModulePublishProof()
         quitAfterDelay();
 }
 
+void MainComponent::dumpC5VisibleModulePublishProof()
+{
+    const auto proofDirectory = c5VisibleModulePublishProofDumpDirectory();
+    const auto publishDirectory = c5VisibleModulePublishDirectory();
+    const auto reportFile = proofDirectory.getChildFile ("visible_module_publish_report.json");
+    const PublishModuleResult emptyPublish;
+
+    const auto writeFailureReport = [&] (const PublishModuleResult& publish, const std::string& message)
+    {
+        const auto report = makeC5VisibleModulePublishReportJson (false,
+                                                                  publish,
+                                                                  false,
+                                                                  false,
+                                                                  false,
+                                                                  false,
+                                                                  {},
+                                                                  message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c5 visible publish proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (proofDirectory.exists() && ! proofDirectory.deleteRecursively())
+    {
+        writeFailureReport (emptyPublish, "could not clear " + proofDirectory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (publishDirectory.exists() && ! publishDirectory.deleteRecursively())
+    {
+        writeFailureReport (emptyPublish, "could not clear " + publishDirectory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (! proofDirectory.createDirectory())
+    {
+        writeFailureReport (emptyPublish, "could not create " + proofDirectory.getFullPathName().toStdString());
+        return;
+    }
+
+    auto session = makeGraphSession (makeDefaultShaderOutputGraph());
+    const auto createSource = createNode (session, "compound.loudness", "loud1", { 220.0, 260.0 });
+    if (! createSource.ok)
+    {
+        writeFailureReport (emptyPublish, createSource.message);
+        return;
+    }
+
+    const auto publish = publishSelectedModuleResult (session, "loud1");
+    const auto package = publish.ok ? loadModulePackageManifest (publish.moduleManifestPath) : ModulePackageLoadResult {};
+    const auto library = publish.ok ? loadModuleLibraryManifest (publish.targetLibraryPath) : ModuleLibraryLoadResult {};
+    const auto loadedSpecs = publish.ok ? loadCompoundModuleNodeSpecsFromLibrary (publish.targetLibraryPath)
+                                        : CompoundModuleNodeSpecsResult {};
+    const auto packageReloaded = package.ok && std::filesystem::exists (publish.compoundPatchPath);
+    const auto libraryReloaded = library.ok;
+    const auto visibleRegistryContainsPublishedNode = loadedSpecs.ok
+        && std::any_of (loadedSpecs.specs.begin(),
+                        loadedSpecs.specs.end(),
+                        [&publish] (const auto& spec) {
+                            return spec.type == publish.publishedNodeType;
+                        });
+
+    auto reuseSession = makeGraphSession (makeDefaultShaderOutputGraph());
+    CommandResult createResult { false, "published node spec not loaded" };
+    if (loadedSpecs.ok)
+    {
+        const auto visibleRegistry = mergeNodeSpecs (makeSeedNodeSpecs(), loadedSpecs.specs);
+        createResult = createNode (reuseSession,
+                                   visibleRegistry,
+                                   publish.publishedNodeType,
+                                   "visible_published_loud1",
+                                   { 340.0, 280.0 });
+    }
+
+    const auto graphCommandLogStatus = reuseSession.commandLog.empty() ? std::string {}
+                                                                       : reuseSession.commandLog.back();
+    const auto createdPublishedNode = createResult.ok && graphCommandLogStatus == "create_node";
+    const auto ok = publish.ok
+                    && publish.status == "published"
+                    && packageReloaded
+                    && libraryReloaded
+                    && visibleRegistryContainsPublishedNode
+                    && createdPublishedNode;
+    const auto error = ok ? std::string {}
+                          : ! publish.ok ? publish.error
+                          : ! package.ok ? package.error
+                          : ! library.ok ? library.error
+                          : ! loadedSpecs.ok ? loadedSpecs.error
+                          : ! createResult.ok ? createResult.message
+                          : "C5 visible publish proof did not match expected publish/reuse evidence";
+
+    const auto report = makeC5VisibleModulePublishReportJson (ok,
+                                                              publish,
+                                                              packageReloaded,
+                                                              libraryReloaded,
+                                                              visibleRegistryContainsPublishedNode,
+                                                              createdPublishedNode,
+                                                              graphCommandLogStatus,
+                                                              error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c5 visible publish proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c5 visible publish proof dumped: " : "c5 visible publish proof mismatch: ")
+                             + proofDirectory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
 {
     const auto manifestFile = activeWorkManifestFile();
@@ -1700,6 +1930,78 @@ CommandResult MainComponent::saveActiveWork (GraphSession& session)
     const auto result = saveWork (session, manifestFile.getFullPathName().toStdString());
     const auto message = result.ok ? result.status : result.error;
     statusLabel.setText ((result.ok ? "save_work: " : "save_work failed: ") + juce::String (message),
+                         juce::dontSendNotification);
+
+    return { result.ok, message };
+}
+
+PublishModuleResult MainComponent::publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId)
+{
+    const auto manifestFile = activeWorkManifestFile();
+    std::string error;
+    std::string workManifestPath;
+
+    if (manifestFile == defaultActiveWorkManifestFile())
+    {
+        for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+        {
+            const auto work = loadWorkProjectManifest (candidate);
+            if (work.ok)
+            {
+                workManifestPath = candidate;
+                break;
+            }
+
+            error = work.error;
+        }
+    }
+    else
+    {
+        workManifestPath = manifestFile.getFullPathName().toStdString();
+    }
+
+    if (workManifestPath.empty())
+    {
+        return { false,
+                 "publish_module",
+                 "validation-failed",
+                 sourceNodeId,
+                 {},
+                 {},
+                 {},
+                 {},
+                 {},
+                 {},
+                 error.empty() ? "could not resolve publish source work manifest" : error };
+    }
+
+    const auto safeNodeId = safeIdentifier (sourceNodeId);
+    const auto publishDirectory = c5VisibleModulePublishDirectory();
+
+    PublishModuleRequest request;
+    request.workManifestPath = workManifestPath;
+    request.sourceNodeId = sourceNodeId;
+    request.moduleId = "module.visible-" + safeNodeId;
+    request.moduleTitle = "Visible " + sourceNodeId;
+    request.nodeType = "compound.visible-" + safeNodeId;
+    request.packageDirectory = publishDirectory.getChildFile ("modules")
+                                   .getChildFile (safeNodeId)
+                                   .getFullPathName()
+                                   .toStdString();
+    request.targetLibraryPath = publishDirectory.getChildFile ("module-libraries")
+                                    .getChildFile ("visible.module-library.json")
+                                    .getFullPathName()
+                                    .toStdString();
+    request.overwriteExisting = true;
+
+    return publishModule (session, request);
+}
+
+CommandResult MainComponent::publishSelectedModule (GraphSession& session, const std::string& sourceNodeId)
+{
+    const auto result = publishSelectedModuleResult (session, sourceNodeId);
+    const auto message = result.ok ? result.status : result.error;
+    statusLabel.setText ((result.ok ? "publish_module: " : "publish_module failed: ") + juce::String (message),
                          juce::dontSendNotification);
 
     return { result.ok, message };

@@ -29,9 +29,12 @@ public:
         const auto dumpC5ModulePublishProofAndExit = commandLine.contains ("--dump-c5-module-publish-proof-and-exit");
         const auto dumpC5AIWorkerModulePublishProofAndExit = commandLine.contains (
             "--dump-c5-ai-worker-module-publish-proof-and-exit");
+        const auto dumpC5VisibleModulePublishProofAndExit = commandLine.contains (
+            "--dump-c5-visible-module-publish-proof-and-exit");
         const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
                                           || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit
-                                          || dumpC5ModulePublishProofAndExit || dumpC5AIWorkerModulePublishProofAndExit;
+                                          || dumpC5ModulePublishProofAndExit || dumpC5AIWorkerModulePublishProofAndExit
+                                          || dumpC5VisibleModulePublishProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
@@ -41,6 +44,7 @@ public:
                                                    dumpC4AIWorkerSaveWorkProofAndExit,
                                                    dumpC5ModulePublishProofAndExit,
                                                    dumpC5AIWorkerModulePublishProofAndExit,
+                                                   dumpC5VisibleModulePublishProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -66,6 +70,7 @@ private:
                     bool dumpC4AIWorkerSaveWorkProofAndExit,
                     bool dumpC5ModulePublishProofAndExit,
                     bool dumpC5AIWorkerModulePublishProofAndExit,
+                    bool dumpC5VisibleModulePublishProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -79,6 +84,7 @@ private:
                                                 dumpC4AIWorkerSaveWorkProofAndExit,
                                                 dumpC5ModulePublishProofAndExit,
                                                 dumpC5AIWorkerModulePublishProofAndExit,
+                                                dumpC5VisibleModulePublishProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

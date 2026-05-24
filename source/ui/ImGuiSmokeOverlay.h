@@ -17,6 +17,7 @@ class ImGuiSmokeOverlay
 public:
     using ShaderSourceCallback = std::function<void (const std::string&)>;
     using SaveWorkCallback = std::function<CommandResult (GraphSession&)>;
+    using PublishModuleCallback = std::function<CommandResult (GraphSession&, const std::string&)>;
 
     ImGuiSmokeOverlay();
 
@@ -35,9 +36,11 @@ public:
     void setRuntimeOpDiagnostics (std::vector<RuntimeOpModuleDiagnostic> diagnostics);
     void requestDeleteSelection();
     void requestSaveWork();
+    void requestPublishSelectedModule();
 
     ShaderSourceCallback onShaderSourceSubmitted;
     SaveWorkCallback onSaveWorkRequested;
+    PublishModuleCallback onPublishModuleRequested;
 
 private:
     void drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,

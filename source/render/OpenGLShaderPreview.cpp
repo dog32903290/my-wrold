@@ -177,6 +177,14 @@ OpenGLShaderPreview::OpenGLShaderPreview()
         return onSaveWorkRequested (session);
     };
 
+    imguiOverlay.onPublishModuleRequested = [this] (GraphSession& session, const std::string& sourceNodeId)
+    {
+        if (onPublishModuleRequested == nullptr)
+            return CommandResult { false, "no active publisher" };
+
+        return onPublishModuleRequested (session, sourceNodeId);
+    };
+
     openGLContext.setOpenGLVersionRequired (juce::OpenGLContext::openGL3_2);
     openGLContext.setRenderer (this);
     openGLContext.setContinuousRepainting (false);

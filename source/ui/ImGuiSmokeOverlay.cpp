@@ -387,6 +387,26 @@ void ImGuiSmokeOverlay::requestSaveWork()
                                        : "save_work failed: " + result.message;
 }
 
+void ImGuiSmokeOverlay::requestPublishSelectedModule()
+{
+    const auto nodeId = selectedNodeId (interactionSession);
+    if (! selectedNodeIsCompound (interactionSession))
+    {
+        lastInteractionMessage = "publish_module failed: select compound node";
+        return;
+    }
+
+    if (onPublishModuleRequested == nullptr)
+    {
+        lastInteractionMessage = "publish_module: no active publisher";
+        return;
+    }
+
+    const auto result = onPublishModuleRequested (interactionSession, nodeId);
+    lastInteractionMessage = result.ok ? "publish_module: " + result.message
+                                       : "publish_module failed: " + result.message;
+}
+
 void ImGuiSmokeOverlay::shutdown()
 {
     if (! initialised)
@@ -763,6 +783,10 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     ImGui::SameLine();
     if (ImGui::Button ("Save Work"))
         requestSaveWork();
+
+    ImGui::SameLine();
+    if (ImGui::Button ("Publish Module"))
+        requestPublishSelectedModule();
 }
 
 void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,

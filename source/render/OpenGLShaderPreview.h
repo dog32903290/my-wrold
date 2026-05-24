@@ -23,6 +23,7 @@ class OpenGLShaderPreview final : public juce::Component,
 public:
     using StatusCallback = std::function<void(juce::String)>;
     using SaveWorkCallback = ImGuiSmokeOverlay::SaveWorkCallback;
+    using PublishModuleCallback = ImGuiSmokeOverlay::PublishModuleCallback;
 
     OpenGLShaderPreview();
     ~OpenGLShaderPreview() override;
@@ -33,6 +34,7 @@ public:
 
     StatusCallback onStatusMessage;
     SaveWorkCallback onSaveWorkRequested;
+    PublishModuleCallback onPublishModuleRequested;
 
 private:
     struct PendingProofDump

@@ -79,7 +79,8 @@ Current C5 note:
 
 ```text
 C5.1 module publish/reuse command + storage/runtime proof is closed and pushed in 73ce3f0.
-C5.2 AI worker publish_module command path is closed locally.
+C5.2 AI worker publish_module command path is closed and pushed in 9b48941.
+C5.3 visible publish hand is closed locally; this segment commit closes C5.
 Active C5 spec:
 - docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md
 Current C5 evidence is in:
@@ -87,6 +88,7 @@ Current C5 evidence is in:
 - tests/AIWorkerCommandTests.cpp
 - debug/c5-module-publish-proof/module_publish_report.json
 - debug/c5-ai-worker-module-publish-proof/ai_worker_module_publish_report.json
+- debug/c5-visible-module-publish-proof/visible_module_publish_report.json
 
 Verification run:
 - `cmake --build build --target my_world_module_publish_tests my_world_save_work_command_tests my_world_compound_module_tests my_world_runtime_registry_tests my-world`
@@ -104,6 +106,12 @@ Current C5.2 verification:
 - `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-ai-worker-module-publish-proof-and-exit`
 - `git diff --check`
 - `ctest --test-dir build --output-on-failure`
+
+Current C5.3 verification:
+- `cmake --build build --target my-world`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-visible-module-publish-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
 ```
 
 ## Main Spine
@@ -116,8 +124,8 @@ Current C5.2 verification:
 | C2 PatchDocument work persistence | closed | `docs/superpowers/specs/2026-05-24-c2-compound-work-closure.md` | Do not reopen C2 |
 | C3 storage command path | closed | `docs/superpowers/specs/2026-05-24-c3-storage-command-path.md` | Do not reopen C3 |
 | C4 AI worker command path | closed | `docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md` | Do not reopen C4 |
-| C5 module publish/reuse path | active | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | C5.3 visible publish hand |
-| C6 analyzer compound family / AI repair loop closure | planned | not yet specified | split if C5 grows too large |
+| C5 module publish/reuse path | closed | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | Do not reopen C5 for C6 work |
+| C6 analyzer compound family / AI repair loop closure | planned | not yet specified | write next spec before implementation |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
@@ -128,7 +136,8 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-C5.3 visible publish hand
+None after C5 closure.
+Next selectable lane: C6 analyzer compound family / AI repair loop closure.
 ```
 
 C4 proved:
@@ -152,14 +161,13 @@ remote sync
 raw callback-buffer runtime
 ```
 
-Park during C5:
+Parked after C5:
 
 ```text
 AI repair loop / retry policy
-AI worker publish_module command
 new analyzer compound family
 multi-node group-to-compound extraction
-publish dialog / browser polish
+publish dialog / browser polish beyond the visible proof hand
 remote sync / shared module registry
 RenderBackend extraction
 TiXL browser/search implementation

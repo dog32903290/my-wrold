@@ -5,6 +5,7 @@
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
+#include "StorageCommand.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -22,6 +23,7 @@ public:
                    bool dumpC4AIWorkerSaveWorkProofOnStart = false,
                    bool dumpC5ModulePublishProofOnStart = false,
                    bool dumpC5AIWorkerModulePublishProofOnStart = false,
+                   bool dumpC5VisibleModulePublishProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -37,7 +39,10 @@ private:
     void dumpC4AIWorkerSaveWorkProof();
     void dumpC5ModulePublishProof();
     void dumpC5AIWorkerModulePublishProof();
+    void dumpC5VisibleModulePublishProof();
     CommandResult saveActiveWork (GraphSession& session);
+    CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
+    PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();
