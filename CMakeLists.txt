@@ -891,6 +891,40 @@ set_tests_properties(c6_ai_repair_loop_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_c4_ai_worker_save_work_proof_runner
+    source/app/C4AIWorkerSaveWorkProofRunner.cpp
+)
+
+target_include_directories(my_world_c4_ai_worker_save_work_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/ai
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_c4_ai_worker_save_work_proof_runner
+    PUBLIC
+        my_world_ai_worker
+        my_world_interaction
+        my_world_proof_reports
+)
+
+add_executable(my_world_c4_ai_worker_save_work_proof_runner_tests
+    tests/C4AIWorkerSaveWorkProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_c4_ai_worker_save_work_proof_runner_tests
+    PRIVATE
+        my_world_c4_ai_worker_save_work_proof_runner
+)
+
+add_test(NAME c4_ai_worker_save_work_proof_runner
+         COMMAND my_world_c4_ai_worker_save_work_proof_runner_tests)
+set_tests_properties(c4_ai_worker_save_work_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_pv_b1_analyzer_environment_proof_runner
     source/app/PVB1AnalyzerEnvironmentProofRunner.cpp
 )
@@ -1091,6 +1125,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
+            my_world_c4_ai_worker_save_work_proof_runner
             my_world_pv_b1_analyzer_environment_proof_runner
             my_world_pv_detector_proof_runner
             my_world_ai_worker
