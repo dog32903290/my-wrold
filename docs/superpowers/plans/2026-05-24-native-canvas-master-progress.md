@@ -207,7 +207,7 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | active | R1 closed: OpenGL proof now runs behind `RenderBackend`; R2 closed: headless `image.constant -> output.texture_summary` writes debug artifacts; `ctest` 33/33 | R3 proof compatibility/closure |
+| R runtime/render backbone | closed | R1 closed: OpenGL proof now runs behind `RenderBackend`; R2 closed: headless `image.constant -> output.texture_summary` writes debug artifacts; R3 closed: V1/R2 proof JSON fields are compatible; `ctest` 33/33 | Select next lane explicitly |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
 ## Active Lane Protocol
@@ -217,15 +217,15 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-R3 runtime/render proof compatibility closure is in progress.
+None after R3 closure.
 H1.1 UI overlay split is closed.
 H1.2 RuntimeRegistry split is closed.
 H1.3 StorageContract split is closed in the current slice.
 R0 runtime/render backbone roadmap spec is closed in the current slice.
 R1 OpenGL proof backend extraction is closed in d884f2d.
-R2 headless image.constant runtime proof is closed in the current slice.
-Active implementation plan:
-- docs/superpowers/plans/2026-05-24-r-segment-implementation.md
+R2 headless image.constant runtime proof is closed in ebeab9f.
+R3 runtime/render proof compatibility closure is closed in the current slice.
+No active implementation plan until the next lane is explicitly selected.
 ```
 
 Current R note:
@@ -248,7 +248,7 @@ fixtures/runtime/top_constant_to_output.graph.json
 -> debug/r2-top-constant/texture_summary.json + cook_order.json + node_stats.json + errors.json
 ```
 
-Do not implement Metal, image.blur, node thumbnails, SOP/MAT/POINT, or render export before R closes.
+R closed without Metal, image.blur, node thumbnails, SOP/MAT/POINT, or render export.
 
 R1 closed evidence:
 
@@ -269,6 +269,17 @@ debug/r2-top-constant/node_stats.json records render-domain image.constant and o
 debug/r2-top-constant/errors.json has `"ok": true`.
 Invalid resolution and unsupported node type fixtures fail with errors evidence.
 ctest passed 33/33.
+```
+
+R3 closed evidence:
+
+```text
+V1 and R2 cook_order.json both expose `"version": 1` and `cookOrder`.
+V1 node_stats.json reports `"renderer": "OpenGL"`.
+R2 node_stats.json reports `"renderer": "headless"`.
+Both proofs expose render-domain node status evidence.
+R3 verification: focused R tests passed, --dump-proof-and-exit exited 0, ctest passed 33/33, git diff --check passed.
+No Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, storage schema, or reopened C4/C5/C6 behavior entered R.
 ```
 
 Current H1.1 note:
@@ -444,7 +455,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first, then `docs/superpowers/plans/2026-05-24-r-segment-implementation.md`. R3 runtime/render proof compatibility closure is active; do not start Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, or PV/TiXL work until R closes. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. R runtime/render backbone is closed through R3; select the next lane explicitly before editing. Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, and PV/TiXL work remain parked until selected. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

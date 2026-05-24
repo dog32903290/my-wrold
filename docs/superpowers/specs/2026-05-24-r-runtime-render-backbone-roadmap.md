@@ -127,7 +127,7 @@ For the first R runtime fixture, `image.constant` only needs texture metadata an
 | R0 roadmap | closed by this spec | master plan routes R lane | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md`, master progress | `git diff --check` |
 | R1 OpenGL backend extraction | closed | default shader graph -> OpenGLRenderBackend -> V1 proof artifacts unchanged | `source/render/RenderBackend.h`, new `source/render/OpenGLRenderBackend.*`, `source/render/OpenGLShaderPreview.*`, `source/app/MainComponent.cpp`, `CMakeLists.txt` | backend test, build app, `--dump-proof-and-exit`, check `frame.png`, `cook_order.json`, `node_stats.json`, `ctest`, `git diff --check` |
 | R2 headless texture summary runtime | closed | `top_constant_to_output.graph.json` -> `texture_summary.json` | `source/render/HeadlessRenderRuntime.*`, `tests/HeadlessRenderRuntimeTests.cpp`, `CMakeLists.txt` | `my_world_headless_render_runtime_tests`, `ctest` 33/33, `git diff --check` |
-| R3 runtime/render proof unification | active | runtimeGraph render status -> shared proof JSON fields | R roadmap, master progress, implementation plan; code only if proof compatibility reveals a gap | V1 proof plus R2 headless proof both write compatible `cook_order` and `node_stats` evidence |
+| R3 runtime/render proof unification | closed | runtimeGraph render status -> shared proof JSON fields | `source/render/HeadlessRenderRuntime.cpp`, `tests/HeadlessRenderRuntimeTests.cpp`, R roadmap, master progress, implementation plan | V1 and R2 both expose `version`, `cookOrder`, node `cookDomain`, node `status`, and renderer evidence |
 | R4 Metal readiness gate | parked | OpenGL backend interface audit -> Metal first-slice decision | spec only until R1-R3 close | no Metal code before the audit names the smallest frame-producing slice |
 
 ## R1 Acceptance Contract
@@ -186,13 +186,26 @@ git diff --check
 
 R2 closed evidence on 2026-05-24: the RED build failed on missing `HeadlessRenderRuntime.h`; the GREEN target printed `headless render runtime ok`; `debug/r2-top-constant/texture_summary.json` reports 1280x720 rgba8; `cook_order.json` orders `const1` before `out1`; `node_stats.json` marks render-domain nodes; `errors.json` has `"ok": true`; invalid resolution and unsupported node type write failure evidence; full `ctest` passed 33/33.
 
+## R3 Closure Contract
+
+R3 is closed when:
+
+```text
+V1 `debug/v1-shader-proof/cook_order.json` and R2 `debug/r2-top-constant/cook_order.json` both expose versioned cook order evidence.
+V1 and R2 `node_stats.json` both expose versioned node stats, renderer identity, node cookDomain, and node status.
+The R segment still has no Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, storage schema work, or reopened C4/C5/C6 behavior.
+The master progress plan marks R closed and leaves no next lane active by assumption.
+```
+
+R3 closed evidence on 2026-05-24: focused R tests printed `render backend contract ok`, `opengl render backend ok`, and `headless render runtime ok`; `--dump-proof-and-exit` refreshed V1 proof; V1 and R2 artifacts both expose `"version": 1`, cook order, renderer identity (`OpenGL` / `headless`), and render-domain node stats; full `ctest` passed 33/33; `git diff --check` passed.
+
 ## Non-Goals
 
 ```text
-do not implement Metal in R1 or R2
+do not implement Metal in R1, R2, or R3
 do not add WGPU, bgfx, MoltenVK, or Vulkan
 do not add production node thumbnails
-do not add image.blur before image.constant proof closes
+do not add image.blur before R closes
 do not add SOP, MAT, POINT, timeline, export window, or render queue
 do not change storage JSON schema
 do not reopen C4/C5/C6 command or AI worker behavior
@@ -203,8 +216,8 @@ do not move graph mutation out of the command path
 
 The older TiXL node-function spec names `top_constant_to_output.graph.json` as the first runtime slice. This roadmap keeps that as the first new runtime-node slice, but places OpenGL backend extraction before it because the current V1 preview still hides backend ownership inside `OpenGLShaderPreview`.
 
-This is not a license to expand R1. R1 only moves the existing OpenGL proof behind a backend boundary. R2 starts new runtime node execution.
+This is not a license to expand R. R1 only moves the existing OpenGL proof behind a backend boundary. R2 starts new runtime node execution. R3 only aligns proof evidence and closes the segment.
 
 ## Next Handoff Sentence
 
-Open the master progress plan first, then the R segment implementation plan. R3 proof compatibility/closure is active; keep Metal and new visual node vocabulary parked until R closes.
+Open the master progress plan first. R runtime/render backbone is closed through R3; select the next lane explicitly before editing. Metal and new visual node vocabulary remain parked.

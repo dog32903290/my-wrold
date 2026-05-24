@@ -342,6 +342,7 @@ std::string makeCookOrderJson (const ParsedFixture& fixture)
     std::ostringstream out;
     out << "{\n";
     out << "  \"kind\": \"headlessRenderCookOrder\",\n";
+    out << "  \"version\": 1,\n";
     out << "  \"cookOrder\": ["
         << jsonQuoted (fixture.constant.id) << ", "
         << jsonQuoted (fixture.output.id) << "],\n";
@@ -359,6 +360,8 @@ std::string makeNodeStatsJson (const ParsedFixture& fixture)
     std::ostringstream out;
     out << "{\n";
     out << "  \"kind\": \"headlessRenderNodeStats\",\n";
+    out << "  \"version\": 1,\n";
+    out << "  \"renderer\": \"headless\",\n";
     out << "  \"nodes\": [\n";
     out << "    {\n";
     out << "      \"id\": " << jsonQuoted (fixture.constant.id) << ",\n";

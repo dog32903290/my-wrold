@@ -144,6 +144,15 @@ int main()
     expectFileContains (outputDirectory / "cook_order.json",
                         "\"cookOrder\": [\"const1\", \"out1\"]",
                         "cook order");
+    expectFileContains (outputDirectory / "cook_order.json",
+                        "\"version\": 1",
+                        "cook order");
+    expectFileContains (outputDirectory / "node_stats.json",
+                        "\"version\": 1",
+                        "node stats");
+    expectFileContains (outputDirectory / "node_stats.json",
+                        "\"renderer\": \"headless\"",
+                        "node stats");
     expectFileContains (outputDirectory / "node_stats.json",
                         "\"type\": \"image.constant\"",
                         "node stats");

@@ -303,7 +303,7 @@ Regression: `ctest --test-dir build --output-on-failure` passed 33/33; `git diff
 - Modify: `docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md`
 - Modify: `docs/superpowers/plans/2026-05-24-r-segment-implementation.md`
 
-- [ ] **Step 1: Verify R evidence from fresh commands**
+- [x] **Step 1: Verify R evidence from fresh commands**
 
 Run:
 
@@ -319,7 +319,7 @@ git diff --check
 
 Expected: all commands exit 0.
 
-- [ ] **Step 2: Self-review the R diff**
+- [x] **Step 2: Self-review the R diff**
 
 Review changed files for:
 
@@ -334,7 +334,7 @@ unrelated refactor
 
 Record any issue in the final report or fix it before closure.
 
-- [ ] **Step 3: Close R in docs**
+- [x] **Step 3: Close R in docs**
 
 Update the R roadmap and master progress with:
 
@@ -346,6 +346,17 @@ R4 Metal readiness remains parked: no Metal code entered
 Next candidate lane after R: PV/analyzer detector expansion or explicitly selected lane
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
+
+R3 closure evidence:
+
+```text
+Build: `cmake --build build --target my_world_render_backend_contract_tests my_world_opengl_render_backend_tests my_world_headless_render_runtime_tests my-world` passed.
+Focused tests: render backend, OpenGL backend, and headless runtime tests printed their ok lines.
+App proof: `--dump-proof-and-exit` exited 0 and refreshed `debug/v1-shader-proof`.
+Compatibility: V1 and R2 `cook_order.json` both expose `"version": 1` and `cookOrder`; V1 node stats reports `"renderer": "OpenGL"`, R2 node stats reports `"renderer": "headless"`.
+Regression: `ctest --test-dir build --output-on-failure` passed 33/33; `git diff --check` passed.
+Self-review: no contract bypass, no unrelated refactor, no Metal/blur/SOP/MAT/POINT/render-export code. Remaining watch point: R2 reuses `storage_contract_internal::JsonParser`; acceptable for this proof, but future repeated runtime fixture readers should promote a public graph fixture parser instead of deepening render -> storage internals.
+```
 
 Commit closure docs and final plan checkbox update.
