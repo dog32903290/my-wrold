@@ -231,6 +231,7 @@ Latest accepted targeted result:
 | PV-B1 analyzer environment promotion | closed | `docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md`; focused test and app proof dump passed; V1 runtime UI diagnostics include PV compounds; `ctest` 40/40 | Do not reopen for MIDI/shader/live callback work without a new selected lane |
 | PV-B1.1 node surface geometry | closed | `docs/superpowers/specs/2026-05-24-pv-b1-node-surface-geometry.md`; TiXL-style `NodeSpec -> CanvasNodeSurfaceGeometry -> draw/hit-test`; focused tests, app build, PV-B1 proof, full `ctest` 40/40, `git diff --check` passed | Do not reopen for broader skin, thumbnails, MIDI/shader mapping, or TiXL runtime work without a new selected lane |
 | PV proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-pv-proof-harness-extraction.md`; `PVDetectorProofRunner` owns detector proof runtime/fixture/artifact orchestration; focused tests, app build, and attack CLI proof passed | Do not reopen detector semantics; C2-C6/PV-B1/V1 proof harness cleanup remain separate selected lanes |
+| PV-B1 proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-pv-b1-proof-harness-extraction.md`; `PVB1AnalyzerEnvironmentProofRunner` owns visible-catalog proof artifact orchestration; focused test, app build, and PV-B1 CLI proof passed | Do not reopen PV-B1 semantics; C2-C6/V1 proof harness cleanup remain separate selected lanes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -240,8 +241,37 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after PV proof harness extraction as of 2026-05-24 23:17 Asia/Taipei.
+None after PV-B1 proof harness extraction as of 2026-05-24 23:52 Asia/Taipei.
 
+PV-B1 proof harness extraction closed as of 2026-05-24 23:52 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-24-pv-b1-proof-harness-extraction.md
+
+Closed proof line:
+PVB1AnalyzerEnvironmentProofRunRequest
+-> runPVB1AnalyzerEnvironmentProof()
+-> analyzer visible module library + visible catalog proof
+-> analyzer_environment_report.json
+-> MainComponent status facade
+
+Latest verification:
+- `cmake -S . -B build` red before runner source existed, then green after implementation
+- `cmake --build build --target my_world_pv_b1_analyzer_environment_proof_runner_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "pv_b1_analyzer_environment_proof_runner|analyzer_visible_catalog"`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-b1-analyzer-environment-proof-and-exit`
+
+Latest accepted result:
+- `analyzer_visible_catalog` passed
+- `pv_b1_analyzer_environment_proof_runner` passed
+- app build passed
+- CLI PV-B1 proof exited 0 and wrote `debug/pv-b1-analyzer-environment-proof/analyzer_environment_report.json` with `ok: true`, `loadedModuleNodeCount: 8`, and `createdNodeCount: 8`
+
+Parked:
+- C2-C6 proof orchestration remains in `MainComponent`
+- V1 shader proof remains tied to `OpenGLShaderPreview`
+
+Previous closure:
 PV proof harness extraction closed as of 2026-05-24 23:17 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-24-pv-proof-harness-extraction.md
@@ -268,7 +298,6 @@ Latest accepted result:
 
 Parked:
 - C2-C6 proof orchestration remains in `MainComponent`
-- PV-B1 analyzer environment proof remains in `MainComponent`
 - V1 shader proof remains tied to `OpenGLShaderPreview`
 
 Previous closure:

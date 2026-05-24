@@ -771,6 +771,36 @@ set_tests_properties(analyzer_visible_catalog PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_pv_b1_analyzer_environment_proof_runner
+    source/app/PVB1AnalyzerEnvironmentProofRunner.cpp
+)
+
+target_include_directories(my_world_pv_b1_analyzer_environment_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_pv_b1_analyzer_environment_proof_runner
+    PUBLIC
+        my_world_analyzer_visible_catalog
+)
+
+add_executable(my_world_pv_b1_analyzer_environment_proof_runner_tests
+    tests/PVB1AnalyzerEnvironmentProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_pv_b1_analyzer_environment_proof_runner_tests
+    PRIVATE
+        my_world_pv_b1_analyzer_environment_proof_runner
+)
+
+add_test(NAME pv_b1_analyzer_environment_proof_runner
+         COMMAND my_world_pv_b1_analyzer_environment_proof_runner_tests)
+set_tests_properties(pv_b1_analyzer_environment_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_pv_detector_proof_runner
     source/app/PVDetectorProofRunner.cpp
 )
@@ -938,7 +968,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_preferences
             my_world_runtime_registry
-            my_world_analyzer_visible_catalog
+            my_world_pv_b1_analyzer_environment_proof_runner
             my_world_pv_detector_proof_runner
             my_world_ai_worker
             my_world_storage_command

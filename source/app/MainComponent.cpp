@@ -1,12 +1,12 @@
 #include "MainComponent.h"
 
 #include "AIWorkerCommand.h"
-#include "AnalyzerVisibleCatalog.h"
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
 #include "InteractionContract.h"
+#include "PVB1AnalyzerEnvironmentProofRunner.h"
 #include "PVDetectorProofRunner.h"
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
@@ -121,7 +121,7 @@ juce::File pvDetectorProofDumpDirectory (PVDetectorProofKind kind)
 
 juce::File pvB1AnalyzerEnvironmentProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("pv-b1-analyzer-environment-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (pvB1AnalyzerEnvironmentProofDirectoryName());
 }
 
 juce::File defaultActiveWorkManifestFile()
@@ -157,11 +157,6 @@ juce::String analyzerFamilyModuleLibraryPath()
     return "fixtures/module-libraries/analyzer-family.module-library.json";
 }
 
-juce::String pvAnalyzerVisibleModuleLibraryPath()
-{
-    return "fixtures/module-libraries/pv-analyzer-visible.module-library.json";
-}
-
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
 {
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
@@ -178,7 +173,7 @@ std::vector<std::string> repoCandidatePaths (const juce::String& relativePath)
     return moduleLibraryCandidatePaths (relativePath);
 }
 
-std::vector<std::filesystem::path> pvDetectorProofCandidateRoots()
+std::vector<std::filesystem::path> proofCandidateRoots()
 {
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
 
@@ -2191,7 +2186,7 @@ void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
     PVDetectorProofRunRequest request;
     request.kind = kind;
     request.outputDirectory = directory.getFullPathName().toStdString();
-    request.candidateRoots = pvDetectorProofCandidateRoots();
+    request.candidateRoots = proofCandidateRoots();
 
     const auto result = runPVDetectorProof (request);
     const auto displayName = juce::String (pvDetectorProofDisplayName (kind));
@@ -2215,61 +2210,21 @@ void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
 void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
 {
     const auto directory = pvB1AnalyzerEnvironmentProofDumpDirectory();
-    const auto reportFile = directory.getChildFile ("analyzer_environment_report.json");
 
-    const auto writeFailureReport = [&] (const std::string& message)
-    {
-        AnalyzerVisibleCatalogProof failure;
-        failure.libraryPath = pvAnalyzerVisibleModuleLibraryPath().toStdString();
-        failure.requiredNodeTypes = pvB1AnalyzerRequiredNodeTypes();
-        failure.error = message;
-        writeTextFile (reportFile, makeAnalyzerVisibleCatalogProofJson (failure));
-        statusLabel.setText ("PV-B1 analyzer environment proof failed: " + juce::String (message),
+    PVB1AnalyzerEnvironmentProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runPVB1AnalyzerEnvironmentProof (request);
+    const auto displayNameString = juce::String (pvB1AnalyzerEnvironmentProofDisplayName());
+
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-    };
-
-    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
-    {
-        writeFailureReport (error);
-        return;
-    }
-
-    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
-    {
-        writeFailureReport (error);
-        return;
-    }
-
-    AnalyzerVisibleCatalogProof proof;
-    std::string lastError;
-    for (const auto& candidate : repoCandidatePaths (pvAnalyzerVisibleModuleLibraryPath()))
-    {
-        proof = proveAnalyzerVisibleCatalog (candidate);
-        if (proof.ok)
-            break;
-
-        lastError = proof.error;
-    }
-
-    if (! proof.ok && proof.error.empty())
-        proof.error = lastError.empty() ? "could not load PV-B1 analyzer visible module library" : lastError;
-
-    if (! writeTextFile (reportFile, makeAnalyzerVisibleCatalogProofJson (proof)))
-    {
-        statusLabel.setText ("PV-B1 analyzer environment proof failed: could not write "
-                                 + reportFile.getFullPathName(),
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    statusLabel.setText ((proof.ok ? "PV-B1 analyzer environment proof dumped: "
-                                   : "PV-B1 analyzer environment proof mismatch: ")
-                             + directory.getFullPathName(),
-                         juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
