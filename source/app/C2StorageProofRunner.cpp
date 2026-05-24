@@ -4,12 +4,10 @@
 #include "GraphEndpoint.h"
 #include "InteractionContract.h"
 #include "ProofReports.h"
+#include "ProofRunSupport.h"
 #include "StorageContract.h"
 
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -30,58 +28,6 @@ bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
                         [&edgeId] (const auto& edge) {
                             return edge.id == edgeId;
                         });
-}
-
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
 }
 
 C2StorageProofRunResult makeInitialResult (const C2StorageProofRunRequest& request)
@@ -120,18 +66,18 @@ C2StorageProofRunResult runC2StorageProof (const C2StorageProofRunRequest& reque
                                   double monoMixY,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC2StorageReportJson (ok,
-                                                       workManifestPath,
-                                                       savedPatchFile.string(),
-                                                       saveStatus,
-                                                       session,
-                                                       publicInputEdge,
-                                                       publicOutputEdge,
-                                                       monoMixLayout,
-                                                       monoMixX,
-                                                       monoMixY,
-                                                       error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC2StorageReportJson (ok,
+                                                            workManifestPath,
+                                                            savedPatchFile.string(),
+                                                            saveStatus,
+                                                            session,
+                                                            publicInputEdge,
+                                                            publicOutputEdge,
+                                                            monoMixLayout,
+                                                            monoMixX,
+                                                            monoMixY,
+                                                            error));
     };
 
     const auto fail = [&] (const std::string& message)
@@ -152,14 +98,14 @@ C2StorageProofRunResult runC2StorageProof (const C2StorageProofRunRequest& reque
         return result;
     };
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (error);
 
     std::string workManifestPath;
     PatchDocumentLoadResult loadedPatch;
     std::string lastError;
 
-    for (const auto& candidate : candidatePaths (request.candidateRoots, workFixturePath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, workFixturePath))
     {
         const auto loaded = loadMainPatchDocumentForWork (candidate.string());
         if (loaded.ok)
@@ -221,7 +167,7 @@ C2StorageProofRunResult runC2StorageProof (const C2StorageProofRunRequest& reque
     auto reloadedSession = makeGraphSession (reloadedPatch.document.graph);
 
     CompoundPatchLoadResult loadedCompound;
-    for (const auto& candidate : candidatePaths (request.candidateRoots, loudnessCompoundFixturePath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, loudnessCompoundFixturePath))
     {
         const auto loaded = loadCompoundPatchSpec (candidate.string());
         if (loaded.ok)

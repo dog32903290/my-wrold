@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 01:15 Asia/Taipei.
+Date: 2026-05-25 01:22 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+30845a7 Extract proof run support helpers
 3c0e471 Extract V1 shader proof artifacts
 caa9372 Extract A1 audio proof runner
 562860d Extract C2 storage proof runner
@@ -229,6 +230,7 @@ Latest accepted targeted result:
 | A1 audio proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md`; `A1AudioProofRunner` owns runtime registry lookup, synthetic runtime execution, audio stats, compound, runtime execution, and bridge artifact writing; focused test, app build, and A1 CLI proof passed | Do not reopen A1 analyzer/runtime semantics; V1 proof harness cleanup remains separate selected lane |
 | V1 shader proof artifact extraction | closed | `docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md`; `V1ShaderProofArtifacts` owns V1 proof artifact path/report/PNG writing while `OpenGLShaderPreview` keeps live frame capture; focused test, app build, and V1 CLI proof passed | Do not treat this as headless V1; RenderBackend/headless visual work remains a separate selected lane |
 | ProofRunSupport C3/C4 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-c3-c4.md`; shared proof text/directory/candidate/copy primitives now serve C3/C4 runners; focused tests, app build, C3/C4 CLI proofs, and full `ctest` 51/51 passed | Do not centralize all proof runner logic; migrate remaining helpers only as selected small slices |
+| ProofRunSupport A1/C2 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-a1-c2.md`; A1/C2 now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, and A1/C2 CLI proofs passed | Do not centralize all proof runner logic; C5/C6/PV cleanup remains separate selected slices |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -238,8 +240,49 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after ProofRunSupport C3/C4 cleanup as of 2026-05-25 01:15 Asia/Taipei.
+None after ProofRunSupport A1/C2 cleanup as of 2026-05-25 01:22 Asia/Taipei.
 
+ProofRunSupport A1/C2 cleanup closed as of 2026-05-25 01:22 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-proof-run-support-a1-c2.md
+
+Closed support line:
+A1/C2 proof runners
+-> ProofRunSupport
+-> proof text file writing / output directory setup / candidate path dedupe
+-> existing A1/C2 artifacts and CLI flags
+
+Latest verification:
+- `cmake -S . -B build`
+- `cmake --build build --target my_world_a1_audio_proof_runner_tests my_world_c2_storage_proof_runner_tests my_world_proof_run_support_tests`
+- `ctest --test-dir build --output-on-failure -R "proof_run_support|a1_audio_proof_runner|c2_storage_proof_runner|runtime_registry|performance_preferences|storage_contract|patch_document"`
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`
+- `git diff --check`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `proof_run_support` passed
+- `a1_audio_proof_runner` passed
+- `c2_storage_proof_runner` passed
+- `runtime_registry` passed
+- `performance_preferences` passed
+- `storage_contract` passed
+- `patch_document` passed
+- app build passed
+- A1 CLI proof exited 0 and kept runtime `kind: "runtimeExecution"` plus `nodeType: "compound.loudness"`
+- C2 CLI proof exited 0 and kept `ok: true`, `saveStatus: "save-ok commit-pending"`, public input/output edges, and matching expanded layout
+- full `ctest` passed 51/51
+- `git diff --check` passed
+
+Parked:
+- Do not migrate all proof helpers in one sweep
+- C5/C6/PV/PV-B1 helper cleanup needs separate selected slices
+- Support helpers are not a new generic proof runner
+
+Previous closure:
 ProofRunSupport C3/C4 cleanup closed as of 2026-05-25 01:15 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-25-proof-run-support-c3-c4.md

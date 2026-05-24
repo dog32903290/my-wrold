@@ -905,6 +905,7 @@ target_include_directories(my_world_a1_audio_proof_runner
 
 target_link_libraries(my_world_a1_audio_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_preferences
         my_world_runtime_registry
 )
@@ -961,6 +962,7 @@ target_include_directories(my_world_c2_storage_proof_runner
 
 target_link_libraries(my_world_c2_storage_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_interaction
         my_world_proof_reports
         my_world_storage

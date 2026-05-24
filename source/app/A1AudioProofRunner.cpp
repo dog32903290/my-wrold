@@ -1,14 +1,12 @@
 #include "A1AudioProofRunner.h"
 
 #include "CompoundPatch.h"
+#include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
 
-#include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <sstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -44,63 +42,11 @@ std::string jsonQuoted (const std::string& text)
     return out.str();
 }
 
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
-}
-
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry (const std::vector<std::filesystem::path>& candidateRoots)
 {
     std::string lastError;
 
-    for (const auto& path : candidatePaths (candidateRoots, moduleLibraryPath))
+    for (const auto& path : proofCandidatePaths (candidateRoots, moduleLibraryPath))
     {
         const auto registry = loadRuntimeRegistryFromModuleLibrary (path.string());
         if (registry.ok)
@@ -180,7 +126,7 @@ A1AudioProofRunResult runA1AudioProof (const A1AudioProofRunRequest& request)
         return result;
     };
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (error);
 
     const auto runtimeRegistry = loadAudioProofRuntimeRegistry (request.candidateRoots);
@@ -214,7 +160,7 @@ A1AudioProofRunResult runA1AudioProof (const A1AudioProofRunRequest& request)
 
     for (const auto& [path, text] : writes)
     {
-        if (const auto error = writeTextFile (path, text); ! error.empty())
+        if (const auto error = writeProofTextFile (path, text); ! error.empty())
             return fail (error);
     }
 
