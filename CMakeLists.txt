@@ -515,6 +515,36 @@ set_tests_properties(patch_document PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_storage_command
+    source/storage/StorageCommand.cpp
+)
+
+target_include_directories(my_world_storage_command
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_storage_command
+    PUBLIC
+        my_world_storage
+        my_world_interaction
+)
+
+add_executable(my_world_save_work_command_tests
+    tests/SaveWorkCommandTests.cpp
+)
+
+target_link_libraries(my_world_save_work_command_tests
+    PRIVATE
+        my_world_storage_command
+)
+
+add_test(NAME save_work_command COMMAND my_world_save_work_command_tests)
+set_tests_properties(save_work_command PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
 

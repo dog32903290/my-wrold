@@ -1,0 +1,122 @@
+#include "CompoundPatch.h"
+#include "GraphEndpoint.h"
+#include "InteractionContract.h"
+#include "StorageCommand.h"
+#include "StorageContract.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+
+bool hasEdgeId (const myworld::GraphContract& graph, const std::string& edgeId)
+{
+    return std::find_if (graph.editorGraph.edges.begin(),
+                         graph.editorGraph.edges.end(),
+                         [&edgeId] (const auto& edge) {
+                             return edge.id == edgeId;
+                         }) != graph.editorGraph.edges.end();
+}
+
+bool containsCommand (const std::vector<std::string>& commands, const std::string& command)
+{
+    return std::find (commands.begin(), commands.end(), command) != commands.end();
+}
+
+std::string readTextFile (const std::filesystem::path& path)
+{
+    std::ifstream input (path);
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    return buffer.str();
+}
+
+void copyC2WorkFixture (const std::filesystem::path& workRoot)
+{
+    std::filesystem::create_directories (workRoot / "patches");
+    std::filesystem::copy_file ("fixtures/storage/c2-compound-work/myworld.work.json",
+                                workRoot / "myworld.work.json",
+                                std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy_file ("fixtures/storage/c2-compound-work/patches/main.patch.json",
+                                workRoot / "patches" / "main.patch.json",
+                                std::filesystem::copy_options::overwrite_existing);
+}
+}
+
+int main()
+{
+    const auto loadedCompound = myworld::loadCompoundPatchSpec ("fixtures/compounds/loudness.compound.json");
+    expect (loadedCompound.ok, loadedCompound.error);
+
+    const auto workRoot = std::filesystem::temp_directory_path() / "my-world-c3-save-work-command";
+    std::filesystem::remove_all (workRoot);
+    copyC2WorkFixture (workRoot);
+
+    const auto workManifestPath = workRoot / "myworld.work.json";
+    const auto loadedMain = myworld::loadMainPatchDocumentForWork (workManifestPath.string());
+    expect (loadedMain.ok, loadedMain.error);
+
+    auto session = myworld::makeGraphSession (loadedMain.document.graph);
+    expect (myworld::moveNode (session, "library_loud1", 13.0, 7.0).ok,
+            "dirty graph session before save_work");
+    expect (session.dirty, "session is dirty before save_work");
+
+    const auto result = myworld::saveWork (session, workManifestPath.string());
+    expect (result.ok, result.error);
+    expect (result.status == "save-ok commit-pending", "save_work status");
+    expect (! session.dirty, "save_work clears dirty graph state after PatchDocument write");
+    expect (containsCommand (session.commandLog, "save_work:save-ok commit-pending"),
+            "save_work command status logged");
+
+    const auto savedPatchPath = workRoot / "patches" / "main.patch.json";
+    const auto savedText = readTextFile (savedPatchPath);
+    expect (savedText.find ("interaction-state-v1") == std::string::npos,
+            "save_work must not use temporary interaction serializer");
+    expect (savedText.find ("library_loud1.audio.in") != std::string::npos,
+            "saved PatchDocument keeps public input port edge");
+    expect (savedText.find ("library_loud1.out") != std::string::npos,
+            "saved PatchDocument keeps public output port edge");
+
+    const auto reloaded = myworld::loadPatchDocument (savedPatchPath.string());
+    expect (reloaded.ok, reloaded.error);
+    expect (hasEdgeId (reloaded.document.graph, "edge.live_audio.channels.library_loud1.audio.in"),
+            "save_work reloaded public input edge");
+    expect (hasEdgeId (reloaded.document.graph, "edge.library_loud1.out.midi_loudness.value"),
+            "save_work reloaded public output edge");
+
+    const auto reloadedExpandedGraph = myworld::makeCompoundPatchInteractionGraph (
+        loadedCompound.spec,
+        "library_loud1",
+        reloaded.document.graph);
+    const auto* monoMix = myworld::findEditorNode (reloadedExpandedGraph, "library_loud1/mono_mix");
+    expect (monoMix != nullptr, "save_work reloaded expanded mono_mix");
+    expect (monoMix->position.x == 358.0, "save_work preserves expanded child layout x");
+    expect (monoMix->position.y == 146.0, "save_work preserves expanded child layout y");
+
+    const auto saveLogPath = workRoot / ".myworld" / "save_log.jsonl";
+    expect (std::filesystem::exists (saveLogPath), "save_work writes save log");
+    const auto saveLog = readTextFile (saveLogPath);
+    expect (saveLog.find ("\"command\": \"save_work\"") != std::string::npos,
+            "save log records save_work command");
+    expect (saveLog.find ("\"status\": \"save-ok commit-pending\"") != std::string::npos,
+            "save log records save_work status");
+
+    std::filesystem::remove_all (workRoot);
+
+    std::cout << "save_work command contract ok\n";
+    return 0;
+}
