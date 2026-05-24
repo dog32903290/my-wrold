@@ -73,6 +73,11 @@ juce::File c5ModulePublishProofDumpDirectory()
     return projectDirectory().getChildFile ("debug").getChildFile ("c5-module-publish-proof");
 }
 
+juce::File c5AIWorkerModulePublishProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c5-ai-worker-module-publish-proof");
+}
+
 juce::File defaultActiveWorkManifestFile()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("c3-active-work").getChildFile ("myworld.work.json");
@@ -394,6 +399,44 @@ std::string makeC5ModulePublishReportJson (bool ok,
     return out.str();
 }
 
+std::string makeC5AIWorkerModulePublishReportJson (bool ok,
+                                                   bool allowedPublishModule,
+                                                   const AIWorkerCommandRequest& request,
+                                                   const AIWorkerCommandResult& result,
+                                                   size_t collaborationLogEntries,
+                                                   const std::string& collaborationProofEvidence,
+                                                   const std::string& aiCommandLogStatus,
+                                                   const std::string& error)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c5AIWorkerModulePublishProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"source\": \"PatchDocument\",\n";
+    out << "  \"allowedPublishModule\": " << (allowedPublishModule ? "true" : "false") << ",\n";
+    out << "  \"operation\": " << jsonQuoted (result.operation) << ",\n";
+    out << "  \"commandId\": " << jsonQuoted (result.commandId) << ",\n";
+    out << "  \"workerId\": " << jsonQuoted (result.workerId) << ",\n";
+    out << "  \"intent\": " << jsonQuoted (request.intent) << ",\n";
+    out << "  \"sourceNodeId\": " << jsonQuoted (request.nodeId) << ",\n";
+    out << "  \"publishedModuleId\": " << jsonQuoted (request.moduleId) << ",\n";
+    out << "  \"publishedNodeType\": " << jsonQuoted (request.publishedNodeType) << ",\n";
+    out << "  \"moduleManifestPath\": " << jsonQuoted (result.evidence.moduleManifestPath) << ",\n";
+    out << "  \"compoundPatchPath\": " << jsonQuoted (result.evidence.compoundPatchPath) << ",\n";
+    out << "  \"targetLibraryPath\": " << jsonQuoted (result.evidence.targetLibraryPath) << ",\n";
+    out << "  \"status\": " << jsonQuoted (result.status) << ",\n";
+    out << "  \"publishCommandLogStatus\": " << jsonQuoted (result.evidence.publishCommandLogStatus) << ",\n";
+    out << "  \"aiCommandLogStatus\": " << jsonQuoted (aiCommandLogStatus) << ",\n";
+    out << "  \"packageReloaded\": " << (result.evidence.packageReloaded ? "true" : "false") << ",\n";
+    out << "  \"libraryReloaded\": " << (result.evidence.libraryReloaded ? "true" : "false") << ",\n";
+    out << "  \"collaborationLogEntries\": " << collaborationLogEntries << ",\n";
+    out << "  \"collaborationProofEvidence\": " << jsonQuoted (collaborationProofEvidence) << ",\n";
+    out << "  \"usesInteractionState\": false,\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 {
     std::string lastError;
@@ -418,6 +461,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpC3SaveWorkProofOnStart,
                               bool dumpC4AIWorkerSaveWorkProofOnStart,
                               bool dumpC5ModulePublishProofOnStart,
+                              bool dumpC5AIWorkerModulePublishProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -552,6 +596,15 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC5ModulePublishProof();
+        });
+    }
+
+    if (dumpC5AIWorkerModulePublishProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC5AIWorkerModulePublishProof();
         });
     }
 
@@ -1493,6 +1546,138 @@ void MainComponent::dumpC5ModulePublishProof()
     }
 
     statusLabel.setText ((ok ? "c5 module publish proof dumped: " : "c5 module publish proof mismatch: ")
+                             + directory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpC5AIWorkerModulePublishProof()
+{
+    const auto directory = c5AIWorkerModulePublishProofDumpDirectory();
+    const auto reportFile = directory.getChildFile ("ai_worker_module_publish_report.json");
+    const auto packageDirectory = directory.getChildFile ("modules").getChildFile ("ai-published-loudness");
+    const auto libraryFile = directory.getChildFile ("module-libraries").getChildFile ("ai-published.module-library.json");
+    const auto allowedOperations = allowedAIWorkerOperations();
+    const auto allowedPublishModule = std::find (allowedOperations.begin(),
+                                                 allowedOperations.end(),
+                                                 "publish_module") != allowedOperations.end();
+
+    AIWorkerCommandRequest request;
+    request.commandId = "c5.2-publish-module";
+    request.workerId = "ai-worker-proof";
+    request.operation = "publish_module";
+    request.intent = "Publish the loaded loudness compound through the shared publish_module command path";
+    request.nodeId = "library_loud1";
+    request.moduleId = "module.ai-published-loudness";
+    request.moduleTitle = "AI Published Loudness";
+    request.publishedNodeType = "compound.ai-published-loudness";
+    request.packageDirectory = packageDirectory.getFullPathName().toStdString();
+    request.targetLibraryPath = libraryFile.getFullPathName().toStdString();
+    request.overwriteExisting = true;
+
+    const AIWorkerCommandResult emptyResult;
+
+    const auto writeFailureReport = [&] (const AIWorkerCommandResult& result, const std::string& message)
+    {
+        const auto report = makeC5AIWorkerModulePublishReportJson (false,
+                                                                   allowedPublishModule,
+                                                                   request,
+                                                                   result,
+                                                                   0,
+                                                                   {},
+                                                                   {},
+                                                                   message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c5 AI worker publish proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        writeFailureReport (emptyResult, "could not clear " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (! directory.createDirectory())
+    {
+        writeFailureReport (emptyResult, "could not create " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    std::string workManifestPath;
+    PatchDocumentLoadResult loadedPatch;
+    std::string lastError;
+
+    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    {
+        const auto loaded = loadMainPatchDocumentForWork (candidate);
+        if (loaded.ok)
+        {
+            workManifestPath = candidate;
+            loadedPatch = loaded;
+            break;
+        }
+
+        lastError = loaded.error;
+    }
+
+    if (! loadedPatch.ok)
+    {
+        writeFailureReport (emptyResult, lastError.empty() ? "could not load C2 work fixture" : lastError);
+        return;
+    }
+
+    request.workManifestPath = workManifestPath;
+    auto session = makeGraphSession (loadedPatch.document.graph);
+    const auto result = executeAIWorkerCommand (session, request);
+    const auto aiCommandLogStatus = session.commandLog.empty() ? std::string {} : session.commandLog.back();
+    const auto collaborationProofEvidence = session.collaborationLog.empty() ? std::string {}
+                                                                             : session.collaborationLog.back().proofEvidence;
+    const auto collaborationLogOk = session.collaborationLog.size() >= 2
+                                    && session.collaborationLog.front().operation == "publish_module"
+                                    && session.collaborationLog.front().status == "requested"
+                                    && session.collaborationLog.back().operation == "publish_module"
+                                    && session.collaborationLog.back().status == "published"
+                                    && collaborationProofEvidence.find ("publishCommandLogStatus=publish_module:published")
+                                        != std::string::npos
+                                    && collaborationProofEvidence.find ("packageReloaded=true") != std::string::npos
+                                    && collaborationProofEvidence.find ("libraryReloaded=true") != std::string::npos;
+    const auto ok = allowedPublishModule
+                    && result.ok
+                    && result.operation == "publish_module"
+                    && result.status == "published"
+                    && result.evidence.publishCommandLogStatus == "publish_module:published"
+                    && result.evidence.packageReloaded
+                    && result.evidence.libraryReloaded
+                    && aiCommandLogStatus == "ai_worker:publish_module:published"
+                    && collaborationLogOk;
+    const auto error = ok ? std::string {}
+                          : ! result.ok ? result.error
+                          : "C5 AI worker publish_module proof did not match expected command/collaboration evidence";
+
+    const auto report = makeC5AIWorkerModulePublishReportJson (ok,
+                                                               allowedPublishModule,
+                                                               request,
+                                                               result,
+                                                               session.collaborationLog.size(),
+                                                               collaborationProofEvidence,
+                                                               aiCommandLogStatus,
+                                                               error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c5 AI worker publish proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c5 AI worker publish proof dumped: " : "c5 AI worker publish proof mismatch: ")
                              + directory.getFullPathName(),
                          juce::dontSendNotification);
 

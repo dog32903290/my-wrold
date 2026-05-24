@@ -154,6 +154,91 @@ new analyzer compound family
 human documentation generation beyond a stub path
 ```
 
+## C5.2 Target
+
+```text
+AIWorkerCommandRequest(publish_module)
+-> allowedAIWorkerOperations includes publish_module
+-> executeAIWorkerCommand()
+-> StorageCommand::publishModule()
+-> published package + library reload evidence
+-> GraphSession commandLog + collaborationLog proof evidence
+-> app proof dump can read back evidence
+```
+
+## C5.2 Closed Slice
+
+```text
+AIWorkerCommandRequest(publish_module, workManifestPath, source node, module package fields)
+-> allowedAIWorkerOperations includes publish_module
+-> executeAIWorkerCommand()
+-> StorageCommand::publishModule()
+-> package/library reload evidence
+-> commandLog records ai_worker:publish_module + publish_module:published
+-> collaborationLog records publish proof evidence
+-> debug/c5-ai-worker-module-publish-proof/ai_worker_module_publish_report.json
+```
+
+## C5.2 Evidence
+
+- `source/ai/AIWorkerCommand.*` now carries the minimal `publish_module` payload: source node id, module id/title, published node type, package directory, target library path, and overwrite flag.
+- `allowedAIWorkerOperations()` exposes `publish_module`.
+- `executeAIWorkerCommand()` handles `publish_module` only by calling `StorageCommand::publishModule()`.
+- `AIWorkerCommandEvidence` records `publishCommandLogStatus`, module manifest path, compound patch path, target library path, `packageReloaded`, and `libraryReloaded`.
+- `tests/AIWorkerCommandTests.cpp` proves AI `publish_module` writes the package/library, reloads the module manifest, records the shared `publish_module:published` command status, and writes collaboration proof evidence.
+- `--dump-c5-ai-worker-module-publish-proof-and-exit` writes `debug/c5-ai-worker-module-publish-proof/ai_worker_module_publish_report.json`.
+
+## C5.2 Proof Report Must Say
+
+```text
+ok: true
+source: PatchDocument
+allowedPublishModule: true
+operation: publish_module
+status: published
+publishCommandLogStatus: publish_module:published
+aiCommandLogStatus: ai_worker:publish_module:published
+packageReloaded: true
+libraryReloaded: true
+collaborationProofEvidence includes publishCommandLogStatus=publish_module:published
+collaborationProofEvidence includes packageReloaded=true
+collaborationProofEvidence includes libraryReloaded=true
+usesInteractionState: false
+```
+
+Latest C5.2 proof report says:
+
+```text
+ok: true
+allowedPublishModule: true
+operation: publish_module
+status: published
+publishCommandLogStatus: publish_module:published
+aiCommandLogStatus: ai_worker:publish_module:published
+packageReloaded: true
+libraryReloaded: true
+usesInteractionState: false
+```
+
+## C5.2 Verification Run
+
+```text
+cmake --build build --target my_world_ai_worker_command_tests my-world
+./build/my_world_ai_worker_command_tests
+./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-ai-worker-module-publish-proof-and-exit
+git diff --check
+ctest --test-dir build --output-on-failure
+```
+
+Latest accepted result:
+
+```text
+AI worker command contract ok
+debug/c5-ai-worker-module-publish-proof/ai_worker_module_publish_report.json ok: true
+29/29 tests passed
+git diff --check passed
+```
+
 ## C5 Closed Target
 
 ```text

@@ -64,6 +64,7 @@ int main()
     const auto allowed = myworld::allowedAIWorkerOperations();
     expect (contains (allowed, "save_work"), "AI worker allowed operation includes save_work");
     expect (contains (allowed, "move_node"), "AI worker allowed operation includes move_node");
+    expect (contains (allowed, "publish_module"), "AI worker allowed operation includes publish_module");
 
     const auto loadedCompound = myworld::loadCompoundPatchSpec ("fixtures/compounds/loudness.compound.json");
     expect (loadedCompound.ok, loadedCompound.error);
@@ -208,6 +209,69 @@ int main()
 
     std::filesystem::remove_all (workRoot);
 
-    std::cout << "AI worker save_work command contract ok\n";
+    const auto publishRoot = std::filesystem::temp_directory_path() / "my-world-c5-ai-worker-publish-module";
+    std::filesystem::remove_all (publishRoot);
+
+    const auto publishLoadedMain = myworld::loadMainPatchDocumentForWork (
+        "fixtures/storage/c2-compound-work/myworld.work.json");
+    expect (publishLoadedMain.ok, publishLoadedMain.error);
+
+    auto publishSession = myworld::makeGraphSession (publishLoadedMain.document.graph);
+
+    myworld::AIWorkerCommandRequest publishRequest;
+    publishRequest.commandId = "c5.2-publish-module";
+    publishRequest.workerId = "ai-worker-test";
+    publishRequest.operation = "publish_module";
+    publishRequest.intent = "Publish the loaded loudness compound through the shared publish_module command path";
+    publishRequest.workManifestPath = "fixtures/storage/c2-compound-work/myworld.work.json";
+    publishRequest.nodeId = "library_loud1";
+    publishRequest.moduleId = "module.ai-published-loudness";
+    publishRequest.moduleTitle = "AI Published Loudness";
+    publishRequest.publishedNodeType = "compound.ai-published-loudness";
+    publishRequest.packageDirectory = (publishRoot / "modules" / "ai-published-loudness").string();
+    publishRequest.targetLibraryPath = (publishRoot / "module-libraries" / "ai-published.module-library.json").string();
+    publishRequest.overwriteExisting = true;
+
+    const auto publishResult = myworld::executeAIWorkerCommand (publishSession, publishRequest);
+    expect (publishResult.ok, publishResult.error);
+    expect (publishResult.operation == "publish_module", "AI worker publish_module result operation");
+    expect (publishResult.status == "published", "AI worker publish_module status");
+    expect (publishResult.evidence.publishCommandLogStatus == "publish_module:published",
+            "AI worker records underlying publish_module command log status");
+    expect (publishResult.evidence.packageReloaded, "AI worker records published module package reload evidence");
+    expect (publishResult.evidence.libraryReloaded, "AI worker records published module library reload evidence");
+    expect (std::filesystem::exists (publishResult.evidence.moduleManifestPath),
+            "AI worker publish_module writes module manifest");
+    expect (std::filesystem::exists (publishResult.evidence.compoundPatchPath),
+            "AI worker publish_module writes compound patch");
+    expect (std::filesystem::exists (publishResult.evidence.targetLibraryPath),
+            "AI worker publish_module writes module library");
+    expect (contains (publishSession.commandLog, "ai_worker:publish_module:requested"),
+            "command log records AI worker publish_module intent");
+    expect (contains (publishSession.commandLog, "publish_module:published"),
+            "AI worker publish_module uses StorageCommand::publishModule command path");
+    expect (contains (publishSession.commandLog, "ai_worker:publish_module:published"),
+            "command log records AI worker publish_module result");
+
+    expect (publishSession.collaborationLog.size() >= 2,
+            "AI worker publish_module records collaboration log entries");
+    expect (publishSession.collaborationLog.front().operation == "publish_module",
+            "collaboration log records publish_module operation");
+    expect (publishSession.collaborationLog.back().proofEvidence.find ("publishCommandLogStatus=publish_module:published")
+                != std::string::npos,
+            "collaboration log records publish_module command proof");
+    expect (publishSession.collaborationLog.back().proofEvidence.find ("packageReloaded=true") != std::string::npos,
+            "collaboration log records package reload proof");
+    expect (publishSession.collaborationLog.back().proofEvidence.find ("libraryReloaded=true") != std::string::npos,
+            "collaboration log records library reload proof");
+
+    const auto aiPublishedModule = myworld::loadModulePackageManifest (publishResult.evidence.moduleManifestPath);
+    expect (aiPublishedModule.ok, aiPublishedModule.error);
+    expect (aiPublishedModule.manifest.nodeType == "compound.ai-published-loudness",
+            "AI worker published module reloads with requested node type");
+
+    std::filesystem::remove_all (publishRoot);
+
+    std::cout << "AI worker command contract ok\n";
     return 0;
 }
