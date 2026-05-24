@@ -14,14 +14,19 @@ struct AIWorkerCommandRequest
     std::string operation;
     std::string intent;
     std::string workManifestPath;
+    std::string nodeId;
+    double deltaX = 0.0;
+    double deltaY = 0.0;
 };
 
 struct AIWorkerCommandEvidence
 {
+    std::string graphCommandLogStatus;
     std::string storageCommandLogStatus;
     std::string saveLogPath;
     std::string saveLogStatus;
     std::string patchPath;
+    bool graphMutationApplied = false;
     bool patchReloaded = false;
     bool usesInteractionState = false;
 };

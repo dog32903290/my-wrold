@@ -13,6 +13,7 @@ namespace myworld
 namespace
 {
 constexpr const char* saveWorkOperation = "save_work";
+constexpr const char* moveNodeOperation = "move_node";
 
 std::string normalizedOperation (const AIWorkerCommandRequest& request)
 {
@@ -47,11 +48,22 @@ std::string lastStorageCommandLogStatus (const GraphSession& session)
     return {};
 }
 
+std::string lastGraphCommandLogStatus (const GraphSession& session, const std::string& command)
+{
+    for (auto item = session.commandLog.rbegin(); item != session.commandLog.rend(); ++item)
+        if (*item == command)
+            return *item;
+
+    return {};
+}
+
 std::string makeProofEvidence (const AIWorkerCommandEvidence& evidence)
 {
     std::ostringstream out;
-    out << "storageCommandLogStatus=" << evidence.storageCommandLogStatus
+    out << "graphCommandLogStatus=" << evidence.graphCommandLogStatus
+        << "; storageCommandLogStatus=" << evidence.storageCommandLogStatus
         << "; saveLogStatus=" << evidence.saveLogStatus
+        << "; graphMutationApplied=" << (evidence.graphMutationApplied ? "true" : "false")
         << "; patchReloaded=" << (evidence.patchReloaded ? "true" : "false")
         << "; usesInteractionState=" << (evidence.usesInteractionState ? "true" : "false");
     return out.str();
@@ -106,7 +118,7 @@ AIWorkerCommandEvidence collectSaveWorkEvidence (const GraphSession& session, co
 
 std::vector<std::string> allowedAIWorkerOperations()
 {
-    return { saveWorkOperation };
+    return { saveWorkOperation, moveNodeOperation };
 }
 
 AIWorkerCommandResult executeAIWorkerCommand (GraphSession& session, const AIWorkerCommandRequest& request)
@@ -126,7 +138,8 @@ AIWorkerCommandResult executeAIWorkerCommand (GraphSession& session, const AIWor
                             {},
                             {});
 
-    if (operation != saveWorkOperation)
+    const auto allowed = allowedAIWorkerOperations();
+    if (std::find (allowed.begin(), allowed.end(), operation) == allowed.end())
     {
         const auto error = "AI worker operation is not allowed: " + operation;
         session.commandLog.push_back ("ai_worker:" + operation + ":rejected");
@@ -140,6 +153,31 @@ AIWorkerCommandResult executeAIWorkerCommand (GraphSession& session, const AIWor
                                 {},
                                 error);
         return { false, commandId, workerId, operation, "rejected", error, {} };
+    }
+
+    if (operation == moveNodeOperation)
+    {
+        const auto commandResult = moveNode (session, request.nodeId, request.deltaX, request.deltaY);
+        AIWorkerCommandEvidence evidence;
+        evidence.graphCommandLogStatus = lastGraphCommandLogStatus (session, moveNodeOperation);
+        evidence.graphMutationApplied = commandResult.ok && evidence.graphCommandLogStatus == moveNodeOperation;
+        const auto proofEvidence = makeProofEvidence (evidence);
+        const auto ok = commandResult.ok && evidence.graphMutationApplied;
+        const auto status = ok ? "ok" : "failed";
+        const auto error = ok ? std::string {} : commandResult.message;
+
+        appendCollaborationLog (session,
+                                workerId,
+                                commandId,
+                                operation,
+                                request.intent,
+                                status,
+                                ok ? "ok" : "failed",
+                                proofEvidence,
+                                error);
+        session.commandLog.push_back ("ai_worker:" + operation + ":" + status);
+
+        return { ok, commandId, workerId, operation, status, error, std::move (evidence) };
     }
 
     const auto saveResult = saveWork (session, request.workManifestPath);

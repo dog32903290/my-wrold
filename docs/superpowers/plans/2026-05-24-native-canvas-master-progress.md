@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 11:24 Asia/Taipei.
+Date: 2026-05-24 11:31 Asia/Taipei.
 
 Branch:
 
@@ -55,21 +55,19 @@ f7fbc10 Advance native canvas proof spine
 Current C4 note:
 
 ```text
-C4.1 AI worker save_work command contract is closed in the current slice.
-Current C4.1 evidence is in:
+C4.1 AI worker save_work command contract is closed.
+C4.2 AI worker move_node command contract is closed in the current slice.
+Current C4 evidence is in:
 - docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md
 - debug/c4-ai-worker-save-work-proof/ai_worker_save_work_report.json
 
 Verification run:
-- `cmake --build build`
-- `ctest --test-dir build --output-on-failure`
-- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`
-- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c3-save-work-proof-and-exit`
-- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c4-ai-worker-save-work-proof-and-exit`
+- `cmake --build build --target my_world_ai_worker_command_tests`
+- `./build/my_world_ai_worker_command_tests`
 - `git diff --check`
 ```
 
-Do not reopen C4.1 to add natural language parsing, repair loop, remote sync, or graph mutation commands.
+Do not reopen C4.1/C4.2 to add natural language parsing, repair loop, remote sync, or additional graph mutation commands.
 
 ## Main Spine
 
@@ -80,7 +78,7 @@ Do not reopen C4.1 to add natural language parsing, repair loop, remote sync, or
 | C1 compound core | closed | `docs/superpowers/specs/2026-05-24-c1-24-compound-proof-closure.md` | Do not reopen C1 |
 | C2 PatchDocument work persistence | closed | `docs/superpowers/specs/2026-05-24-c2-compound-work-closure.md` | Do not reopen C2 |
 | C3 storage command path | closed | `docs/superpowers/specs/2026-05-24-c3-storage-command-path.md` | Do not reopen C3 |
-| C4 AI worker save_work caller | C4.1 closed | `docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md` | Choose C4.2 or C5 explicitly |
+| C4 AI worker command path | C4.1-C4.2 closed | `docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md` | C4.3 app proof closure |
 | C5 module publish/reuse path | planned | not yet specified | write slice spec after C4 closure |
 | C6 analyzer compound family / AI repair loop closure | planned | not yet specified | split if C5 grows too large |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
@@ -93,17 +91,17 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-none selected after C4.1 closure
+C4.3 app proof closure
 ```
 
-C4.1 proved:
+C4.1-C4.2 proved:
 
 ```text
 AI worker request
--> commandGraph / StorageCommand boundary
--> save_work
+-> allowed operation boundary
+-> move_node through InteractionContract
+-> save_work through StorageCommand
 -> command/collaboration proof evidence
--> PatchDocument reload + save log readback
 ```
 
 Park during C4:
@@ -125,7 +123,7 @@ raw callback-buffer runtime
 | `P` prefix is overloaded | Tooll3 skin `P0-P7`, TiXL `P-TAX/P-SEARCH`, future "P segment" talk | Future performance/patch-vocabulary lane must not use bare `P1/P2`. Use `PV-*` for patch vocabulary or rename the lane before writing specs. |
 | TiXL ledger is a plan but also tracks progress | `2026-05-24-tixl-parity-construction-ledger.md` | It is a sub-ledger. Start progress from this master plan, then open TiXL ledger only for TiXL-visible parity work. |
 | Skeleton spec can become too long and look like the dashboard | `2026-05-22-native-canvas-skeleton-design.md` | Skeleton is architecture/status evidence. This master plan is the current dashboard. |
-| C4.1 closes only save_work, not the full AI worker loop | C4 spec vs future AI worker expectations | Natural language parsing, graph mutation commands, repair loop, and remote sync remain parked outside C4.1. |
+| C4.1-C4.2 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Natural language parsing, additional graph mutation commands, repair loop, and remote sync remain parked outside C4. |
 
 ## Plan Inventory
 

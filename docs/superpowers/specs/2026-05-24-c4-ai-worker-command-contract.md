@@ -1,6 +1,6 @@
 # C4 AI Worker Command Contract
 
-Date: 2026-05-24 11:24 Asia/Taipei
+Date: 2026-05-24 11:31 Asia/Taipei
 
 ## C4 Target
 
@@ -25,6 +25,17 @@ AIWorkerCommandRequest(save_work, workManifestPath, dirty GraphSession)
 -> debug/c4-ai-worker-save-work-proof/ai_worker_save_work_report.json
 ```
 
+## C4.2 Closed Slice
+
+```text
+AIWorkerCommandRequest(move_node, nodeId, deltaX, deltaY)
+-> allowedAIWorkerOperations includes move_node
+-> executeAIWorkerCommand()
+-> InteractionContract::moveNode()
+-> dirty GraphSession + move_node command log
+-> GraphSession collaborationLog evidence
+```
+
 ## C4.1 Evidence
 
 - `source/ai/AIWorkerCommand.*` defines the minimal AI worker request/result shape.
@@ -34,6 +45,14 @@ AIWorkerCommandRequest(save_work, workManifestPath, dirty GraphSession)
 - `GraphSession::collaborationLog` records actor, command id, operation, intent, status, result, proof evidence, and error.
 - `tests/AIWorkerCommandTests.cpp` proves dirty C2 compound work saves through the shared command path, reloads as `PatchDocument`, preserves public compound ports and expanded child layout, and reads back `.myworld/save_log.jsonl`.
 - `--dump-c4-ai-worker-save-work-proof-and-exit` writes `debug/c4-ai-worker-save-work-proof/ai_worker_save_work_report.json`.
+
+## C4.2 Evidence
+
+- `AIWorkerCommandRequest` now carries the minimal mutation payload: `nodeId`, `deltaX`, and `deltaY`.
+- `AIWorkerCommandEvidence` now records graph-command evidence: `graphCommandLogStatus` and `graphMutationApplied`.
+- `allowedAIWorkerOperations()` exposes `move_node` as the first AI graph mutation operation.
+- `executeAIWorkerCommand()` handles `move_node` only through `InteractionContract::moveNode()`.
+- `tests/AIWorkerCommandTests.cpp` proves AI `move_node` changes `library_loud1` position, leaves the session dirty, records `move_node` in `commandLog`, and records collaboration proof evidence.
 
 ## C4.1 Proof Report Must Say
 
@@ -70,7 +89,7 @@ cmake --build build --target my-world my_world_ai_worker_command_tests
 
 ```text
 natural language task parsing
-AI graph mutation commands beyond save_work
+AI graph mutation commands beyond move_node
 repair loop / retry policy
 remote push/sync
 persisted collaboration_log.jsonl file
@@ -80,9 +99,8 @@ user-facing AI worker UI
 ## Next Line
 
 ```text
-C4.2 candidate:
-AI worker graph mutation command
--> allowed commandGraph operation
--> InteractionContract mutation path
--> save_work proof still reloads PatchDocument
+C4.3 candidate:
+AI worker move_node command
+-> AI worker save_work command
+-> app proof dump reads back mutation, save log, PatchDocument reload, and collaboration evidence
 ```

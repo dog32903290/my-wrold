@@ -63,6 +63,7 @@ int main()
 {
     const auto allowed = myworld::allowedAIWorkerOperations();
     expect (contains (allowed, "save_work"), "AI worker allowed operation includes save_work");
+    expect (contains (allowed, "move_node"), "AI worker allowed operation includes move_node");
 
     const auto loadedCompound = myworld::loadCompoundPatchSpec ("fixtures/compounds/loudness.compound.json");
     expect (loadedCompound.ok, loadedCompound.error);
@@ -74,6 +75,47 @@ int main()
     const auto workManifestPath = workRoot / "myworld.work.json";
     const auto loadedMain = myworld::loadMainPatchDocumentForWork (workManifestPath.string());
     expect (loadedMain.ok, loadedMain.error);
+
+    auto moveSession = myworld::makeGraphSession (loadedMain.document.graph);
+    const auto* initialMoveNode = myworld::findEditorNode (moveSession.graph, "library_loud1");
+    expect (initialMoveNode != nullptr, "AI worker move_node fixture has target node");
+    const auto initialMoveX = initialMoveNode->position.x;
+    const auto initialMoveY = initialMoveNode->position.y;
+
+    myworld::AIWorkerCommandRequest moveRequest;
+    moveRequest.commandId = "c4.2-move-node";
+    moveRequest.workerId = "ai-worker-test";
+    moveRequest.operation = "move_node";
+    moveRequest.intent = "Move the loaded loudness compound through the shared interaction command path";
+    moveRequest.nodeId = "library_loud1";
+    moveRequest.deltaX = 21.0;
+    moveRequest.deltaY = 9.0;
+
+    const auto moveResult = myworld::executeAIWorkerCommand (moveSession, moveRequest);
+    expect (moveResult.ok, moveResult.error);
+    expect (moveResult.operation == "move_node", "AI worker move_node result operation");
+    expect (moveResult.status == "ok", "AI worker move_node status");
+    expect (moveResult.evidence.graphCommandLogStatus == "move_node",
+            "AI worker records underlying InteractionContract command log status");
+    expect (moveResult.evidence.graphMutationApplied,
+            "AI worker records graph mutation evidence");
+    expect (moveSession.dirty, "AI worker move_node leaves session dirty");
+    expect (contains (moveSession.commandLog, "ai_worker:move_node:requested"),
+            "command log records AI worker move_node intent");
+    expect (contains (moveSession.commandLog, "move_node"),
+            "AI worker move_node uses InteractionContract::moveNode command path");
+    expect (contains (moveSession.commandLog, "ai_worker:move_node:ok"),
+            "command log records AI worker move_node result");
+
+    const auto* movedNode = myworld::findEditorNode (moveSession.graph, "library_loud1");
+    expect (movedNode != nullptr, "AI worker move_node target remains in graph");
+    expect (movedNode->position.x == initialMoveX + 21.0, "AI worker move_node updates x");
+    expect (movedNode->position.y == initialMoveY + 9.0, "AI worker move_node updates y");
+    expect (moveSession.collaborationLog.size() >= 2, "AI worker move_node records collaboration log entries");
+    expect (moveSession.collaborationLog.front().operation == "move_node",
+            "collaboration log records move_node operation");
+    expect (moveSession.collaborationLog.back().proofEvidence.find ("graphCommandLogStatus=move_node") != std::string::npos,
+            "collaboration log records move_node command proof");
 
     auto session = myworld::makeGraphSession (loadedMain.document.graph);
     expect (myworld::moveNode (session, "library_loud1", 13.0, 7.0).ok,
