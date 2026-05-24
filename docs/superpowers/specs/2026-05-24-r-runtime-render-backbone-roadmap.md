@@ -126,8 +126,8 @@ For the first R runtime fixture, `image.constant` only needs texture metadata an
 | --- | --- | --- | --- | --- |
 | R0 roadmap | closed by this spec | master plan routes R lane | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md`, master progress | `git diff --check` |
 | R1 OpenGL backend extraction | closed | default shader graph -> OpenGLRenderBackend -> V1 proof artifacts unchanged | `source/render/RenderBackend.h`, new `source/render/OpenGLRenderBackend.*`, `source/render/OpenGLShaderPreview.*`, `source/app/MainComponent.cpp`, `CMakeLists.txt` | backend test, build app, `--dump-proof-and-exit`, check `frame.png`, `cook_order.json`, `node_stats.json`, `ctest`, `git diff --check` |
-| R2 headless texture summary runtime | queued | `top_constant_to_output.graph.json` -> `texture_summary.json` | new render/runtime core files, fixture if current one needs tightening, focused tests | new runtime test target, headless dump command or test fixture, `ctest`, `git diff --check` |
-| R3 runtime/render proof unification | queued | runtimeGraph render status -> shared proof JSON fields | `GraphContract.*`, render proof helpers, app proof command code | V1 proof plus R2 headless proof both write compatible `cook_order` and `node_stats` evidence |
+| R2 headless texture summary runtime | closed | `top_constant_to_output.graph.json` -> `texture_summary.json` | `source/render/HeadlessRenderRuntime.*`, `tests/HeadlessRenderRuntimeTests.cpp`, `CMakeLists.txt` | `my_world_headless_render_runtime_tests`, `ctest` 33/33, `git diff --check` |
+| R3 runtime/render proof unification | active | runtimeGraph render status -> shared proof JSON fields | R roadmap, master progress, implementation plan; code only if proof compatibility reveals a gap | V1 proof plus R2 headless proof both write compatible `cook_order` and `node_stats` evidence |
 | R4 Metal readiness gate | parked | OpenGL backend interface audit -> Metal first-slice decision | spec only until R1-R3 close | no Metal code before the audit names the smallest frame-producing slice |
 
 ## R1 Acceptance Contract
@@ -178,11 +178,13 @@ Invalid resolution or unknown node type produces errors.json without pretending 
 Suggested R2 verification:
 
 ```text
-cmake --build build --target my_world_render_runtime_tests
-./build/my_world_render_runtime_tests
+cmake --build build --target my_world_headless_render_runtime_tests
+./build/my_world_headless_render_runtime_tests
 ctest --test-dir build --output-on-failure
 git diff --check
 ```
+
+R2 closed evidence on 2026-05-24: the RED build failed on missing `HeadlessRenderRuntime.h`; the GREEN target printed `headless render runtime ok`; `debug/r2-top-constant/texture_summary.json` reports 1280x720 rgba8; `cook_order.json` orders `const1` before `out1`; `node_stats.json` marks render-domain nodes; `errors.json` has `"ok": true`; invalid resolution and unsupported node type write failure evidence; full `ctest` passed 33/33.
 
 ## Non-Goals
 
@@ -205,4 +207,4 @@ This is not a license to expand R1. R1 only moves the existing OpenGL proof behi
 
 ## Next Handoff Sentence
 
-Open the master progress plan first, then this spec. The next implementation lane is R1 OpenGL proof backend extraction behind `RenderBackend`; keep Metal and new visual node vocabulary parked until R1 closes.
+Open the master progress plan first, then the R segment implementation plan. R3 proof compatibility/closure is active; keep Metal and new visual node vocabulary parked until R closes.

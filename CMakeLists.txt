@@ -503,6 +503,37 @@ target_link_libraries(my_world_storage
         my_world_json
 )
 
+add_library(my_world_headless_render_runtime
+    source/render/HeadlessRenderRuntime.cpp
+)
+
+target_include_directories(my_world_headless_render_runtime
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/render
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_headless_render_runtime
+    PRIVATE
+        my_world_storage
+)
+
+add_executable(my_world_headless_render_runtime_tests
+    tests/HeadlessRenderRuntimeTests.cpp
+)
+
+target_link_libraries(my_world_headless_render_runtime_tests
+    PRIVATE
+        my_world_headless_render_runtime
+)
+
+add_test(NAME headless_render_runtime COMMAND my_world_headless_render_runtime_tests)
+set_tests_properties(headless_render_runtime PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(my_world_storage_tests
     tests/StorageContractTests.cpp
 )

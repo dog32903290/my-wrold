@@ -207,7 +207,7 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | active | R1 closed: OpenGL proof now runs behind `RenderBackend`; `--dump-proof-and-exit` writes local repo proof artifacts; `ctest` 32/32 | Stop after R1; resume with R2 only when explicitly started |
+| R runtime/render backbone | active | R1 closed: OpenGL proof now runs behind `RenderBackend`; R2 closed: headless `image.constant -> output.texture_summary` writes debug artifacts; `ctest` 33/33 | R3 proof compatibility/closure |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
 ## Active Lane Protocol
@@ -217,11 +217,13 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-R1 OpenGL proof backend extraction is in progress.
+R3 runtime/render proof compatibility closure is in progress.
 H1.1 UI overlay split is closed.
 H1.2 RuntimeRegistry split is closed.
 H1.3 StorageContract split is closed in the current slice.
 R0 runtime/render backbone roadmap spec is closed in the current slice.
+R1 OpenGL proof backend extraction is closed in d884f2d.
+R2 headless image.constant runtime proof is closed in the current slice.
 Active implementation plan:
 - docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 ```
@@ -244,8 +246,29 @@ R2 first new runtime-node line:
 fixtures/runtime/top_constant_to_output.graph.json
 -> headless image.constant runtime
 -> debug/r2-top-constant/texture_summary.json + cook_order.json + node_stats.json + errors.json
+```
 
-Do not implement Metal, image.blur, node thumbnails, SOP/MAT/POINT, or render export before R1 closes.
+Do not implement Metal, image.blur, node thumbnails, SOP/MAT/POINT, or render export before R closes.
+
+R1 closed evidence:
+
+```text
+my_world_opengl_render_backend_tests printed `opengl render backend ok`.
+--dump-proof-and-exit wrote debug/v1-shader-proof/{frame.png,cook_order.json,node_stats.json}.
+node_stats.json kept `"renderer": "OpenGL"`.
+ctest passed 32/32 before d884f2d.
+```
+
+R2 closed evidence:
+
+```text
+my_world_headless_render_runtime_tests printed `headless render runtime ok`.
+debug/r2-top-constant/texture_summary.json reports 1280x720 rgba8.
+debug/r2-top-constant/cook_order.json orders const1 before out1.
+debug/r2-top-constant/node_stats.json records render-domain image.constant and output.texture_summary nodes.
+debug/r2-top-constant/errors.json has `"ok": true`.
+Invalid resolution and unsupported node type fixtures fail with errors evidence.
+ctest passed 33/33.
 ```
 
 Current H1.1 note:
@@ -421,7 +444,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first, then `docs/superpowers/plans/2026-05-24-r-segment-implementation.md`. R1 OpenGL proof backend extraction is active; do not start R2 until R1 red/green/proof gates pass and the R1 commit is made. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first, then `docs/superpowers/plans/2026-05-24-r-segment-implementation.md`. R3 runtime/render proof compatibility closure is active; do not start Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, or PV/TiXL work until R closes. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

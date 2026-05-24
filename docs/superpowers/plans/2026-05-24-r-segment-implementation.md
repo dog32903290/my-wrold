@@ -215,7 +215,7 @@ Regression: cmake --build build; ctest --test-dir build --output-on-failure => 3
 - Create: `tests/HeadlessRenderRuntimeTests.cpp`
 - Modify: `CMakeLists.txt`
 
-- [ ] **Step 1: Write the failing runtime test**
+- [x] **Step 1: Write the failing runtime test**
 
 Create `tests/HeadlessRenderRuntimeTests.cpp` that runs:
 
@@ -236,7 +236,7 @@ invalid resolution fixture text fails with "invalid resolution"
 unknown node type fixture text fails with "unsupported node type"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -246,7 +246,7 @@ cmake --build build --target my_world_headless_render_runtime_tests
 
 Expected: fail because `HeadlessRenderRuntime` API does not exist yet.
 
-- [ ] **Step 3: Implement minimal headless runtime**
+- [x] **Step 3: Implement minimal headless runtime**
 
 Implement only:
 
@@ -260,7 +260,7 @@ texture_summary.json, cook_order.json, node_stats.json, errors.json writers
 
 Do not implement `image.blur`, SOP/MAT/POINT, GPU textures, or UI exposure.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 Run:
 
@@ -271,7 +271,7 @@ cmake --build build --target my_world_headless_render_runtime_tests
 
 Expected: executable prints `headless render runtime ok`.
 
-- [ ] **Step 5: Nearby regression gate**
+- [x] **Step 5: Nearby regression gate**
 
 Run:
 
@@ -282,9 +282,19 @@ git diff --check
 
 Expected: all configured tests pass and diff check is clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Commit only R2 runtime files, test, plan checkbox update, and corresponding master/spec status updates.
+
+Evidence:
+
+```text
+RED: after `cmake -S . -B build`, `cmake --build build --target my_world_headless_render_runtime_tests` failed on missing `HeadlessRenderRuntime.h`.
+GREEN: `cmake -S . -B build && cmake --build build --target my_world_headless_render_runtime_tests` built the target; `./build/my_world_headless_render_runtime_tests` printed `headless render runtime ok`.
+Artifacts: `debug/r2-top-constant/{texture_summary.json,cook_order.json,node_stats.json,errors.json}` were written; texture summary reports 1280x720 rgba8 and errors.json has `"ok": true`.
+Failures: invalid resolution and unsupported node type both return failed results and write errors.json.
+Regression: `ctest --test-dir build --output-on-failure` passed 33/33; `git diff --check` passed.
+```
 
 ## Task 4: R3 Segment Closure
 
