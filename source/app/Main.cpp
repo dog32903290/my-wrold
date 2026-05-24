@@ -31,10 +31,16 @@ public:
             "--dump-c5-ai-worker-module-publish-proof-and-exit");
         const auto dumpC5VisibleModulePublishProofAndExit = commandLine.contains (
             "--dump-c5-visible-module-publish-proof-and-exit");
+        const auto dumpC6AnalyzerFamilyProofAndExit = commandLine.contains (
+            "--dump-c6-analyzer-family-proof-and-exit");
+        const auto dumpC6AIRepairLoopProofAndExit = commandLine.contains (
+            "--dump-c6-ai-repair-loop-proof-and-exit");
         const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
                                           || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit
                                           || dumpC5ModulePublishProofAndExit || dumpC5AIWorkerModulePublishProofAndExit
-                                          || dumpC5VisibleModulePublishProofAndExit;
+                                          || dumpC5VisibleModulePublishProofAndExit
+                                          || dumpC6AnalyzerFamilyProofAndExit
+                                          || dumpC6AIRepairLoopProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
@@ -45,6 +51,8 @@ public:
                                                    dumpC5ModulePublishProofAndExit,
                                                    dumpC5AIWorkerModulePublishProofAndExit,
                                                    dumpC5VisibleModulePublishProofAndExit,
+                                                   dumpC6AnalyzerFamilyProofAndExit,
+                                                   dumpC6AIRepairLoopProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -71,6 +79,8 @@ private:
                     bool dumpC5ModulePublishProofAndExit,
                     bool dumpC5AIWorkerModulePublishProofAndExit,
                     bool dumpC5VisibleModulePublishProofAndExit,
+                    bool dumpC6AnalyzerFamilyProofAndExit,
+                    bool dumpC6AIRepairLoopProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -85,6 +95,8 @@ private:
                                                 dumpC5ModulePublishProofAndExit,
                                                 dumpC5AIWorkerModulePublishProofAndExit,
                                                 dumpC5VisibleModulePublishProofAndExit,
+                                                dumpC6AnalyzerFamilyProofAndExit,
+                                                dumpC6AIRepairLoopProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

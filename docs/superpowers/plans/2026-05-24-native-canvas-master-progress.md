@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 11:57 Asia/Taipei.
+Date: 2026-05-24 13:28 Asia/Taipei.
 
 Branch:
 
@@ -44,15 +44,14 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+0754301 Close C5.3 visible module publish
+9b48941 Add C5.2 AI worker module publish
+73ce3f0 Close C5.1 module publish proof
 ec3efe2 Close C4 AI worker command proof
 d73b893 Add C4.2 AI worker move_node command
 835ce85 Add C4.1 AI worker save_work contract
 09edd86 Add C3.5 save commit failure proof
 57ba0c5 Add C3.4 background save commit worker
-f163d80 Wire C3.3 visible save_work hand
-fd2976d Add C3.2 save_work app proof
-f872999 Add C3.1 save_work command contract
-f7fbc10 Advance native canvas proof spine
 ```
 
 Current C4 note:
@@ -80,8 +79,9 @@ Current C5 note:
 ```text
 C5.1 module publish/reuse command + storage/runtime proof is closed and pushed in 73ce3f0.
 C5.2 AI worker publish_module command path is closed and pushed in 9b48941.
-C5.3 visible publish hand is closed locally; this segment commit closes C5.
-Active C5 spec:
+C5.3 visible publish hand is closed and pushed in 0754301.
+C5 is closed. Do not reopen C5 for analyzer-family or repair-loop work.
+C5 closure spec:
 - docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md
 Current C5 evidence is in:
 - tests/ModulePublishTests.cpp
@@ -114,6 +114,69 @@ Current C5.3 verification:
 - `git diff --check`
 ```
 
+Current C6 note:
+
+```text
+C6.1 analyzer compound family seed is closed in this slice.
+C6.2 AI repair loop closure is closed in this slice.
+C6 is closed. It did not add natural-language parsing and did not reopen C5.
+C6 spec:
+- docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
+C6.1 evidence is in:
+- tests/AnalyzerCompoundFamilyTests.cpp
+- fixtures/compounds/raw-energy.compound.json
+- fixtures/modules/raw-energy/module.json
+- fixtures/module-libraries/analyzer-family.module-library.json
+- debug/c6-analyzer-family-proof/analyzer_family_report.json
+C6.1 proof:
+analyzer family library fixture
+-> compound.raw-energy package
+-> visible/runtime registry load
+-> runtime coverage create-enabled
+-> synthetic execution publishes raw rms / peak / sampleCount
+-> InteractionContract createNode proof
+
+Current C6.1 targeted verification:
+- `cmake --build build --target my_world_analyzer_compound_family_tests`
+- `./build/my_world_analyzer_compound_family_tests`
+- `cmake --build build --target my_world_runtime_registry_tests my_world_compound_module_tests`
+- `./build/my_world_runtime_registry_tests`
+- `./build/my_world_compound_module_tests`
+- `cmake --build build --target my-world`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c6-analyzer-family-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted result:
+- `analyzer compound family ok`
+- `runtime registry ok`
+- `compound module fixture ok`
+- `debug/c6-analyzer-family-proof/analyzer_family_report.json` has `ok: true`
+- `30/30 tests passed`
+- `git diff --check passed`
+
+C6.2 proof:
+AIWorkerRepairPlan
+-> bounded attempts
+-> every attempt goes through executeAIWorkerCommand()
+-> failed move_node attempt records evidence
+-> repaired move_node attempt succeeds and stops the loop
+-> debug/c6-ai-repair-loop-proof/ai_repair_loop_report.json
+
+Current C6.2 targeted verification:
+- `cmake --build build --target my_world_ai_worker_command_tests my-world`
+- `./build/my_world_ai_worker_command_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c6-ai-repair-loop-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted targeted result:
+- `AI worker command contract ok`
+- `debug/c6-ai-repair-loop-proof/ai_repair_loop_report.json` has `ok: true`
+- `30/30 tests passed`
+- `git diff --check passed`
+```
+
 ## Main Spine
 
 | Lane | Status | Current law / evidence | Next |
@@ -125,7 +188,8 @@ Current C5.3 verification:
 | C3 storage command path | closed | `docs/superpowers/specs/2026-05-24-c3-storage-command-path.md` | Do not reopen C3 |
 | C4 AI worker command path | closed | `docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md` | Do not reopen C4 |
 | C5 module publish/reuse path | closed | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | Do not reopen C5 for C6 work |
-| C6 analyzer compound family / AI repair loop closure | planned | not yet specified | write next spec before implementation |
+| C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
+| C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
@@ -136,8 +200,8 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after C5 closure.
-Next selectable lane: C6 analyzer compound family / AI repair loop closure.
+None after C6 closure.
+Next selectable lane: R runtime/render backbone, PV/analyzer detector expansion, or TiXL sub-ledger work.
 ```
 
 C4 proved:
@@ -161,11 +225,10 @@ remote sync
 raw callback-buffer runtime
 ```
 
-Parked after C5:
+Parked after C6:
 
 ```text
-AI repair loop / retry policy
-new analyzer compound family
+attack / density / sustain / silence compound semantics
 multi-node group-to-compound extraction
 publish dialog / browser polish beyond the visible proof hand
 remote sync / shared module registry
@@ -183,8 +246,8 @@ raw callback-buffer runtime
 | `P` prefix is overloaded | Tooll3 skin `P0-P7`, TiXL `P-TAX/P-SEARCH`, future "P segment" talk | Future performance/patch-vocabulary lane must not use bare `P1/P2`. Use `PV-*` for patch vocabulary or rename the lane before writing specs. |
 | TiXL ledger is a plan but also tracks progress | `2026-05-24-tixl-parity-construction-ledger.md` | It is a sub-ledger. Start progress from this master plan, then open TiXL ledger only for TiXL-visible parity work. |
 | Skeleton spec can become too long and look like the dashboard | `2026-05-22-native-canvas-skeleton-design.md` | Skeleton is architecture/status evidence. This master plan is the current dashboard. |
-| C4 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Natural language parsing, additional graph mutation commands, repair loop, and remote sync remain parked outside C4. |
-| C5 can be mistaken for new analyzer/module vocabulary work | C5 title vs C6 planned analyzer family | C5.1 only proves publishing and reusing one selected compound source. New analyzer families and repair loop remain C6+. |
+| C4 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Repair-loop orchestration moved to C6.2. Natural language parsing, additional graph mutation commands, and remote sync remain parked outside C4/C6. |
+| C5 can be mistaken for new analyzer/module vocabulary work | C5 title vs C6 analyzer family | C5.1 only proves publishing and reusing one selected compound source. C6.1 owns the analyzer family seed; detector semantics remain future PV work. |
 
 ## Plan Inventory
 
@@ -197,8 +260,45 @@ raw callback-buffer runtime
 | `2026-05-22-tooll3-interaction-t0-t7.md` | historical interaction implementation plan | no |
 | `2026-05-24-c2-1-patch-document-boundary.md` | historical C2.1 implementation plan | no |
 | `2026-05-24-c2-compound-work-closure.md` | historical C2 implementation/closure plan | no |
-| `2026-05-24-c5-module-publish-reuse-path.md` | active C5 slice spec | yes, after this master plan |
+| `2026-05-24-c5-module-publish-reuse-path.md` | C5 closure evidence | no, unless auditing C5 evidence |
+| `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
+| `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
+
+## Session Safety
+
+Files outside C6 ownership that this C6 commit must not edit or include unless explicitly requested:
+
+```text
+AGENTS.md
+docs/superpowers/plans/2026-05-24-flow-runner-automation.md
+scripts/
+tests/test_myworld_flow.py
+```
+
+C6 owned files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
+fixtures/compounds/raw-energy.compound.json
+fixtures/modules/raw-energy/module.json
+fixtures/module-libraries/analyzer-family.module-library.json
+docs/nodes/analyzer.raw-energy.md
+tests/AnalyzerCompoundFamilyTests.cpp
+source/core/RuntimeRegistry.*
+source/app/Main.*
+source/app/MainComponent.*
+source/ai/AIWorkerCommand.*
+tests/AIWorkerCommandTests.cpp
+CMakeLists.txt
+debug/c6-analyzer-family-proof/analyzer_family_report.json
+debug/c6-ai-repair-loop-proof/ai_repair_loop_report.json
+```
+
+## Next Handoff Sentence
+
+Open this master plan first. C6 is closed; choose exactly one next lane before implementation and do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

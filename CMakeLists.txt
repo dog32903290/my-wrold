@@ -562,6 +562,22 @@ set_tests_properties(module_publish PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_executable(my_world_analyzer_compound_family_tests
+    tests/AnalyzerCompoundFamilyTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_compound_family_tests
+    PRIVATE
+        my_world_runtime_registry
+        my_world_compound_module
+        my_world_interaction
+)
+
+add_test(NAME analyzer_compound_family COMMAND my_world_analyzer_compound_family_tests)
+set_tests_properties(analyzer_compound_family PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_ai_worker
     source/ai/AIWorkerCommand.cpp
 )

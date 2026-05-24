@@ -1,0 +1,27 @@
+{
+  "type": "compound.raw-energy",
+  "displayName": "Raw Energy",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "raw_energy_out", "type": "analyzer.raw_energy_out", "role": "Publish raw energy fact ports" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "raw_energy_out.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "raw_energy_out.peak", "dataType": "signal.float" },
+    { "from": "mono_mix.sampleCount", "to": "raw_energy_out.sampleCount", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "rms", "label": "RMS", "dataType": "signal.float", "direction": "out", "mapsTo": "raw_energy_out.rms" },
+    { "id": "peak", "label": "Peak", "dataType": "signal.float", "direction": "out", "mapsTo": "raw_energy_out.peak" },
+    { "id": "sampleCount", "label": "Sample Count", "dataType": "signal.float", "direction": "out", "mapsTo": "raw_energy_out.sampleCount" }
+  ]
+}

@@ -24,6 +24,8 @@ public:
                    bool dumpC5ModulePublishProofOnStart = false,
                    bool dumpC5AIWorkerModulePublishProofOnStart = false,
                    bool dumpC5VisibleModulePublishProofOnStart = false,
+                   bool dumpC6AnalyzerFamilyProofOnStart = false,
+                   bool dumpC6AIRepairLoopProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -40,6 +42,8 @@ private:
     void dumpC5ModulePublishProof();
     void dumpC5AIWorkerModulePublishProof();
     void dumpC5VisibleModulePublishProof();
+    void dumpC6AnalyzerFamilyProof();
+    void dumpC6AIRepairLoopProof();
     CommandResult saveActiveWork (GraphSession& session);
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);

@@ -272,6 +272,86 @@ int main()
 
     std::filesystem::remove_all (publishRoot);
 
+    auto repairSession = myworld::makeGraphSession (loadedMain.document.graph);
+    const auto* repairInitialNode = myworld::findEditorNode (repairSession.graph, "library_loud1");
+    expect (repairInitialNode != nullptr, "AI repair loop fixture has target node");
+    const auto repairInitialX = repairInitialNode->position.x;
+    const auto repairInitialY = repairInitialNode->position.y;
+
+    myworld::AIWorkerRepairPlan repairPlan;
+    repairPlan.repairId = "c6.2-ai-repair-loop";
+    repairPlan.workerId = "ai-worker-test";
+    repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
+    repairPlan.maxAttempts = 3;
+
+    myworld::AIWorkerCommandRequest failedAttempt;
+    failedAttempt.commandId = "c6.2-move-missing-node";
+    failedAttempt.workerId = repairPlan.workerId;
+    failedAttempt.operation = "move_node";
+    failedAttempt.intent = "First repair attempt intentionally targets a missing node";
+    failedAttempt.nodeId = "missing_loudness";
+    failedAttempt.deltaX = 17.0;
+    failedAttempt.deltaY = 5.0;
+
+    myworld::AIWorkerCommandRequest repairedAttempt;
+    repairedAttempt.commandId = "c6.2-move-library-loudness";
+    repairedAttempt.workerId = repairPlan.workerId;
+    repairedAttempt.operation = "move_node";
+    repairedAttempt.intent = "Second repair attempt targets the loaded loudness node";
+    repairedAttempt.nodeId = "library_loud1";
+    repairedAttempt.deltaX = 17.0;
+    repairedAttempt.deltaY = 5.0;
+
+    myworld::AIWorkerCommandRequest unusedAttempt = repairedAttempt;
+    unusedAttempt.commandId = "c6.2-unused-attempt";
+    unusedAttempt.deltaX = 100.0;
+    unusedAttempt.deltaY = 100.0;
+
+    repairPlan.attempts = { failedAttempt, repairedAttempt, unusedAttempt };
+
+    const auto repairResult = myworld::executeAIWorkerRepairLoop (repairSession, repairPlan);
+    expect (repairResult.ok, repairResult.error);
+    expect (repairResult.repairId == "c6.2-ai-repair-loop", "AI repair loop result id");
+    expect (repairResult.workerId == "ai-worker-test", "AI repair loop worker id");
+    expect (repairResult.status == "repaired", "AI repair loop status");
+    expect (repairResult.attemptsRun == 2, "AI repair loop stops after repaired attempt");
+    expect (repairResult.maxAttempts == 3, "AI repair loop records max attempts");
+    expect (repairResult.successfulAttemptIndex == 2, "AI repair loop records one-based successful attempt index");
+    expect (repairResult.finalOperation == "move_node", "AI repair loop final operation");
+    expect (repairResult.finalCommandLogStatus == "ai_worker_repair_loop:repaired",
+            "AI repair loop final command log status");
+    expect (repairResult.attempts.size() == 2, "AI repair loop records only executed attempts");
+    expect (! repairResult.attempts.front().commandResult.ok, "AI repair loop first attempt fails");
+    expect (repairResult.attempts.front().status == "failed", "AI repair loop first attempt status");
+    expect (repairResult.attempts.back().commandResult.ok, "AI repair loop second attempt succeeds");
+    expect (repairResult.attempts.back().status == "repaired", "AI repair loop second attempt status");
+    expect (repairResult.finalProofEvidence.find ("graphCommandLogStatus=move_node") != std::string::npos,
+            "AI repair loop exposes final command proof");
+    expect (repairResult.finalProofEvidence.find ("graphMutationApplied=true") != std::string::npos,
+            "AI repair loop exposes final mutation proof");
+    expect (contains (repairSession.commandLog, "ai_worker_repair_loop:started"),
+            "AI repair loop command log records start");
+    expect (contains (repairSession.commandLog, "ai_worker_repair_loop:attempt_failed"),
+            "AI repair loop command log records failed attempt");
+    expect (contains (repairSession.commandLog, "ai_worker_repair_loop:repaired"),
+            "AI repair loop command log records repaired status");
+    expect (! contains (repairSession.commandLog, "c6.2-unused-attempt"),
+            "AI repair loop does not execute unused attempt");
+
+    const auto* repairedNode = myworld::findEditorNode (repairSession.graph, "library_loud1");
+    expect (repairedNode != nullptr, "AI repair loop target remains in graph");
+    expect (repairedNode->position.x == repairInitialX + 17.0, "AI repair loop repaired x");
+    expect (repairedNode->position.y == repairInitialY + 5.0, "AI repair loop repaired y");
+    expect (repairSession.collaborationLog.size() >= 6, "AI repair loop records command and loop collaboration entries");
+    expect (repairSession.collaborationLog.front().operation == "repair_loop",
+            "AI repair loop records loop start in collaboration log");
+    expect (repairSession.collaborationLog.back().operation == "repair_loop",
+            "AI repair loop records loop result in collaboration log");
+    expect (repairSession.collaborationLog.back().status == "repaired",
+            "AI repair loop collaboration result status");
+    expect (repairSession.collaborationLog.back().proofEvidence.find ("successfulAttemptIndex=2") != std::string::npos,
+            "AI repair loop collaboration proof records successful attempt index");
+
     std::cout << "AI worker command contract ok\n";
     return 0;
 }

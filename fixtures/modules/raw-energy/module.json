@@ -1,0 +1,18 @@
+{
+  "kind": "modulePackage",
+  "id": "module.raw-energy",
+  "title": "Raw Energy",
+  "nodeType": "compound.raw-energy",
+  "patchPath": "fixtures/compounds/raw-energy.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.raw-energy.md",
+  "category": "compound",
+  "subcategory": "raw-facts",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "rms",
+    "peak",
+    "sampleCount"
+  ]
+}

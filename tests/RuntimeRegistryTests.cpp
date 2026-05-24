@@ -126,7 +126,7 @@ int main()
     expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
 
     const auto runtimeOpCatalog = myworld::makeRuntimeOpCatalog();
-    expect (runtimeOpCatalog.size() == 7, "runtime op catalog count");
+    expect (runtimeOpCatalog.size() == 8, "runtime op catalog count");
     expectEqual (runtimeOpCatalog.front().nodeType, "audio.input", "runtime op catalog first node type");
     expectEqual (runtimeOpCatalog.front().runtimeOp, "synthetic.audio.input", "runtime op catalog first id");
     expectEqual (runtimeOpCatalog.back().nodeType,
@@ -141,6 +141,9 @@ int main()
     expectContains (runtimeOpCatalogJson, "\"nodeType\": \"audio.input\"", "runtime op catalog json");
     expectContains (runtimeOpCatalogJson,
                     "\"runtimeOp\": \"synthetic.signal.smoother\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.raw_energy_out\"",
                     "runtime op catalog json");
 
     const auto coverage = myworld::inspectRuntimeOpCoverage (registryResult.registry);

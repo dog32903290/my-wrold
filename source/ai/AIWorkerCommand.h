@@ -54,6 +54,39 @@ struct AIWorkerCommandResult
     AIWorkerCommandEvidence evidence;
 };
 
+struct AIWorkerRepairAttemptResult
+{
+    size_t attemptIndex = 0;
+    std::string status;
+    AIWorkerCommandResult commandResult;
+};
+
+struct AIWorkerRepairPlan
+{
+    std::string repairId;
+    std::string workerId;
+    std::string intent;
+    size_t maxAttempts = 1;
+    std::vector<AIWorkerCommandRequest> attempts;
+};
+
+struct AIWorkerRepairLoopResult
+{
+    bool ok = false;
+    std::string repairId;
+    std::string workerId;
+    std::string status;
+    std::string error;
+    size_t attemptsRun = 0;
+    size_t maxAttempts = 0;
+    size_t successfulAttemptIndex = 0;
+    std::string finalOperation;
+    std::string finalCommandLogStatus;
+    std::string finalProofEvidence;
+    std::vector<AIWorkerRepairAttemptResult> attempts;
+};
+
 std::vector<std::string> allowedAIWorkerOperations();
 AIWorkerCommandResult executeAIWorkerCommand (GraphSession& session, const AIWorkerCommandRequest& request);
+AIWorkerRepairLoopResult executeAIWorkerRepairLoop (GraphSession& session, const AIWorkerRepairPlan& plan);
 }

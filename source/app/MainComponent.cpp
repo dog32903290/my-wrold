@@ -90,6 +90,16 @@ juce::File c5VisibleModulePublishProofDumpDirectory()
     return projectDirectory().getChildFile ("debug").getChildFile ("c5-visible-module-publish-proof");
 }
 
+juce::File c6AnalyzerFamilyProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c6-analyzer-family-proof");
+}
+
+juce::File c6AIRepairLoopProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c6-ai-repair-loop-proof");
+}
+
 juce::File defaultActiveWorkManifestFile()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("c3-active-work").getChildFile ("myworld.work.json");
@@ -116,6 +126,11 @@ juce::File parentDirectory (juce::File file, const int levels)
 juce::String defaultModuleLibraryPath()
 {
     return "fixtures/module-libraries/default.module-library.json";
+}
+
+juce::String analyzerFamilyModuleLibraryPath()
+{
+    return "fixtures/module-libraries/analyzer-family.module-library.json";
 }
 
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
@@ -530,6 +545,108 @@ std::string makeC5VisibleModulePublishReportJson (bool ok,
     return out.str();
 }
 
+const RuntimeOutputValue* findRuntimeOutput (const std::vector<RuntimeOutputValue>& outputs, const std::string& id)
+{
+    for (const auto& output : outputs)
+        if (output.id == id)
+            return &output;
+
+    return nullptr;
+}
+
+double runtimeOutputValueOrZero (const std::vector<RuntimeOutputValue>& outputs, const std::string& id)
+{
+    const auto* output = findRuntimeOutput (outputs, id);
+    return output == nullptr ? 0.0 : output->value;
+}
+
+std::string runtimeOutputSourceOrEmpty (const std::vector<RuntimeOutputValue>& outputs, const std::string& id)
+{
+    const auto* output = findRuntimeOutput (outputs, id);
+    return output == nullptr ? std::string {} : output->source;
+}
+
+std::string makeC6AnalyzerFamilyReportJson (bool ok,
+                                            const std::string& libraryPath,
+                                            size_t familyEntryCount,
+                                            bool visibleRegistryContainsRawEnergy,
+                                            bool runtimeRegistryContainsRawEnergy,
+                                            const std::string& runtimeCoverageStatus,
+                                            bool createdRawEnergyNode,
+                                            const std::string& graphCommandLogStatus,
+                                            bool loudnessStillPresent,
+                                            const std::vector<RuntimeOutputValue>& rawEnergyPublicOutputs,
+                                            const std::string& error)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c6AnalyzerFamilyProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"operation\": \"analyzer_compound_family_seed\",\n";
+    out << "  \"libraryPath\": " << jsonQuoted (libraryPath) << ",\n";
+    out << "  \"familyEntryCount\": " << familyEntryCount << ",\n";
+    out << "  \"visibleRegistryContainsRawEnergy\": " << (visibleRegistryContainsRawEnergy ? "true" : "false") << ",\n";
+    out << "  \"runtimeRegistryContainsRawEnergy\": " << (runtimeRegistryContainsRawEnergy ? "true" : "false") << ",\n";
+    out << "  \"runtimeCoverageStatus\": " << jsonQuoted (runtimeCoverageStatus) << ",\n";
+    out << "  \"createdRawEnergyNode\": " << (createdRawEnergyNode ? "true" : "false") << ",\n";
+    out << "  \"graphCommandLogStatus\": " << jsonQuoted (graphCommandLogStatus) << ",\n";
+    out << "  \"rawEnergyPublicOutputs\": {\n";
+    out << "    \"rms\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "rms") << ",\n";
+    out << "    \"peak\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "peak") << ",\n";
+    out << "    \"sampleCount\": " << runtimeOutputValueOrZero (rawEnergyPublicOutputs, "sampleCount") << "\n";
+    out << "  },\n";
+    out << "  \"rawEnergyPublicOutputSources\": {\n";
+    out << "    \"rms\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "rms")) << ",\n";
+    out << "    \"peak\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "peak")) << ",\n";
+    out << "    \"sampleCount\": " << jsonQuoted (runtimeOutputSourceOrEmpty (rawEnergyPublicOutputs, "sampleCount")) << "\n";
+    out << "  },\n";
+    out << "  \"loudnessStillPresent\": " << (loudnessStillPresent ? "true" : "false") << ",\n";
+    out << "  \"usesInteractionState\": false,\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeC6AIRepairLoopReportJson (bool ok,
+                                          const AIWorkerRepairLoopResult& repairResult,
+                                          bool graphMutationApplied,
+                                          size_t collaborationLogEntries,
+                                          bool usesInteractionState,
+                                          double finalNodeX,
+                                          double finalNodeY,
+                                          const std::string& error)
+{
+    const auto firstAttemptStatus = repairResult.attempts.empty() ? std::string {}
+                                                                  : repairResult.attempts.front().status;
+
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c6AIRepairLoopProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"operation\": \"ai_repair_loop\",\n";
+    out << "  \"repairId\": " << jsonQuoted (repairResult.repairId) << ",\n";
+    out << "  \"workerId\": " << jsonQuoted (repairResult.workerId) << ",\n";
+    out << "  \"status\": " << jsonQuoted (repairResult.status) << ",\n";
+    out << "  \"attemptsRun\": " << repairResult.attemptsRun << ",\n";
+    out << "  \"maxAttempts\": " << repairResult.maxAttempts << ",\n";
+    out << "  \"firstAttemptStatus\": " << jsonQuoted (firstAttemptStatus) << ",\n";
+    out << "  \"successfulAttemptIndex\": " << repairResult.successfulAttemptIndex << ",\n";
+    out << "  \"finalOperation\": " << jsonQuoted (repairResult.finalOperation) << ",\n";
+    out << "  \"finalCommandLogStatus\": " << jsonQuoted (repairResult.finalCommandLogStatus) << ",\n";
+    out << "  \"finalProofEvidence\": " << jsonQuoted (repairResult.finalProofEvidence) << ",\n";
+    out << "  \"graphMutationApplied\": " << (graphMutationApplied ? "true" : "false") << ",\n";
+    out << "  \"collaborationLogEntries\": " << collaborationLogEntries << ",\n";
+    out << "  \"usesInteractionState\": " << (usesInteractionState ? "true" : "false") << ",\n";
+    out << "  \"finalNode\": {\n";
+    out << "    \"nodeId\": \"library_loud1\",\n";
+    out << "    \"x\": " << finalNodeX << ",\n";
+    out << "    \"y\": " << finalNodeY << "\n";
+    out << "  },\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 {
     std::string lastError;
@@ -556,6 +673,8 @@ MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpC5ModulePublishProofOnStart,
                               bool dumpC5AIWorkerModulePublishProofOnStart,
                               bool dumpC5VisibleModulePublishProofOnStart,
+                              bool dumpC6AnalyzerFamilyProofOnStart,
+                              bool dumpC6AIRepairLoopProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -716,6 +835,24 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC5VisibleModulePublishProof();
+        });
+    }
+
+    if (dumpC6AnalyzerFamilyProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC6AnalyzerFamilyProof();
+        });
+    }
+
+    if (dumpC6AIRepairLoopProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC6AIRepairLoopProof();
         });
     }
 
@@ -1909,6 +2046,308 @@ void MainComponent::dumpC5VisibleModulePublishProof()
 
     statusLabel.setText ((ok ? "c5 visible publish proof dumped: " : "c5 visible publish proof mismatch: ")
                              + proofDirectory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpC6AnalyzerFamilyProof()
+{
+    const auto directory = c6AnalyzerFamilyProofDumpDirectory();
+    const auto reportFile = directory.getChildFile ("analyzer_family_report.json");
+    const auto libraryPath = analyzerFamilyModuleLibraryPath().toStdString();
+    const std::vector<RuntimeOutputValue> emptyOutputs;
+
+    const auto writeFailureReport = [&] (const std::string& message)
+    {
+        const auto report = makeC6AnalyzerFamilyReportJson (false,
+                                                            libraryPath,
+                                                            0,
+                                                            false,
+                                                            false,
+                                                            {},
+                                                            false,
+                                                            {},
+                                                            false,
+                                                            emptyOutputs,
+                                                            message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c6 analyzer family proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        writeFailureReport ("could not clear " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (! directory.createDirectory())
+    {
+        writeFailureReport ("could not create " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    const auto loadedSpecs = loadCompoundModuleNodeSpecsFromLibrary (libraryPath);
+    const auto familyEntryCount = loadedSpecs.ok ? loadedSpecs.specs.size() : 0;
+    const auto visibleRegistryContainsRawEnergy = loadedSpecs.ok
+        && findNodeSpec (loadedSpecs.specs, "compound.raw-energy") != nullptr;
+    const auto loudnessStillPresent = loadedSpecs.ok
+        && findNodeSpec (loadedSpecs.specs, "compound.loudness") != nullptr;
+
+    const auto runtime = loadRuntimeRegistryFromModuleLibrary (libraryPath);
+    const auto runtimeRegistryContainsRawEnergy = runtime.ok
+        && std::any_of (runtime.registry.entries.begin(),
+                        runtime.registry.entries.end(),
+                        [] (const auto& entry) {
+                            return entry.nodeType == "compound.raw-energy";
+                        });
+    const auto coverage = runtime.ok ? inspectRuntimeOpCoverage (runtime.registry) : RuntimeOpCoverageResult {};
+    const auto diagnostics = coverage.snapshot.entries.empty()
+        ? std::vector<RuntimeOpModuleDiagnostic> {}
+        : makeRuntimeOpModuleDiagnostics (coverage.snapshot);
+    const auto runtimeCoverageStatus = [&diagnostics]
+    {
+        for (const auto& diagnostic : diagnostics)
+        {
+            if (diagnostic.nodeType != "compound.raw-energy")
+                continue;
+
+            return diagnostic.status == "runtime-op-ready" ? std::string { "ready" } : diagnostic.status;
+        }
+
+        return std::string {};
+    }();
+
+    RuntimeSyntheticAudioInput input;
+    input.channels = {
+        { 0.0f, 1.0f, -1.0f, 0.0f },
+        { 0.0f, 0.5f, -0.5f, 0.0f }
+    };
+    input.analysisGain = 1.5f;
+
+    const auto execution = runtime.ok ? executeRuntimeRegistryWithSyntheticAudio (runtime.registry, input)
+                                      : RuntimeExecutionResult {};
+    std::vector<RuntimeOutputValue> rawEnergyPublicOutputs;
+    std::string rawEnergyExecutionStatus;
+
+    if (execution.ok)
+    {
+        for (const auto& entry : execution.snapshot.entries)
+        {
+            if (entry.nodeType != "compound.raw-energy")
+                continue;
+
+            rawEnergyExecutionStatus = entry.status;
+            rawEnergyPublicOutputs = entry.publicOutputs;
+            break;
+        }
+    }
+
+    const auto rawOutputsOk = rawEnergyExecutionStatus == "computed"
+        && findRuntimeOutput (rawEnergyPublicOutputs, "rms") != nullptr
+        && findRuntimeOutput (rawEnergyPublicOutputs, "peak") != nullptr
+        && findRuntimeOutput (rawEnergyPublicOutputs, "sampleCount") != nullptr
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "rms"), std::sqrt (0.28125))
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "peak"), 0.75)
+        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, "sampleCount"), 4.0);
+
+    auto session = makeGraphSession (makeDefaultShaderOutputGraph());
+    CommandResult createResult { false, "raw-energy node spec not loaded" };
+    if (loadedSpecs.ok)
+    {
+        const auto visibleRegistry = mergeNodeSpecs (makeSeedNodeSpecs(), loadedSpecs.specs);
+        createResult = createNode (session,
+                                   visibleRegistry,
+                                   "compound.raw-energy",
+                                   "raw_energy1",
+                                   { 300.0, 320.0 });
+    }
+
+    const auto graphCommandLogStatus = session.commandLog.empty() ? std::string {}
+                                                                  : session.commandLog.back();
+    const auto createdRawEnergyNode = createResult.ok && graphCommandLogStatus == "create_node";
+    const auto ok = loadedSpecs.ok
+                    && familyEntryCount == 2
+                    && visibleRegistryContainsRawEnergy
+                    && runtime.ok
+                    && runtimeRegistryContainsRawEnergy
+                    && coverage.ok
+                    && runtimeCoverageStatus == "ready"
+                    && execution.ok
+                    && rawOutputsOk
+                    && createdRawEnergyNode
+                    && loudnessStillPresent;
+    const auto error = ok ? std::string {}
+                          : ! loadedSpecs.ok ? loadedSpecs.error
+                          : ! runtime.ok ? runtime.error
+                          : ! coverage.ok ? coverage.error
+                          : ! execution.ok ? execution.error
+                          : ! createResult.ok ? createResult.message
+                          : "C6 analyzer family proof did not match expected raw-energy evidence";
+
+    const auto report = makeC6AnalyzerFamilyReportJson (ok,
+                                                        libraryPath,
+                                                        familyEntryCount,
+                                                        visibleRegistryContainsRawEnergy,
+                                                        runtimeRegistryContainsRawEnergy,
+                                                        runtimeCoverageStatus,
+                                                        createdRawEnergyNode,
+                                                        graphCommandLogStatus,
+                                                        loudnessStillPresent,
+                                                        rawEnergyPublicOutputs,
+                                                        error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c6 analyzer family proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c6 analyzer family proof dumped: " : "c6 analyzer family proof mismatch: ")
+                             + directory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpC6AIRepairLoopProof()
+{
+    const auto directory = c6AIRepairLoopProofDumpDirectory();
+    const auto reportFile = directory.getChildFile ("ai_repair_loop_report.json");
+    const AIWorkerRepairLoopResult emptyResult;
+
+    const auto writeFailureReport = [&] (const AIWorkerRepairLoopResult& repairResult, const std::string& message)
+    {
+        const auto report = makeC6AIRepairLoopReportJson (false,
+                                                          repairResult,
+                                                          false,
+                                                          0,
+                                                          false,
+                                                          0.0,
+                                                          0.0,
+                                                          message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c6 AI repair loop proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        writeFailureReport (emptyResult, "could not clear " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (! directory.createDirectory())
+    {
+        writeFailureReport (emptyResult, "could not create " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    PatchDocumentLoadResult loadedPatch;
+    std::string lastError;
+    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    {
+        const auto loaded = loadMainPatchDocumentForWork (candidate);
+        if (loaded.ok)
+        {
+            loadedPatch = loaded;
+            break;
+        }
+
+        lastError = loaded.error;
+    }
+
+    if (! loadedPatch.ok)
+    {
+        writeFailureReport (emptyResult, lastError.empty() ? "could not load C2 work fixture" : lastError);
+        return;
+    }
+
+    auto session = makeGraphSession (loadedPatch.document.graph);
+
+    AIWorkerCommandRequest failedAttempt;
+    failedAttempt.commandId = "c6.2-move-missing-node";
+    failedAttempt.workerId = "ai-worker-proof";
+    failedAttempt.operation = "move_node";
+    failedAttempt.intent = "First repair attempt intentionally targets a missing node";
+    failedAttempt.nodeId = "missing_loudness";
+    failedAttempt.deltaX = 17.0;
+    failedAttempt.deltaY = 5.0;
+
+    AIWorkerCommandRequest repairedAttempt;
+    repairedAttempt.commandId = "c6.2-move-library-loudness";
+    repairedAttempt.workerId = "ai-worker-proof";
+    repairedAttempt.operation = "move_node";
+    repairedAttempt.intent = "Second repair attempt targets the loaded loudness node";
+    repairedAttempt.nodeId = "library_loud1";
+    repairedAttempt.deltaX = 17.0;
+    repairedAttempt.deltaY = 5.0;
+
+    AIWorkerCommandRequest unusedAttempt = repairedAttempt;
+    unusedAttempt.commandId = "c6.2-unused-attempt";
+    unusedAttempt.deltaX = 100.0;
+    unusedAttempt.deltaY = 100.0;
+
+    AIWorkerRepairPlan repairPlan;
+    repairPlan.repairId = "c6.2-ai-repair-loop";
+    repairPlan.workerId = "ai-worker-proof";
+    repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
+    repairPlan.maxAttempts = 3;
+    repairPlan.attempts = { failedAttempt, repairedAttempt, unusedAttempt };
+
+    const auto repairResult = executeAIWorkerRepairLoop (session, repairPlan);
+    const auto* finalNode = findEditorNode (session.graph, "library_loud1");
+    const auto finalNodeX = finalNode == nullptr ? 0.0 : finalNode->position.x;
+    const auto finalNodeY = finalNode == nullptr ? 0.0 : finalNode->position.y;
+    const auto graphMutationApplied = ! repairResult.attempts.empty()
+        && repairResult.attempts.back().commandResult.evidence.graphMutationApplied;
+    const auto firstAttemptFailed = ! repairResult.attempts.empty()
+        && repairResult.attempts.front().status == "failed";
+    const auto ok = repairResult.ok
+                    && repairResult.status == "repaired"
+                    && repairResult.attemptsRun == 2
+                    && repairResult.maxAttempts == 3
+                    && firstAttemptFailed
+                    && repairResult.successfulAttemptIndex == 2
+                    && repairResult.finalOperation == "move_node"
+                    && repairResult.finalCommandLogStatus == "ai_worker_repair_loop:repaired"
+                    && graphMutationApplied
+                    && session.collaborationLog.size() >= 6
+                    && finalNode != nullptr;
+    const auto error = ok ? std::string {}
+                          : ! repairResult.ok ? repairResult.error
+                          : "C6 AI repair loop proof did not match expected retry/repair evidence";
+
+    const auto report = makeC6AIRepairLoopReportJson (ok,
+                                                      repairResult,
+                                                      graphMutationApplied,
+                                                      session.collaborationLog.size(),
+                                                      false,
+                                                      finalNodeX,
+                                                      finalNodeY,
+                                                      error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c6 AI repair loop proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c6 AI repair loop proof dumped: " : "c6 AI repair loop proof mismatch: ")
+                             + directory.getFullPathName(),
                          juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)

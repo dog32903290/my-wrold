@@ -1,0 +1,9 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.analyzer-family",
+  "title": "Analyzer Compound Family",
+  "modulePackages": [
+    "modules/loudness/module.json",
+    "modules/raw-energy/module.json"
+  ]
+}

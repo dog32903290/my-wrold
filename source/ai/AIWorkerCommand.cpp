@@ -32,6 +32,16 @@ std::string normalizedCommandId (const AIWorkerCommandRequest& request)
     return request.commandId.empty() ? "ai-worker-command" : request.commandId;
 }
 
+std::string normalizedRepairId (const AIWorkerRepairPlan& plan)
+{
+    return plan.repairId.empty() ? "ai-worker-repair-loop" : plan.repairId;
+}
+
+std::string normalizedRepairWorkerId (const AIWorkerRepairPlan& plan)
+{
+    return plan.workerId.empty() ? "ai-worker" : plan.workerId;
+}
+
 std::string readTextFile (const std::string& path)
 {
     std::ifstream input (path);
@@ -102,6 +112,31 @@ void appendCollaborationLog (GraphSession& session,
                                           result,
                                           proofEvidence,
                                           error });
+}
+
+std::string lastCollaborationProofEvidence (const GraphSession& session,
+                                            const std::string& operation,
+                                            const std::string& commandId)
+{
+    for (auto item = session.collaborationLog.rbegin(); item != session.collaborationLog.rend(); ++item)
+    {
+        if (item->operation == operation && item->commandId == commandId)
+            return item->proofEvidence;
+    }
+
+    return {};
+}
+
+std::string makeRepairLoopProofEvidence (const AIWorkerRepairLoopResult& result)
+{
+    std::ostringstream out;
+    out << "attemptsRun=" << result.attemptsRun
+        << "; maxAttempts=" << result.maxAttempts
+        << "; successfulAttemptIndex=" << result.successfulAttemptIndex
+        << "; finalOperation=" << result.finalOperation
+        << "; finalCommandLogStatus=" << result.finalCommandLogStatus
+        << "; finalProofEvidence=" << result.finalProofEvidence;
+    return out.str();
 }
 
 AIWorkerCommandEvidence collectSaveWorkEvidence (const GraphSession& session, const SaveWorkResult& saveResult)
@@ -298,5 +333,132 @@ AIWorkerCommandResult executeAIWorkerCommand (GraphSession& session, const AIWor
     session.commandLog.push_back ("ai_worker:" + operation + ":" + resultStatus);
 
     return { ok, commandId, workerId, operation, resultStatus, error, std::move (evidence) };
+}
+
+AIWorkerRepairLoopResult executeAIWorkerRepairLoop (GraphSession& session, const AIWorkerRepairPlan& plan)
+{
+    const auto repairId = normalizedRepairId (plan);
+    const auto workerId = normalizedRepairWorkerId (plan);
+
+    AIWorkerRepairLoopResult result;
+    result.repairId = repairId;
+    result.workerId = workerId;
+    result.maxAttempts = plan.maxAttempts;
+
+    session.commandLog.push_back ("ai_worker_repair_loop:started");
+    appendCollaborationLog (session,
+                            workerId,
+                            repairId,
+                            "repair_loop",
+                            plan.intent,
+                            "started",
+                            {},
+                            {},
+                            {});
+
+    if (plan.maxAttempts == 0)
+    {
+        result.status = "rejected";
+        result.error = "AI repair loop requires maxAttempts > 0";
+        result.finalCommandLogStatus = "ai_worker_repair_loop:rejected";
+        session.commandLog.push_back (result.finalCommandLogStatus);
+        appendCollaborationLog (session,
+                                workerId,
+                                repairId,
+                                "repair_loop",
+                                plan.intent,
+                                result.status,
+                                "failed",
+                                makeRepairLoopProofEvidence (result),
+                                result.error);
+        return result;
+    }
+
+    if (plan.attempts.empty())
+    {
+        result.status = "rejected";
+        result.error = "AI repair loop requires at least one attempt";
+        result.finalCommandLogStatus = "ai_worker_repair_loop:rejected";
+        session.commandLog.push_back (result.finalCommandLogStatus);
+        appendCollaborationLog (session,
+                                workerId,
+                                repairId,
+                                "repair_loop",
+                                plan.intent,
+                                result.status,
+                                "failed",
+                                makeRepairLoopProofEvidence (result),
+                                result.error);
+        return result;
+    }
+
+    const auto attemptsToRun = std::min (plan.maxAttempts, plan.attempts.size());
+
+    for (size_t index = 0; index < attemptsToRun; ++index)
+    {
+        auto request = plan.attempts[index];
+        if (request.workerId.empty())
+            request.workerId = workerId;
+
+        const auto commandResult = executeAIWorkerCommand (session, request);
+        const auto operation = commandResult.operation;
+        const auto commandId = commandResult.commandId;
+        const auto proofEvidence = lastCollaborationProofEvidence (session, operation, commandId);
+
+        result.attemptsRun = index + 1;
+        result.finalOperation = operation;
+        result.finalProofEvidence = proofEvidence;
+        result.attempts.push_back ({ index + 1,
+                                     commandResult.ok ? std::string { "repaired" } : std::string { "failed" },
+                                     commandResult });
+
+        if (commandResult.ok)
+        {
+            result.ok = true;
+            result.status = "repaired";
+            result.successfulAttemptIndex = index + 1;
+            result.finalCommandLogStatus = "ai_worker_repair_loop:repaired";
+            session.commandLog.push_back (result.finalCommandLogStatus);
+            appendCollaborationLog (session,
+                                    workerId,
+                                    repairId,
+                                    "repair_loop",
+                                    plan.intent,
+                                    result.status,
+                                    "ok",
+                                    makeRepairLoopProofEvidence (result),
+                                    {});
+            return result;
+        }
+
+        session.commandLog.push_back ("ai_worker_repair_loop:attempt_failed");
+        appendCollaborationLog (session,
+                                workerId,
+                                repairId,
+                                "repair_loop",
+                                plan.intent,
+                                "attempt_failed",
+                                "failed",
+                                makeRepairLoopProofEvidence (result),
+                                commandResult.error);
+        result.error = commandResult.error;
+    }
+
+    result.ok = false;
+    result.status = "failed";
+    result.finalCommandLogStatus = "ai_worker_repair_loop:failed";
+    if (result.error.empty())
+        result.error = "AI repair loop exhausted attempts without a successful command";
+    session.commandLog.push_back (result.finalCommandLogStatus);
+    appendCollaborationLog (session,
+                            workerId,
+                            repairId,
+                            "repair_loop",
+                            plan.intent,
+                            result.status,
+                            "failed",
+                            makeRepairLoopProofEvidence (result),
+                            result.error);
+    return result;
 }
 }

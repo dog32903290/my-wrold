@@ -476,6 +476,42 @@ void runSyntheticLoudnessOutOp (SyntheticRuntimeOpContext& context, RuntimeChild
     }
 }
 
+void runSyntheticRawEnergyOutOp (SyntheticRuntimeOpContext& context, RuntimeChildExecutionStatus& childStatus)
+{
+    const auto rmsInput = makeInputValue ("rms", context.entry, context.child.id, "rms", context.valueBus);
+    const auto peakInput = makeInputValue ("peak", context.entry, context.child.id, "peak", context.valueBus);
+    const auto sampleCountInput = makeInputValue ("sampleCount",
+                                                  context.entry,
+                                                  context.child.id,
+                                                  "sampleCount",
+                                                  context.valueBus);
+    childStatus.inputs = {
+        rmsInput,
+        peakInput,
+        sampleCountInput
+    };
+
+    if (hasValue (context.valueBus, rmsInput.source)
+        && hasValue (context.valueBus, peakInput.source)
+        && hasValue (context.valueBus, sampleCountInput.source))
+    {
+        childStatus.status = "computed";
+        childStatus.reason = "published raw energy facts before detector shaping";
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "rms", rmsInput.value);
+        publishValue (context.valueBus, childStatus.outputs, context.child.id, "peak", peakInput.value);
+        publishValue (context.valueBus,
+                      childStatus.outputs,
+                      context.child.id,
+                      "sampleCount",
+                      sampleCountInput.value);
+    }
+    else
+    {
+        childStatus.status = "blocked";
+        childStatus.reason = "waiting for analyzer.rms and audio.mono_mix raw facts";
+    }
+}
+
 const std::vector<SyntheticRuntimeOpDefinition>& syntheticRuntimeOps()
 {
     static const std::vector<SyntheticRuntimeOpDefinition> ops {
@@ -485,6 +521,7 @@ const std::vector<SyntheticRuntimeOpDefinition>& syntheticRuntimeOps()
         { "analyzer.analysis_gain", "synthetic.analyzer.analysis_gain", runSyntheticAnalysisGainOp },
         { "analyzer.pre_gate", "synthetic.analyzer.pre_gate", runSyntheticPreGateOp },
         { "signal.smoother", "synthetic.signal.smoother", runSyntheticSmootherOp },
+        { "analyzer.raw_energy_out", "synthetic.analyzer.raw_energy_out", runSyntheticRawEnergyOutOp },
         { "analyzer.loudness_out", "synthetic.analyzer.loudness_out", runSyntheticLoudnessOutOp }
     };
 
