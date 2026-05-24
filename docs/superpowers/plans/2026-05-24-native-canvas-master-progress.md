@@ -44,6 +44,7 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+cff975e Split runtime registry responsibilities
 2c53c05 Split ImGui smoke overlay helpers
 bbadbe8 Schedule post-C three-layer cleanup
 311b64e Tidy C proof request fixtures
@@ -203,7 +204,7 @@ Latest accepted targeted result:
 | C5 module publish/reuse path | closed | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | Do not reopen C5 for C6 work |
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
-| H1 post-C three-layer cleanup | active | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | H1.1/H1.2 closed; H1.3 StorageContract split next |
+| H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
@@ -214,11 +215,11 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-H1 post-C three-layer cleanup is active.
-H1.1 UI overlay split is closed in the current slice.
-H1.2 RuntimeRegistry split is closed in the current slice.
-H1.3 StorageContract split is next.
-Do not start R runtime/render, PV/analyzer detector expansion, or TiXL sub-ledger work before H1 unless explicitly overridden.
+None after H1 closure.
+H1.1 UI overlay split is closed.
+H1.2 RuntimeRegistry split is closed.
+H1.3 StorageContract split is closed in the current slice.
+Next candidate lane: R runtime/render backbone roadmap spec unless explicitly overridden.
 ```
 
 Current H1.1 note:
@@ -262,6 +263,32 @@ Verification run:
 - `git diff --check`
 ```
 
+Current H1.3 note:
+
+```text
+H1.3 splits source/storage/StorageContract.cpp into:
+- source/storage/StorageContract.cpp
+- source/storage/StorageContractJson.*
+- source/storage/StorageContractWorkProject.cpp
+- source/storage/StorageContractPatchDocument.cpp
+- source/storage/StorageContractModules.cpp
+
+Storage JSON field names and parse behavior stay stable.
+save_work behavior is unchanged.
+
+Verification run:
+- `cmake --build build --target my_world_storage_tests my_world_patch_document_tests my_world_save_work_command_tests my_world_module_publish_tests my-world`
+- `./build/my_world_storage_tests`
+- `./build/my_world_patch_document_tests`
+- `./build/my_world_save_work_command_tests`
+- `./build/my_world_module_publish_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c3-save-work-proof-and-exit`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-module-publish-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+```
+
 C4 proved:
 
 ```text
@@ -289,7 +316,7 @@ Scheduled before those parked lanes:
 H1 post-C three-layer cleanup
 -> source/ui/ImGuiSmokeOverlay.cpp responsibility split (done in H1.1)
 -> source/core/RuntimeRegistry.cpp responsibility split (done in H1.2)
--> source/storage/StorageContract.cpp serialization split (next in H1.3)
+-> source/storage/StorageContract.cpp serialization split (done in H1.3)
 ```
 
 Parked after C6:
@@ -329,7 +356,7 @@ raw callback-buffer runtime
 | `2026-05-24-c2-compound-work-closure.md` | historical C2 implementation/closure plan | no |
 | `2026-05-24-c5-module-publish-reuse-path.md` | C5 closure evidence | no, unless auditing C5 evidence |
 | `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
-| `2026-05-24-post-c-three-layer-cleanup.md` | next lane spec after C hygiene | yes, after this master plan when starting H1 |
+| `2026-05-24-post-c-three-layer-cleanup.md` | H1 closure evidence | no, unless auditing H1 evidence |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
 
@@ -357,7 +384,7 @@ CMakeLists.txt
 
 ## Next Handoff Sentence
 
-Open this master plan first. H1 post-C three-layer cleanup is active; H1.1 UI overlay split and H1.2 RuntimeRegistry split are closed, and H1.3 StorageContract split is next unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. H1 post-C three-layer cleanup is closed; no lane is active, and the next candidate is an R runtime/render backbone roadmap spec unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

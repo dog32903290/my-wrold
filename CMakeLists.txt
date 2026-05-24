@@ -475,6 +475,10 @@ add_test(NAME performance_preferences COMMAND my_world_performance_preferences_t
 
 add_library(my_world_storage
     source/storage/StorageContract.cpp
+    source/storage/StorageContractJson.cpp
+    source/storage/StorageContractModules.cpp
+    source/storage/StorageContractPatchDocument.cpp
+    source/storage/StorageContractWorkProject.cpp
 )
 
 target_include_directories(my_world_storage
