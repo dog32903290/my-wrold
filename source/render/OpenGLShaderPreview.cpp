@@ -2,9 +2,11 @@
 
 #include "CompoundModule.h"
 #include "RuntimeRegistry.h"
+#include "V1ShaderProofArtifacts.h"
 
 #include <algorithm>
 #include <atomic>
+#include <filesystem>
 #include <iterator>
 #include <vector>
 
@@ -12,28 +14,6 @@ namespace myworld
 {
 namespace
 {
-bool writeTextFile (const juce::File& file, const std::string& text)
-{
-    return file.replaceWithText (juce::String::fromUTF8 (text.data(), static_cast<int> (text.size())),
-                                 false,
-                                 false,
-                                 "\n");
-}
-
-bool writePngFile (const juce::File& file, const juce::Image& image)
-{
-    if (file.existsAsFile() && ! file.deleteFile())
-        return false;
-
-    auto output = file.createOutputStream();
-
-    if (output == nullptr)
-        return false;
-
-    juce::PNGImageFormat pngFormat;
-    return pngFormat.writeImageToStream (image, *output);
-}
-
 int mouseButtonIndex (const juce::MouseEvent& event)
 {
     if (event.mods.isRightButtonDown())
@@ -161,9 +141,14 @@ std::vector<NodeSpec> loadVisibleNodeSpecs()
     return visibleSpecs;
 }
 
-RuntimeRegistry loadVisibleRuntimeRegistry()
+std::vector<std::filesystem::path> proofCandidateRoots()
 {
-    return loadRuntimeRegistryFromCandidates (defaultModuleLibraryPath()).registry;
+    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+
+    return {
+        juce::File::getCurrentWorkingDirectory().getFullPathName().toStdString(),
+        parentDirectory (executableDir, 5).getFullPathName().toStdString()
+    };
 }
 }
 
@@ -371,139 +356,29 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     if (dump == nullptr)
         return;
 
-    if (! dump->outputDirectory.createDirectory())
-    {
-        reportStatus ("proof dump failed: could not create " + dump->outputDirectory.getFullPathName());
-        return;
-    }
-
     const auto frameImage = capturedFrameToImage (renderBackend.captureFrame());
-    const auto frameFile = dump->outputDirectory.getChildFile ("frame.png");
-    const auto cookOrderFile = dump->outputDirectory.getChildFile ("cook_order.json");
-    const auto nodeStatsFile = dump->outputDirectory.getChildFile ("node_stats.json");
-    const auto loudnessCompoundFile = dump->outputDirectory.getChildFile ("loudness_compound.json");
-    const auto runtimeRegistryFile = dump->outputDirectory.getChildFile ("runtime_registry.json");
-    const auto runtimeOpCatalogFile = dump->outputDirectory.getChildFile ("runtime_op_catalog.json");
-    const auto runtimeOpCoverageFile = dump->outputDirectory.getChildFile ("runtime_op_coverage.json");
-    const auto runtimeUiDiagnosticsFile = dump->outputDirectory.getChildFile ("runtime_ui_diagnostics.json");
-    const auto runtimeDryRunFile = dump->outputDirectory.getChildFile ("runtime_dry_run.json");
-    const auto runtimeExecutionFile = dump->outputDirectory.getChildFile ("runtime_execution.json");
-    const auto missingRuntimeOpRegistryFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_registry.json");
-    const auto missingRuntimeOpCoverageFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_coverage.json");
-    const auto missingRuntimeOpDryRunFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_dry_run.json");
-    const auto missingRuntimeOpExecutionFile = dump->outputDirectory.getChildFile ("runtime_missing_runtimeop_execution.json");
-    const auto runtimeRegistry = loadVisibleRuntimeRegistry();
-    const auto runtimeOpCatalog = makeRuntimeOpCatalog();
-    const auto runtimeOpCoverage = inspectRuntimeOpCoverage (runtimeRegistry);
-    const auto runtimeDryRun = dryRunRuntimeRegistry (runtimeRegistry);
-    RuntimeSyntheticAudioInput syntheticRuntimeInput;
-    syntheticRuntimeInput.channels = {
-        { 0.0f, 1.0f, -1.0f, 0.0f },
-        { 0.0f, 0.5f, -0.5f, 0.0f }
-    };
-    syntheticRuntimeInput.analysisGain = 1.5f;
-    const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry,
-                                                                            syntheticRuntimeInput);
-    const auto missingRuntimeOpRegistry = loadRuntimeRegistryFromCandidates (missingRuntimeOpModuleLibraryPath());
-    const auto missingRuntimeOpCoverage = missingRuntimeOpRegistry.ok
-                                              ? inspectRuntimeOpCoverage (missingRuntimeOpRegistry.registry)
-                                              : RuntimeOpCoverageResult {};
-    auto runtimeUiDiagnostics = runtimeOpDiagnostics.empty()
-                                    ? makeRuntimeOpModuleDiagnostics (runtimeOpCoverage.snapshot)
-                                    : runtimeOpDiagnostics;
-    appendRuntimeOpModuleDiagnostics (runtimeUiDiagnostics, missingRuntimeOpCoverage);
-    const auto missingRuntimeOpDryRun = missingRuntimeOpRegistry.ok
-                                            ? dryRunRuntimeRegistry (missingRuntimeOpRegistry.registry)
-                                            : RuntimeDryRunResult {};
-    const auto missingRuntimeOpExecution = missingRuntimeOpRegistry.ok
-                                               ? executeRuntimeRegistryWithSyntheticAudio (
-                                                   missingRuntimeOpRegistry.registry,
-                                                   syntheticRuntimeInput)
-                                               : RuntimeExecutionResult {};
+    V1ShaderProofArtifactRequest request;
+    request.outputDirectory = dump->outputDirectory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+    request.graph = dump->graph;
+    request.frameImage = frameImage;
+    request.viewportWidth = width;
+    request.viewportHeight = height;
+    request.timeSeconds = timeSeconds;
+    request.frameIndex = currentFrameIndex;
+    request.backendName = renderBackend.backendName();
+    request.backendStatus = renderBackend.lastStatus();
+    request.loudnessCompound = loudnessCompound;
+    request.runtimeOpDiagnostics = runtimeOpDiagnostics;
 
-    const auto cookOrderWritten = writeTextFile (cookOrderFile, makeCookOrderJson (dump->graph));
-    const auto nodeStatsWritten = writeTextFile (nodeStatsFile,
-                                                 makeNodeStatsJson (dump->graph,
-                                                                    width,
-                                                                    height,
-                                                                    currentFrameIndex,
-                                                                    timeSeconds,
-                                                                    renderBackend.backendName(),
-                                                                    renderBackend.lastStatus()));
-    const auto loudnessCompoundWritten = writeTextFile (loudnessCompoundFile,
-                                                        makeCompoundPatchJson (loudnessCompound));
-    const auto runtimeRegistryWritten = writeTextFile (runtimeRegistryFile,
-                                                       makeRuntimeRegistryJson (runtimeRegistry));
-    const auto runtimeOpCatalogWritten = writeTextFile (runtimeOpCatalogFile,
-                                                        makeRuntimeOpCatalogJson (runtimeOpCatalog));
-    const auto runtimeOpCoverageWritten = runtimeOpCoverage.ok
-                                              && writeTextFile (
-                                                  runtimeOpCoverageFile,
-                                                  makeRuntimeOpCoverageJson (runtimeOpCoverage.snapshot));
-    const auto runtimeUiDiagnosticsWritten = writeTextFile (
-        runtimeUiDiagnosticsFile,
-        makeRuntimeOpModuleDiagnosticsJson (runtimeUiDiagnostics));
-    const auto runtimeDryRunWritten = runtimeDryRun.ok
-                                          && writeTextFile (runtimeDryRunFile,
-                                                            makeRuntimeDryRunJson (runtimeDryRun.snapshot));
-    const auto runtimeExecutionWritten = runtimeExecution.ok
-                                             && writeTextFile (runtimeExecutionFile,
-                                                               makeRuntimeExecutionJson (runtimeExecution.snapshot));
-    const auto missingRuntimeOpRegistryWritten = missingRuntimeOpRegistry.ok
-                                                     && writeTextFile (
-                                                         missingRuntimeOpRegistryFile,
-                                                         makeRuntimeRegistryJson (missingRuntimeOpRegistry.registry));
-    const auto missingRuntimeOpCoverageWritten = missingRuntimeOpRegistry.ok
-                                                     && ! missingRuntimeOpCoverage.ok
-                                                     && writeTextFile (
-                                                         missingRuntimeOpCoverageFile,
-                                                         makeRuntimeOpCoverageJson (missingRuntimeOpCoverage.snapshot));
-    const auto missingRuntimeOpDryRunWritten = missingRuntimeOpRegistry.ok
-                                                   && ! missingRuntimeOpDryRun.ok
-                                                   && writeTextFile (
-                                                       missingRuntimeOpDryRunFile,
-                                                       makeRuntimeDryRunJson (missingRuntimeOpDryRun.snapshot));
-    const auto missingRuntimeOpExecutionWritten = missingRuntimeOpRegistry.ok
-                                                      && ! missingRuntimeOpExecution.ok
-                                                      && writeTextFile (
-                                                          missingRuntimeOpExecutionFile,
-                                                          makeRuntimeExecutionJson (missingRuntimeOpExecution.snapshot));
-    const auto frameWritten = writePngFile (frameFile, frameImage);
-
-    if (cookOrderWritten
-        && nodeStatsWritten
-        && loudnessCompoundWritten
-        && runtimeRegistryWritten
-        && runtimeOpCatalogWritten
-        && runtimeOpCoverageWritten
-        && runtimeUiDiagnosticsWritten
-        && runtimeDryRunWritten
-        && runtimeExecutionWritten
-        && missingRuntimeOpRegistryWritten
-        && missingRuntimeOpCoverageWritten
-        && missingRuntimeOpDryRunWritten
-        && missingRuntimeOpExecutionWritten
-        && frameWritten)
+    const auto result = writeV1ShaderProofArtifacts (request);
+    if (result.ok)
     {
         reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
         return;
     }
 
-    reportStatus ("proof dump failed: "
-                  + juce::String (cookOrderWritten ? "" : "cook_order.json ")
-                  + juce::String (nodeStatsWritten ? "" : "node_stats.json ")
-                  + juce::String (loudnessCompoundWritten ? "" : "loudness_compound.json ")
-                  + juce::String (runtimeRegistryWritten ? "" : "runtime_registry.json ")
-                  + juce::String (runtimeOpCatalogWritten ? "" : "runtime_op_catalog.json ")
-                  + juce::String (runtimeOpCoverageWritten ? "" : "runtime_op_coverage.json ")
-                  + juce::String (runtimeUiDiagnosticsWritten ? "" : "runtime_ui_diagnostics.json ")
-                  + juce::String (runtimeDryRunWritten ? "" : "runtime_dry_run.json ")
-                  + juce::String (runtimeExecutionWritten ? "" : "runtime_execution.json ")
-                  + juce::String (missingRuntimeOpRegistryWritten ? "" : "runtime_missing_runtimeop_registry.json ")
-                  + juce::String (missingRuntimeOpCoverageWritten ? "" : "runtime_missing_runtimeop_coverage.json ")
-                  + juce::String (missingRuntimeOpDryRunWritten ? "" : "runtime_missing_runtimeop_dry_run.json ")
-                  + juce::String (missingRuntimeOpExecutionWritten ? "" : "runtime_missing_runtimeop_execution.json ")
-                  + juce::String (frameWritten ? "" : "frame.png"));
+    reportStatus (juce::String (result.error));
 }
 
 juce::Image OpenGLShaderPreview::capturedFrameToImage (const CapturedFrame& frame) const

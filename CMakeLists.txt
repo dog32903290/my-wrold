@@ -1182,6 +1182,40 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     add_test(NAME opengl_render_backend COMMAND my_world_opengl_render_backend_tests)
 
+    add_library(my_world_v1_shader_proof_artifacts
+        source/render/V1ShaderProofArtifacts.cpp
+    )
+
+    target_include_directories(my_world_v1_shader_proof_artifacts
+        PUBLIC
+            source/render
+            source/core
+            source/audio
+    )
+
+    target_link_libraries(my_world_v1_shader_proof_artifacts
+        PUBLIC
+            my_world_core
+            my_world_runtime_registry
+            juce::juce_gui_extra
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags
+    )
+
+    add_executable(my_world_v1_shader_proof_artifacts_tests
+        tests/V1ShaderProofArtifactsTests.cpp
+    )
+
+    target_link_libraries(my_world_v1_shader_proof_artifacts_tests
+        PRIVATE
+            my_world_v1_shader_proof_artifacts
+    )
+
+    add_test(NAME v1_shader_proof_artifacts COMMAND my_world_v1_shader_proof_artifacts_tests)
+    set_tests_properties(v1_shader_proof_artifacts PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
     juce_add_gui_app(my-world
         PRODUCT_NAME "${MY_WORLD_DISPLAY_NAME}"
         COMPANY_NAME "Chen Po-Wei"
@@ -1225,6 +1259,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
             my_world_a1_audio_proof_runner
+            my_world_v1_shader_proof_artifacts
             my_world_c2_storage_proof_runner
             my_world_c3_save_work_proof_runner
             my_world_c4_ai_worker_save_work_proof_runner

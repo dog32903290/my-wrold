@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 00:54 Asia/Taipei.
+Date: 2026-05-25 01:05 Asia/Taipei.
 
 Branch:
 
@@ -239,6 +239,7 @@ Latest accepted targeted result:
 | C3 save-work proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c3-save-work-proof-harness-extraction.md`; `C3SaveWorkProofRunner` owns fixture copy, move/save command proof, storage reload, layout evidence, and report writing; focused test, app build, and C3 CLI proof passed | Do not reopen C3 storage command semantics; C2/V1 proof harness cleanup remain separate selected lanes |
 | C2 storage proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c2-storage-proof-harness-extraction.md`; `C2StorageProofRunner` owns fixture lookup, patch save/reload, layout evidence, and report writing; focused test, app build, and C2 CLI proof passed | Do not reopen C2 storage semantics; V1/A1 proof harness cleanup remain separate selected lanes |
 | A1 audio proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md`; `A1AudioProofRunner` owns runtime registry lookup, synthetic runtime execution, audio stats, compound, runtime execution, and bridge artifact writing; focused test, app build, and A1 CLI proof passed | Do not reopen A1 analyzer/runtime semantics; V1 proof harness cleanup remains separate selected lane |
+| V1 shader proof artifact extraction | closed | `docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md`; `V1ShaderProofArtifacts` owns V1 proof artifact path/report/PNG writing while `OpenGLShaderPreview` keeps live frame capture; focused test, app build, and V1 CLI proof passed | Do not treat this as headless V1; RenderBackend/headless visual work remains a separate selected lane |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -248,8 +249,44 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after A1 audio proof harness extraction as of 2026-05-25 00:54 Asia/Taipei.
+None after V1 shader proof artifact extraction as of 2026-05-25 01:05 Asia/Taipei.
 
+V1 shader proof artifact extraction closed as of 2026-05-25 01:05 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md
+
+Closed proof line:
+OpenGLShaderPreview live frame capture
+-> V1ShaderProofArtifactRequest
+-> writeV1ShaderProofArtifacts()
+-> frame.png + 13 JSON artifacts
+-> existing proof status callback
+
+Latest verification:
+- `cmake -S . -B build` red before artifact writer source existed, then green after implementation
+- `cmake --build build --target my_world_v1_shader_proof_artifacts_tests`
+- `ctest --test-dir build --output-on-failure -R "v1_shader_proof_artifacts|runtime_registry|opengl_render_backend|render_backend_contract"`
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`
+- `git diff --check`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `v1_shader_proof_artifacts` passed
+- `runtime_registry` passed
+- `opengl_render_backend` passed
+- `render_backend_contract` passed
+- app build passed
+- CLI V1 shader proof exited 0, wrote all 14 artifacts, and kept nonempty `frame.png`, `renderer: "OpenGL"`, `kind: "runtimeExecution"`, `nodeType: "compound.loudness"`, and missing-runtime-op evidence
+- full `ctest` passed 50/50
+- `git diff --check` passed
+
+Parked:
+- V1 still depends on live OpenGL for `frame.png`
+- headless visual proof / future Metal work remains a separate selected lane
+
+Previous closure:
 A1 audio proof harness extraction closed as of 2026-05-25 00:54 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md
