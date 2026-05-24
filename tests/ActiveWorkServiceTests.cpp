@@ -1,0 +1,90 @@
+#include "ActiveWorkService.h"
+
+#include "StorageContract.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+
+void copyC2WorkFixture (const std::filesystem::path& workRoot)
+{
+    std::filesystem::create_directories (workRoot / "patches");
+    std::filesystem::copy_file ("fixtures/storage/c2-compound-work/myworld.work.json",
+                                workRoot / "myworld.work.json",
+                                std::filesystem::copy_options::overwrite_existing);
+    std::filesystem::copy_file ("fixtures/storage/c2-compound-work/patches/main.patch.json",
+                                workRoot / "patches" / "main.patch.json",
+                                std::filesystem::copy_options::overwrite_existing);
+}
+
+bool containsCommand (const std::vector<std::string>& commands, const std::string& command)
+{
+    return std::find (commands.begin(), commands.end(), command) != commands.end();
+}
+
+void setEnvironment (const char* name, const std::string& value)
+{
+    expect (setenv (name, value.c_str(), 1) == 0, std::string ("setenv failed for ") + name);
+}
+}
+
+int main()
+{
+    const auto tempRoot = std::filesystem::temp_directory_path() / "my-world-active-work-service";
+    const auto workRoot = tempRoot / "work";
+    const auto projectRoot = tempRoot / "project";
+    std::filesystem::remove_all (tempRoot);
+    std::filesystem::create_directories (projectRoot);
+    copyC2WorkFixture (workRoot);
+
+    const auto workManifestPath = workRoot / "myworld.work.json";
+    setEnvironment ("MY_WORLD_ACTIVE_WORK_MANIFEST", workManifestPath.string());
+    setEnvironment ("MY_WORLD_PROJECT_DIR", projectRoot.string());
+
+    const auto sourceFixtureManifest = std::string { "fixtures/storage/c2-compound-work/myworld.work.json" };
+    const auto loadedMain = myworld::loadMainPatchDocumentForWork (sourceFixtureManifest);
+    expect (loadedMain.ok, loadedMain.error);
+
+    auto saveSession = myworld::makeGraphSession (loadedMain.document.graph);
+    expect (myworld::moveNode (saveSession, "library_loud1", 13.0, 7.0).ok,
+            "dirty graph session before active work save");
+
+    const auto save = myworld::saveActiveWorkProject (saveSession);
+    expect (save.ok, save.message);
+    expect (save.message == "save-ok commit-pending", "active work save status");
+    expect (! saveSession.dirty, "active work save clears dirty graph state");
+    expect (containsCommand (saveSession.commandLog, "save_work:save-ok commit-pending"),
+            "active work save records save command");
+
+    setEnvironment ("MY_WORLD_ACTIVE_WORK_MANIFEST", sourceFixtureManifest);
+
+    auto publishSession = myworld::makeGraphSession (loadedMain.document.graph);
+    const auto publish = myworld::publishSelectedModuleFromActiveWork (publishSession, "library_loud1");
+    expect (publish.ok, publish.error);
+    expect (publish.status == "published", "active work publish status");
+    expect (publish.moduleId == "module.visible-library_loud1", "active work publish module id");
+    expect (publish.publishedNodeType == "compound.visible-library_loud1", "active work publish node type");
+    expect (containsCommand (publishSession.commandLog, "publish_module:published"),
+            "active work publish records publish command");
+    expect (std::filesystem::exists (publish.moduleManifestPath), "active work publish module manifest exists");
+    expect (std::filesystem::exists (publish.compoundPatchPath), "active work publish compound patch exists");
+    expect (std::filesystem::exists (projectRoot / "debug" / "c5-visible-module-publish"),
+            "active work publish uses project debug directory");
+
+    return 0;
+}

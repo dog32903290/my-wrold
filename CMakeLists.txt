@@ -1216,6 +1216,30 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             juce::juce_opengl
     )
 
+    add_executable(my_world_active_work_service_tests
+        source/app/ActiveWorkService.cpp
+        source/app/AppPaths.cpp
+        tests/ActiveWorkServiceTests.cpp
+    )
+
+    target_include_directories(my_world_active_work_service_tests
+        PRIVATE
+            source/app
+            source/core
+            source/storage
+    )
+
+    target_link_libraries(my_world_active_work_service_tests
+        PRIVATE
+            my_world_storage_command
+            juce::juce_core
+    )
+
+    add_test(NAME active_work_service COMMAND my_world_active_work_service_tests)
+    set_tests_properties(active_work_service PROPERTIES
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
     add_executable(my_world_opengl_render_backend_tests
         source/render/OpenGLRenderBackend.cpp
         tests/OpenGLRenderBackendTests.cpp
@@ -1280,6 +1304,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
     target_sources(my-world
         PRIVATE
             source/app/AppPaths.cpp
+            source/app/ActiveWorkService.cpp
             source/app/Main.cpp
             source/app/MainComponent.cpp
             source/app/PreferencesPanel.cpp

@@ -5,7 +5,6 @@
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
-#include "StorageCommand.h"
 #include "StartupProof.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -55,7 +54,6 @@ private:
                           const juce::File& directory);
     CommandResult saveActiveWork (GraphSession& session);
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
-    PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();
