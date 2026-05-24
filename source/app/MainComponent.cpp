@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
 #include "A1AudioProofRunner.h"
+#include "AppPaths.h"
 #include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
 #include "C4AIWorkerSaveWorkProofRunner.h"
@@ -19,11 +20,9 @@
 #include "StorageCommand.h"
 #include "StorageContract.h"
 
-#include <algorithm>
 #include <cctype>
-#include <filesystem>
+#include <string>
 #include <utility>
-#include <vector>
 
 namespace myworld
 {
@@ -34,152 +33,11 @@ juce::Font monoFont (float height)
     return juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), height, juce::Font::plain));
 }
 
-bool looksLikeProjectDirectory (const juce::File& directory)
-{
-    return directory.getChildFile ("CMakeLists.txt").existsAsFile()
-           && directory.getChildFile ("source").isDirectory()
-           && directory.getChildFile ("fixtures").isDirectory();
-}
-
 void configureMeterLabel (juce::Label& label, juce::String text)
 {
     label.setText (std::move (text), juce::dontSendNotification);
     label.setColour (juce::Label::textColourId, juce::Colour::fromRGB (202, 211, 226));
     label.setFont (monoFont (13.0f));
-}
-
-juce::File projectDirectory()
-{
-    const auto environmentPath = juce::SystemStats::getEnvironmentVariable ("MY_WORLD_PROJECT_DIR", {});
-
-    if (environmentPath.isNotEmpty())
-        return juce::File (environmentPath);
-
-    const auto workingDirectory = juce::File::getCurrentWorkingDirectory();
-
-    if (looksLikeProjectDirectory (workingDirectory))
-        return workingDirectory;
-
-    return juce::File::getSpecialLocation (juce::File::userDesktopDirectory)
-        .getChildFile (juce::String::fromUTF8 ("\xe6\x88\x91\xe7\x9a\x84\xe4\xb8\x96\xe7\x95\x8c"));
-}
-
-juce::File proofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile ("v1-shader-proof");
-}
-
-juce::File audioProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (a1AudioProofDirectoryName());
-}
-
-juce::File c2StorageProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (c2StorageProofDirectoryName());
-}
-
-juce::File c3SaveWorkProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (c3SaveWorkProofDirectoryName());
-}
-
-juce::File c4AIWorkerSaveWorkProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (c4AIWorkerSaveWorkProofDirectoryName());
-}
-
-juce::File c5ModulePublishProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (
-        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::modulePublish));
-}
-
-juce::File c5AIWorkerModulePublishProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (
-        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::aiWorkerModulePublish));
-}
-
-juce::File c5VisibleModulePublishDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile ("c5-visible-module-publish");
-}
-
-juce::File c5VisibleModulePublishProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (
-        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::visibleModulePublish));
-}
-
-juce::File c6AnalyzerFamilyProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (c6AnalyzerFamilyProofDirectoryName());
-}
-
-juce::File c6AIRepairLoopProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (c6AIRepairLoopProofDirectoryName());
-}
-
-juce::File pvDetectorProofDumpDirectory (PVDetectorProofKind kind)
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (pvDetectorProofDirectoryName (kind));
-}
-
-juce::File pvB1AnalyzerEnvironmentProofDumpDirectory()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile (pvB1AnalyzerEnvironmentProofDirectoryName());
-}
-
-juce::File defaultActiveWorkManifestFile()
-{
-    return projectDirectory().getChildFile ("debug").getChildFile ("c3-active-work").getChildFile ("myworld.work.json");
-}
-
-juce::File activeWorkManifestFile()
-{
-    const auto environmentPath = juce::SystemStats::getEnvironmentVariable ("MY_WORLD_ACTIVE_WORK_MANIFEST", {});
-
-    if (environmentPath.isNotEmpty())
-        return juce::File (environmentPath);
-
-    return defaultActiveWorkManifestFile();
-}
-
-juce::File parentDirectory (juce::File file, const int levels)
-{
-    for (int i = 0; i < levels; ++i)
-        file = file.getParentDirectory();
-
-    return file;
-}
-
-std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
-{
-    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
-    const auto buildAppRepoRoot = parentDirectory (executableDir, 5);
-
-    return {
-        juce::File::getCurrentWorkingDirectory().getChildFile (libraryPath).getFullPathName().toStdString(),
-        buildAppRepoRoot.getChildFile (libraryPath).getFullPathName().toStdString()
-    };
-}
-
-std::vector<std::string> repoCandidatePaths (const juce::String& relativePath)
-{
-    return moduleLibraryCandidatePaths (relativePath);
-}
-
-std::vector<std::filesystem::path> proofCandidateRoots()
-{
-    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
-
-    return {
-        projectDirectory().getFullPathName().toStdString(),
-        juce::File::getCurrentWorkingDirectory().getFullPathName().toStdString(),
-        parentDirectory (executableDir, 5).getFullPathName().toStdString()
-    };
 }
 
 bool copyTextFile (const juce::File& source, const juce::File& target)
@@ -474,7 +332,7 @@ void MainComponent::resized()
 
 void MainComponent::dumpProof()
 {
-    const auto directory = proofDumpDirectory();
+    const auto directory = proofDumpDirectory ("v1-shader-proof");
     statusLabel.setText ("proof dump requested: " + directory.getFullPathName(), juce::dontSendNotification);
     preview.requestProofDump (directory, graph);
 }
@@ -502,7 +360,7 @@ void MainComponent::finishProofDump (const juce::String& displayName,
 
 void MainComponent::dumpAudioProof()
 {
-    const auto directory = audioProofDumpDirectory();
+    const auto directory = proofDumpDirectory (a1AudioProofDirectoryName());
 
     A1AudioProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -518,7 +376,7 @@ void MainComponent::dumpAudioProof()
 
 void MainComponent::dumpC2StorageProof()
 {
-    const auto directory = c2StorageProofDumpDirectory();
+    const auto directory = proofDumpDirectory (c2StorageProofDirectoryName());
 
     C2StorageProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -530,7 +388,7 @@ void MainComponent::dumpC2StorageProof()
 
 void MainComponent::dumpC3SaveWorkProof()
 {
-    const auto directory = c3SaveWorkProofDumpDirectory();
+    const auto directory = proofDumpDirectory (c3SaveWorkProofDirectoryName());
 
     C3SaveWorkProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -542,7 +400,7 @@ void MainComponent::dumpC3SaveWorkProof()
 
 void MainComponent::dumpC4AIWorkerSaveWorkProof()
 {
-    const auto directory = c4AIWorkerSaveWorkProofDumpDirectory();
+    const auto directory = proofDumpDirectory (c4AIWorkerSaveWorkProofDirectoryName());
 
     C4AIWorkerSaveWorkProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -554,7 +412,8 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
 
 void MainComponent::dumpC5ModulePublishProof()
 {
-    const auto directory = c5ModulePublishProofDumpDirectory();
+    const auto directory = proofDumpDirectory (
+        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::modulePublish));
 
     C5ModulePublishProofRunRequest request;
     request.kind = C5ModulePublishProofKind::modulePublish;
@@ -570,7 +429,8 @@ void MainComponent::dumpC5ModulePublishProof()
 
 void MainComponent::dumpC5AIWorkerModulePublishProof()
 {
-    const auto directory = c5AIWorkerModulePublishProofDumpDirectory();
+    const auto directory = proofDumpDirectory (
+        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::aiWorkerModulePublish));
 
     C5ModulePublishProofRunRequest request;
     request.kind = C5ModulePublishProofKind::aiWorkerModulePublish;
@@ -586,7 +446,8 @@ void MainComponent::dumpC5AIWorkerModulePublishProof()
 
 void MainComponent::dumpC5VisibleModulePublishProof()
 {
-    const auto proofDirectory = c5VisibleModulePublishProofDumpDirectory();
+    const auto proofDirectory = proofDumpDirectory (
+        c5ModulePublishProofDirectoryName (C5ModulePublishProofKind::visibleModulePublish));
 
     C5ModulePublishProofRunRequest request;
     request.kind = C5ModulePublishProofKind::visibleModulePublish;
@@ -602,7 +463,7 @@ void MainComponent::dumpC5VisibleModulePublishProof()
 
 void MainComponent::dumpC6AnalyzerFamilyProof()
 {
-    const auto directory = c6AnalyzerFamilyProofDumpDirectory();
+    const auto directory = proofDumpDirectory (c6AnalyzerFamilyProofDirectoryName());
 
     C6AnalyzerFamilyProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -614,7 +475,7 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
 
 void MainComponent::dumpC6AIRepairLoopProof()
 {
-    const auto directory = c6AIRepairLoopProofDumpDirectory();
+    const auto directory = proofDumpDirectory (c6AIRepairLoopProofDirectoryName());
 
     C6AIRepairLoopProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
@@ -656,7 +517,7 @@ void MainComponent::dumpPVAggregatePressureProof()
 
 void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
 {
-    const auto directory = pvDetectorProofDumpDirectory (kind);
+    const auto directory = proofDumpDirectory (pvDetectorProofDirectoryName (kind));
 
     PVDetectorProofRunRequest request;
     request.kind = kind;
@@ -669,7 +530,7 @@ void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
 
 void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
 {
-    const auto directory = pvB1AnalyzerEnvironmentProofDumpDirectory();
+    const auto directory = proofDumpDirectory (pvB1AnalyzerEnvironmentProofDirectoryName());
 
     PVB1AnalyzerEnvironmentProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();

@@ -1279,6 +1279,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     target_sources(my-world
         PRIVATE
+            source/app/AppPaths.cpp
             source/app/Main.cpp
             source/app/MainComponent.cpp
             source/app/PreferencesPanel.cpp

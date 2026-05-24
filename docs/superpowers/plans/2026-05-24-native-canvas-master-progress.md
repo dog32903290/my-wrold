@@ -237,6 +237,7 @@ Latest accepted targeted result:
 | ProofRunSupport C5/C6 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-c5-c6.md`; C5 publish and C6 analyzer/repair runners now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, all C5/C6 CLI proofs, and full `ctest` 51/51 passed | Do not turn `ProofRunSupport` into a generic proof runner; future cleanup should target adapter duplication |
 | MainComponent startup proof adapter | closed | `docs/superpowers/specs/2026-05-25-startup-proof-adapter-cleanup.md`; `StartupProofOptions` and task mapping now own CLI startup proof selection/order/delays; focused test, app build, and C2 CLI proof passed | Do not move proof runner semantics into startup adapter; next cleanup is proof status facade duplication |
 | MainComponent proof status facade | closed | `docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md`; `finishProofDump()` owns proof result status text and quit-after-dump handling for file-based proof runners; app build and PV attack CLI proof passed | Do not move request construction or proof semantics into the UI facade; next cleanup is path policy extraction |
+| App path policy cleanup | closed | `docs/superpowers/specs/2026-05-25-app-path-policy-cleanup.md`; `AppPaths` owns project root/debug folder/active manifest/candidate roots policy; app build plus C2 and C5 visible CLI proofs passed | Do not add proof runner schemas to path policy; next cleanup is active work save/publish adapter |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -246,12 +247,39 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-MainComponent proof adapter cleanup is in progress as of 2026-05-25 01:54 Asia/Taipei.
+MainComponent proof adapter cleanup is in progress as of 2026-05-25 01:58 Asia/Taipei.
 
-Proof status facade step closed; next step is app/proof path policy extraction.
+App path policy step closed; next step is active work save/publish adapter extraction.
 Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-app-path-policy-cleanup.md
 - docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md
 - docs/superpowers/specs/2026-05-25-startup-proof-adapter-cleanup.md
+
+Closed support line:
+MainComponent project/debug/candidate path helpers
+-> AppPaths
+-> MainComponent trigger/status adapter
+-> existing proof output directories and fixture candidate roots
+
+Latest verification:
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-visible-module-publish-proof-and-exit`
+- `git diff --check`
+
+Latest accepted result:
+- app build passed
+- C2 CLI proof exited 0 and wrote `debug/c2-storage-proof/reload_report.json` plus `saved_main.patch.json`
+- C5 visible module publish proof CLI exited 0 and wrote `debug/c5-visible-module-publish-proof/visible_module_publish_report.json`
+- `git diff --check` passed
+
+Parked:
+- active work save/publish adapter still lives in `MainComponent`
+
+Previous closure:
+Proof status facade step closed as of 2026-05-25 01:54 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md
 
 Closed support line:
 MainComponent repeated proof result status blocks
@@ -268,10 +296,6 @@ Latest accepted result:
 - app build passed
 - PV attack detector proof CLI exited 0 and wrote `debug/pv-attack-detector-proof/attack_detector_report.json`, `cook_order.json`, `errors.json`, and `node_stats.json`
 - `git diff --check` passed
-
-Parked:
-- app/proof path policy still lives in `MainComponent`
-- active work save/publish adapter still lives in `MainComponent`
 
 Previous closure:
 Startup proof adapter step closed as of 2026-05-25 01:51 Asia/Taipei.
