@@ -1064,6 +1064,7 @@ target_include_directories(my_world_pv_b1_analyzer_environment_proof_runner
 
 target_link_libraries(my_world_pv_b1_analyzer_environment_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_analyzer_visible_catalog
 )
 
@@ -1094,6 +1095,7 @@ target_include_directories(my_world_pv_detector_proof_runner
 
 target_link_libraries(my_world_pv_detector_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_analyzer_detector_fixture
 )
 

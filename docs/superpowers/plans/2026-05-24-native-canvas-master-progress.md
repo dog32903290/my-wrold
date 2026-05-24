@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 01:22 Asia/Taipei.
+Date: 2026-05-25 01:30 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+4f86e70 Reuse proof support in A1 and C2
 30845a7 Extract proof run support helpers
 3c0e471 Extract V1 shader proof artifacts
 caa9372 Extract A1 audio proof runner
@@ -231,6 +232,7 @@ Latest accepted targeted result:
 | V1 shader proof artifact extraction | closed | `docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md`; `V1ShaderProofArtifacts` owns V1 proof artifact path/report/PNG writing while `OpenGLShaderPreview` keeps live frame capture; focused test, app build, and V1 CLI proof passed | Do not treat this as headless V1; RenderBackend/headless visual work remains a separate selected lane |
 | ProofRunSupport C3/C4 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-c3-c4.md`; shared proof text/directory/candidate/copy primitives now serve C3/C4 runners; focused tests, app build, C3/C4 CLI proofs, and full `ctest` 51/51 passed | Do not centralize all proof runner logic; migrate remaining helpers only as selected small slices |
 | ProofRunSupport A1/C2 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-a1-c2.md`; A1/C2 now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, and A1/C2 CLI proofs passed | Do not centralize all proof runner logic; C5/C6/PV cleanup remains separate selected slices |
+| ProofRunSupport PV/PV-B1 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-pv-pvb1.md`; PV detector and PV-B1 runners now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, all PV detector CLI proofs, and PV-B1 CLI proof passed | Do not centralize all proof runner logic; C5/C6 helper cleanup remains separate selected slices |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -240,7 +242,52 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after ProofRunSupport A1/C2 cleanup as of 2026-05-25 01:22 Asia/Taipei.
+None after ProofRunSupport PV/PV-B1 cleanup as of 2026-05-25 01:30 Asia/Taipei.
+
+ProofRunSupport PV/PV-B1 cleanup closed as of 2026-05-25 01:30 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-proof-run-support-pv-pvb1.md
+
+Closed support line:
+PV/PV-B1 proof runners
+-> ProofRunSupport
+-> proof text file writing / output directory clear/create / candidate path dedupe
+-> existing PV detector and PV-B1 artifacts and CLI flags
+
+Latest verification:
+- `cmake -S . -B build`
+- `cmake --build build --target my_world_pv_detector_proof_runner_tests my_world_pv_b1_analyzer_environment_proof_runner_tests my_world_proof_run_support_tests`
+- `ctest --test-dir build --output-on-failure -R "proof_run_support|pv_detector_proof_runner|pv_b1_analyzer_environment_proof_runner|analyzer_detector|analyzer_density_detector|analyzer_silence_detector|analyzer_sustain_detector|analyzer_residue_detector|analyzer_aggregate_pressure|analyzer_visible_catalog"`
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-attack-detector-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-density-detector-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-silence-detector-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-sustain-detector-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-residue-detector-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-aggregate-pressure-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-b1-analyzer-environment-proof-and-exit`
+- `git diff --check`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `proof_run_support` passed
+- `pv_detector_proof_runner` passed
+- `pv_b1_analyzer_environment_proof_runner` passed
+- detector and visible catalog focused tests passed
+- app build passed
+- all six PV detector CLI proofs exited 0 and kept `ok: true`, expected `kind`, expected `operation`, and empty `error`
+- PV-B1 CLI proof exited 0 and kept `ok: true`, `loadedModuleNodeCount: 8`, `visibleCatalogContainsAllRequired: true`, `runtimeDiagnosticsReadyForAllRequired: true`, and `createdNodeCount: 8`
+- full `ctest` passed 51/51
+- `git diff --check` passed
+
+Parked:
+- Do not migrate all proof helpers in one sweep
+- C5/C6 helper cleanup needs separate selected slices
+- Support helpers are not a new generic proof runner
+
+Previous closure:
+ProofRunSupport A1/C2 cleanup closed as of 2026-05-25 01:22 Asia/Taipei.
 
 ProofRunSupport A1/C2 cleanup closed as of 2026-05-25 01:22 Asia/Taipei.
 Spec / closure evidence:

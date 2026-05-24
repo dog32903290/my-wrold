@@ -6,10 +6,9 @@
 #include "AnalyzerResidueDetectorFixture.h"
 #include "AnalyzerSilenceDetectorFixture.h"
 #include "AnalyzerSustainDetectorFixture.h"
+#include "ProofRunSupport.h"
 
-#include <algorithm>
-#include <fstream>
-#include <system_error>
+#include <filesystem>
 
 namespace myworld
 {
@@ -100,77 +99,12 @@ const PVDetectorProofDefinition& definitionFor (PVDetectorProofKind kind)
     return attackDefinition;
 }
 
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string clearDirectoryIfExists (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    if (std::filesystem::exists (directory, error))
-    {
-        std::filesystem::remove_all (directory, error);
-        if (error)
-            return "could not clear " + directory.string() + ": " + error.message();
-    }
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
-}
-
 RuntimeRegistryLoadResult loadRuntimeRegistryFromCandidateLibrary (const PVDetectorProofRunRequest& request,
                                                                    const PVDetectorProofDefinition& definition)
 {
     std::string lastError;
 
-    for (const auto& path : candidatePaths (request.candidateRoots, definition.moduleLibraryPath))
+    for (const auto& path : proofCandidatePaths (request.candidateRoots, definition.moduleLibraryPath))
     {
         const auto registry = loadRuntimeRegistryFromModuleLibrary (path.string());
         if (registry.ok)
@@ -190,7 +124,7 @@ std::string firstLoadableFixturePath (const PVDetectorProofRunRequest& request,
                                       const PVDetectorProofDefinition& definition,
                                       LoadFixture loadFixture)
 {
-    for (const auto& path : candidatePaths (request.candidateRoots, definition.fixturePath))
+    for (const auto& path : proofCandidatePaths (request.candidateRoots, definition.fixturePath))
     {
         if (loadFixture (path.string()).ok)
             return path.string();
@@ -240,7 +174,7 @@ PVDetectorProofRunResult runDetectorProof (const PVDetectorProofRunRequest& requ
                  { request.outputDirectory / "node_stats.json", makeNodeStats (proof) },
                  { request.outputDirectory / "errors.json", makeErrors (proof) } })
         {
-            if (const auto error = writeTextFile (path, text); ! error.empty())
+            if (const auto error = writeProofTextFile (path, text); ! error.empty())
                 return error;
         }
 
@@ -260,10 +194,10 @@ PVDetectorProofRunResult runDetectorProof (const PVDetectorProofRunRequest& requ
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (error);
 
     const auto runtime = loadRuntimeRegistryFromCandidateLibrary (request, definition);
