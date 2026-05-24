@@ -177,6 +177,44 @@ int main()
 
     std::filesystem::remove_all (gitWorkRoot);
 
+    const auto failingCommitRoot = std::filesystem::temp_directory_path() / "my-world-c3-save-work-commit-failed";
+    std::filesystem::remove_all (failingCommitRoot);
+    copyC2WorkFixture (failingCommitRoot);
+
+    const auto failingManifestPath = failingCommitRoot / "myworld.work.json";
+    const auto failingLoadedMain = myworld::loadMainPatchDocumentForWork (failingManifestPath.string());
+    expect (failingLoadedMain.ok, failingLoadedMain.error);
+
+    auto failingSession = myworld::makeGraphSession (failingLoadedMain.document.graph);
+    expect (myworld::moveNode (failingSession, "library_loud1", 34.0, 11.0).ok,
+            "dirty failing graph session before save_work");
+
+    myworld::SaveWorkOptions failingCommitOptions;
+    failingCommitOptions.startLocalGitCommit = true;
+    failingCommitOptions.commitMessage = "C3.5 failing save_work";
+
+    const auto failingSave = myworld::saveWork (failingSession, failingManifestPath.string(), failingCommitOptions);
+    expect (failingSave.ok, failingSave.error);
+    expect (failingSave.status == "save-ok commit-pending", "failing git save starts after successful write");
+    expect (failingSave.commitStatus == "commit-pending", "failing git save starts commit pending");
+    expect (failingSave.commitJob != nullptr, "failing git save returns background commit job");
+
+    const auto failingCommitResult = failingSave.commitJob->wait();
+    expect (! failingCommitResult.ok, "failing git commit reports failure");
+    expect (failingCommitResult.status == "save-ok commit-failed", "failing git commit final status");
+    expect (! failingCommitResult.error.empty(), "failing git commit error is recorded");
+
+    const auto failingSaveLog = myworld::loadSaveLog (failingSave.saveLogPath);
+    expect (failingSaveLog.ok, failingSaveLog.error);
+    expect (failingSaveLog.entries.size() >= 2, "failing git save log records pending and final entries");
+    expect (failingSaveLog.entries.back().status == "save-ok commit-failed",
+            "failing git save log final status reads back");
+    expect (failingSaveLog.entries.back().commitStatus == "save-ok commit-failed",
+            "failing git save log final commit status reads back");
+    expect (! failingSaveLog.entries.back().error.empty(), "failing git save log final error reads back");
+
+    std::filesystem::remove_all (failingCommitRoot);
+
     std::cout << "save_work command contract ok\n";
     return 0;
 }

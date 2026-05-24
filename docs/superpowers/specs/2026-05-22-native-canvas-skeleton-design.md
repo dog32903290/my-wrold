@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, C3.1 save_work command contract, C3.2 save log/app proof, C3.3 visible save_work hand, and C3.4 background local git commit success path are implemented and verified. Raw callback-buffer runtime execution, commit failure proof, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as C3.5+ or later high-risk work.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, and C3.1-C3.5 storage command path closure are implemented and verified. Raw callback-buffer runtime execution, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, remote sync, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as later high-risk work.
 
 ## Purpose
 
@@ -39,6 +39,7 @@ C3.1 save command   proven through save_work -> PatchDocument write/reload + sav
 C3.2 save proof     proven through structured save log readback + app proof dump
 C3.3 visible hand    proven through Save Work button / Command+S callback path
 C3.4 local commit    proven through opt-in background git worker success path
+C3.5 commit failure  proven through save-ok commit-failed save log readback
 ```
 
 已鎖定:
@@ -78,12 +79,13 @@ C3.4 local commit    proven through opt-in background git worker success path
 - C3.2 save log readback and app proof are implemented: `loadSaveLog()` reads `.myworld/save_log.jsonl` into structured entries, and `--dump-c3-save-work-proof-and-exit` writes `debug/c3-save-work-proof/save_work_report.json` proving command log status, save log status, PatchDocument reload, public ports, and expanded child layout.
 - C3.3 visible save_work hand is implemented: the ImGui command strip exposes `Save Work`, `Command+S` triggers the same path, `MainComponent::saveActiveWork()` calls `saveWork()` on the active `GraphSession`, and the visible save hand no longer writes `interaction-state-v1`.
 - C3.4 background local git commit success path is implemented: `SaveWorkOptions::startLocalGitCommit` makes `saveWork()` return `commit-pending` plus a `SaveWorkCommitJob`, the worker commits only the active work repo files, and the save log records the final `saved-and-committed` status plus commit id.
+- C3.5 commit failure path is implemented: when the worker cannot commit, `saveWork()` still preserves the successful PatchDocument write, the commit job returns `save-ok commit-failed`, and the save log records final failure status plus error.
 - Latest C2 verification: `cmake --build build --target my-world my_world_patch_document_tests`, `./build/my_world_patch_document_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`.
-- Latest C3.4 verification: `cmake --build build --target my_world_save_work_command_tests` and `./build/my_world_save_work_command_tests`.
+- Latest C3.5 verification: `cmake --build build --target my_world_save_work_command_tests` and `./build/my_world_save_work_command_tests`.
 
 正在試壓:
 
-- Whether C3.5 should keep commit failure as only a unit proof or also add an app proof command for failed commit evidence.
+- Whether C4 should start from AI worker `save_work` caller or first add a user-facing commit preference for the visible save hand.
 - Whether P-SEARCH1 browser/search work should wait for the patch-document boundary, now that `NodeSpecQueries` exists as the small shared query helper.
 
 還沒承重:
@@ -94,12 +96,12 @@ C3.4 local commit    proven through opt-in background git worker success path
 - App audio proof feeds loaded runtime execution from a non-realtime snapshot-shaped input; raw callback-buffer capture and live UI cached runtime snapshots are still parked.
 - Collapsed compound ports are command/hit-test backed and persist through interaction state; deeper visual grouping is still parked.
 - Expanded child node positions persist per compound instance; expanded view pan/zoom is still session-local.
-- C3.1-C3.4 prove the `save_work` command boundary, structured save log readback, app proof dump, visible save hand, and background local git success path. The `save-ok commit-failed` negative proof and AI worker caller are still not implemented.
+- C3.1-C3.5 close the storage command path. AI worker caller, remote sync, and user-facing commit preference remain parked outside C3.
 - High-risk cleanup is intentionally parked: no full ImGui component split, graph schema rewrite, JSON library swap, enum/hash migration, or ownership model rewrite until a proof line requires it.
 
 下一根線:
 
-- C3.5 commit failure proof: `save-ok commit-pending -> git worker cannot commit -> save-ok commit-failed -> failure reason readable from save log`.
+- C4 candidate: `AI worker save_work caller -> same StorageCommand boundary -> proof evidence and repair loop`.
 
 ## First Stage Proofs
 
@@ -137,6 +139,7 @@ Contract:
 - Proven: C3.2 reads save logs back through `loadSaveLog()` and app-level `--dump-c3-save-work-proof-and-exit` records command/save-log/reload evidence in `debug/c3-save-work-proof/save_work_report.json`.
 - Proven: C3.3 replaces the visible temporary interaction-state save buttons with `Save Work`, wires `Command+S`, and routes both through the same active-work `saveWork()` callback.
 - Proven: C3.4 adds an opt-in background local git worker that commits the active work repository and records final committed status in the save log.
+- Proven: C3.5 adds the commit-failed path: successful PatchDocument save remains valid, background commit failure returns `save-ok commit-failed`, and the error is readable from the save log.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:

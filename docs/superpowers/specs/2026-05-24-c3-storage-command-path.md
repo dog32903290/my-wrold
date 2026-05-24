@@ -114,20 +114,44 @@ cmake --build build --target my_world_save_work_command_tests
 ./build/my_world_save_work_command_tests
 ```
 
-## Parked Outside C3.4
+## C3.5 Closed Slice
 
 ```text
-save-ok commit-failed negative proof
-AI worker save_work caller
-remote push/sync
+save_work succeeds
+-> git worker cannot commit
+-> commit job returns save-ok commit-failed
+-> save log records final failure status and error
 ```
 
-## Next Line
+## C3.5 Evidence
+
+- `tests/SaveWorkCommandTests.cpp` copies the C2 compound work fixture into a temp work directory without `git init`, runs `saveWork()` with `startLocalGitCommit`, waits for the background job, and verifies `save-ok commit-failed`.
+- The failed commit path leaves the PatchDocument write intact and records a final save log entry with `status: save-ok commit-failed`, `commitStatus: save-ok commit-failed`, and a non-empty error string.
+
+## C3.5 Verification Gate
 
 ```text
-C3.5 commit failure proof:
-save-ok commit-pending
--> git worker cannot commit
--> save-ok commit-failed
--> failure reason readable from save log
+cmake --build build --target my_world_save_work_command_tests
+./build/my_world_save_work_command_tests
+```
+
+## C3 Closed Target
+
+```text
+UI save_work command
+-> validate active GraphSession
+-> atomic PatchDocument write
+-> save-ok commit-pending
+-> optional background local git commit
+-> saved-and-committed / save-ok commit-failed
+-> save log can be read back
+-> C2 reload proof still passes
+```
+
+## Parked Outside C3
+
+```text
+AI worker save_work caller
+remote push/sync
+user-facing commit preference for visible save hand
 ```
