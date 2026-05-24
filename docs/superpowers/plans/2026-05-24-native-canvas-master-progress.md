@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 15:16 Asia/Taipei.
+Date: 2026-05-24 15:28 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,7 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+2c53c05 Split ImGui smoke overlay helpers
 bbadbe8 Schedule post-C three-layer cleanup
 311b64e Tidy C proof request fixtures
 2c49f1a Extract C proof reports
@@ -202,7 +203,7 @@ Latest accepted targeted result:
 | C5 module publish/reuse path | closed | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | Do not reopen C5 for C6 work |
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
-| H1 post-C three-layer cleanup | active | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | H1.1 closed; H1.2 RuntimeRegistry split next |
+| H1 post-C three-layer cleanup | active | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | H1.1/H1.2 closed; H1.3 StorageContract split next |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
@@ -215,7 +216,8 @@ Current active lane:
 ```text
 H1 post-C three-layer cleanup is active.
 H1.1 UI overlay split is closed in the current slice.
-H1.2 RuntimeRegistry split is next.
+H1.2 RuntimeRegistry split is closed in the current slice.
+H1.3 StorageContract split is next.
 Do not start R runtime/render, PV/analyzer detector expansion, or TiXL sub-ledger work before H1 unless explicitly overridden.
 ```
 
@@ -234,6 +236,29 @@ Verification run:
 - `cmake --build build --target my-world`
 - `ctest --test-dir build --output-on-failure`
 - `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-visible-module-publish-proof-and-exit`
+- `git diff --check`
+```
+
+Current H1.2 note:
+
+```text
+H1.2 splits source/core/RuntimeRegistry.cpp into:
+- source/core/RuntimeRegistry.cpp
+- source/core/RuntimeRegistryDiagnostics.cpp
+- source/core/RuntimeRegistryJson.cpp
+- source/core/RuntimeRegistrySynthetic.cpp
+- source/core/RuntimeRegistryInternals.h
+
+RuntimeRegistry value structs and public function signatures stay stable.
+Registry schema and RuntimeOp semantics are unchanged.
+
+Verification run:
+- `cmake --build build --target my_world_runtime_registry_tests my_world_analyzer_compound_family_tests my-world`
+- `./build/my_world_runtime_registry_tests`
+- `./build/my_world_analyzer_compound_family_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c6-analyzer-family-proof-and-exit`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c6-ai-repair-loop-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
 - `git diff --check`
 ```
 
@@ -263,8 +288,8 @@ Scheduled before those parked lanes:
 ```text
 H1 post-C three-layer cleanup
 -> source/ui/ImGuiSmokeOverlay.cpp responsibility split (done in H1.1)
--> source/core/RuntimeRegistry.cpp responsibility split (next in H1.2)
--> source/storage/StorageContract.cpp serialization split
+-> source/core/RuntimeRegistry.cpp responsibility split (done in H1.2)
+-> source/storage/StorageContract.cpp serialization split (next in H1.3)
 ```
 
 Parked after C6:
@@ -319,29 +344,20 @@ scripts/
 tests/test_myworld_flow.py
 ```
 
-C6 owned files:
+H cleanup owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
-fixtures/compounds/raw-energy.compound.json
-fixtures/modules/raw-energy/module.json
-fixtures/module-libraries/analyzer-family.module-library.json
-docs/nodes/analyzer.raw-energy.md
-tests/AnalyzerCompoundFamilyTests.cpp
+docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md
 source/core/RuntimeRegistry.*
-source/app/Main.*
-source/app/MainComponent.*
-source/ai/AIWorkerCommand.*
-tests/AIWorkerCommandTests.cpp
+source/storage/StorageContract.*
+source/ui/ImGuiSmokeOverlay.*
 CMakeLists.txt
-debug/c6-analyzer-family-proof/analyzer_family_report.json
-debug/c6-ai-repair-loop-proof/ai_repair_loop_report.json
 ```
 
 ## Next Handoff Sentence
 
-Open this master plan first. H1 post-C three-layer cleanup is active; H1.1 UI overlay split is closed, and H1.2 RuntimeRegistry split is next unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. H1 post-C three-layer cleanup is active; H1.1 UI overlay split and H1.2 RuntimeRegistry split are closed, and H1.3 StorageContract split is next unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

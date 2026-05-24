@@ -157,7 +157,10 @@ target_link_libraries(my_world_compound_module
 )
 
 add_library(my_world_runtime_registry
+    source/core/RuntimeRegistryDiagnostics.cpp
     source/core/RuntimeRegistry.cpp
+    source/core/RuntimeRegistryJson.cpp
+    source/core/RuntimeRegistrySynthetic.cpp
 )
 
 target_include_directories(my_world_runtime_registry
