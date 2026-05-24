@@ -5,6 +5,7 @@
 #include "GraphContract.h"
 #include "InteractionContract.h"
 #include "ProofReports.h"
+#include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
 #include "StorageCommand.h"
 #include "StorageContract.h"
@@ -12,8 +13,6 @@
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
-#include <fstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -67,74 +66,9 @@ const C5ModulePublishProofDefinition& definitionFor (C5ModulePublishProofKind ki
     return modulePublishDefinition;
 }
 
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string clearDirectoryIfExists (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    if (std::filesystem::exists (directory, error))
-    {
-        std::filesystem::remove_all (directory, error);
-        if (error)
-            return "could not clear " + directory.string() + ": " + error.message();
-    }
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
-}
-
 std::string firstLoadableWorkManifestPath (const C5ModulePublishProofRunRequest& request)
 {
-    for (const auto& candidate : candidatePaths (request.candidateRoots, workFixturePath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, workFixturePath))
     {
         if (loadMainPatchDocumentForWork (candidate.string()).ok)
             return candidate.string();
@@ -291,17 +225,17 @@ C5ModulePublishProofRunResult runModulePublishProof (const C5ModulePublishProofR
                                   const std::string& graphCommandLogStatus,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC5ModulePublishReportJson (ok,
-                                                             publish,
-                                                             packageReloaded,
-                                                             libraryReloaded,
-                                                             visibleRegistryContainsPublishedNode,
-                                                             runtimeRegistryContainsPublishedNodeResult,
-                                                             runtimeCoverageStatus,
-                                                             createdPublishedNode,
-                                                             graphCommandLogStatus,
-                                                             error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC5ModulePublishReportJson (ok,
+                                                                  publish,
+                                                                  packageReloaded,
+                                                                  libraryReloaded,
+                                                                  visibleRegistryContainsPublishedNode,
+                                                                  runtimeRegistryContainsPublishedNodeResult,
+                                                                  runtimeCoverageStatus,
+                                                                  createdPublishedNode,
+                                                                  graphCommandLogStatus,
+                                                                  error));
     };
 
     const auto fail = [&] (const PublishModuleResult& publish,
@@ -316,10 +250,10 @@ C5ModulePublishProofRunResult runModulePublishProof (const C5ModulePublishProofR
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (emptyPublish, error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (emptyPublish, error);
 
     const auto workManifestPath = firstLoadableWorkManifestPath (request);
@@ -416,15 +350,15 @@ C5ModulePublishProofRunResult runAIWorkerModulePublishProof (const C5ModulePubli
                                   const std::string& aiCommandLogStatus,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC5AIWorkerModulePublishReportJson (ok,
-                                                                      allowedPublishModule,
-                                                                      commandRequest,
-                                                                      commandResult,
-                                                                      collaborationLogEntries,
-                                                                      collaborationProofEvidence,
-                                                                      aiCommandLogStatus,
-                                                                      error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC5AIWorkerModulePublishReportJson (ok,
+                                                                           allowedPublishModule,
+                                                                           commandRequest,
+                                                                           commandResult,
+                                                                           collaborationLogEntries,
+                                                                           collaborationProofEvidence,
+                                                                           aiCommandLogStatus,
+                                                                           error));
     };
 
     const auto fail = [&] (const AIWorkerCommandResult& commandResult, const std::string& message)
@@ -436,10 +370,10 @@ C5ModulePublishProofRunResult runAIWorkerModulePublishProof (const C5ModulePubli
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (emptyResult, error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (emptyResult, error);
 
     const auto workManifestPath = firstLoadableWorkManifestPath (request);
@@ -515,15 +449,15 @@ C5ModulePublishProofRunResult runVisibleModulePublishProof (const C5ModulePublis
                                   const std::string& graphCommandLogStatus,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC5VisibleModulePublishReportJson (ok,
-                                                                    publish,
-                                                                    packageReloaded,
-                                                                    libraryReloaded,
-                                                                    visibleRegistryContainsPublishedNode,
-                                                                    createdPublishedNode,
-                                                                    graphCommandLogStatus,
-                                                                    error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC5VisibleModulePublishReportJson (ok,
+                                                                         publish,
+                                                                         packageReloaded,
+                                                                         libraryReloaded,
+                                                                         visibleRegistryContainsPublishedNode,
+                                                                         createdPublishedNode,
+                                                                         graphCommandLogStatus,
+                                                                         error));
     };
 
     const auto fail = [&] (const PublishModuleResult& publish, const std::string& message)
@@ -535,13 +469,13 @@ C5ModulePublishProofRunResult runVisibleModulePublishProof (const C5ModulePublis
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (emptyPublish, error);
 
-    if (const auto error = clearDirectoryIfExists (publishDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (publishDirectory); ! error.empty())
         return fail (emptyPublish, error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (emptyPublish, error);
 
     const auto workManifestPath = firstLoadableWorkManifestPath (request);

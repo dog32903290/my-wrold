@@ -803,6 +803,7 @@ target_include_directories(my_world_c5_module_publish_proof_runner
 
 target_link_libraries(my_world_c5_module_publish_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_ai_worker
         my_world_interaction
         my_world_runtime_registry
@@ -837,6 +838,7 @@ target_include_directories(my_world_c6_analyzer_family_proof_runner
 
 target_link_libraries(my_world_c6_analyzer_family_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_interaction
         my_world_runtime_registry
         my_world_proof_reports
@@ -871,6 +873,7 @@ target_include_directories(my_world_c6_ai_repair_loop_proof_runner
 
 target_link_libraries(my_world_c6_ai_repair_loop_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_ai_worker
         my_world_interaction
         my_world_proof_reports

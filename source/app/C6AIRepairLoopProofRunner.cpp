@@ -4,12 +4,8 @@
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
 #include "ProofReports.h"
+#include "ProofRunSupport.h"
 #include "StorageContract.h"
-
-#include <algorithm>
-#include <filesystem>
-#include <fstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -26,71 +22,6 @@ constexpr const char* repairTargetNodeId = "library_loud1";
 constexpr double repairDeltaX = 17.0;
 constexpr double repairDeltaY = 5.0;
 constexpr double unusedRepairDelta = 100.0;
-
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string clearDirectoryIfExists (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    if (std::filesystem::exists (directory, error))
-    {
-        std::filesystem::remove_all (directory, error);
-        if (error)
-            return "could not clear " + directory.string() + ": " + error.message();
-    }
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
-}
 
 AIWorkerCommandRequest makeMoveNodeRequest (std::string commandId,
                                             std::string intent,
@@ -168,15 +99,15 @@ C6AIRepairLoopProofRunResult runC6AIRepairLoopProof (const C6AIRepairLoopProofRu
                                   double finalNodeY,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC6AIRepairLoopReportJson (ok,
-                                                            repairResult,
-                                                            graphMutationApplied,
-                                                            collaborationLogEntries,
-                                                            false,
-                                                            finalNodeX,
-                                                            finalNodeY,
-                                                            error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC6AIRepairLoopReportJson (ok,
+                                                                 repairResult,
+                                                                 graphMutationApplied,
+                                                                 collaborationLogEntries,
+                                                                 false,
+                                                                 finalNodeX,
+                                                                 finalNodeY,
+                                                                 error));
     };
 
     const auto fail = [&] (const AIWorkerRepairLoopResult& repairResult, const std::string& message)
@@ -188,15 +119,15 @@ C6AIRepairLoopProofRunResult runC6AIRepairLoopProof (const C6AIRepairLoopProofRu
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (emptyRepairResult, error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (emptyRepairResult, error);
 
     PatchDocumentLoadResult loadedPatch;
     std::string lastError;
-    for (const auto& candidate : candidatePaths (request.candidateRoots, workFixturePath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, workFixturePath))
     {
         const auto loaded = loadMainPatchDocumentForWork (candidate.string());
         if (loaded.ok)

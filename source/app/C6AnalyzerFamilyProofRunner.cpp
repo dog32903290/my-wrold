@@ -4,12 +4,11 @@
 #include "GraphContract.h"
 #include "InteractionContract.h"
 #include "ProofReports.h"
+#include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
 
 #include <algorithm>
 #include <cmath>
-#include <fstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -44,71 +43,6 @@ double runtimeOutputValueOrZero (const std::vector<RuntimeOutputValue>& outputs,
 {
     const auto* output = findRuntimeOutput (outputs, id);
     return output == nullptr ? 0.0 : output->value;
-}
-
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string clearDirectoryIfExists (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    if (std::filesystem::exists (directory, error))
-    {
-        std::filesystem::remove_all (directory, error);
-        if (error)
-            return "could not clear " + directory.string() + ": " + error.message();
-    }
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
 }
 
 C6AnalyzerFamilyProofRunResult makeInitialResult (const C6AnalyzerFamilyProofRunRequest& request)
@@ -147,18 +81,18 @@ C6AnalyzerFamilyProofRunResult runC6AnalyzerFamilyProof (const C6AnalyzerFamilyP
                                   const std::vector<RuntimeOutputValue>& rawEnergyPublicOutputs,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC6AnalyzerFamilyReportJson (ok,
-                                                              moduleLibraryPath,
-                                                              familyEntryCount,
-                                                              visibleRegistryContainsRawEnergy,
-                                                              runtimeRegistryContainsRawEnergy,
-                                                              runtimeCoverageStatus,
-                                                              createdRawEnergyNode,
-                                                              graphCommandLogStatus,
-                                                              loudnessStillPresent,
-                                                              rawEnergyPublicOutputs,
-                                                              error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC6AnalyzerFamilyReportJson (ok,
+                                                                   moduleLibraryPath,
+                                                                   familyEntryCount,
+                                                                   visibleRegistryContainsRawEnergy,
+                                                                   runtimeRegistryContainsRawEnergy,
+                                                                   runtimeCoverageStatus,
+                                                                   createdRawEnergyNode,
+                                                                   graphCommandLogStatus,
+                                                                   loudnessStillPresent,
+                                                                   rawEnergyPublicOutputs,
+                                                                   error));
     };
 
     const auto fail = [&] (const std::string& message)
@@ -170,17 +104,17 @@ C6AnalyzerFamilyProofRunResult runC6AnalyzerFamilyProof (const C6AnalyzerFamilyP
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (error);
 
-    if (const auto error = createDirectoryIfMissing (request.outputDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (request.outputDirectory); ! error.empty())
         return fail (error);
 
     CompoundModuleNodeSpecsResult loadedSpecs;
     std::string loadedLibraryPath;
     std::string lastLoadError;
 
-    for (const auto& candidate : candidatePaths (request.candidateRoots, moduleLibraryPath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, moduleLibraryPath))
     {
         loadedSpecs = loadCompoundModuleNodeSpecsFromLibrary (candidate.string());
         if (loadedSpecs.ok)
