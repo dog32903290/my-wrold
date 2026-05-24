@@ -352,6 +352,47 @@ int main()
     expect (repairSession.collaborationLog.back().proofEvidence.find ("successfulAttemptIndex=2") != std::string::npos,
             "AI repair loop collaboration proof records successful attempt index");
 
+    myworld::AIWorkerRepairPlan zeroAttemptPlan;
+    zeroAttemptPlan.repairId = "c6.2-zero-max-attempts";
+    zeroAttemptPlan.workerId = "ai-worker-test";
+    zeroAttemptPlan.intent = "Reject invalid repair loop without max attempts";
+    zeroAttemptPlan.maxAttempts = 0;
+    zeroAttemptPlan.attempts = { repairedAttempt };
+
+    auto zeroAttemptSession = myworld::makeGraphSession (loadedMain.document.graph);
+    const auto zeroAttemptResult = myworld::executeAIWorkerRepairLoop (zeroAttemptSession, zeroAttemptPlan);
+    expect (! zeroAttemptResult.ok, "AI repair loop rejects zero max attempts");
+    expect (zeroAttemptResult.status == "rejected", "AI repair loop zero max attempt status");
+    expect (zeroAttemptResult.finalCommandLogStatus == "ai_worker_repair_loop:rejected",
+            "AI repair loop zero max attempt command status");
+    expect (zeroAttemptResult.error == "AI repair loop requires maxAttempts > 0",
+            "AI repair loop zero max attempt error");
+    expect (contains (zeroAttemptSession.commandLog, "ai_worker_repair_loop:rejected"),
+            "AI repair loop zero max attempt command log records rejection");
+    expect (zeroAttemptSession.collaborationLog.back().proofEvidence.find (
+                "finalCommandLogStatus=ai_worker_repair_loop:rejected") != std::string::npos,
+            "AI repair loop zero max attempt proof records rejected status");
+
+    myworld::AIWorkerRepairPlan emptyAttemptPlan;
+    emptyAttemptPlan.repairId = "c6.2-empty-attempts";
+    emptyAttemptPlan.workerId = "ai-worker-test";
+    emptyAttemptPlan.intent = "Reject invalid repair loop without attempts";
+    emptyAttemptPlan.maxAttempts = 1;
+
+    auto emptyAttemptSession = myworld::makeGraphSession (loadedMain.document.graph);
+    const auto emptyAttemptResult = myworld::executeAIWorkerRepairLoop (emptyAttemptSession, emptyAttemptPlan);
+    expect (! emptyAttemptResult.ok, "AI repair loop rejects empty attempts");
+    expect (emptyAttemptResult.status == "rejected", "AI repair loop empty attempt status");
+    expect (emptyAttemptResult.finalCommandLogStatus == "ai_worker_repair_loop:rejected",
+            "AI repair loop empty attempt command status");
+    expect (emptyAttemptResult.error == "AI repair loop requires at least one attempt",
+            "AI repair loop empty attempt error");
+    expect (contains (emptyAttemptSession.commandLog, "ai_worker_repair_loop:rejected"),
+            "AI repair loop empty attempt command log records rejection");
+    expect (emptyAttemptSession.collaborationLog.back().proofEvidence.find (
+                "finalCommandLogStatus=ai_worker_repair_loop:rejected") != std::string::npos,
+            "AI repair loop empty attempt proof records rejected status");
+
     std::cout << "AI worker command contract ok\n";
     return 0;
 }
