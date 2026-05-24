@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 14:13 Asia/Taipei.
+Date: 2026-05-24 14:27 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,7 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+5fb9d66 Tidy C6 proof fixtures
 cdb35da Tidy C6 repair loop closure
 6939992 Close C6 analyzer family and repair loop
 0754301 Close C5.3 visible module publish
@@ -124,7 +125,8 @@ C6.2 AI repair loop closure is closed in this slice.
 C6 is closed. It did not add natural-language parsing and did not reopen C5.
 C6 post-close hygiene stays contract-neutral:
 - cdb35da extracts repair-loop terminal logging/proof closure and adds rejected-branch tests.
-- current cleanup pass keeps C6 app proof fixtures local, with no node/runtime/schema change.
+- 5fb9d66 keeps C6 app proof fixtures local, with no node/runtime/schema change.
+- current C-segment hygiene pass shares C2-C6 proof directory setup, with no proof report schema change.
 C6 spec:
 - docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
 C6.1 evidence is in:
@@ -272,7 +274,7 @@ raw callback-buffer runtime
 
 ## Session Safety
 
-Files outside C6 ownership that this C6 commit must not edit or include unless explicitly requested:
+Files outside C cleanup ownership that this pass must not edit or include unless explicitly requested:
 
 ```text
 AGENTS.md

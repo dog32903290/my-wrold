@@ -169,6 +169,22 @@ bool writeTextFile (const juce::File& file, const std::string& text)
     return file.replaceWithText (juce::String::fromUTF8 (text.c_str()), false, false, "\n");
 }
 
+std::string clearDirectoryIfExists (const juce::File& directory)
+{
+    if (directory.exists() && ! directory.deleteRecursively())
+        return "could not clear " + directory.getFullPathName().toStdString();
+
+    return {};
+}
+
+std::string createDirectoryIfMissing (const juce::File& directory)
+{
+    if (! directory.createDirectory())
+        return "could not create " + directory.getFullPathName().toStdString();
+
+    return {};
+}
+
 bool copyTextFile (const juce::File& source, const juce::File& target)
 {
     if (! target.getParentDirectory().createDirectory())
@@ -1075,10 +1091,9 @@ void MainComponent::dumpC2StorageProof()
     const auto reportFile = directory.getChildFile ("reload_report.json");
     const auto savedPatchFile = directory.getChildFile ("saved_main.patch.json");
 
-    if (! directory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
     {
-        statusLabel.setText ("c2 storage proof failed: could not create " + directory.getFullPathName(),
-                             juce::dontSendNotification);
+        statusLabel.setText ("c2 storage proof failed: " + juce::String (error), juce::dontSendNotification);
         if (shouldQuitAfterStartupDump)
             quitAfterDelay();
         return;
@@ -1254,19 +1269,17 @@ void MainComponent::dumpC3SaveWorkProof()
     const auto workManifestFile = workDirectory.getChildFile ("myworld.work.json");
     const auto savedPatchFile = patchDirectory.getChildFile ("main.patch.json");
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        statusLabel.setText ("c3 save_work proof failed: could not clear " + directory.getFullPathName(),
-                             juce::dontSendNotification);
+        statusLabel.setText ("c3 save_work proof failed: " + juce::String (error), juce::dontSendNotification);
         if (shouldQuitAfterStartupDump)
             quitAfterDelay();
         return;
     }
 
-    if (! patchDirectory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (patchDirectory); ! error.empty())
     {
-        statusLabel.setText ("c3 save_work proof failed: could not create " + patchDirectory.getFullPathName(),
-                             juce::dontSendNotification);
+        statusLabel.setText ("c3 save_work proof failed: " + juce::String (error), juce::dontSendNotification);
         if (shouldQuitAfterStartupDump)
             quitAfterDelay();
         return;
@@ -1497,17 +1510,15 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
             quitAfterDelay();
     };
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        writeFailureReport ("could not clear " + directory.getFullPathName().toStdString(),
-                            makeGraphSession (GraphContract {}));
+        writeFailureReport (error, makeGraphSession (GraphContract {}));
         return;
     }
 
-    if (! patchDirectory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (patchDirectory); ! error.empty())
     {
-        writeFailureReport ("could not create " + patchDirectory.getFullPathName().toStdString(),
-                            makeGraphSession (GraphContract {}));
+        writeFailureReport (error, makeGraphSession (GraphContract {}));
         return;
     }
 
@@ -1722,15 +1733,15 @@ void MainComponent::dumpC5ModulePublishProof()
             quitAfterDelay();
     };
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        writeFailureReport (emptyPublish, "could not clear " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyPublish, error);
         return;
     }
 
-    if (! directory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
     {
-        writeFailureReport (emptyPublish, "could not create " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyPublish, error);
         return;
     }
 
@@ -1906,15 +1917,15 @@ void MainComponent::dumpC5AIWorkerModulePublishProof()
             quitAfterDelay();
     };
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        writeFailureReport (emptyResult, "could not clear " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyResult, error);
         return;
     }
 
-    if (! directory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
     {
-        writeFailureReport (emptyResult, "could not create " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyResult, error);
         return;
     }
 
@@ -2019,21 +2030,21 @@ void MainComponent::dumpC5VisibleModulePublishProof()
             quitAfterDelay();
     };
 
-    if (proofDirectory.exists() && ! proofDirectory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (proofDirectory); ! error.empty())
     {
-        writeFailureReport (emptyPublish, "could not clear " + proofDirectory.getFullPathName().toStdString());
+        writeFailureReport (emptyPublish, error);
         return;
     }
 
-    if (publishDirectory.exists() && ! publishDirectory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (publishDirectory); ! error.empty())
     {
-        writeFailureReport (emptyPublish, "could not clear " + publishDirectory.getFullPathName().toStdString());
+        writeFailureReport (emptyPublish, error);
         return;
     }
 
-    if (! proofDirectory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (proofDirectory); ! error.empty())
     {
-        writeFailureReport (emptyPublish, "could not create " + proofDirectory.getFullPathName().toStdString());
+        writeFailureReport (emptyPublish, error);
         return;
     }
 
@@ -2141,15 +2152,15 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
             quitAfterDelay();
     };
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        writeFailureReport ("could not clear " + directory.getFullPathName().toStdString());
+        writeFailureReport (error);
         return;
     }
 
-    if (! directory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
     {
-        writeFailureReport ("could not create " + directory.getFullPathName().toStdString());
+        writeFailureReport (error);
         return;
     }
 
@@ -2303,15 +2314,15 @@ void MainComponent::dumpC6AIRepairLoopProof()
             quitAfterDelay();
     };
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
     {
-        writeFailureReport (emptyResult, "could not clear " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyResult, error);
         return;
     }
 
-    if (! directory.createDirectory())
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
     {
-        writeFailureReport (emptyResult, "could not create " + directory.getFullPathName().toStdString());
+        writeFailureReport (emptyResult, error);
         return;
     }
 
