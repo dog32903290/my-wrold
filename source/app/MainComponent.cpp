@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
 #include "AIWorkerCommand.h"
+#include "C6AnalyzerFamilyProofRunner.h"
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
 #include "GraphEndpoint.h"
@@ -106,7 +107,7 @@ juce::File c5VisibleModulePublishProofDumpDirectory()
 
 juce::File c6AnalyzerFamilyProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("c6-analyzer-family-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (c6AnalyzerFamilyProofDirectoryName());
 }
 
 juce::File c6AIRepairLoopProofDumpDirectory()
@@ -150,11 +151,6 @@ juce::File parentDirectory (juce::File file, const int levels)
 juce::String defaultModuleLibraryPath()
 {
     return "fixtures/module-libraries/default.module-library.json";
-}
-
-juce::String analyzerFamilyModuleLibraryPath()
-{
-    return "fixtures/module-libraries/analyzer-family.module-library.json";
 }
 
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
@@ -301,27 +297,6 @@ std::string safeIdentifier (const std::string& text)
     return result.empty() ? "module" : result;
 }
 
-const RuntimeOutputValue* findRuntimeOutput (const std::vector<RuntimeOutputValue>& outputs, const std::string& id)
-{
-    for (const auto& output : outputs)
-        if (output.id == id)
-            return &output;
-
-    return nullptr;
-}
-
-double runtimeOutputValueOrZero (const std::vector<RuntimeOutputValue>& outputs, const std::string& id)
-{
-    const auto* output = findRuntimeOutput (outputs, id);
-    return output == nullptr ? 0.0 : output->value;
-}
-
-constexpr const char* c6RawEnergyNodeType = "compound.raw-energy";
-constexpr const char* c6LoudnessNodeType = "compound.loudness";
-constexpr const char* c6RawEnergyNodeId = "raw_energy1";
-constexpr const char* c6RmsOutputId = "rms";
-constexpr const char* c6PeakOutputId = "peak";
-constexpr const char* c6SampleCountOutputId = "sampleCount";
 constexpr const char* proofWorkerId = "ai-worker-proof";
 constexpr const char* loudnessCompoundNodeId = "library_loud1";
 constexpr const char* c6RepairWorkerId = proofWorkerId;
@@ -1878,164 +1853,21 @@ void MainComponent::dumpC5VisibleModulePublishProof()
 void MainComponent::dumpC6AnalyzerFamilyProof()
 {
     const auto directory = c6AnalyzerFamilyProofDumpDirectory();
-    const auto reportFile = directory.getChildFile ("analyzer_family_report.json");
-    const auto libraryPath = analyzerFamilyModuleLibraryPath().toStdString();
-    const std::vector<RuntimeOutputValue> emptyOutputs;
 
-    const auto writeFailureReport = [&] (const std::string& message)
-    {
-        const auto report = makeC6AnalyzerFamilyReportJson (false,
-                                                            libraryPath,
-                                                            0,
-                                                            false,
-                                                            false,
-                                                            {},
-                                                            false,
-                                                            {},
-                                                            false,
-                                                            emptyOutputs,
-                                                            message);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c6 analyzer family proof failed: " + juce::String (message),
+    C6AnalyzerFamilyProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runC6AnalyzerFamilyProof (request);
+    const auto displayNameString = juce::String (c6AnalyzerFamilyProofDisplayName());
+
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-    };
-
-    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
-    {
-        writeFailureReport (error);
-        return;
-    }
-
-    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
-    {
-        writeFailureReport (error);
-        return;
-    }
-
-    const auto loadedSpecs = loadCompoundModuleNodeSpecsFromLibrary (libraryPath);
-    const auto familyEntryCount = loadedSpecs.ok ? loadedSpecs.specs.size() : 0;
-    const auto visibleRegistryContainsRawEnergy = loadedSpecs.ok
-        && findNodeSpec (loadedSpecs.specs, c6RawEnergyNodeType) != nullptr;
-    const auto loudnessStillPresent = loadedSpecs.ok
-        && findNodeSpec (loadedSpecs.specs, c6LoudnessNodeType) != nullptr;
-
-    const auto runtime = loadRuntimeRegistryFromModuleLibrary (libraryPath);
-    const auto runtimeRegistryContainsRawEnergy = runtime.ok
-        && std::any_of (runtime.registry.entries.begin(),
-                        runtime.registry.entries.end(),
-                        [] (const auto& entry) {
-                            return entry.nodeType == c6RawEnergyNodeType;
-                        });
-    const auto coverage = runtime.ok ? inspectRuntimeOpCoverage (runtime.registry) : RuntimeOpCoverageResult {};
-    const auto diagnostics = coverage.snapshot.entries.empty()
-        ? std::vector<RuntimeOpModuleDiagnostic> {}
-        : makeRuntimeOpModuleDiagnostics (coverage.snapshot);
-    const auto runtimeCoverageStatus = [&diagnostics]
-    {
-        for (const auto& diagnostic : diagnostics)
-        {
-            if (diagnostic.nodeType != c6RawEnergyNodeType)
-                continue;
-
-            return diagnostic.status == "runtime-op-ready" ? std::string { "ready" } : diagnostic.status;
-        }
-
-        return std::string {};
-    }();
-
-    RuntimeSyntheticAudioInput input;
-    input.channels = {
-        { 0.0f, 1.0f, -1.0f, 0.0f },
-        { 0.0f, 0.5f, -0.5f, 0.0f }
-    };
-    input.analysisGain = 1.5f;
-
-    const auto execution = runtime.ok ? executeRuntimeRegistryWithSyntheticAudio (runtime.registry, input)
-                                      : RuntimeExecutionResult {};
-    std::vector<RuntimeOutputValue> rawEnergyPublicOutputs;
-    std::string rawEnergyExecutionStatus;
-
-    if (execution.ok)
-    {
-        for (const auto& entry : execution.snapshot.entries)
-        {
-            if (entry.nodeType != c6RawEnergyNodeType)
-                continue;
-
-            rawEnergyExecutionStatus = entry.status;
-            rawEnergyPublicOutputs = entry.publicOutputs;
-            break;
-        }
-    }
-
-    const auto rawOutputsOk = rawEnergyExecutionStatus == "computed"
-        && findRuntimeOutput (rawEnergyPublicOutputs, c6RmsOutputId) != nullptr
-        && findRuntimeOutput (rawEnergyPublicOutputs, c6PeakOutputId) != nullptr
-        && findRuntimeOutput (rawEnergyPublicOutputs, c6SampleCountOutputId) != nullptr
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6RmsOutputId), std::sqrt (0.28125))
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6PeakOutputId), 0.75)
-        && nearlyEqual (runtimeOutputValueOrZero (rawEnergyPublicOutputs, c6SampleCountOutputId), 4.0);
-
-    auto session = makeGraphSession (makeDefaultShaderOutputGraph());
-    CommandResult createResult { false, "raw-energy node spec not loaded" };
-    if (loadedSpecs.ok)
-    {
-        const auto visibleRegistry = mergeNodeSpecs (makeSeedNodeSpecs(), loadedSpecs.specs);
-        createResult = createNode (session,
-                                   visibleRegistry,
-                                   c6RawEnergyNodeType,
-                                   c6RawEnergyNodeId,
-                                   { 300.0, 320.0 });
-    }
-
-    const auto graphCommandLogStatus = session.commandLog.empty() ? std::string {}
-                                                                  : session.commandLog.back();
-    const auto createdRawEnergyNode = createResult.ok && graphCommandLogStatus == "create_node";
-    const auto ok = loadedSpecs.ok
-                    && familyEntryCount == 2
-                    && visibleRegistryContainsRawEnergy
-                    && runtime.ok
-                    && runtimeRegistryContainsRawEnergy
-                    && coverage.ok
-                    && runtimeCoverageStatus == "ready"
-                    && execution.ok
-                    && rawOutputsOk
-                    && createdRawEnergyNode
-                    && loudnessStillPresent;
-    const auto error = ok ? std::string {}
-                          : ! loadedSpecs.ok ? loadedSpecs.error
-                          : ! runtime.ok ? runtime.error
-                          : ! coverage.ok ? coverage.error
-                          : ! execution.ok ? execution.error
-                          : ! createResult.ok ? createResult.message
-                          : "C6 analyzer family proof did not match expected raw-energy evidence";
-
-    const auto report = makeC6AnalyzerFamilyReportJson (ok,
-                                                        libraryPath,
-                                                        familyEntryCount,
-                                                        visibleRegistryContainsRawEnergy,
-                                                        runtimeRegistryContainsRawEnergy,
-                                                        runtimeCoverageStatus,
-                                                        createdRawEnergyNode,
-                                                        graphCommandLogStatus,
-                                                        loudnessStillPresent,
-                                                        rawEnergyPublicOutputs,
-                                                        error);
-
-    if (! writeTextFile (reportFile, report))
-    {
-        statusLabel.setText ("c6 analyzer family proof failed: could not write " + reportFile.getFullPathName(),
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    statusLabel.setText ((ok ? "c6 analyzer family proof dumped: " : "c6 analyzer family proof mismatch: ")
-                             + directory.getFullPathName(),
-                         juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
