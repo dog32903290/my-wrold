@@ -924,6 +924,30 @@ set_tests_properties(a1_audio_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_proof_run_support
+    source/app/ProofRunSupport.cpp
+)
+
+target_include_directories(my_world_proof_run_support
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+)
+
+add_executable(my_world_proof_run_support_tests
+    tests/ProofRunSupportTests.cpp
+)
+
+target_link_libraries(my_world_proof_run_support_tests
+    PRIVATE
+        my_world_proof_run_support
+)
+
+add_test(NAME proof_run_support
+         COMMAND my_world_proof_run_support_tests)
+set_tests_properties(proof_run_support PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_c2_storage_proof_runner
     source/app/C2StorageProofRunner.cpp
 )
@@ -970,6 +994,7 @@ target_include_directories(my_world_c3_save_work_proof_runner
 
 target_link_libraries(my_world_c3_save_work_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_interaction
         my_world_proof_reports
         my_world_storage_command
@@ -1004,6 +1029,7 @@ target_include_directories(my_world_c4_ai_worker_save_work_proof_runner
 
 target_link_libraries(my_world_c4_ai_worker_save_work_proof_runner
     PUBLIC
+        my_world_proof_run_support
         my_world_ai_worker
         my_world_interaction
         my_world_proof_reports

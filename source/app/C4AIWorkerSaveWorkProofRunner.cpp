@@ -4,14 +4,12 @@
 #include "CompoundPatch.h"
 #include "GraphEndpoint.h"
 #include "InteractionContract.h"
+#include "ProofRunSupport.h"
 #include "ProofReports.h"
 #include "StorageContract.h"
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
-#include <fstream>
-#include <system_error>
 
 namespace myworld
 {
@@ -38,100 +36,6 @@ bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
                         [&edgeId] (const auto& edge) {
                             return edge.id == edgeId;
                         });
-}
-
-std::string writeTextFile (const std::filesystem::path& path, const std::string& text)
-{
-    std::error_code error;
-    std::filesystem::create_directories (path.parent_path(), error);
-    if (error)
-        return "could not create " + path.parent_path().string() + ": " + error.message();
-
-    std::ofstream output (path, std::ios::binary);
-    if (! output)
-        return "could not write " + path.string();
-
-    output << text;
-    if (! output)
-        return "could not write " + path.string();
-
-    return {};
-}
-
-std::string clearDirectoryIfExists (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    if (std::filesystem::exists (directory, error))
-    {
-        std::filesystem::remove_all (directory, error);
-        if (error)
-            return "could not clear " + directory.string() + ": " + error.message();
-    }
-
-    return {};
-}
-
-std::string createDirectoryIfMissing (const std::filesystem::path& directory)
-{
-    std::error_code error;
-    std::filesystem::create_directories (directory, error);
-    if (error)
-        return "could not create " + directory.string() + ": " + error.message();
-
-    return {};
-}
-
-std::vector<std::filesystem::path> candidatePaths (const std::vector<std::filesystem::path>& roots,
-                                                   const char* relativePath)
-{
-    std::vector<std::filesystem::path> paths;
-
-    for (const auto& root : roots)
-    {
-        if (! root.empty())
-            paths.push_back (root / relativePath);
-    }
-
-    paths.push_back (std::filesystem::current_path() / relativePath);
-    paths.push_back (std::filesystem::path (relativePath));
-
-    std::vector<std::filesystem::path> uniquePaths;
-    for (const auto& path : paths)
-    {
-        if (std::find (uniquePaths.begin(), uniquePaths.end(), path) == uniquePaths.end())
-            uniquePaths.push_back (path);
-    }
-
-    return uniquePaths;
-}
-
-bool copyFirstCandidate (const std::vector<std::filesystem::path>& roots,
-                         const char* relativePath,
-                         const std::filesystem::path& target,
-                         std::string& error)
-{
-    std::error_code createError;
-    std::filesystem::create_directories (target.parent_path(), createError);
-    if (createError)
-    {
-        error = "could not create " + target.parent_path().string() + ": " + createError.message();
-        return false;
-    }
-
-    for (const auto& candidate : candidatePaths (roots, relativePath))
-    {
-        std::error_code copyError;
-        std::filesystem::copy_file (candidate, target, std::filesystem::copy_options::overwrite_existing, copyError);
-        if (! copyError)
-            return true;
-
-        error = "could not copy " + std::string (relativePath) + " from " + candidate.string();
-    }
-
-    if (error.empty())
-        error = "could not copy " + std::string (relativePath);
-
-    return false;
 }
 
 AIWorkerCommandRequest makeMoveNodeProofRequest()
@@ -211,25 +115,25 @@ C4AIWorkerSaveWorkProofRunResult runC4AIWorkerSaveWorkProof (
                                   const std::string& aiCommandLogStatus,
                                   const std::string& error)
     {
-        return writeTextFile (result.reportPath,
-                              makeC4AIWorkerSaveWorkReportJson (ok,
-                                                                 moveRequest,
-                                                                 moveResult,
-                                                                 saveRequest,
-                                                                 saveResult,
-                                                                 allowedOperations,
-                                                                 saveLog,
-                                                                 session,
-                                                                 publicInputEdge,
-                                                                 publicOutputEdge,
-                                                                 monoMixLayout,
-                                                                 monoMixX,
-                                                                 monoMixY,
-                                                                 savedMovePersisted,
-                                                                 savedMoveX,
-                                                                 savedMoveY,
-                                                                 aiCommandLogStatus,
-                                                                 error));
+        return writeProofTextFile (result.reportPath,
+                                   makeC4AIWorkerSaveWorkReportJson (ok,
+                                                                      moveRequest,
+                                                                      moveResult,
+                                                                      saveRequest,
+                                                                      saveResult,
+                                                                      allowedOperations,
+                                                                      saveLog,
+                                                                      session,
+                                                                      publicInputEdge,
+                                                                      publicOutputEdge,
+                                                                      monoMixLayout,
+                                                                      monoMixX,
+                                                                      monoMixY,
+                                                                      savedMovePersisted,
+                                                                      savedMoveX,
+                                                                      savedMoveY,
+                                                                      aiCommandLogStatus,
+                                                                      error));
     };
 
     const auto fail = [&] (const std::string& message, const GraphSession& reportSession)
@@ -255,19 +159,19 @@ C4AIWorkerSaveWorkProofRunResult runC4AIWorkerSaveWorkProof (
         return result;
     };
 
-    if (const auto error = clearDirectoryIfExists (request.outputDirectory); ! error.empty())
+    if (const auto error = clearProofDirectoryIfExists (request.outputDirectory); ! error.empty())
         return fail (error, makeGraphSession (GraphContract {}));
 
-    if (const auto error = createDirectoryIfMissing (patchDirectory); ! error.empty())
+    if (const auto error = createProofDirectoryIfMissing (patchDirectory); ! error.empty())
         return fail (error, makeGraphSession (GraphContract {}));
 
     std::string lastError;
-    const auto copiedWorkManifest = copyFirstCandidate (request.candidateRoots,
-                                                        workFixturePath,
-                                                        workManifestFile,
-                                                        lastError);
+    const auto copiedWorkManifest = copyFirstProofCandidate (request.candidateRoots,
+                                                             workFixturePath,
+                                                             workManifestFile,
+                                                             lastError);
     const auto copiedPatch = copiedWorkManifest
-        && copyFirstCandidate (request.candidateRoots, patchFixturePath, savedPatchFile, lastError);
+        && copyFirstProofCandidate (request.candidateRoots, patchFixturePath, savedPatchFile, lastError);
 
     if (! copiedPatch)
         return fail (lastError.empty() ? "could not copy C4 work fixture" : lastError,
@@ -319,7 +223,7 @@ C4AIWorkerSaveWorkProofRunResult runC4AIWorkerSaveWorkProof (
                                             : makeGraphSession (GraphContract {});
 
     CompoundPatchLoadResult loadedCompound;
-    for (const auto& candidate : candidatePaths (request.candidateRoots, loudnessCompoundFixturePath))
+    for (const auto& candidate : proofCandidatePaths (request.candidateRoots, loudnessCompoundFixturePath))
     {
         const auto loaded = loadCompoundPatchSpec (candidate.string());
         if (loaded.ok)

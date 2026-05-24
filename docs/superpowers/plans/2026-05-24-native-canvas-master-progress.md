@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 01:05 Asia/Taipei.
+Date: 2026-05-25 01:15 Asia/Taipei.
 
 Branch:
 
@@ -55,30 +55,18 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+3c0e471 Extract V1 shader proof artifacts
+caa9372 Extract A1 audio proof runner
+562860d Extract C2 storage proof runner
+ca90a0e Extract C3 save work proof runner
+a4991ff Extract C4 AI worker proof runner
+adaeb53 Extract C6 repair proof runner
+248e41f Extract C5 module publish proof runner
+8006397 Extract C6 analyzer proof runner
+47703f9 Extract PV-B1 analyzer proof runner
+04f33d5 Add PV analyzer detector proofs
 5cc6399 Close R runtime render backbone
 ebeab9f Add R2 headless render runtime
-d884f2d Close R1 OpenGL render backend
-94fc456 Add render backend contract
-fd1e972 Plan R segment implementation
-90a4b40 Route R runtime render backbone
-a6390b6 Split storage contract serialization
-cff975e Split runtime registry responsibilities
-2c53c05 Split ImGui smoke overlay helpers
-bbadbe8 Schedule post-C three-layer cleanup
-311b64e Tidy C proof request fixtures
-2c49f1a Extract C proof reports
-0f81a42 Tidy C proof directory setup
-5fb9d66 Tidy C6 proof fixtures
-cdb35da Tidy C6 repair loop closure
-6939992 Close C6 analyzer family and repair loop
-0754301 Close C5.3 visible module publish
-9b48941 Add C5.2 AI worker module publish
-73ce3f0 Close C5.1 module publish proof
-ec3efe2 Close C4 AI worker command proof
-d73b893 Add C4.2 AI worker move_node command
-835ce85 Add C4.1 AI worker save_work contract
-09edd86 Add C3.5 save commit failure proof
-57ba0c5 Add C3.4 background save commit worker
 ```
 
 Current C4 note:
@@ -240,6 +228,7 @@ Latest accepted targeted result:
 | C2 storage proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c2-storage-proof-harness-extraction.md`; `C2StorageProofRunner` owns fixture lookup, patch save/reload, layout evidence, and report writing; focused test, app build, and C2 CLI proof passed | Do not reopen C2 storage semantics; V1/A1 proof harness cleanup remain separate selected lanes |
 | A1 audio proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md`; `A1AudioProofRunner` owns runtime registry lookup, synthetic runtime execution, audio stats, compound, runtime execution, and bridge artifact writing; focused test, app build, and A1 CLI proof passed | Do not reopen A1 analyzer/runtime semantics; V1 proof harness cleanup remains separate selected lane |
 | V1 shader proof artifact extraction | closed | `docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md`; `V1ShaderProofArtifacts` owns V1 proof artifact path/report/PNG writing while `OpenGLShaderPreview` keeps live frame capture; focused test, app build, and V1 CLI proof passed | Do not treat this as headless V1; RenderBackend/headless visual work remains a separate selected lane |
+| ProofRunSupport C3/C4 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-c3-c4.md`; shared proof text/directory/candidate/copy primitives now serve C3/C4 runners; focused tests, app build, C3/C4 CLI proofs, and full `ctest` 51/51 passed | Do not centralize all proof runner logic; migrate remaining helpers only as selected small slices |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -249,8 +238,47 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after V1 shader proof artifact extraction as of 2026-05-25 01:05 Asia/Taipei.
+None after ProofRunSupport C3/C4 cleanup as of 2026-05-25 01:15 Asia/Taipei.
 
+ProofRunSupport C3/C4 cleanup closed as of 2026-05-25 01:15 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-proof-run-support-c3-c4.md
+
+Closed support line:
+C3/C4 proof runners
+-> ProofRunSupport
+-> proof text file writing / output directory setup / candidate path dedupe / first candidate copy
+-> existing C3/C4 reports and CLI flags
+
+Latest verification:
+- `cmake -S . -B build`
+- `cmake --build build --target my_world_proof_run_support_tests my_world_c3_save_work_proof_runner_tests my_world_c4_ai_worker_save_work_proof_runner_tests`
+- `ctest --test-dir build --output-on-failure -R "proof_run_support|c3_save_work_proof_runner|c4_ai_worker_save_work_proof_runner|save_work_command|ai_worker_command"`
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c3-save-work-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c4-ai-worker-save-work-proof-and-exit`
+- `git diff --check`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `proof_run_support` passed
+- `c3_save_work_proof_runner` passed
+- `c4_ai_worker_save_work_proof_runner` passed
+- `save_work_command` passed
+- `ai_worker_command` passed
+- app build passed
+- C3 CLI proof exited 0 and kept `ok: true`, `saveStatus: "save-ok commit-pending"`, `commandLogStatus: "save_work:save-ok commit-pending"`, and `commitStatus: "not-started"`
+- C4 CLI proof exited 0 and kept `ok: true`, `status: "save-ok commit-pending"`, `graphMutationApplied: true`, `patchReloaded: true`, and `collaborationLogEntries: 4`
+- full `ctest` passed 51/51
+- `git diff --check` passed
+
+Parked:
+- Do not migrate all proof helpers in one sweep
+- Support helpers are not a new generic proof runner
+- Remaining proof cleanup needs separate selected slices
+
+Previous closure:
 V1 shader proof artifact extraction closed as of 2026-05-25 01:05 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-25-v1-shader-proof-artifact-extraction.md
