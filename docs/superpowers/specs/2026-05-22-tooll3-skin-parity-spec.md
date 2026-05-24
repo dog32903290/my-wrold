@@ -1,7 +1,7 @@
 # Tooll3 Skin Parity Spec
 
 Date: 2026-05-22
-Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.18 RuntimeOp diagnostics now gate normal browser creation, expose explicit debug override commands, and switch the canvas to expanded child patcher graphs inside compounds. S8 full timeline editing, output pinning, live thumbnails, and deeper node browser polish are still pending.
+Status: P0-P7 first pass implemented: source packet recorded, testable skin contract added, old global shader/prefs panels hidden, output now reads as workspace background, nodes float over it, left/bottom Tooll3-style rails exist, node/port/connection skin grammar is contract-backed, selected shader source lives in the node inspector with real compile handoff, workspace tabs/context-menu/transport grammar exist, Delete follows selected-object command behavior, and the visible browser consumes the loaded module-library registry. C1.18 RuntimeOp diagnostics now gate normal browser creation, expose explicit debug override commands, and switch the canvas to expanded child patcher graphs inside compounds. H1/H4 cleanup keeps node bounds and browser/create queries outside local ImGui helpers. S8 full timeline editing, output pinning, live thumbnails, and deeper node browser polish are still pending.
 
 Source witness: `jithinraj/t3` cloned for inspection at upstream commit `61d254c3e3107eaa1f64239dd0e399150a68436b`.
 
@@ -9,7 +9,7 @@ License stance: Tooll3/T3 is MIT licensed in the inspected repository. If this p
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 01:45 Asia/Taipei.
+Date: 2026-05-24 10:01 Asia/Taipei.
 
 已鎖定:
 
@@ -32,21 +32,23 @@ Date: 2026-05-24 01:45 Asia/Taipei.
 - C1.16 coverage-gated creation proof exists, so the browser and compatible-node popup disable missing-runtime rows and pass `NodeCreationGate` into the command path before mutation.
 - C1.17 explicit debug override proof exists, so blocked rows have an intentional Override affordance that lowers to `create_node_debug_override` / `create_node+connect_debug_override` with stored reason.
 - C1.18 expanded/collapsed compound proof exists, so the canvas shows root compounds as draggable collapsed nodes and switches to a parent-qualified child patcher graph after entering a compound.
+- H1/H4 hygiene proofs exist, so visible node bounds now read `CanvasGeometry` instead of local ImGui constants, and browser/create datatype, filter, and unique-id queries now come from `NodeSpecQueries` instead of local ImGui helpers.
 
 正在試壓:
 
-- Whether the live analyzer/debug surface should read loaded compound runtime outputs instead of only direct analyzer state.
+- Whether P-SEARCH1 browser/search should advance now that `NodeSpecQueries` exists, or wait until C2.1 patch-document boundaries stop the saved graph shape from moving underneath it.
 
 還沒承重:
 
 - S8 timeline editing has only a visual/status strip, not animation commandGraph contracts.
 - S9 browser works for right-click and drag-to-empty creation, but keyboard-first browser polish and insert-between-edge behavior remain parked.
-- Module-library discovery, runtime registry proof, dry-run status, computed runtime chain, public output map, source-route evidence, named dispatch-backed runtime output status, missing RuntimeOp failure, saved negative proof artifacts, coverage report artifacts, visible coverage diagnostics, coverage-gated creation, explicit debug override, and expanded/collapsed compound interaction are wired, but the browser still needs deeper category/search ergonomics once more modules exist.
+- Module-library discovery beyond the default saved library is not implemented; the browser still needs deeper category/search ergonomics once more modules exist.
 - Live node thumbnails and output pin/multi-output workflow are not proven until `RenderBackend` is extracted.
+- Full overlay component splitting is parked. Current cleanup only moved contract/query helpers out of ImGui; panel-level extraction waits for a feature that needs it.
 
 下一根線:
 
-- Keep new skin surface area parked until the loaded compound runtime becomes the live analyzer/debug source. Compound drag/drop has first evidence; next pressure is runtime truth, not more panel polish.
+- Keep new skin surface area parked until C2.1 patch documents and P-SEARCH1 browser/search clarify their contracts. Next pressure is saved graph shape and query behavior, not more panel decoration.
 
 ## Purpose
 

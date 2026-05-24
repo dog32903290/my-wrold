@@ -1,3 +1,4 @@
+#include "GraphEndpoint.h"
 #include "InteractionContract.h"
 #include "StorageContract.h"
 
@@ -16,14 +17,6 @@ void expect (bool condition, const std::string& message)
     }
 }
 
-const myworld::GraphNode* findNode (const myworld::GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
 }
 
 int main()
@@ -52,13 +45,13 @@ int main()
     expect (loaded.currentPatchPath.size() == 1 && loaded.currentPatchPath[0] == "loud1", "patch path roundtrip");
     expect (loaded.graph.editorGraph.edges.size() == session.graph.editorGraph.edges.size(), "edges roundtrip");
 
-    const auto* shader = findNode (loaded.graph, "shader1");
+    const auto* shader = myworld::findEditorNode (loaded.graph, "shader1");
     expect (shader != nullptr, "shader roundtrip");
-    expect (shader->position.x == findNode (session.graph, "shader1")->position.x, "position x roundtrip");
+    expect (shader->position.x == myworld::findEditorNode (session.graph, "shader1")->position.x, "position x roundtrip");
     expect (shader->params.size() == 1, "param roundtrip");
     expect (shader->portBindings.size() == 1, "binding roundtrip");
 
-    const auto* loudness = findNode (loaded.graph, "loud1");
+    const auto* loudness = myworld::findEditorNode (loaded.graph, "loud1");
     expect (loudness != nullptr, "loudness roundtrip");
     expect (loudness->collapsed, "collapsed roundtrip");
 

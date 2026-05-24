@@ -1,7 +1,10 @@
 #include "ImGuiSmokeOverlay.h"
 
+#include "CanvasGeometry.h"
 #include "CompoundPatch.h"
+#include "GraphEndpoint.h"
 #include "NodeSpec.h"
+#include "NodeSpecQueries.h"
 #include "Tooll3SkinContract.h"
 
 #include <imgui.h>
@@ -9,7 +12,6 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cfloat>
 #include <sstream>
@@ -18,9 +20,6 @@ namespace myworld
 {
 namespace
 {
-constexpr float nodeWidth = 140.0f;
-constexpr float nodeHeight = 60.0f;
-
 ImVec2 rectMin (Tooll3SkinRect rect)
 {
     return { static_cast<float> (rect.x), static_cast<float> (rect.y) };
@@ -77,28 +76,6 @@ std::string patchPathText (const GraphSession& session)
     }
 
     return text.str();
-}
-
-const GraphNode* findNode (const GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
-
-bool hasNode (const GraphContract& graph, const std::string& id)
-{
-    return findNode (graph, id) != nullptr;
-}
-
-const NodeSpec* specForNode (const GraphContract& graph,
-                             const std::vector<NodeSpec>& specs,
-                             const std::string& nodeId)
-{
-    const auto* node = findNode (graph, nodeId);
-    return node == nullptr ? nullptr : findNodeSpec (specs, node->type);
 }
 
 const RuntimeOpModuleDiagnostic* diagnosticForNodeType (const std::vector<RuntimeOpModuleDiagnostic>& diagnostics,
@@ -163,84 +140,6 @@ void drawRuntimeDiagnosticSummary (const RuntimeOpModuleDiagnostic& diagnostic)
     ImGui::Unindent (12.0f);
 }
 
-std::string nodeIdFromEndpoint (const std::string& endpoint)
-{
-    const auto dot = endpoint.find ('.');
-    return dot == std::string::npos ? endpoint : endpoint.substr (0, dot);
-}
-
-std::string portIdFromEndpoint (const std::string& endpoint)
-{
-    const auto dot = endpoint.find ('.');
-    return dot == std::string::npos ? std::string {} : endpoint.substr (dot + 1);
-}
-
-std::string outputDataTypeForEndpoint (const GraphContract& graph,
-                                       const std::vector<NodeSpec>& specs,
-                                       const std::string& endpoint)
-{
-    const auto* spec = specForNode (graph, specs, nodeIdFromEndpoint (endpoint));
-
-    if (spec == nullptr)
-        return {};
-
-    const auto portId = portIdFromEndpoint (endpoint);
-    for (const auto& port : spec->outputs)
-        if (port.id == portId)
-            return port.dataType;
-
-    return {};
-}
-
-std::string makeNodeIdStem (const std::string& nodeType);
-
-bool canCreateFromEndpoint (const NodeSpec& spec, const std::string& sourceDataType)
-{
-    return ! spec.inputs.empty() && spec.inputs.front().dataType == sourceDataType;
-}
-
-bool nodeSpecMatchesFilter (const NodeSpec& spec, const std::string& filter)
-{
-    if (filter.empty())
-        return true;
-
-    const auto needle = makeNodeIdStem (filter);
-    const auto haystack = makeNodeIdStem (spec.type + " " + spec.displayName + " " + spec.category + " " + spec.subcategory);
-    return haystack.find (needle) != std::string::npos;
-}
-
-std::string makeNodeIdStem (const std::string& nodeType)
-{
-    std::string stem;
-
-    for (const auto c : nodeType)
-    {
-        if (std::isalnum (static_cast<unsigned char> (c)))
-            stem.push_back (static_cast<char> (std::tolower (static_cast<unsigned char> (c))));
-        else if (! stem.empty() && stem.back() != '_')
-            stem.push_back ('_');
-    }
-
-    while (! stem.empty() && stem.back() == '_')
-        stem.pop_back();
-
-    return stem.empty() ? "node" : stem;
-}
-
-std::string makeUniqueNodeId (const GraphContract& graph, const std::string& nodeType)
-{
-    const auto stem = makeNodeIdStem (nodeType);
-
-    for (int index = 1; index < 1000; ++index)
-    {
-        const auto candidate = stem + std::to_string (index);
-        if (! hasNode (graph, candidate))
-            return candidate;
-    }
-
-    return stem + "_overflow";
-}
-
 ImVec2 toImVec (CanvasPoint point, const CanvasViewState& view, ImVec2 origin)
 {
     const auto screen = canvasToScreen (view, point);
@@ -268,7 +167,7 @@ std::string selectedNodeId (const GraphSession& session)
 
 bool nodeIsCompound (const GraphContract& graph, const std::string& nodeId)
 {
-    const auto* node = findNode (graph, nodeId);
+    const auto* node = findEditorNode (graph, nodeId);
     return node != nullptr && node->type.rfind ("compound.", 0) == 0;
 }
 
@@ -328,20 +227,6 @@ std::string demoValueForParam (const ParamSpec& param)
         return "void main(){}";
 
     return "demo";
-}
-
-std::string primaryDataTypeForSpec (const NodeSpec* spec)
-{
-    if (spec == nullptr)
-        return {};
-
-    if (! spec->outputs.empty())
-        return spec->outputs.front().dataType;
-
-    if (! spec->inputs.empty())
-        return spec->inputs.front().dataType;
-
-    return {};
 }
 
 void drawPortStrip (ImDrawList& drawList, ImVec2 min, ImVec2 max, const Tooll3PortSkin& skin)
@@ -796,7 +681,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Create Output"))
     {
         runInteractionCommand ("create output",
-                               hasNode (interactionSession.graph, "out2")
+                               findEditorNode (interactionSession.graph, "out2") != nullptr
                                    ? CommandResult { false, "out2 already exists" }
                                    : createNodeAndConnect (interactionSession,
                                                            "shader1.output",
@@ -807,7 +692,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
 
     if (ImGui::Button ("Add Loudness"))
     {
-        if (! hasNode (interactionSession.graph, "loud1"))
+        if (findEditorNode (interactionSession.graph, "loud1") == nullptr)
             runInteractionCommand ("create loudness",
                                    createNode (interactionSession, "compound.loudness", "loud1", { 180.0, 250.0 }));
         else
@@ -852,7 +737,7 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     if (ImGui::Button ("Collapse/Expand"))
     {
         const auto nodeId = selectedNodeId (interactionSession);
-        const auto* node = findNode (interactionSession.graph, nodeId);
+        const auto* node = findEditorNode (interactionSession.graph, nodeId);
         runInteractionCommand ("collapse toggle",
                                nodeIsCompound (interactionSession.graph, nodeId)
                                    ? setCollapsed (interactionSession, nodeId, ! node->collapsed)
@@ -1205,7 +1090,9 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     {
         const auto position = displayedPosition (node, draggingNodeId, dragCanvasDelta);
         const auto topLeft = toImVec (position, canvasSession.view, origin);
-        const auto bottomRight = ImVec2 (topLeft.x + nodeWidth, topLeft.y + nodeHeight);
+        const auto& geometry = defaultCanvasGeometry();
+        const auto bottomRight = ImVec2 (topLeft.x + static_cast<float> (geometry.nodeWidth),
+                                         topLeft.y + static_cast<float> (geometry.nodeHeight));
         const auto* spec = findNodeSpec (nodeSpecs, node.type);
         const auto primaryDataType = primaryDataTypeForSpec (spec);
         const auto selected = std::find (canvasSession.selectedNodeIds.begin(),
@@ -1475,7 +1362,7 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     ImGui::SeparatorText ("Inspector");
 
     const auto nodeId = selectedNodeId (interactionSession);
-    const auto* node = findNode (interactionSession.graph, nodeId);
+    const auto* node = findEditorNode (interactionSession.graph, nodeId);
     const auto* spec = node == nullptr ? nullptr : findNodeSpec (nodeSpecs, node->type);
 
     if (node == nullptr || spec == nullptr)

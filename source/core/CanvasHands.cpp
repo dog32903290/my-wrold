@@ -1,5 +1,7 @@
 #include "CanvasHands.h"
 
+#include "GraphEndpoint.h"
+
 #include <cmath>
 #include <sstream>
 
@@ -7,15 +9,6 @@ namespace myworld
 {
 namespace
 {
-const GraphNode* findNode (const GraphContract& graph, const std::string& nodeId)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == nodeId)
-            return &node;
-
-    return nullptr;
-}
-
 std::string buttonName (CanvasHandButton button)
 {
     switch (button)
@@ -211,7 +204,7 @@ CanvasHandResolvedTarget resolveCanvasHandTarget (const GraphSession& session,
     }
     else if (target.kind == CanvasHandTargetKind::node)
     {
-        const auto* node = findNode (session.graph, target.id);
+        const auto* node = findEditorNode (session.graph, target.id);
         if (node == nullptr)
         {
             result.message = "missing node target: " + target.id;

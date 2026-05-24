@@ -13,6 +13,49 @@ set(MY_WORLD_JUCE_DIR "/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer
 
 enable_testing()
 
+add_library(my_world_json
+    source/core/JsonWriter.cpp
+)
+
+target_include_directories(my_world_json
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_json_writer_tests
+    tests/JsonWriterTests.cpp
+)
+
+target_link_libraries(my_world_json_writer_tests
+    PRIVATE
+        my_world_json
+)
+
+add_test(NAME json_writer COMMAND my_world_json_writer_tests)
+
+add_library(my_world_path_resolution
+    source/core/PathResolution.cpp
+)
+
+target_include_directories(my_world_path_resolution
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+add_executable(my_world_path_resolution_tests
+    tests/PathResolutionTests.cpp
+)
+
+target_link_libraries(my_world_path_resolution_tests
+    PRIVATE
+        my_world_path_resolution
+)
+
+add_test(NAME path_resolution COMMAND my_world_path_resolution_tests)
+set_tests_properties(path_resolution PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_core
     source/core/GraphContract.cpp
 )
@@ -20,6 +63,11 @@ add_library(my_world_core
 target_include_directories(my_world_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_core
+    PUBLIC
+        my_world_json
 )
 
 add_executable(my_world_graph_contract_tests
@@ -85,6 +133,11 @@ target_include_directories(my_world_compound
         ${CMAKE_CURRENT_SOURCE_DIR}/source/core
 )
 
+target_link_libraries(my_world_compound
+    PUBLIC
+        my_world_json
+)
+
 add_library(my_world_compound_module
     source/core/CompoundModule.cpp
 )
@@ -99,6 +152,7 @@ target_link_libraries(my_world_compound_module
     PUBLIC
         my_world_compound
         my_world_node_specs
+        my_world_path_resolution
         my_world_storage
 )
 
@@ -115,8 +169,10 @@ target_include_directories(my_world_runtime_registry
 
 target_link_libraries(my_world_runtime_registry
     PUBLIC
+        my_world_json
         my_world_audio
         my_world_compound_module
+        my_world_path_resolution
 )
 
 add_executable(my_world_runtime_registry_tests
@@ -165,7 +221,10 @@ target_link_libraries(my_world_patch_interaction_tests
 add_test(NAME patch_interaction COMMAND my_world_patch_interaction_tests)
 
 add_library(my_world_interaction
+    source/core/CanvasGeometry.cpp
+    source/core/GraphEndpoint.cpp
     source/core/InteractionContract.cpp
+    source/core/NodeSpecQueries.cpp
 )
 
 target_include_directories(my_world_interaction
@@ -180,6 +239,39 @@ target_link_libraries(my_world_interaction
         my_world_node_specs
         my_world_compound
 )
+
+add_executable(my_world_graph_endpoint_tests
+    tests/GraphEndpointTests.cpp
+)
+
+target_link_libraries(my_world_graph_endpoint_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME graph_endpoint COMMAND my_world_graph_endpoint_tests)
+
+add_executable(my_world_canvas_geometry_contract_tests
+    tests/CanvasGeometryContractTests.cpp
+)
+
+target_link_libraries(my_world_canvas_geometry_contract_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME canvas_geometry_contract COMMAND my_world_canvas_geometry_contract_tests)
+
+add_executable(my_world_node_spec_query_tests
+    tests/NodeSpecQueryTests.cpp
+)
+
+target_link_libraries(my_world_node_spec_query_tests
+    PRIVATE
+        my_world_interaction
+)
+
+add_test(NAME node_spec_queries COMMAND my_world_node_spec_query_tests)
 
 add_executable(my_world_compound_module_tests
     tests/CompoundModuleTests.cpp
@@ -385,6 +477,12 @@ add_library(my_world_storage
 target_include_directories(my_world_storage
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_storage
+    PUBLIC
+        my_world_json
 )
 
 add_executable(my_world_storage_tests
@@ -398,6 +496,22 @@ target_link_libraries(my_world_storage_tests
 
 add_test(NAME storage_contract COMMAND my_world_storage_tests)
 set_tests_properties(storage_contract PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_patch_document_tests
+    tests/PatchDocumentTests.cpp
+)
+
+target_link_libraries(my_world_patch_document_tests
+    PRIVATE
+        my_world_storage
+        my_world_interaction
+        my_world_compound_module
+)
+
+add_test(NAME patch_document COMMAND my_world_patch_document_tests)
+set_tests_properties(patch_document PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -469,6 +583,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             source/app
             source/core
             source/preferences
+            source/storage
             source/ui
             source/render
     )
@@ -483,6 +598,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_preferences
             my_world_runtime_registry
+            my_world_storage
             my_world_imgui
             juce::juce_audio_devices
             juce::juce_audio_utils

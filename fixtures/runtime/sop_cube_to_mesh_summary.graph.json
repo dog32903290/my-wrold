@@ -1,0 +1,55 @@
+{
+  "kind": "runtimeProofFixture",
+  "version": 1,
+  "name": "sop_cube_to_mesh_summary",
+  "purpose": "First headless mesh proof: canonical mesh.cube, browser alias sop.cube, writes mesh metadata instead of rendering.",
+  "graph": {
+    "nodes": [
+      {
+        "id": "cube1",
+        "type": "mesh.cube",
+        "browserAlias": "sop.cube",
+        "params": {
+          "scale": 1.0,
+          "stretch": [1.0, 1.0, 1.0],
+          "center": [0.0, 0.0, 0.0],
+          "rotation": [0.0, 0.0, 0.0],
+          "pivot": [0.0, 0.0, 0.0],
+          "segments": [1, 1, 1],
+          "texCoord": "default",
+          "texCoord2": "none",
+          "margin": 0.0,
+          "margin2": 0.0
+        }
+      },
+      {
+        "id": "meshOut1",
+        "type": "output.mesh_summary",
+        "params": {
+          "path": "debug/sop-cube/mesh_summary.json"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "from": "cube1.mesh",
+        "to": "meshOut1.input",
+        "dataType": "geometry.mesh",
+        "streamKind": "continuous"
+      }
+    ]
+  },
+  "expectedArtifacts": [
+    "debug/sop-cube/mesh_summary.json",
+    "debug/sop-cube/cook_order.json",
+    "debug/sop-cube/node_stats.json",
+    "debug/sop-cube/errors.json"
+  ],
+  "acceptance": [
+    "saved node type is mesh.cube; sop.cube is alias only",
+    "mesh summary reports nonzero vertex, index, and face counts",
+    "mesh summary includes bounds around the requested center",
+    "this proof does not require render.screen_quad or output.preview"
+  ]
+}

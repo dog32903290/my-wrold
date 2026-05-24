@@ -50,6 +50,12 @@ int main()
     expect (registryResult.ok, registryResult.error);
     expect (registryResult.registry.entries.size() == 1, "runtime registry entry count");
 
+    const auto missingRegistryResult = myworld::loadRuntimeRegistryFromModuleLibrary (
+        "fixtures/module-libraries/missing.module-library.json");
+    expect (! missingRegistryResult.ok, "missing runtime registry library reports failure");
+    expectContains (missingRegistryResult.error, "could not resolve module library", "missing runtime registry library error");
+    expectContains (missingRegistryResult.error, "attempted:", "missing runtime registry library error");
+
     const auto& entry = registryResult.registry.entries.front();
     expectEqual (entry.nodeType, "compound.loudness", "runtime entry node type");
     expectEqual (entry.displayName, "Loudness", "runtime entry display name");

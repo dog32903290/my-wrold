@@ -1,5 +1,7 @@
 #include "CompoundPatch.h"
 
+#include "JsonWriter.h"
+
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -11,28 +13,6 @@ namespace myworld
 {
 namespace
 {
-std::string jsonEscaped (const std::string& text)
-{
-    std::ostringstream out;
-
-    for (const auto character : text)
-    {
-        switch (character)
-        {
-            case '"':  out << "\\\""; break;
-            case '\\': out << "\\\\"; break;
-            case '\b': out << "\\b"; break;
-            case '\f': out << "\\f"; break;
-            case '\n': out << "\\n"; break;
-            case '\r': out << "\\r"; break;
-            case '\t': out << "\\t"; break;
-            default:   out << character; break;
-        }
-    }
-
-    return out.str();
-}
-
 std::string portOwner (const std::string& portPath)
 {
     const auto dot = portPath.find ('.');
@@ -570,17 +550,17 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
 {
     std::ostringstream out;
     out << "{\n";
-    out << "  \"type\": \"" << jsonEscaped (spec.type) << "\",\n";
-    out << "  \"displayName\": \"" << jsonEscaped (spec.displayName) << "\",\n";
+    out << "  \"type\": " << jsonQuoted (spec.type) << ",\n";
+    out << "  \"displayName\": " << jsonQuoted (spec.displayName) << ",\n";
     out << "  \"collapsedByDefault\": " << (spec.collapsedByDefault ? "true" : "false") << ",\n";
 
     out << "  \"children\": [\n";
     for (size_t index = 0; index < spec.children.size(); ++index)
     {
         const auto& child = spec.children[index];
-        out << "    { \"id\": \"" << jsonEscaped (child.id)
-            << "\", \"type\": \"" << jsonEscaped (child.nodeType)
-            << "\", \"role\": \"" << jsonEscaped (child.role) << "\" }";
+        out << "    { \"id\": " << jsonQuoted (child.id)
+            << ", \"type\": " << jsonQuoted (child.nodeType)
+            << ", \"role\": " << jsonQuoted (child.role) << " }";
 
         if (index + 1 < spec.children.size())
             out << ",";
@@ -593,9 +573,9 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
     for (size_t index = 0; index < spec.internalEdges.size(); ++index)
     {
         const auto& edge = spec.internalEdges[index];
-        out << "    { \"from\": \"" << jsonEscaped (edge.from)
-            << "\", \"to\": \"" << jsonEscaped (edge.to)
-            << "\", \"dataType\": \"" << jsonEscaped (edge.dataType) << "\" }";
+        out << "    { \"from\": " << jsonQuoted (edge.from)
+            << ", \"to\": " << jsonQuoted (edge.to)
+            << ", \"dataType\": " << jsonQuoted (edge.dataType) << " }";
 
         if (index + 1 < spec.internalEdges.size())
             out << ",";
@@ -608,11 +588,11 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
     for (size_t index = 0; index < spec.publicInputs.size(); ++index)
     {
         const auto& port = spec.publicInputs[index];
-        out << "    { \"id\": \"" << jsonEscaped (port.id)
-            << "\", \"label\": \"" << jsonEscaped (port.label)
-            << "\", \"dataType\": \"" << jsonEscaped (port.dataType)
-            << "\", \"direction\": \"" << jsonEscaped (port.direction)
-            << "\", \"mapsTo\": \"" << jsonEscaped (port.mapsTo) << "\" }";
+        out << "    { \"id\": " << jsonQuoted (port.id)
+            << ", \"label\": " << jsonQuoted (port.label)
+            << ", \"dataType\": " << jsonQuoted (port.dataType)
+            << ", \"direction\": " << jsonQuoted (port.direction)
+            << ", \"mapsTo\": " << jsonQuoted (port.mapsTo) << " }";
 
         if (index + 1 < spec.publicInputs.size())
             out << ",";
@@ -625,11 +605,11 @@ std::string makeCompoundPatchJson (const CompoundPatchSpec& spec)
     for (size_t index = 0; index < spec.publicOutputs.size(); ++index)
     {
         const auto& port = spec.publicOutputs[index];
-        out << "    { \"id\": \"" << jsonEscaped (port.id)
-            << "\", \"label\": \"" << jsonEscaped (port.label)
-            << "\", \"dataType\": \"" << jsonEscaped (port.dataType)
-            << "\", \"direction\": \"" << jsonEscaped (port.direction)
-            << "\", \"mapsTo\": \"" << jsonEscaped (port.mapsTo) << "\" }";
+        out << "    { \"id\": " << jsonQuoted (port.id)
+            << ", \"label\": " << jsonQuoted (port.label)
+            << ", \"dataType\": " << jsonQuoted (port.dataType)
+            << ", \"direction\": " << jsonQuoted (port.direction)
+            << ", \"mapsTo\": " << jsonQuoted (port.mapsTo) << " }";
 
         if (index + 1 < spec.publicOutputs.size())
             out << ",";

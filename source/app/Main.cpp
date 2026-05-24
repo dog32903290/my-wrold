@@ -23,11 +23,13 @@ public:
     {
         const auto dumpProofAndExit = commandLine.contains ("--dump-proof-and-exit");
         const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and-exit");
-        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit;
+        const auto dumpC2StorageProofAndExit = commandLine.contains ("--dump-c2-storage-proof-and-exit");
+        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
                                                    dumpAudioProofAndExit,
+                                                   dumpC2StorageProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -48,6 +50,7 @@ private:
         MainWindow (juce::String name,
                     bool dumpProofAndExit,
                     bool dumpAudioProofAndExit,
+                    bool dumpC2StorageProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -56,6 +59,7 @@ private:
             setUsingNativeTitleBar (true);
             setContentOwned (new MainComponent (dumpProofAndExit,
                                                 dumpAudioProofAndExit,
+                                                dumpC2StorageProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

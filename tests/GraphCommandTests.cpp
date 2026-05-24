@@ -1,4 +1,5 @@
 #include "GraphContract.h"
+#include "GraphEndpoint.h"
 #include "GraphLanguage.h"
 #include "InteractionContract.h"
 
@@ -17,14 +18,6 @@ void expect (bool condition, const std::string& message)
     }
 }
 
-const myworld::GraphNode* findNode (const myworld::GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
 }
 
 int main()
@@ -36,25 +29,25 @@ int main()
 
     auto session = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
 
-    const auto* shader = findNode (session.graph, "shader1");
+    const auto* shader = myworld::findEditorNode (session.graph, "shader1");
     expect (shader != nullptr, "shader exists");
     const auto originalX = shader->position.x;
     const auto originalY = shader->position.y;
 
     auto move = myworld::moveNode (session, "shader1", 40.0, 20.0);
     expect (move.ok, "move_node succeeds");
-    shader = findNode (session.graph, "shader1");
+    shader = myworld::findEditorNode (session.graph, "shader1");
     expect (shader->position.x == originalX + 40.0, "shader x moved");
     expect (shader->position.y == originalY + 20.0, "shader y moved");
     expect (session.commandLog.back() == "move_node", "move command logged");
 
     expect (myworld::undo (session), "undo move");
-    shader = findNode (session.graph, "shader1");
+    shader = myworld::findEditorNode (session.graph, "shader1");
     expect (shader->position.x == originalX, "undo restores x");
     expect (shader->position.y == originalY, "undo restores y");
 
     expect (myworld::redo (session), "redo move");
-    shader = findNode (session.graph, "shader1");
+    shader = myworld::findEditorNode (session.graph, "shader1");
     expect (shader->position.x == originalX + 40.0, "redo restores moved x");
 
     session.selectedEdgeIds = { "edge.shader1.output.out1.input" };
@@ -81,18 +74,18 @@ int main()
 
     const auto deleteShader = myworld::deleteNode (session, "shader1");
     expect (deleteShader.ok, "delete node succeeds");
-    expect (findNode (session.graph, "shader1") == nullptr, "deleted node removed from editor graph");
+    expect (myworld::findEditorNode (session.graph, "shader1") == nullptr, "deleted node removed from editor graph");
     expect (session.graph.editorGraph.edges.empty(), "incident editor edges removed");
     expect (session.graph.runtimeGraph.edges.empty(), "incident runtime edges removed");
     expect (session.selectedNodeIds.empty(), "deleted node selection cleared");
     expect (session.commandLog.back() == "delete_node", "delete node command logged");
 
     expect (myworld::undo (session), "undo delete node");
-    expect (findNode (session.graph, "shader1") != nullptr, "undo restores deleted node");
+    expect (myworld::findEditorNode (session.graph, "shader1") != nullptr, "undo restores deleted node");
     expect (session.graph.editorGraph.edges.size() == 1, "undo restores incident edge");
 
     expect (myworld::redo (session), "redo delete node");
-    expect (findNode (session.graph, "shader1") == nullptr, "redo removes node again");
+    expect (myworld::findEditorNode (session.graph, "shader1") == nullptr, "redo removes node again");
 
     std::cout << "graph commands ok\n";
     return 0;

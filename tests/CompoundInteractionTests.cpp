@@ -1,6 +1,7 @@
 #include "CanvasHands.h"
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
+#include "GraphEndpoint.h"
 #include "InteractionContract.h"
 
 #include <algorithm>
@@ -25,14 +26,6 @@ bool contains (const std::vector<std::string>& values, const std::string& value)
     return std::find (values.begin(), values.end(), value) != values.end();
 }
 
-const myworld::GraphNode* findNode (const myworld::GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
 }
 
 int main()
@@ -65,7 +58,7 @@ int main()
     expect (contains (collapsedDrag.commandLogDelta, "move_node"), "collapsed compound drag logs move_node");
     expect (rootSession.selectedNodeIds.size() == 1 && rootSession.selectedNodeIds.front() == "library_loud1",
             "collapsed compound remains selected after drag");
-    const auto* movedCompound = findNode (rootSession.graph, "library_loud1");
+    const auto* movedCompound = myworld::findEditorNode (rootSession.graph, "library_loud1");
     expect (movedCompound != nullptr, "moved compound exists");
     expect (movedCompound->collapsed, "collapsed flag survives drag");
     expect (movedCompound->position.x > 300.0, "collapsed compound x moved");
@@ -113,7 +106,7 @@ int main()
 
     const auto encodedRoot = myworld::serializeInteractionState (rootSession);
     const auto restoredRoot = myworld::deserializeInteractionState (encodedRoot);
-    const auto* restoredCompound = findNode (restoredRoot.graph, "library_loud1");
+    const auto* restoredCompound = myworld::findEditorNode (restoredRoot.graph, "library_loud1");
     expect (restoredCompound != nullptr, "root compound survives roundtrip");
     expect (restoredCompound->collapsed, "root collapsed state survives roundtrip");
     expect (restoredCompound->position.x == movedCompoundX, "root compound x roundtrips");
@@ -122,8 +115,8 @@ int main()
 
     const auto expandedGraph = myworld::makeCompoundPatchInteractionGraph (loaded.spec, "library_loud1");
     expect (expandedGraph.editorGraph.nodes.size() == loaded.spec.children.size(), "expanded graph child count");
-    expect (findNode (expandedGraph, "library_loud1/audio_in") != nullptr, "expanded audio_in node exists");
-    expect (findNode (expandedGraph, "library_loud1/loudness_out") != nullptr, "expanded loudness_out node exists");
+    expect (myworld::findEditorNode (expandedGraph, "library_loud1/audio_in") != nullptr, "expanded audio_in node exists");
+    expect (myworld::findEditorNode (expandedGraph, "library_loud1/loudness_out") != nullptr, "expanded loudness_out node exists");
     expect (expandedGraph.editorGraph.edges.size() == 8, "expanded graph keeps child-to-child internal edges");
     expect (expandedGraph.editorGraph.edges.front().from == "library_loud1/audio_in.channels",
             "expanded edge source is parent-qualified");
@@ -148,9 +141,9 @@ int main()
 
     const auto encodedExpanded = myworld::serializeInteractionState (expandedSession);
     const auto restoredExpanded = myworld::deserializeInteractionState (encodedExpanded);
-    const auto* restoredMonoMix = findNode (restoredExpanded.graph, "library_loud1/mono_mix");
+    const auto* restoredMonoMix = myworld::findEditorNode (restoredExpanded.graph, "library_loud1/mono_mix");
     expect (restoredMonoMix != nullptr, "expanded child survives roundtrip");
-    expect (restoredMonoMix->position.x == findNode (expandedSession.graph, "library_loud1/mono_mix")->position.x,
+    expect (restoredMonoMix->position.x == myworld::findEditorNode (expandedSession.graph, "library_loud1/mono_mix")->position.x,
             "expanded child x roundtrips");
     expect (restoredExpanded.graph.editorGraph.edges.size() == expandedSession.graph.editorGraph.edges.size(),
             "expanded internal edges roundtrip");
@@ -163,11 +156,11 @@ int main()
     const auto relayoutGraph = myworld::makeCompoundPatchInteractionGraph (loaded.spec,
                                                                            "library_loud1",
                                                                            restoredLayoutRoot.graph);
-    const auto* relayoutMonoMix = findNode (relayoutGraph, "library_loud1/mono_mix");
+    const auto* relayoutMonoMix = myworld::findEditorNode (relayoutGraph, "library_loud1/mono_mix");
     expect (relayoutMonoMix != nullptr, "relayout mono_mix exists");
-    expect (relayoutMonoMix->position.x == findNode (expandedSession.graph, "library_loud1/mono_mix")->position.x,
+    expect (relayoutMonoMix->position.x == myworld::findEditorNode (expandedSession.graph, "library_loud1/mono_mix")->position.x,
             "expanded child layout x persists per compound instance");
-    expect (relayoutMonoMix->position.y == findNode (expandedSession.graph, "library_loud1/mono_mix")->position.y,
+    expect (relayoutMonoMix->position.y == myworld::findEditorNode (expandedSession.graph, "library_loud1/mono_mix")->position.y,
             "expanded child layout y persists per compound instance");
     expect (contains (rootSession.commandLog, "store_expanded_patch_layout"), "layout store logs command");
     expect (std::find_if (restoredLayoutRoot.graph.editorGraph.edges.begin(),

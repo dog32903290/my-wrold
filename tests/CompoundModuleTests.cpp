@@ -1,5 +1,6 @@
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
+#include "GraphEndpoint.h"
 #include "InteractionContract.h"
 #include "StorageContract.h"
 
@@ -28,14 +29,6 @@ void expectContains (const std::string& text, const std::string& expected, const
     expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
 }
 
-const myworld::GraphNode* findNode (const myworld::GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
 }
 
 int main()
@@ -69,7 +62,7 @@ int main()
 
     const auto encoded = myworld::serializeInteractionState (session);
     const auto restored = myworld::deserializeInteractionState (encoded);
-    const auto* restoredLoudness = findNode (restored.graph, "loud1");
+    const auto* restoredLoudness = myworld::findEditorNode (restored.graph, "loud1");
     expect (restoredLoudness != nullptr, "loaded compound survives interaction roundtrip");
     expect (restoredLoudness->collapsed == loudness.collapsedByDefault, "loaded collapse state survives roundtrip");
 
@@ -99,7 +92,7 @@ int main()
     auto moduleSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
     expect (myworld::createNode (moduleSession, moduleRegistry, moduleSpec.type, "loud_module1", { 220.0, 280.0 }).ok,
             "create compound from module registry");
-    expect (findNode (moduleSession.graph, "loud_module1") != nullptr, "module-created compound node exists");
+    expect (myworld::findEditorNode (moduleSession.graph, "loud_module1") != nullptr, "module-created compound node exists");
     expect (myworld::enterPatch (moduleSession, "loud_module1").ok, "enter module-created compound");
 
     const auto loadedRegistry = myworld::loadCompoundModuleNodeSpecs ({ "fixtures/modules/loudness/module.json" });
@@ -129,6 +122,12 @@ int main()
     expect (libraryRegistry.specs.size() == 1, "library registry count");
     expectEqual (libraryRegistry.specs.front().type, "compound.loudness", "library registry node type");
 
+    const auto missingLibraryRegistry = myworld::loadCompoundModuleNodeSpecsFromLibrary (
+        "fixtures/module-libraries/missing.module-library.json");
+    expect (! missingLibraryRegistry.ok, "missing module library reports failure");
+    expectContains (missingLibraryRegistry.error, "could not resolve module library", "missing module library error");
+    expectContains (missingLibraryRegistry.error, "attempted:", "missing module library error");
+
     const auto browserRegistry = myworld::mergeNodeSpecs (myworld::makeSeedNodeSpecs(), libraryRegistry.specs);
     auto browserSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
     const auto browserCreate = myworld::createNode (browserSession,
@@ -137,7 +136,7 @@ int main()
                                                     "library_loud1",
                                                     { 300.0, 320.0 });
     expect (browserCreate.ok, "library registry creates browser compound");
-    expect (findNode (browserSession.graph, "library_loud1") != nullptr, "library-created node exists");
+    expect (myworld::findEditorNode (browserSession.graph, "library_loud1") != nullptr, "library-created node exists");
 
     std::cout << "compound module fixture ok\n";
     return 0;

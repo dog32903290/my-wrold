@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1 loudness compound contract, C1.1 reloadable loudness compound fixture, C1.2 loudness module package proof, C1.3 visible module registry proof, C1.4 module-library index proof, C1.5 loaded compound runtime-registry proof, C1.6 loaded compound dry-run proof, C1.7 loaded compound first executable child RuntimeOp proof, C1.8 loaded loudness mini-chain value-handoff proof, C1.9 loaded loudness public-output proof, C1.10 loaded internal-edge value-bus proof, C1.11 RuntimeOp dispatch-table proof, C1.12 RuntimeOp coverage failure proof, C1.13 saved negative module fixture proof, C1.14 RuntimeOp catalog coverage proof, C1.15 visible RuntimeOp diagnostics proof, C1.16 coverage-gated module creation proof, C1.17 explicit debug override proof, C1.18 expanded/collapsed compound drag-drop proof, C1.19 loaded loudness runtime bridge proof, C1.20 live-safe loudness runtime proof, C1.21 compound public-port surface proof, C1.22 compound public-port persistence proof, C1.23 expanded child layout persistence proof, and C1.24 compound proof closure are implemented. Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, and Tooll3 skin parity P0-P7 first pass are implemented. Raw callback-buffer runtime execution, patch-document compound instance schema, RenderBackend extraction, production node previews, 13-patch analyzer expansion, and AI worker command loop are parked as C2+ work.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, and C2.1-C2.4 compound work PatchDocument closure are implemented and verified. Raw callback-buffer runtime execution, Command+S local git commit path, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as C3+ or later high-risk work.
 
 ## Purpose
 
@@ -25,7 +25,17 @@ This is not a Web wrapper and not a generic C++ port. The first skeleton must pr
 
 ## Current Progress Snapshot
 
-Date: 2026-05-24 02:30 Asia/Taipei.
+Date: 2026-05-24 10:26 Asia/Taipei.
+
+目前工程切面:
+
+```text
+V1 visual proof      proven
+A1 audio/MIDI proof proven through snapshot-shaped loaded-runtime bridge
+C1 compound proof   closed through loaded runtime, public ports, persistence, layout
+H1-H4 hygiene       low/medium-risk cleanup complete and verified
+C2 storage proof    closed through formal PatchDocument file save/reload and app proof dump
+```
 
 已鎖定:
 
@@ -55,25 +65,32 @@ Date: 2026-05-24 02:30 Asia/Taipei.
 - C1.22 compound public-port persistence proof is implemented: behavior trace `compound public ports persist undo` proves root public-port edges survive interaction serialize/deserialize into both editorGraph/runtimeGraph, then disconnect/undo/redo cleanly.
 - C1.23 expanded child layout persistence proof is implemented: `storeExpandedPatchLayout()` stores moved expanded child positions on the parent compound instance, regenerated expanded graphs apply that layout, and visible Exit stores layout before leaving a compound patch.
 - C1.24 closes the first loudness compound proof. C1 is no longer extended for raw callback-buffer runtime, patch document schema, visual mapping polish, 13-patch analyzer expansion, or AI worker modules; those are C2+.
-- Latest C1.24 verification before commit: `cmake --build build`, `./build/my_world_storage_tests`, `./build/my_world_compound_module_tests`, `./build/my_world_runtime_registry_tests`, `./build/my_world_t3_t5_command_tests`, `./build/my_world_compound_interaction_tests`, `./build/my_world_interaction_trace_tests`, `ctest --test-dir build --output-on-failure`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-proof-and-exit`, `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`, and `git diff --check`.
+- H1-H4 hygiene proofs are implemented: endpoint/geometry helpers now live in `GraphEndpoint` and `CanvasGeometry`, graph/runtime/compound/storage JSON emitters share `JsonWriter` for quoting and string arrays, module/runtime path lookup uses `PathResolution` with attempted-path evidence, and ImGui node-spec queries now live in `NodeSpecQueries`. Full JSON parser/library replacement remains parked until a schema boundary requires it.
+- C2.1 first patch-document boundary is implemented: `PatchDocument` serializes/parses `GraphContract` as JSON, `fixtures/storage/c2-compound-work/patches/main.patch.json` loads a saved compound instance with root public-port edges, and regenerated expanded child graphs restore `mono_mix` layout without using `interaction-state-v1`.
+- C2.2 active patch file roundtrip is implemented: `savePatchDocument()` writes a `PatchDocument` generated from a dirty `GraphSession` to a real file path, `loadPatchDocument()` reloads it, and a fresh `GraphSession` preserves editor/runtime edge parity, public-port edges, and expanded child layout.
+- C2.3 work manifest main patch reload is implemented: `loadWorkProjectManifest()` parses `fixtures/storage/c2-compound-work/myworld.work.json`, keeps module-library refs as work-level data, and `loadMainPatchDocumentForWork()` resolves `patches/main.patch.json` relative to the work manifest.
+- C2.4 app-level storage proof dump is implemented: `--dump-c2-storage-proof-and-exit` loads the C2 work fixture, saves `debug/c2-storage-proof/saved_main.patch.json`, reloads it, and writes `debug/c2-storage-proof/reload_report.json` with `ok: true`, `source: PatchDocument`, `usesInteractionState: false`, public-port evidence, and `library_loud1/mono_mix` layout evidence.
+- Latest C2 verification: `cmake --build build --target my-world my_world_patch_document_tests`, `./build/my_world_patch_document_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`.
 
 正在試壓:
 
-- How to define C2 compound patch document boundaries without reopening C1.
+- Whether C3 should start with the visible `save_work` command/keyboard path or with the local git commit worker.
+- Whether P-SEARCH1 browser/search work should wait for the patch-document boundary, now that `NodeSpecQueries` exists as the small shared query helper.
 
 還沒承重:
 
-- Module discovery, runtime registry snapshots, dry-run statuses, value handoff, public output maps, internal-edge routing evidence, named RuntimeOp dispatch, missing RuntimeOp coverage failure, saved negative proof export, visible RuntimeOp diagnostics, coverage-gated normal creation, explicit debug override insertion, and expanded/collapsed compound interaction are proven.
-- Missing-runtime modules are blocked by the normal create path; intentional repair insertion has explicit debug override commands.
+- True module discovery beyond the default saved `ModuleLibrary` index is not implemented.
 - `RenderBackend` is still not extracted; OpenGL/GLSL remains the proof backend and Metal work stays parked.
 - Timeline editing, output pinning, live node thumbnails, and AI worker graph edits do not yet have commandGraph/storage contracts.
 - App audio proof feeds loaded runtime execution from a non-realtime snapshot-shaped input; raw callback-buffer capture and live UI cached runtime snapshots are still parked.
 - Collapsed compound ports are command/hit-test backed and persist through interaction state; deeper visual grouping is still parked.
 - Expanded child node positions persist per compound instance; expanded view pan/zoom is still session-local.
+- Active `Command+S` and background local git commit are still not implemented. C2 proves the formal storage API, work main-patch loader, and app proof dump; C3 must turn that into a user/AI `save_work` command path with commit evidence.
+- High-risk cleanup is intentionally parked: no full ImGui component split, graph schema rewrite, JSON library swap, enum/hash migration, or ownership model rewrite until a proof line requires it.
 
 下一根線:
 
-- C2.1 compound patch document boundary: `interaction-state proof -> saved patch document shape for compound instances -> reload root edges, public ports, and expanded child layout without using the temporary interaction serializer`.
+- C3 storage command path: `UI/AI save_work command -> atomic PatchDocument write -> save-ok commit-pending -> background local git commit result -> visible save log evidence`.
 
 ## First Stage Proofs
 
@@ -106,6 +123,7 @@ Contract:
 - Proven: Command+S save statuses are explicit: clean, save-ok commit-pending, saved-and-committed, save-ok commit-failed, validation-failed, write-failed.
 - Proven: minimal work fixture stores a main patch with `shader1 -> out1` as reloadable project data.
 - Proven: `ModuleLibraryManifest` serializes/parses/loads as a storage-backed index of module package paths, with `fixtures/module-libraries/default.module-library.json` as the first default library.
+- Proven: C2.1-C2.4 patch documents now serialize/load `GraphContract` through `PatchDocument`, including node positions, collapsed compound state, params, port bindings, root edges, runtime graph, fixture-backed compound child layout evidence, active file save/reload, work-manifest main-patch resolution, and app-level C2 proof dumps.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:

@@ -2,11 +2,12 @@
 
 #include "AudioAnalyzerState.h"
 #include "CompoundPatch.h"
+#include "JsonWriter.h"
+#include "PathResolution.h"
 #include "StorageContract.h"
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
 #include <iomanip>
 #include <map>
 #include <sstream>
@@ -15,64 +16,6 @@ namespace myworld
 {
 namespace
 {
-std::string jsonEscaped (const std::string& text)
-{
-    std::ostringstream out;
-
-    for (const auto character : text)
-    {
-        switch (character)
-        {
-            case '"':  out << "\\\""; break;
-            case '\\': out << "\\\\"; break;
-            case '\b': out << "\\b"; break;
-            case '\f': out << "\\f"; break;
-            case '\n': out << "\\n"; break;
-            case '\r': out << "\\r"; break;
-            case '\t': out << "\\t"; break;
-            default:
-                if (static_cast<unsigned char> (character) < 0x20)
-                    out << "\\u" << std::hex << std::setw (4) << std::setfill ('0')
-                        << static_cast<int> (static_cast<unsigned char> (character));
-                else
-                    out << character;
-                break;
-        }
-    }
-
-    return out.str();
-}
-
-void appendStringArray (std::ostringstream& out, const std::vector<std::string>& values)
-{
-    out << "[";
-
-    for (size_t index = 0; index < values.size(); ++index)
-    {
-        if (index != 0)
-            out << ", ";
-
-        out << "\"" << jsonEscaped (values[index]) << "\"";
-    }
-
-    out << "]";
-}
-
-void appendCompactStringArray (std::ostringstream& out, const std::vector<std::string>& values)
-{
-    out << "[";
-
-    for (size_t index = 0; index < values.size(); ++index)
-    {
-        if (index != 0)
-            out << ", ";
-
-        out << "\"" << jsonEscaped (values[index]) << "\"";
-    }
-
-    out << "]";
-}
-
 void appendRuntimeOpCatalogArray (std::ostringstream& out, const std::vector<RuntimeOpCatalogEntry>& catalog)
 {
     out << "[\n";
@@ -80,8 +23,8 @@ void appendRuntimeOpCatalogArray (std::ostringstream& out, const std::vector<Run
     for (size_t index = 0; index < catalog.size(); ++index)
     {
         const auto& entry = catalog[index];
-        out << "    { \"nodeType\": \"" << jsonEscaped (entry.nodeType)
-            << "\", \"runtimeOp\": \"" << jsonEscaped (entry.runtimeOp) << "\" }";
+        out << "    { \"nodeType\": " << jsonQuoted (entry.nodeType)
+            << ", \"runtimeOp\": " << jsonQuoted (entry.runtimeOp) << " }";
 
         if (index + 1 < catalog.size())
             out << ",";
@@ -101,7 +44,7 @@ void appendValueObject (std::ostringstream& out, const std::vector<RuntimeOutput
         if (index != 0)
             out << ",";
 
-        out << " \"" << jsonEscaped (values[index].id) << "\": " << values[index].value;
+        out << " " << jsonQuoted (values[index].id) << ": " << values[index].value;
     }
 
     if (! values.empty())
@@ -131,7 +74,7 @@ void appendValueSourceObject (std::ostringstream& out, const std::vector<Runtime
         if (wroteAny)
             out << ",";
 
-        out << " \"" << jsonEscaped (value.id) << "\": \"" << jsonEscaped (value.source) << "\"";
+        out << " " << jsonQuoted (value.id) << ": " << jsonQuoted (value.source);
         wroteAny = true;
     }
 
@@ -174,32 +117,6 @@ std::vector<RuntimeOutputValue> orderedLoudnessPublicOutputs (const std::vector<
 std::string fallback (const std::string& value, const std::string& fallbackValue)
 {
     return value.empty() ? fallbackValue : value;
-}
-
-std::string resolvePathNear (const std::string& anchorPath, const std::string& candidatePath)
-{
-    namespace fs = std::filesystem;
-
-    const fs::path candidate { candidatePath };
-    if (candidate.is_absolute() || fs::exists (candidate))
-        return candidate.string();
-
-    auto directory = fs::path { anchorPath };
-    directory = directory.has_parent_path() ? directory.parent_path() : fs::current_path();
-
-    for (int depth = 0; depth < 8; ++depth)
-    {
-        const auto resolved = directory / candidate;
-        if (fs::exists (resolved))
-            return resolved.string();
-
-        if (! directory.has_parent_path() || directory == directory.parent_path())
-            break;
-
-        directory = directory.parent_path();
-    }
-
-    return candidate.string();
 }
 
 std::vector<std::string> portIds (const std::vector<CompoundPublicPort>& ports)
@@ -649,8 +566,11 @@ RuntimeRegistryEntry makeRuntimeRegistryEntry (const ModulePackageManifest& modu
 
 RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::string& libraryPath)
 {
-    const auto resolvedLibraryPath = resolvePathNear ({}, libraryPath);
-    const auto library = loadModuleLibraryManifest (resolvedLibraryPath);
+    const auto libraryResolution = resolvePathNearWithReport ({}, libraryPath);
+    if (! libraryResolution.found)
+        return { false, {}, describePathResolutionFailure ("module library", libraryResolution) };
+
+    const auto library = loadModuleLibraryManifest (libraryResolution.resolvedPath);
     if (! library.ok)
         return { false, {}, library.error };
 
@@ -658,13 +578,19 @@ RuntimeRegistryLoadResult loadRuntimeRegistryFromModuleLibrary (const std::strin
 
     for (const auto& modulePath : library.manifest.modulePackages)
     {
-        const auto resolvedModulePath = resolvePathNear (resolvedLibraryPath, modulePath);
-        const auto module = loadModulePackageManifest (resolvedModulePath);
+        const auto moduleResolution = resolvePathNearWithReport (libraryResolution.resolvedPath, modulePath);
+        if (! moduleResolution.found)
+            return { false, {}, describePathResolutionFailure ("module manifest", moduleResolution) };
+
+        const auto module = loadModulePackageManifest (moduleResolution.resolvedPath);
         if (! module.ok)
             return { false, {}, module.error };
 
-        const auto resolvedCompoundPath = resolvePathNear (resolvedModulePath, module.manifest.patchPath);
-        const auto compound = loadCompoundPatchSpec (resolvedCompoundPath);
+        const auto compoundResolution = resolvePathNearWithReport (moduleResolution.resolvedPath, module.manifest.patchPath);
+        if (! compoundResolution.found)
+            return { false, {}, describePathResolutionFailure ("compound patch", compoundResolution) };
+
+        const auto compound = loadCompoundPatchSpec (compoundResolution.resolvedPath);
         if (! compound.ok)
             return { false, {}, compound.error };
 
@@ -1036,11 +962,11 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
     {
         const auto& entry = registry.entries[index];
         out << "    {\n";
-        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
-        out << "      \"displayName\": \"" << jsonEscaped (entry.displayName) << "\",\n";
-        out << "      \"runtimeDomain\": \"" << jsonEscaped (entry.runtimeDomain) << "\",\n";
-        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
-        out << "      \"previewPolicy\": \"" << jsonEscaped (entry.previewPolicy) << "\",\n";
+        out << "      \"nodeType\": " << jsonQuoted (entry.nodeType) << ",\n";
+        out << "      \"displayName\": " << jsonQuoted (entry.displayName) << ",\n";
+        out << "      \"runtimeDomain\": " << jsonQuoted (entry.runtimeDomain) << ",\n";
+        out << "      \"executionKind\": " << jsonQuoted (entry.executionKind) << ",\n";
+        out << "      \"previewPolicy\": " << jsonQuoted (entry.previewPolicy) << ",\n";
         out << "      \"childCount\": " << entry.childCount << ",\n";
         out << "      \"internalEdgeCount\": " << entry.internalEdgeCount << ",\n";
         out << "      \"children\": [\n";
@@ -1048,9 +974,9 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
         for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)
         {
             const auto& child = entry.children[childIndex];
-            out << "        { \"id\": \"" << jsonEscaped (child.id)
-                << "\", \"nodeType\": \"" << jsonEscaped (child.nodeType)
-                << "\", \"role\": \"" << jsonEscaped (child.role) << "\" }";
+            out << "        { \"id\": " << jsonQuoted (child.id)
+                << ", \"nodeType\": " << jsonQuoted (child.nodeType)
+                << ", \"role\": " << jsonQuoted (child.role) << " }";
 
             if (childIndex + 1 < entry.children.size())
                 out << ",";
@@ -1064,9 +990,9 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
         for (size_t edgeIndex = 0; edgeIndex < entry.internalEdges.size(); ++edgeIndex)
         {
             const auto& edge = entry.internalEdges[edgeIndex];
-            out << "        { \"from\": \"" << jsonEscaped (edge.from)
-                << "\", \"to\": \"" << jsonEscaped (edge.to)
-                << "\", \"dataType\": \"" << jsonEscaped (edge.dataType) << "\" }";
+            out << "        { \"from\": " << jsonQuoted (edge.from)
+                << ", \"to\": " << jsonQuoted (edge.to)
+                << ", \"dataType\": " << jsonQuoted (edge.dataType) << " }";
 
             if (edgeIndex + 1 < entry.internalEdges.size())
                 out << ",";
@@ -1076,18 +1002,18 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
 
         out << "      ],\n";
         out << "      \"publicInputs\": ";
-        appendStringArray (out, entry.publicInputs);
+        appendJsonStringArray (out, entry.publicInputs);
         out << ",\n";
         out << "      \"publicOutputs\": ";
-        appendStringArray (out, entry.publicOutputs);
+        appendJsonStringArray (out, entry.publicOutputs);
         out << ",\n";
         out << "      \"publicOutputMappings\": [\n";
 
         for (size_t mappingIndex = 0; mappingIndex < entry.publicOutputMappings.size(); ++mappingIndex)
         {
             const auto& mapping = entry.publicOutputMappings[mappingIndex];
-            out << "        { \"id\": \"" << jsonEscaped (mapping.id)
-                << "\", \"mapsTo\": \"" << jsonEscaped (mapping.mapsTo) << "\" }";
+            out << "        { \"id\": " << jsonQuoted (mapping.id)
+                << ", \"mapsTo\": " << jsonQuoted (mapping.mapsTo) << " }";
 
             if (mappingIndex + 1 < entry.publicOutputMappings.size())
                 out << ",";
@@ -1097,7 +1023,7 @@ std::string makeRuntimeRegistryJson (const RuntimeRegistry& registry)
 
         out << "      ],\n";
         out << "      \"cookOrder\": ";
-        appendStringArray (out, entry.cookOrder);
+        appendJsonStringArray (out, entry.cookOrder);
         out << "\n";
         out << "    }";
 
@@ -1131,7 +1057,7 @@ std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot
     out << "{\n";
     out << "  \"kind\": \"runtimeOpCoverage\",\n";
     out << "  \"version\": " << snapshot.version << ",\n";
-    out << "  \"mode\": \"" << jsonEscaped (snapshot.mode) << "\",\n";
+    out << "  \"mode\": " << jsonQuoted (snapshot.mode) << ",\n";
     out << "  \"supportedChildCount\": " << snapshot.supportedChildCount << ",\n";
     out << "  \"missingChildCount\": " << snapshot.missingChildCount << ",\n";
     out << "  \"catalog\": ";
@@ -1143,9 +1069,9 @@ std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot
     {
         const auto& entry = snapshot.entries[entryIndex];
         out << "    {\n";
-        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
-        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
-        out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"nodeType\": " << jsonQuoted (entry.nodeType) << ",\n";
+        out << "      \"executionKind\": " << jsonQuoted (entry.executionKind) << ",\n";
+        out << "      \"status\": " << jsonQuoted (entry.status) << ",\n";
         out << "      \"supportedChildCount\": " << entry.supportedChildCount << ",\n";
         out << "      \"missingChildCount\": " << entry.missingChildCount << ",\n";
         out << "      \"children\": [\n";
@@ -1155,12 +1081,12 @@ std::string makeRuntimeOpCoverageJson (const RuntimeOpCoverageSnapshot& snapshot
             const auto& child = entry.children[childIndex];
             out << "        {\n";
             out << "          \"cookIndex\": " << child.cookIndex << ",\n";
-            out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
-            out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
-            out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
-            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
-            out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
-            out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\"\n";
+            out << "          \"childId\": " << jsonQuoted (child.childId) << ",\n";
+            out << "          \"nodeType\": " << jsonQuoted (child.nodeType) << ",\n";
+            out << "          \"role\": " << jsonQuoted (child.role) << ",\n";
+            out << "          \"runtimeOp\": " << jsonQuoted (child.runtimeOp) << ",\n";
+            out << "          \"status\": " << jsonQuoted (child.status) << ",\n";
+            out << "          \"reason\": " << jsonQuoted (child.reason) << "\n";
             out << "        }";
 
             if (childIndex + 1 < entry.children.size())
@@ -1196,17 +1122,17 @@ std::string makeRuntimeOpModuleDiagnosticsJson (const std::vector<RuntimeOpModul
     {
         const auto& diagnostic = diagnostics[index];
         out << "    {\n";
-        out << "      \"nodeType\": \"" << jsonEscaped (diagnostic.nodeType) << "\",\n";
-        out << "      \"status\": \"" << jsonEscaped (diagnostic.status) << "\",\n";
-        out << "      \"browserLabel\": \"" << jsonEscaped (diagnostic.browserLabel) << "\",\n";
-        out << "      \"inspectorDetail\": \"" << jsonEscaped (diagnostic.inspectorDetail) << "\",\n";
-        out << "      \"creationStatus\": \"" << jsonEscaped (diagnostic.creationStatus) << "\",\n";
-        out << "      \"creationLabel\": \"" << jsonEscaped (diagnostic.creationLabel) << "\",\n";
-        out << "      \"creationBlockReason\": \"" << jsonEscaped (diagnostic.creationBlockReason) << "\",\n";
+        out << "      \"nodeType\": " << jsonQuoted (diagnostic.nodeType) << ",\n";
+        out << "      \"status\": " << jsonQuoted (diagnostic.status) << ",\n";
+        out << "      \"browserLabel\": " << jsonQuoted (diagnostic.browserLabel) << ",\n";
+        out << "      \"inspectorDetail\": " << jsonQuoted (diagnostic.inspectorDetail) << ",\n";
+        out << "      \"creationStatus\": " << jsonQuoted (diagnostic.creationStatus) << ",\n";
+        out << "      \"creationLabel\": " << jsonQuoted (diagnostic.creationLabel) << ",\n";
+        out << "      \"creationBlockReason\": " << jsonQuoted (diagnostic.creationBlockReason) << ",\n";
         out << "      \"supportedChildCount\": " << diagnostic.supportedChildCount << ",\n";
         out << "      \"missingChildCount\": " << diagnostic.missingChildCount << ",\n";
         out << "      \"missingNodeTypes\": ";
-        appendCompactStringArray (out, diagnostic.missingNodeTypes);
+        appendJsonStringArray (out, diagnostic.missingNodeTypes);
         out << "\n";
         out << "    }";
 
@@ -1227,16 +1153,16 @@ std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot)
     out << "{\n";
     out << "  \"kind\": \"runtimeDryRun\",\n";
     out << "  \"version\": " << snapshot.version << ",\n";
-    out << "  \"mode\": \"" << jsonEscaped (snapshot.mode) << "\",\n";
+    out << "  \"mode\": " << jsonQuoted (snapshot.mode) << ",\n";
     out << "  \"entries\": [\n";
 
     for (size_t entryIndex = 0; entryIndex < snapshot.entries.size(); ++entryIndex)
     {
         const auto& entry = snapshot.entries[entryIndex];
         out << "    {\n";
-        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
-        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
-        out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"nodeType\": " << jsonQuoted (entry.nodeType) << ",\n";
+        out << "      \"executionKind\": " << jsonQuoted (entry.executionKind) << ",\n";
+        out << "      \"status\": " << jsonQuoted (entry.status) << ",\n";
         out << "      \"children\": [\n";
 
         for (size_t childIndex = 0; childIndex < entry.children.size(); ++childIndex)
@@ -1244,12 +1170,12 @@ std::string makeRuntimeDryRunJson (const RuntimeDryRunSnapshot& snapshot)
             const auto& child = entry.children[childIndex];
             out << "        {\n";
             out << "          \"cookIndex\": " << child.cookIndex << ",\n";
-            out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
-            out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
-            out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
-            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
-            out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
-            out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\"\n";
+            out << "          \"childId\": " << jsonQuoted (child.childId) << ",\n";
+            out << "          \"nodeType\": " << jsonQuoted (child.nodeType) << ",\n";
+            out << "          \"role\": " << jsonQuoted (child.role) << ",\n";
+            out << "          \"runtimeOp\": " << jsonQuoted (child.runtimeOp) << ",\n";
+            out << "          \"status\": " << jsonQuoted (child.status) << ",\n";
+            out << "          \"reason\": " << jsonQuoted (child.reason) << "\n";
             out << "        }";
 
             if (childIndex + 1 < entry.children.size())
@@ -1279,16 +1205,16 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
     out << "{\n";
     out << "  \"kind\": \"runtimeExecution\",\n";
     out << "  \"version\": " << snapshot.version << ",\n";
-    out << "  \"mode\": \"" << jsonEscaped (snapshot.mode) << "\",\n";
+    out << "  \"mode\": " << jsonQuoted (snapshot.mode) << ",\n";
     out << "  \"entries\": [\n";
 
     for (size_t entryIndex = 0; entryIndex < snapshot.entries.size(); ++entryIndex)
     {
         const auto& entry = snapshot.entries[entryIndex];
         out << "    {\n";
-        out << "      \"nodeType\": \"" << jsonEscaped (entry.nodeType) << "\",\n";
-        out << "      \"executionKind\": \"" << jsonEscaped (entry.executionKind) << "\",\n";
-        out << "      \"status\": \"" << jsonEscaped (entry.status) << "\",\n";
+        out << "      \"nodeType\": " << jsonQuoted (entry.nodeType) << ",\n";
+        out << "      \"executionKind\": " << jsonQuoted (entry.executionKind) << ",\n";
+        out << "      \"status\": " << jsonQuoted (entry.status) << ",\n";
         out << "      \"publicOutputs\": ";
         appendValueObject (out, entry.publicOutputs);
         out << ",\n";
@@ -1302,12 +1228,12 @@ std::string makeRuntimeExecutionJson (const RuntimeExecutionSnapshot& snapshot)
             const auto& child = entry.children[childIndex];
             out << "        {\n";
             out << "          \"cookIndex\": " << child.cookIndex << ",\n";
-            out << "          \"childId\": \"" << jsonEscaped (child.childId) << "\",\n";
-            out << "          \"nodeType\": \"" << jsonEscaped (child.nodeType) << "\",\n";
-            out << "          \"role\": \"" << jsonEscaped (child.role) << "\",\n";
-            out << "          \"runtimeOp\": \"" << jsonEscaped (child.runtimeOp) << "\",\n";
-            out << "          \"status\": \"" << jsonEscaped (child.status) << "\",\n";
-            out << "          \"reason\": \"" << jsonEscaped (child.reason) << "\",\n";
+            out << "          \"childId\": " << jsonQuoted (child.childId) << ",\n";
+            out << "          \"nodeType\": " << jsonQuoted (child.nodeType) << ",\n";
+            out << "          \"role\": " << jsonQuoted (child.role) << ",\n";
+            out << "          \"runtimeOp\": " << jsonQuoted (child.runtimeOp) << ",\n";
+            out << "          \"status\": " << jsonQuoted (child.status) << ",\n";
+            out << "          \"reason\": " << jsonQuoted (child.reason) << ",\n";
             out << "          \"inputs\": ";
             appendValueObject (out, child.inputs);
             out << ",\n";
@@ -1345,7 +1271,7 @@ std::string makeLoudnessRuntimeBridgeJson (const LoudnessRuntimeBridgeSnapshot& 
     out << std::fixed << std::setprecision (6);
     out << "{\n";
     out << "  \"kind\": \"loudnessRuntimeBridge\",\n";
-    out << "  \"sourceMode\": \"" << jsonEscaped (snapshot.sourceMode) << "\",\n";
+    out << "  \"sourceMode\": " << jsonQuoted (snapshot.sourceMode) << ",\n";
     out << "  \"usesLoadedRuntimeOutputs\": " << (snapshot.usesLoadedRuntimeOutputs ? "true" : "false") << ",\n";
     out << "  \"publicOutputs\": ";
     appendValueObject (out, snapshot.publicOutputs);

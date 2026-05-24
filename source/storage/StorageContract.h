@@ -1,5 +1,7 @@
 #pragma once
 
+#include "GraphContract.h"
+
 #include <string>
 #include <vector>
 
@@ -24,6 +26,14 @@ struct PatchDocumentManifest
     std::string portBindingsKind;
 };
 
+struct PatchDocument
+{
+    std::string id;
+    std::string title;
+    int version = 1;
+    GraphContract graph;
+};
+
 struct ModulePackageManifest
 {
     std::string id;
@@ -45,6 +55,13 @@ struct ModuleLibraryManifest
     std::vector<std::string> modulePackages;
 };
 
+struct WorkProjectLoadResult
+{
+    bool ok = false;
+    WorkProjectManifest manifest;
+    std::string error;
+};
+
 struct ModulePackageLoadResult
 {
     bool ok = false;
@@ -59,8 +76,24 @@ struct ModuleLibraryLoadResult
     std::string error;
 };
 
+struct PatchDocumentLoadResult
+{
+    bool ok = false;
+    PatchDocument document;
+    std::string error;
+};
+
+struct PatchDocumentSaveResult
+{
+    bool ok = false;
+    std::string status;
+    std::string path;
+    std::string error;
+};
+
 WorkProjectManifest makeMinimalWorkProject (const std::string& id, const std::string& title);
 PatchDocumentManifest makeMinimalPatchDocument (const std::string& id, const std::string& title);
+PatchDocument makePatchDocument (const std::string& id, const std::string& title, const GraphContract& graph);
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath);
 ModuleLibraryManifest makeModuleLibrary (const std::string& id,
                                          const std::string& title,
@@ -68,8 +101,15 @@ ModuleLibraryManifest makeModuleLibrary (const std::string& id,
 
 std::string toJson (const WorkProjectManifest& manifest);
 std::string toJson (const PatchDocumentManifest& manifest);
+std::string toJson (const PatchDocument& document);
 std::string toJson (const ModulePackageManifest& manifest);
 std::string toJson (const ModuleLibraryManifest& manifest);
+WorkProjectLoadResult parseWorkProjectManifest (const std::string& text);
+WorkProjectLoadResult loadWorkProjectManifest (const std::string& path);
+PatchDocumentLoadResult parsePatchDocument (const std::string& text);
+PatchDocumentLoadResult loadPatchDocument (const std::string& path);
+PatchDocumentLoadResult loadMainPatchDocumentForWork (const std::string& workManifestPath);
+PatchDocumentSaveResult savePatchDocument (const std::string& path, const PatchDocument& document);
 ModulePackageLoadResult parseModulePackageManifest (const std::string& text);
 ModulePackageLoadResult loadModulePackageManifest (const std::string& path);
 ModuleLibraryLoadResult parseModuleLibraryManifest (const std::string& text);

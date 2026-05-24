@@ -1,38 +1,13 @@
 #include "CompoundModule.h"
 
+#include "PathResolution.h"
+
 #include <algorithm>
-#include <filesystem>
 
 namespace myworld
 {
 namespace
 {
-std::string resolvePathNear (const std::string& anchorPath, const std::string& candidatePath)
-{
-    namespace fs = std::filesystem;
-
-    const fs::path candidate { candidatePath };
-    if (candidate.is_absolute() || fs::exists (candidate))
-        return candidate.string();
-
-    auto directory = fs::path { anchorPath };
-    directory = directory.has_parent_path() ? directory.parent_path() : fs::current_path();
-
-    for (int depth = 0; depth < 8; ++depth)
-    {
-        const auto resolved = directory / candidate;
-        if (fs::exists (resolved))
-            return resolved.string();
-
-        if (! directory.has_parent_path() || directory == directory.parent_path())
-            break;
-
-        directory = directory.parent_path();
-    }
-
-    return candidate.string();
-}
-
 PortSpec toPortSpec (const CompoundPublicPort& port)
 {
     return { port.id, port.label, port.dataType, port.direction };
@@ -100,13 +75,20 @@ CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecs (const std::vector<std
 
     for (const auto& manifestPath : manifestPaths)
     {
-        const auto resolvedManifestPath = resolvePathNear ({}, manifestPath);
+        const auto manifestResolution = resolvePathNearWithReport ({}, manifestPath);
+        if (! manifestResolution.found)
+            return { false, {}, describePathResolutionFailure ("module manifest", manifestResolution) };
+
+        const auto resolvedManifestPath = manifestResolution.resolvedPath;
         const auto module = loadModulePackageManifest (resolvedManifestPath);
         if (! module.ok)
             return { false, {}, module.error };
 
-        const auto compoundPath = resolvePathNear (resolvedManifestPath, module.manifest.patchPath);
-        const auto compound = loadCompoundPatchSpec (compoundPath);
+        const auto compoundResolution = resolvePathNearWithReport (resolvedManifestPath, module.manifest.patchPath);
+        if (! compoundResolution.found)
+            return { false, {}, describePathResolutionFailure ("compound patch", compoundResolution) };
+
+        const auto compound = loadCompoundPatchSpec (compoundResolution.resolvedPath);
         if (! compound.ok)
             return { false, {}, compound.error };
 
@@ -119,8 +101,11 @@ CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecs (const std::vector<std
 
 CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecsFromLibrary (const std::string& libraryPath)
 {
-    const auto resolvedLibraryPath = resolvePathNear ({}, libraryPath);
-    const auto library = loadModuleLibraryManifest (resolvedLibraryPath);
+    const auto libraryResolution = resolvePathNearWithReport ({}, libraryPath);
+    if (! libraryResolution.found)
+        return { false, {}, describePathResolutionFailure ("module library", libraryResolution) };
+
+    const auto library = loadModuleLibraryManifest (libraryResolution.resolvedPath);
     if (! library.ok)
         return { false, {}, library.error };
 
@@ -128,7 +113,13 @@ CompoundModuleNodeSpecsResult loadCompoundModuleNodeSpecsFromLibrary (const std:
     manifestPaths.reserve (library.manifest.modulePackages.size());
 
     for (const auto& modulePath : library.manifest.modulePackages)
-        manifestPaths.push_back (resolvePathNear (resolvedLibraryPath, modulePath));
+    {
+        const auto moduleResolution = resolvePathNearWithReport (libraryResolution.resolvedPath, modulePath);
+        if (! moduleResolution.found)
+            return { false, {}, describePathResolutionFailure ("module manifest", moduleResolution) };
+
+        manifestPaths.push_back (moduleResolution.resolvedPath);
+    }
 
     return loadCompoundModuleNodeSpecs (manifestPaths);
 }

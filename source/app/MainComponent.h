@@ -16,6 +16,7 @@ class MainComponent final : public juce::Component,
 public:
     MainComponent (bool dumpProofOnStart = false,
                    bool dumpAudioProofOnStart = false,
+                   bool dumpC2StorageProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -26,6 +27,7 @@ private:
     void timerCallback() override;
     void dumpProof();
     void dumpAudioProof();
+    void dumpC2StorageProof();
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();

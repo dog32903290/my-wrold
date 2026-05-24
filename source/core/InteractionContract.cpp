@@ -1,6 +1,8 @@
 #include "InteractionContract.h"
 
+#include "CanvasGeometry.h"
 #include "CompoundPatch.h"
+#include "GraphEndpoint.h"
 
 #include <algorithm>
 #include <cmath>
@@ -39,36 +41,6 @@ void restoreSnapshot (GraphSession& session, const GraphSession::Snapshot& snaps
     session.dirty = snapshot.dirty;
 }
 
-GraphNode* findEditorNode (GraphContract& graph, const std::string& id)
-{
-    for (auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
-
-const GraphNode* findEditorNode (const GraphContract& graph, const std::string& id)
-{
-    for (const auto& node : graph.editorGraph.nodes)
-        if (node.id == id)
-            return &node;
-
-    return nullptr;
-}
-
-std::string nodeIdFromEndpoint (const std::string& endpoint)
-{
-    const auto dot = endpoint.find ('.');
-    return dot == std::string::npos ? endpoint : endpoint.substr (0, dot);
-}
-
-std::string portIdFromEndpoint (const std::string& endpoint)
-{
-    const auto dot = endpoint.find ('.');
-    return dot == std::string::npos ? std::string {} : endpoint.substr (dot + 1);
-}
-
 std::string makeEdgeId (const std::string& from, const std::string& to)
 {
     return "edge." + from + "." + to;
@@ -83,14 +55,6 @@ const PortSpec* findPort (const NodeSpec& spec, const std::string& portId, const
             return &port;
 
     return nullptr;
-}
-
-const NodeSpec* specForNode (const GraphContract& graph,
-                             const std::vector<NodeSpec>& specs,
-                             const std::string& nodeId)
-{
-    const auto* node = findEditorNode (graph, nodeId);
-    return node == nullptr ? nullptr : findNodeSpec (specs, node->type);
 }
 
 const NodeCreationGate* creationGateForNodeType (const std::vector<NodeCreationGate>& creationGates,
@@ -230,20 +194,13 @@ double distanceToSegmentSquared (CanvasPoint point, CanvasPoint a, CanvasPoint b
 
 bool pointInNodeBody (CanvasPoint point, const GraphNode& node)
 {
-    constexpr double width = 140.0;
-    constexpr double height = 60.0;
-    return point.x >= node.position.x
-           && point.x <= node.position.x + width
-           && point.y >= node.position.y
-           && point.y <= node.position.y + height;
+    return canvasPointInNodeBody ({ point.x, point.y }, node);
 }
 
 CanvasPoint portCenterForIndex (const GraphNode& node, const std::string& direction, size_t index)
 {
-    constexpr double width = 140.0;
-    constexpr double portSpacing = 18.0;
-    const auto x = direction == "out" ? node.position.x + width : node.position.x;
-    return { x, node.position.y + 30.0 + static_cast<double> (index) * portSpacing };
+    const auto point = canvasPortCenterForIndex (node, direction, index);
+    return { point.x, point.y };
 }
 
 PortCenterResult portCenterInternal (const GraphContract& graph,

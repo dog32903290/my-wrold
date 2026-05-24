@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is now command-backed for both edges and nodes. The visible ImGui node browser now consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, RuntimeOp catalog coverage, UI-facing RuntimeOp diagnostics, coverage-gated creation state, explicit debug override insertion, expanded/collapsed compound drag-drop state, dry-run snapshots, first executable child runtime execution snapshots, value-handoff snapshots, public-output snapshots, internal-edge source snapshots, named RuntimeOp execution snapshots, and saved missing RuntimeOp coverage failure snapshots. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
+Status: T0-T7 core interaction proof and visible ImGui canvas proof implemented and self-reviewed. Selected-object deletion is command-backed for both edges and nodes. The visible ImGui node browser consumes a loaded module registry sourced from the default saved `ModuleLibrary` index when creating nodes, and app proof dump records loaded compounds in runtime registry, RuntimeOp catalog coverage, UI-facing RuntimeOp diagnostics, coverage-gated creation state, explicit debug override insertion, expanded/collapsed compound drag-drop state, dry-run snapshots, first executable child runtime execution snapshots, value-handoff snapshots, public-output snapshots, internal-edge source snapshots, named RuntimeOp execution snapshots, and saved missing RuntimeOp coverage failure snapshots. H1-H4 hygiene cleanup centralizes endpoint parsing/editor-node lookup, canvas geometry, JSON writing, path resolution, and node-spec query helpers. The proven layer is C++ graph, command, hit-test, storage, behavior trace logic, runtime-registry/execution evidence, and an ImGui workspace wired to that command path.
 
 ## Purpose
 
@@ -80,6 +80,10 @@ Existing project facts this design must respect:
 - C1.16 adds coverage-gated creation evidence, so RuntimeOp diagnostics carry `creationStatus`, the browser/create popup passes `NodeCreationGate` into `InteractionContract`, and missing-runtime modules are blocked before graph mutation.
 - C1.17 adds explicit debug override evidence, so blocked module insertion requires a visible reason, stores debug override params, logs a distinct command, and remains undoable.
 - C1.18 adds expanded/collapsed compound drag-drop evidence, so collapsed loaded compounds move/select through CanvasHands and expanded child patcher graphs are generated from loaded `CompoundPatchSpec` with parent-qualified child nodes and internal edges.
+- H1 adds `GraphEndpoint` and `CanvasGeometry` contracts, so endpoint splitting, editor-node lookup, spec lookup, node bounds, and port centers are no longer privately duplicated between `InteractionContract`, `CanvasHands`, and the ImGui smoke overlay.
+- H2 adds a shared `JsonWriter` contract, so graph, runtime-registry, compound, and storage JSON writers no longer carry private string escaping or string-array helpers.
+- H3 adds `PathResolution`, so module-library, module-package, and compound-patch lookup share one parent-walk rule and report attempted paths instead of falling through silently.
+- H4 adds `NodeSpecQueries`, so ImGui creation/filter/datatype helpers share core query behavior with tests instead of living only in the overlay file.
 
 ## First Slice
 
@@ -99,6 +103,8 @@ T7 behavior trace compatibility suite
 Parked:
 
 - Production-level node editor polish beyond the current Tooll3 skin first pass.
+- Full ImGui component split is parked until C2/P-SEARCH/S8 work needs a stable panel boundary. Do not split the overlay merely because the file is large.
+- Graph schema and patch-document rewrites are parked until C2.1 defines saved patch document fixtures.
 - Insert-node-between-edge menu.
 - Rich parameter widgets beyond current command-backed inspector rows.
 - AI worker graph edits.

@@ -1,0 +1,9 @@
+{
+  "kind": "workProject",
+  "id": "work.c2-compound",
+  "title": "C2 Compound Patch Document Work",
+  "mainPatchPath": "patches/main.patch.json",
+  "savePolicy": "commandS.localCommit",
+  "moduleLibraries": ["../../module-libraries/default.module-library.json"],
+  "workLibraries": ["works"]
+}

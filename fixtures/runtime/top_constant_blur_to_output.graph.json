@@ -1,0 +1,67 @@
+{
+  "kind": "runtimeProofFixture",
+  "version": 1,
+  "name": "top_constant_blur_to_output",
+  "purpose": "Second headless texture proof: image.constant feeds image.blur before any UI or OpenGL frame proof.",
+  "graph": {
+    "nodes": [
+      {
+        "id": "const1",
+        "type": "image.constant",
+        "browserAlias": "top.constant",
+        "params": {
+          "color": [0.08, 0.16, 0.28, 1.0],
+          "resolution": [640, 360]
+        }
+      },
+      {
+        "id": "blur1",
+        "type": "image.blur",
+        "browserAlias": "top.blur",
+        "params": {
+          "size": 1.0,
+          "samples": 8.0,
+          "offset": 0.0,
+          "opacity": 1.0,
+          "resolution": [0, 0],
+          "wrap": "MirrorOnce"
+        }
+      },
+      {
+        "id": "out1",
+        "type": "output.texture_summary",
+        "params": {
+          "path": "debug/top-blur/texture_summary.json"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge1",
+        "from": "const1.out",
+        "to": "blur1.image",
+        "dataType": "texture.rgba",
+        "streamKind": "continuous"
+      },
+      {
+        "id": "edge2",
+        "from": "blur1.out",
+        "to": "out1.input",
+        "dataType": "texture.rgba",
+        "streamKind": "continuous"
+      }
+    ]
+  },
+  "expectedArtifacts": [
+    "debug/top-blur/texture_summary.json",
+    "debug/top-blur/cook_order.json",
+    "debug/top-blur/node_stats.json",
+    "debug/top-blur/errors.json"
+  ],
+  "acceptance": [
+    "saved node type is image.blur; top.blur is alias only",
+    "blur1 inherits 640x360 resolution from const1",
+    "cook order includes const1, blur1, out1",
+    "missing image input would be a validation error before cook"
+  ]
+}

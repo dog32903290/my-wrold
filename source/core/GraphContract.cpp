@@ -1,5 +1,7 @@
 #include "GraphContract.h"
 
+#include "JsonWriter.h"
+
 #include <algorithm>
 #include <iomanip>
 #include <sstream>
@@ -39,49 +41,6 @@ GraphEdge makeDefaultEdge()
         "texture.rgba",
         "continuous"
     };
-}
-
-std::string jsonEscaped (const std::string& text)
-{
-    std::ostringstream out;
-
-    for (const auto character : text)
-    {
-        switch (character)
-        {
-            case '"':  out << "\\\""; break;
-            case '\\': out << "\\\\"; break;
-            case '\b': out << "\\b"; break;
-            case '\f': out << "\\f"; break;
-            case '\n': out << "\\n"; break;
-            case '\r': out << "\\r"; break;
-            case '\t': out << "\\t"; break;
-            default:
-                if (static_cast<unsigned char> (character) < 0x20)
-                    out << "\\u" << std::hex << std::setw (4) << std::setfill ('0')
-                        << static_cast<int> (static_cast<unsigned char> (character));
-                else
-                    out << character;
-                break;
-        }
-    }
-
-    return out.str();
-}
-
-void appendStringArray (std::ostringstream& out, const std::vector<std::string>& values)
-{
-    out << "[";
-
-    for (size_t index = 0; index < values.size(); ++index)
-    {
-        if (index != 0)
-            out << ", ";
-
-        out << "\"" << jsonEscaped (values[index]) << "\"";
-    }
-
-    out << "]";
 }
 
 std::string cookDomainFor (const GraphNode& node)
@@ -168,7 +127,7 @@ std::string makeCookOrderJson (const GraphContract& graph)
         if (index != 0)
             out << ", ";
 
-        out << "\"" << jsonEscaped (graph.runtimeGraph.nodes[index].id) << "\"";
+        out << jsonQuoted (graph.runtimeGraph.nodes[index].id);
     }
 
     out << "],\n";
@@ -177,8 +136,8 @@ std::string makeCookOrderJson (const GraphContract& graph)
     for (size_t index = 0; index < graph.runtimeGraph.edges.size(); ++index)
     {
         const auto& edge = graph.runtimeGraph.edges[index];
-        out << "    { \"from\": \"" << jsonEscaped (edge.from)
-            << "\", \"to\": \"" << jsonEscaped (edge.to) << "\" }";
+        out << "    { \"from\": " << jsonQuoted (edge.from)
+            << ", \"to\": " << jsonQuoted (edge.to) << " }";
 
         if (index + 1 < graph.runtimeGraph.edges.size())
             out << ",";
@@ -207,23 +166,23 @@ std::string makeNodeStatsJson (const GraphContract& graph,
     out << "  \"timeSeconds\": " << timeSeconds << ",\n";
     out << "  \"viewport\": { \"width\": " << viewportWidth
         << ", \"height\": " << viewportHeight << " },\n";
-    out << "  \"renderer\": \"" << jsonEscaped (renderer) << "\",\n";
-    out << "  \"shaderStatus\": \"" << jsonEscaped (shaderStatus) << "\",\n";
+    out << "  \"renderer\": " << jsonQuoted (renderer) << ",\n";
+    out << "  \"shaderStatus\": " << jsonQuoted (shaderStatus) << ",\n";
     out << "  \"nodes\": [\n";
 
     for (size_t index = 0; index < graph.runtimeGraph.nodes.size(); ++index)
     {
         const auto& node = graph.runtimeGraph.nodes[index];
         out << "    {\n";
-        out << "      \"id\": \"" << jsonEscaped (node.id) << "\",\n";
-        out << "      \"type\": \"" << jsonEscaped (node.type) << "\",\n";
+        out << "      \"id\": " << jsonQuoted (node.id) << ",\n";
+        out << "      \"type\": " << jsonQuoted (node.type) << ",\n";
         out << "      \"cookDomain\": \"" << cookDomainFor (node) << "\",\n";
         out << "      \"status\": \"ok\",\n";
         out << "      \"systemUniforms\": ";
-        appendStringArray (out, node.systemUniforms);
+        appendJsonStringArray (out, node.systemUniforms);
         out << ",\n";
         out << "      \"outputs\": ";
-        appendStringArray (out, outputPortsFor (graph.runtimeGraph, node));
+        appendJsonStringArray (out, outputPortsFor (graph.runtimeGraph, node));
         out << "\n";
         out << "    }";
 
