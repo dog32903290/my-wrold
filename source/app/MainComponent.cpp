@@ -11,6 +11,7 @@
 #include "StorageContract.h"
 
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 #include <vector>
 
@@ -117,6 +118,11 @@ bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
                         [&edgeId] (const auto& edge) {
                             return edge.id == edgeId;
                         });
+}
+
+bool nearlyEqual (double lhs, double rhs)
+{
+    return std::abs (lhs - rhs) < 0.000001;
 }
 
 bool writeTextFile (const juce::File& file, const std::string& text)
@@ -250,8 +256,10 @@ std::string makeC3SaveWorkReportJson (bool ok,
 }
 
 std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
-                                              const AIWorkerCommandRequest& request,
-                                              const AIWorkerCommandResult& result,
+                                              const AIWorkerCommandRequest& moveRequest,
+                                              const AIWorkerCommandResult& moveResult,
+                                              const AIWorkerCommandRequest& saveRequest,
+                                              const AIWorkerCommandResult& saveResult,
                                               const std::vector<std::string>& allowedOperations,
                                               const SaveLogLoadResult& saveLog,
                                               const GraphSession& session,
@@ -260,6 +268,9 @@ std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
                                               bool monoMixLayout,
                                               double monoMixX,
                                               double monoMixY,
+                                              bool savedMovePersisted,
+                                              double savedMoveX,
+                                              double savedMoveY,
                                               const std::string& aiCommandLogStatus,
                                               const std::string& error)
 {
@@ -271,7 +282,17 @@ std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
                                                                             : session.collaborationLog.back().status;
     const auto collaborationProofEvidence = session.collaborationLog.empty() ? std::string {}
                                                                              : session.collaborationLog.back().proofEvidence;
+    const auto moveCollaborationProof = [&session]
+    {
+        for (const auto& item : session.collaborationLog)
+            if (item.operation == "move_node" && ! item.proofEvidence.empty())
+                return item.proofEvidence;
+
+        return std::string {};
+    }();
     const auto saveWorkAllowed = std::find (allowedOperations.begin(), allowedOperations.end(), "save_work")
+                                 != allowedOperations.end();
+    const auto moveNodeAllowed = std::find (allowedOperations.begin(), allowedOperations.end(), "move_node")
                                  != allowedOperations.end();
 
     std::ostringstream out;
@@ -279,25 +300,33 @@ std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
     out << "  \"kind\": \"c4AIWorkerSaveWorkProof\",\n";
     out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
     out << "  \"source\": \"PatchDocument\",\n";
-    out << "  \"usesInteractionState\": " << (result.evidence.usesInteractionState ? "true" : "false") << ",\n";
+    out << "  \"usesInteractionState\": " << (saveResult.evidence.usesInteractionState ? "true" : "false") << ",\n";
     out << "  \"allowedSaveWork\": " << (saveWorkAllowed ? "true" : "false") << ",\n";
-    out << "  \"operation\": " << jsonQuoted (result.operation) << ",\n";
-    out << "  \"commandId\": " << jsonQuoted (result.commandId) << ",\n";
-    out << "  \"workerId\": " << jsonQuoted (result.workerId) << ",\n";
-    out << "  \"intent\": " << jsonQuoted (request.intent) << ",\n";
-    out << "  \"workManifestPath\": " << jsonQuoted (request.workManifestPath) << ",\n";
-    out << "  \"savedPatchPath\": " << jsonQuoted (result.evidence.patchPath) << ",\n";
-    out << "  \"saveLogPath\": " << jsonQuoted (result.evidence.saveLogPath) << ",\n";
-    out << "  \"status\": " << jsonQuoted (result.status) << ",\n";
-    out << "  \"storageCommandLogStatus\": " << jsonQuoted (result.evidence.storageCommandLogStatus) << ",\n";
+    out << "  \"allowedMoveNode\": " << (moveNodeAllowed ? "true" : "false") << ",\n";
+    out << "  \"operation\": " << jsonQuoted (saveResult.operation) << ",\n";
+    out << "  \"commandId\": " << jsonQuoted (saveResult.commandId) << ",\n";
+    out << "  \"workerId\": " << jsonQuoted (saveResult.workerId) << ",\n";
+    out << "  \"intent\": " << jsonQuoted (saveRequest.intent) << ",\n";
+    out << "  \"workManifestPath\": " << jsonQuoted (saveRequest.workManifestPath) << ",\n";
+    out << "  \"savedPatchPath\": " << jsonQuoted (saveResult.evidence.patchPath) << ",\n";
+    out << "  \"saveLogPath\": " << jsonQuoted (saveResult.evidence.saveLogPath) << ",\n";
+    out << "  \"status\": " << jsonQuoted (saveResult.status) << ",\n";
+    out << "  \"moveOperation\": " << jsonQuoted (moveResult.operation) << ",\n";
+    out << "  \"moveCommandId\": " << jsonQuoted (moveResult.commandId) << ",\n";
+    out << "  \"moveIntent\": " << jsonQuoted (moveRequest.intent) << ",\n";
+    out << "  \"moveStatus\": " << jsonQuoted (moveResult.status) << ",\n";
+    out << "  \"graphCommandLogStatus\": " << jsonQuoted (moveResult.evidence.graphCommandLogStatus) << ",\n";
+    out << "  \"graphMutationApplied\": " << (moveResult.evidence.graphMutationApplied ? "true" : "false") << ",\n";
+    out << "  \"storageCommandLogStatus\": " << jsonQuoted (saveResult.evidence.storageCommandLogStatus) << ",\n";
     out << "  \"aiCommandLogStatus\": " << jsonQuoted (aiCommandLogStatus) << ",\n";
-    out << "  \"patchReloaded\": " << (result.evidence.patchReloaded ? "true" : "false") << ",\n";
+    out << "  \"patchReloaded\": " << (saveResult.evidence.patchReloaded ? "true" : "false") << ",\n";
     out << "  \"saveLogOk\": " << (saveLog.ok ? "true" : "false") << ",\n";
     out << "  \"saveLogEntries\": " << saveLog.entries.size() << ",\n";
     out << "  \"saveLogStatus\": " << jsonQuoted (saveLogStatus) << ",\n";
     out << "  \"collaborationLogEntries\": " << session.collaborationLog.size() << ",\n";
     out << "  \"collaborationIntentStatus\": " << jsonQuoted (collaborationIntentStatus) << ",\n";
     out << "  \"collaborationResultStatus\": " << jsonQuoted (collaborationResultStatus) << ",\n";
+    out << "  \"moveCollaborationProofEvidence\": " << jsonQuoted (moveCollaborationProof) << ",\n";
     out << "  \"collaborationProofEvidence\": " << jsonQuoted (collaborationProofEvidence) << ",\n";
     out << "  \"editorNodeCount\": " << session.graph.editorGraph.nodes.size() << ",\n";
     out << "  \"editorEdgeCount\": " << session.graph.editorGraph.edges.size() << ",\n";
@@ -305,6 +334,12 @@ std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
     out << "  \"runtimeEdgeCount\": " << session.graph.runtimeGraph.edges.size() << ",\n";
     out << "  \"publicInputEdge\": " << (publicInputEdge ? "true" : "false") << ",\n";
     out << "  \"publicOutputEdge\": " << (publicOutputEdge ? "true" : "false") << ",\n";
+    out << "  \"savedMove\": {\n";
+    out << "    \"nodeId\": \"library_loud1\",\n";
+    out << "    \"matches\": " << (savedMovePersisted ? "true" : "false") << ",\n";
+    out << "    \"x\": " << savedMoveX << ",\n";
+    out << "    \"y\": " << savedMoveY << "\n";
+    out << "  },\n";
     out << "  \"expandedLayout\": {\n";
     out << "    \"nodeId\": \"library_loud1/mono_mix\",\n";
     out << "    \"matches\": " << (monoMixLayout ? "true" : "false") << ",\n";
@@ -999,62 +1034,64 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     const auto workManifestFile = workDirectory.getChildFile ("myworld.work.json");
     const auto savedPatchFile = patchDirectory.getChildFile ("main.patch.json");
 
-    AIWorkerCommandRequest request;
-    request.commandId = "c4.1-save-work";
-    request.workerId = "ai-worker-proof";
-    request.operation = "save_work";
-    request.intent = "Persist dirty C2 compound work through the shared save_work command path";
-    request.workManifestPath = workManifestFile.getFullPathName().toStdString();
+    AIWorkerCommandRequest moveRequest;
+    moveRequest.commandId = "c4.3-move-node";
+    moveRequest.workerId = "ai-worker-proof";
+    moveRequest.operation = "move_node";
+    moveRequest.intent = "Move the loaded loudness compound through the shared interaction command path";
+    moveRequest.nodeId = "library_loud1";
+    moveRequest.deltaX = 13.0;
+    moveRequest.deltaY = 7.0;
+
+    AIWorkerCommandRequest saveRequest;
+    saveRequest.commandId = "c4.3-save-work";
+    saveRequest.workerId = "ai-worker-proof";
+    saveRequest.operation = "save_work";
+    saveRequest.intent = "Persist AI-mutated C2 compound work through the shared save_work command path";
+    saveRequest.workManifestPath = workManifestFile.getFullPathName().toStdString();
 
     const auto allowedOperations = allowedAIWorkerOperations();
+    const AIWorkerCommandResult emptyMoveResult;
+    const AIWorkerCommandResult emptySaveResult;
+    const SaveLogLoadResult emptySaveLog;
 
-    if (directory.exists() && ! directory.deleteRecursively())
+    const auto writeFailureReport = [&] (const std::string& message, const GraphSession& reportSession)
     {
-        const SaveLogLoadResult emptySaveLog;
-        const AIWorkerCommandResult emptyResult;
         const auto report = makeC4AIWorkerSaveWorkReportJson (false,
-                                                              request,
-                                                              emptyResult,
+                                                              moveRequest,
+                                                              emptyMoveResult,
+                                                              saveRequest,
+                                                              emptySaveResult,
                                                               allowedOperations,
                                                               emptySaveLog,
-                                                              makeGraphSession (GraphContract {}),
+                                                              reportSession,
                                                               false,
                                                               false,
+                                                              false,
+                                                              0.0,
+                                                              0.0,
                                                               false,
                                                               0.0,
                                                               0.0,
                                                               {},
-                                                              "could not clear " + directory.getFullPathName().toStdString());
+                                                              message);
         writeTextFile (reportFile, report);
-        statusLabel.setText ("c4 AI worker proof failed: could not clear " + directory.getFullPathName(),
-                             juce::dontSendNotification);
+        statusLabel.setText ("c4 AI worker proof failed: " + juce::String (message), juce::dontSendNotification);
         if (shouldQuitAfterStartupDump)
             quitAfterDelay();
+    };
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        writeFailureReport ("could not clear " + directory.getFullPathName().toStdString(),
+                            makeGraphSession (GraphContract {}));
         return;
     }
 
     if (! patchDirectory.createDirectory())
     {
-        const SaveLogLoadResult emptySaveLog;
-        const AIWorkerCommandResult emptyResult;
-        const auto report = makeC4AIWorkerSaveWorkReportJson (false,
-                                                              request,
-                                                              emptyResult,
-                                                              allowedOperations,
-                                                              emptySaveLog,
-                                                              makeGraphSession (GraphContract {}),
-                                                              false,
-                                                              false,
-                                                              false,
-                                                              0.0,
-                                                              0.0,
-                                                              {},
-                                                              "could not create " + patchDirectory.getFullPathName().toStdString());
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c4 AI worker proof failed: could not create " + patchDirectory.getFullPathName(),
-                             juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
+        writeFailureReport ("could not create " + patchDirectory.getFullPathName().toStdString(),
+                            makeGraphSession (GraphContract {}));
         return;
     }
 
@@ -1073,62 +1110,27 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
 
     if (! copiedFixture)
     {
-        const SaveLogLoadResult emptySaveLog;
-        const AIWorkerCommandResult emptyResult;
-        const auto report = makeC4AIWorkerSaveWorkReportJson (false,
-                                                              request,
-                                                              emptyResult,
-                                                              allowedOperations,
-                                                              emptySaveLog,
-                                                              makeGraphSession (GraphContract {}),
-                                                              false,
-                                                              false,
-                                                              false,
-                                                              0.0,
-                                                              0.0,
-                                                              {},
-                                                              lastError.empty() ? "could not copy C4 work fixture" : lastError);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c4 AI worker proof failed: " + juce::String (lastError), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
+        writeFailureReport (lastError.empty() ? "could not copy C4 work fixture" : lastError,
+                            makeGraphSession (GraphContract {}));
         return;
     }
 
     const auto loadedPatch = loadMainPatchDocumentForWork (workManifestFile.getFullPathName().toStdString());
     if (! loadedPatch.ok)
     {
-        const SaveLogLoadResult emptySaveLog;
-        const AIWorkerCommandResult emptyResult;
-        const auto report = makeC4AIWorkerSaveWorkReportJson (false,
-                                                              request,
-                                                              emptyResult,
-                                                              allowedOperations,
-                                                              emptySaveLog,
-                                                              makeGraphSession (GraphContract {}),
-                                                              false,
-                                                              false,
-                                                              false,
-                                                              0.0,
-                                                              0.0,
-                                                              {},
-                                                              loadedPatch.error);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c4 AI worker proof failed: " + juce::String (loadedPatch.error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
+        writeFailureReport (loadedPatch.error, makeGraphSession (GraphContract {}));
         return;
     }
 
     auto activeSession = makeGraphSession (loadedPatch.document.graph);
-    const auto moveResult = moveNode (activeSession, "library_loud1", 13.0, 7.0);
+    const auto moveResult = executeAIWorkerCommand (activeSession, moveRequest);
     if (! moveResult.ok)
     {
-        const SaveLogLoadResult emptySaveLog;
-        const AIWorkerCommandResult emptyResult;
         const auto report = makeC4AIWorkerSaveWorkReportJson (false,
-                                                              request,
-                                                              emptyResult,
+                                                              moveRequest,
+                                                              moveResult,
+                                                              saveRequest,
+                                                              emptySaveResult,
                                                               allowedOperations,
                                                               emptySaveLog,
                                                               activeSession,
@@ -1137,18 +1139,21 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
                                                               false,
                                                               0.0,
                                                               0.0,
-                                                              {},
-                                                              moveResult.message);
+                                                              false,
+                                                              0.0,
+                                                              0.0,
+                                                              activeSession.commandLog.empty() ? std::string {} : activeSession.commandLog.back(),
+                                                              moveResult.error);
         writeTextFile (reportFile, report);
-        statusLabel.setText ("c4 AI worker proof failed: " + juce::String (moveResult.message), juce::dontSendNotification);
+        statusLabel.setText ("c4 AI worker proof failed: " + juce::String (moveResult.error), juce::dontSendNotification);
         if (shouldQuitAfterStartupDump)
             quitAfterDelay();
         return;
     }
 
-    const auto result = executeAIWorkerCommand (activeSession, request);
-    const auto reloadedPatch = loadPatchDocument (result.evidence.patchPath);
-    const auto saveLog = loadSaveLog (result.evidence.saveLogPath);
+    const auto saveResult = executeAIWorkerCommand (activeSession, saveRequest);
+    const auto reloadedPatch = loadPatchDocument (saveResult.evidence.patchPath);
+    const auto saveLog = loadSaveLog (saveResult.evidence.saveLogPath);
     auto reloadedSession = reloadedPatch.ok ? makeGraphSession (reloadedPatch.document.graph) : makeGraphSession (GraphContract {});
 
     CompoundPatchLoadResult loadedCompound;
@@ -1172,6 +1177,14 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     const auto monoMixY = monoMix == nullptr ? 0.0 : monoMix->position.y;
     const auto publicInputEdge = hasEdgeId (reloadedSession.graph, "edge.live_audio.channels.library_loud1.audio.in");
     const auto publicOutputEdge = hasEdgeId (reloadedSession.graph, "edge.library_loud1.out.midi_loudness.value");
+    const auto* savedMovedNode = findEditorNode (reloadedSession.graph, "library_loud1");
+    const auto* activeMovedNode = findEditorNode (activeSession.graph, "library_loud1");
+    const auto savedMoveX = savedMovedNode == nullptr ? 0.0 : savedMovedNode->position.x;
+    const auto savedMoveY = savedMovedNode == nullptr ? 0.0 : savedMovedNode->position.y;
+    const auto savedMovePersisted = savedMovedNode != nullptr
+                                    && activeMovedNode != nullptr
+                                    && nearlyEqual (savedMovedNode->position.x, activeMovedNode->position.x)
+                                    && nearlyEqual (savedMovedNode->position.y, activeMovedNode->position.y);
     const auto monoMixLayout = monoMix != nullptr && monoMixX == 358.0 && monoMixY == 146.0;
     const auto graphCountsMatch = reloadedSession.graph.editorGraph.edges.size()
                                   == reloadedSession.graph.runtimeGraph.edges.size();
@@ -1179,39 +1192,60 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     const auto saveLogStatus = saveLog.entries.empty() ? std::string {} : saveLog.entries.back().status;
     const auto saveWorkAllowed = std::find (allowedOperations.begin(), allowedOperations.end(), "save_work")
                                  != allowedOperations.end();
-    const auto collaborationLogOk = activeSession.collaborationLog.size() >= 2
+    const auto moveNodeAllowed = std::find (allowedOperations.begin(), allowedOperations.end(), "move_node")
+                                 != allowedOperations.end();
+    const auto hasMoveProof = std::any_of (activeSession.collaborationLog.begin(),
+                                           activeSession.collaborationLog.end(),
+                                           [] (const auto& item) {
+                                               return item.proofEvidence.find ("graphCommandLogStatus=move_node")
+                                                      != std::string::npos;
+                                           });
+    const auto collaborationLogOk = activeSession.collaborationLog.size() >= 4
+                                    && activeSession.collaborationLog.front().operation == "move_node"
                                     && activeSession.collaborationLog.front().status == "requested"
+                                    && activeSession.collaborationLog.back().operation == "save_work"
                                     && activeSession.collaborationLog.back().status == "save-ok commit-pending"
+                                    && hasMoveProof
                                     && activeSession.collaborationLog.back().proofEvidence.find ("patchReloaded=true")
                                         != std::string::npos
                                     && activeSession.collaborationLog.back().proofEvidence.find ("saveLogStatus=save-ok commit-pending")
                                         != std::string::npos;
-    const auto ok = result.ok
-                    && result.operation == "save_work"
-                    && result.status == "save-ok commit-pending"
-                    && result.evidence.storageCommandLogStatus == "save_work:save-ok commit-pending"
-                    && result.evidence.saveLogStatus == "save-ok commit-pending"
-                    && ! result.evidence.usesInteractionState
+    const auto ok = moveResult.ok
+                    && moveResult.operation == "move_node"
+                    && moveResult.status == "ok"
+                    && moveResult.evidence.graphCommandLogStatus == "move_node"
+                    && moveResult.evidence.graphMutationApplied
+                    && saveResult.ok
+                    && saveResult.operation == "save_work"
+                    && saveResult.status == "save-ok commit-pending"
+                    && saveResult.evidence.storageCommandLogStatus == "save_work:save-ok commit-pending"
+                    && saveResult.evidence.saveLogStatus == "save-ok commit-pending"
+                    && ! saveResult.evidence.usesInteractionState
                     && aiCommandLogStatus == "ai_worker:save_work:save-ok commit-pending"
                     && saveWorkAllowed
+                    && moveNodeAllowed
                     && reloadedPatch.ok
                     && saveLog.ok
                     && saveLogStatus == "save-ok commit-pending"
                     && collaborationLogOk
+                    && savedMovePersisted
                     && publicInputEdge
                     && publicOutputEdge
                     && monoMixLayout
                     && graphCountsMatch;
     const auto error = ok ? std::string {}
-                          : ! result.ok ? result.error
+                          : ! moveResult.ok ? moveResult.error
+                          : ! saveResult.ok ? saveResult.error
                           : ! reloadedPatch.ok ? reloadedPatch.error
                           : ! saveLog.ok ? saveLog.error
                           : ! loadedCompound.ok ? lastError
                           : "C4 AI worker save_work proof did not match expected command/collaboration evidence";
 
     const auto report = makeC4AIWorkerSaveWorkReportJson (ok,
-                                                          request,
-                                                          result,
+                                                          moveRequest,
+                                                          moveResult,
+                                                          saveRequest,
+                                                          saveResult,
                                                           allowedOperations,
                                                           saveLog,
                                                           activeSession,
@@ -1220,6 +1254,9 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
                                                           monoMixLayout,
                                                           monoMixX,
                                                           monoMixY,
+                                                          savedMovePersisted,
+                                                          savedMoveX,
+                                                          savedMoveY,
                                                           aiCommandLogStatus,
                                                           error);
 

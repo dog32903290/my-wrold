@@ -117,16 +117,14 @@ int main()
     expect (moveSession.collaborationLog.back().proofEvidence.find ("graphCommandLogStatus=move_node") != std::string::npos,
             "collaboration log records move_node command proof");
 
-    auto session = myworld::makeGraphSession (loadedMain.document.graph);
-    expect (myworld::moveNode (session, "library_loud1", 13.0, 7.0).ok,
-            "dirty graph session before AI worker save_work");
-    expect (session.dirty, "session is dirty before AI worker save_work");
+    auto& session = moveSession;
+    expect (session.dirty, "AI worker move_node dirties session before save_work");
 
     myworld::AIWorkerCommandRequest request;
-    request.commandId = "c4.1-save-work";
+    request.commandId = "c4.3-save-work";
     request.workerId = "ai-worker-test";
     request.operation = "save_work";
-    request.intent = "Persist dirty C2 compound work through the shared save_work command path";
+    request.intent = "Persist AI-mutated C2 compound work through the shared save_work command path";
     request.workManifestPath = workManifestPath.string();
 
     const auto result = myworld::executeAIWorkerCommand (session, request);
@@ -148,15 +146,19 @@ int main()
     expect (contains (session.commandLog, "ai_worker:save_work:save-ok commit-pending"),
             "command log records AI worker result");
 
-    expect (session.collaborationLog.size() >= 2, "AI worker records collaboration log entries");
+    expect (session.collaborationLog.size() >= 4, "AI worker move_node plus save_work records collaboration log entries");
     expect (session.collaborationLog.front().actor == "ai-worker-test",
             "collaboration log records actor");
-    expect (session.collaborationLog.front().commandId == "c4.1-save-work",
+    expect (session.collaborationLog.front().commandId == "c4.2-move-node",
             "collaboration log records command id");
-    expect (session.collaborationLog.front().operation == "save_work",
-            "collaboration log records operation");
-    expect (session.collaborationLog.front().intent == request.intent,
-            "collaboration log records intent");
+    expect (session.collaborationLog.front().operation == "move_node",
+            "collaboration log records first operation");
+    expect (session.collaborationLog.back().commandId == "c4.3-save-work",
+            "collaboration log records final command id");
+    expect (session.collaborationLog.back().operation == "save_work",
+            "collaboration log records final operation");
+    expect (session.collaborationLog.back().intent == request.intent,
+            "collaboration log records save intent");
     expect (session.collaborationLog.front().status == "requested",
             "collaboration log records requested status");
 
@@ -182,6 +184,10 @@ int main()
             "AI worker save_work reloaded public input edge");
     expect (hasEdgeId (reloaded.document.graph, "edge.library_loud1.out.midi_loudness.value"),
             "AI worker save_work reloaded public output edge");
+    const auto* savedMovedNode = myworld::findEditorNode (reloaded.document.graph, "library_loud1");
+    expect (savedMovedNode != nullptr, "AI worker save_work reloads moved node");
+    expect (savedMovedNode->position.x == movedNode->position.x, "AI worker save_work persists AI move_node x");
+    expect (savedMovedNode->position.y == movedNode->position.y, "AI worker save_work persists AI move_node y");
 
     const auto reloadedExpandedGraph = myworld::makeCompoundPatchInteractionGraph (
         loadedCompound.spec,
