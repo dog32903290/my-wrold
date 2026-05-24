@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 
+#include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
 #include "C4AIWorkerSaveWorkProofRunner.h"
 #include "C6AIRepairLoopProofRunner.h"
@@ -74,7 +75,7 @@ juce::File audioProofDumpDirectory()
 
 juce::File c2StorageProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("c2-storage-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (c2StorageProofDirectoryName());
 }
 
 juce::File c3SaveWorkProofDumpDirectory()
@@ -183,28 +184,6 @@ std::vector<std::filesystem::path> proofCandidateRoots()
         juce::File::getCurrentWorkingDirectory().getFullPathName().toStdString(),
         parentDirectory (executableDir, 5).getFullPathName().toStdString()
     };
-}
-
-bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
-{
-    return std::any_of (graph.editorGraph.edges.begin(),
-                        graph.editorGraph.edges.end(),
-                        [&edgeId] (const auto& edge) {
-                            return edge.id == edgeId;
-                        });
-}
-
-bool writeTextFile (const juce::File& file, const std::string& text)
-{
-    return file.replaceWithText (juce::String::fromUTF8 (text.c_str()), false, false, "\n");
-}
-
-std::string createDirectoryIfMissing (const juce::File& directory)
-{
-    if (! directory.createDirectory())
-        return "could not create " + directory.getFullPathName().toStdString();
-
-    return {};
 }
 
 bool copyTextFile (const juce::File& source, const juce::File& target)
@@ -723,173 +702,21 @@ void MainComponent::dumpAudioProof()
 void MainComponent::dumpC2StorageProof()
 {
     const auto directory = c2StorageProofDumpDirectory();
-    const auto reportFile = directory.getChildFile ("reload_report.json");
-    const auto savedPatchFile = directory.getChildFile ("saved_main.patch.json");
 
-    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
-    {
-        statusLabel.setText ("c2 storage proof failed: " + juce::String (error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
+    C2StorageProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
 
-    std::string workManifestPath;
-    PatchDocumentLoadResult loadedPatch;
-    std::string lastError;
+    const auto result = runC2StorageProof (request);
+    const auto displayNameString = juce::String (c2StorageProofDisplayName());
 
-    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
-    {
-        const auto loaded = loadMainPatchDocumentForWork (candidate);
-        if (loaded.ok)
-        {
-            workManifestPath = candidate;
-            loadedPatch = loaded;
-            break;
-        }
-
-        lastError = loaded.error;
-    }
-
-    if (! loadedPatch.ok)
-    {
-        const auto report = makeC2StorageReportJson (false,
-                                                     {},
-                                                     savedPatchFile.getFullPathName().toStdString(),
-                                                     {},
-                                                     makeGraphSession (GraphContract {}),
-                                                     false,
-                                                     false,
-                                                     false,
-                                                     0.0,
-                                                     0.0,
-                                                     lastError.empty() ? "could not load C2 work fixture" : lastError);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c2 storage proof failed: " + juce::String (lastError), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    auto activeSession = makeGraphSession (loadedPatch.document.graph);
-    const auto activeDocument = makePatchDocument (loadedPatch.document.id,
-                                                  loadedPatch.document.title,
-                                                  activeSession.graph);
-    const auto saveResult = savePatchDocument (savedPatchFile.getFullPathName().toStdString(), activeDocument);
-
-    if (! saveResult.ok)
-    {
-        const auto report = makeC2StorageReportJson (false,
-                                                     workManifestPath,
-                                                     savedPatchFile.getFullPathName().toStdString(),
-                                                     saveResult.status,
-                                                     activeSession,
-                                                     false,
-                                                     false,
-                                                     false,
-                                                     0.0,
-                                                     0.0,
-                                                     saveResult.error);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c2 storage proof failed: " + juce::String (saveResult.error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    const auto reloadedPatch = loadPatchDocument (savedPatchFile.getFullPathName().toStdString());
-    if (! reloadedPatch.ok)
-    {
-        const auto report = makeC2StorageReportJson (false,
-                                                     workManifestPath,
-                                                     savedPatchFile.getFullPathName().toStdString(),
-                                                     saveResult.status,
-                                                     activeSession,
-                                                     false,
-                                                     false,
-                                                     false,
-                                                     0.0,
-                                                     0.0,
-                                                     reloadedPatch.error);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c2 storage proof failed: " + juce::String (reloadedPatch.error), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    auto reloadedSession = makeGraphSession (reloadedPatch.document.graph);
-
-    CompoundPatchLoadResult loadedCompound;
-    for (const auto& candidate : repoCandidatePaths ("fixtures/compounds/loudness.compound.json"))
-    {
-        const auto loaded = loadCompoundPatchSpec (candidate);
-        if (loaded.ok)
-        {
-            loadedCompound = loaded;
-            break;
-        }
-
-        lastError = loaded.error;
-    }
-
-    if (! loadedCompound.ok)
-    {
-        const auto report = makeC2StorageReportJson (false,
-                                                     workManifestPath,
-                                                     savedPatchFile.getFullPathName().toStdString(),
-                                                     saveResult.status,
-                                                     reloadedSession,
-                                                     false,
-                                                     false,
-                                                     false,
-                                                     0.0,
-                                                     0.0,
-                                                     lastError.empty() ? "could not load loudness compound fixture" : lastError);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c2 storage proof failed: " + juce::String (lastError), juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    const auto relayoutGraph = makeCompoundPatchInteractionGraph (loadedCompound.spec,
-                                                                  "library_loud1",
-                                                                  reloadedSession.graph);
-    const auto* monoMix = findEditorNode (relayoutGraph, "library_loud1/mono_mix");
-    const auto monoMixX = monoMix == nullptr ? 0.0 : monoMix->position.x;
-    const auto monoMixY = monoMix == nullptr ? 0.0 : monoMix->position.y;
-    const auto publicInputEdge = hasEdgeId (reloadedSession.graph, "edge.live_audio.channels.library_loud1.audio.in");
-    const auto publicOutputEdge = hasEdgeId (reloadedSession.graph, "edge.library_loud1.out.midi_loudness.value");
-    const auto monoMixLayout = monoMix != nullptr && monoMixX == 358.0 && monoMixY == 146.0;
-    const auto graphCountsMatch = reloadedSession.graph.editorGraph.edges.size()
-                                  == reloadedSession.graph.runtimeGraph.edges.size();
-    const auto ok = publicInputEdge && publicOutputEdge && monoMixLayout && graphCountsMatch;
-
-    const auto report = makeC2StorageReportJson (ok,
-                                                 workManifestPath,
-                                                 savedPatchFile.getFullPathName().toStdString(),
-                                                 saveResult.status,
-                                                 reloadedSession,
-                                                 publicInputEdge,
-                                                 publicOutputEdge,
-                                                 monoMixLayout,
-                                                 monoMixX,
-                                                 monoMixY,
-                                                 ok ? std::string {} : "reloaded C2 graph did not match expected compound work");
-
-    if (! writeTextFile (reportFile, report))
-    {
-        statusLabel.setText ("c2 storage proof failed: could not write " + reportFile.getFullPathName(),
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    statusLabel.setText ((ok ? "c2 storage proof dumped: " : "c2 storage proof mismatch: ")
-                             + directory.getFullPathName(),
-                         juce::dontSendNotification);
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
+                             juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
