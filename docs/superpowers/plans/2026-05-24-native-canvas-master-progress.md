@@ -233,6 +233,7 @@ Latest accepted targeted result:
 | PV proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-pv-proof-harness-extraction.md`; `PVDetectorProofRunner` owns detector proof runtime/fixture/artifact orchestration; focused tests, app build, and attack CLI proof passed | Do not reopen detector semantics; C2-C6/PV-B1/V1 proof harness cleanup remain separate selected lanes |
 | PV-B1 proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-pv-b1-proof-harness-extraction.md`; `PVB1AnalyzerEnvironmentProofRunner` owns visible-catalog proof artifact orchestration; focused test, app build, and PV-B1 CLI proof passed | Do not reopen PV-B1 semantics; C2-C6/V1 proof harness cleanup remain separate selected lanes |
 | C6 proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-c6-proof-harness-extraction.md`; `C6AnalyzerFamilyProofRunner` owns raw-energy visible/runtime/synthetic-audio proof orchestration; focused test, app build, and C6 CLI proof passed | Do not reopen C6 analyzer semantics; C2-C5/C6 repair/V1 proof harness cleanup remain separate selected lanes |
+| C5 proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c5-proof-harness-extraction.md`; `C5ModulePublishProofRunner` owns direct, AI worker, and visible module publish proof orchestration; focused test, app build, and all three C5 CLI proofs passed | Do not reopen C5 publish semantics; C2-C4/C6 repair/V1 proof harness cleanup remain separate selected lanes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -242,8 +243,41 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after C6 proof harness extraction as of 2026-05-24 23:59 Asia/Taipei.
+None after C5 proof harness extraction as of 2026-05-25 00:08 Asia/Taipei.
 
+C5 proof harness extraction closed as of 2026-05-25 00:08 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-c5-proof-harness-extraction.md
+
+Closed proof line:
+C5ModulePublishProofRunRequest
+-> runC5ModulePublishProof()
+-> direct / AI worker / visible module publish proof
+-> module_publish_report.json / ai_worker_module_publish_report.json / visible_module_publish_report.json
+-> MainComponent status facade
+
+Latest verification:
+- `cmake -S . -B build` red before runner source existed, then green after implementation
+- `cmake --build build --target my_world_c5_module_publish_proof_runner_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "c5_module_publish_proof_runner|module_publish|ai_worker_command"`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-module-publish-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-ai-worker-module-publish-proof-and-exit`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-visible-module-publish-proof-and-exit`
+
+Latest accepted result:
+- `module_publish` passed
+- `ai_worker_command` passed
+- `c5_module_publish_proof_runner` passed
+- app build passed
+- all three C5 CLI proofs exited 0 and wrote reports with `ok: true`
+
+Parked:
+- C2-C4 proof orchestration remains in `MainComponent`
+- C6 AI repair-loop proof remains in `MainComponent`
+- V1 shader proof remains tied to `OpenGLShaderPreview`
+
+Previous closure:
 C6 proof harness extraction closed as of 2026-05-24 23:59 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-24-c6-proof-harness-extraction.md
@@ -269,7 +303,7 @@ Latest accepted result:
 - CLI C6 proof exited 0 and wrote `debug/c6-analyzer-family-proof/analyzer_family_report.json` with `ok: true`, `familyEntryCount: 2`, `runtimeCoverageStatus: "ready"`, and `loudnessStillPresent: true`
 
 Parked:
-- C2-C5 proof orchestration remains in `MainComponent`
+- C2-C4 proof orchestration remains in `MainComponent`
 - C6 AI repair-loop proof remains in `MainComponent`
 - V1 shader proof remains tied to `OpenGLShaderPreview`
 
