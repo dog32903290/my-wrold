@@ -20,6 +20,7 @@ public:
                    bool dumpC2StorageProofOnStart = false,
                    bool dumpC3SaveWorkProofOnStart = false,
                    bool dumpC4AIWorkerSaveWorkProofOnStart = false,
+                   bool dumpC5ModulePublishProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -33,6 +34,7 @@ private:
     void dumpC2StorageProof();
     void dumpC3SaveWorkProof();
     void dumpC4AIWorkerSaveWorkProof();
+    void dumpC5ModulePublishProof();
     CommandResult saveActiveWork (GraphSession& session);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);

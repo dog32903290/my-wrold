@@ -26,8 +26,10 @@ public:
         const auto dumpC2StorageProofAndExit = commandLine.contains ("--dump-c2-storage-proof-and-exit");
         const auto dumpC3SaveWorkProofAndExit = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
         const auto dumpC4AIWorkerSaveWorkProofAndExit = commandLine.contains ("--dump-c4-ai-worker-save-work-proof-and-exit");
+        const auto dumpC5ModulePublishProofAndExit = commandLine.contains ("--dump-c5-module-publish-proof-and-exit");
         const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
-                                          || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit;
+                                          || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit
+                                          || dumpC5ModulePublishProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
@@ -35,6 +37,7 @@ public:
                                                    dumpC2StorageProofAndExit,
                                                    dumpC3SaveWorkProofAndExit,
                                                    dumpC4AIWorkerSaveWorkProofAndExit,
+                                                   dumpC5ModulePublishProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -58,6 +61,7 @@ private:
                     bool dumpC2StorageProofAndExit,
                     bool dumpC3SaveWorkProofAndExit,
                     bool dumpC4AIWorkerSaveWorkProofAndExit,
+                    bool dumpC5ModulePublishProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -69,6 +73,7 @@ private:
                                                 dumpC2StorageProofAndExit,
                                                 dumpC3SaveWorkProofAndExit,
                                                 dumpC4AIWorkerSaveWorkProofAndExit,
+                                                dumpC5ModulePublishProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

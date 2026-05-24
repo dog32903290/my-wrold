@@ -65,7 +65,35 @@ struct SaveWorkOptions
     std::string commitMessage = "Save work";
 };
 
+struct PublishModuleRequest
+{
+    std::string workManifestPath;
+    std::string sourceNodeId;
+    std::string moduleId;
+    std::string moduleTitle;
+    std::string nodeType;
+    std::string packageDirectory;
+    std::string targetLibraryPath;
+    bool overwriteExisting = false;
+};
+
+struct PublishModuleResult
+{
+    bool ok = false;
+    std::string operation = "publish_module";
+    std::string status;
+    std::string sourceNodeId;
+    std::string sourceNodeType;
+    std::string moduleId;
+    std::string publishedNodeType;
+    std::string moduleManifestPath;
+    std::string compoundPatchPath;
+    std::string targetLibraryPath;
+    std::string error;
+};
+
 SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestPath);
 SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestPath, const SaveWorkOptions& options);
 SaveLogLoadResult loadSaveLog (const std::string& saveLogPath);
+PublishModuleResult publishModule (GraphSession& session, const PublishModuleRequest& request);
 }

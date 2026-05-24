@@ -529,6 +529,7 @@ target_link_libraries(my_world_storage_command
     PUBLIC
         my_world_storage
         my_world_interaction
+        my_world_path_resolution
 )
 
 add_executable(my_world_save_work_command_tests
@@ -542,6 +543,22 @@ target_link_libraries(my_world_save_work_command_tests
 
 add_test(NAME save_work_command COMMAND my_world_save_work_command_tests)
 set_tests_properties(save_work_command PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_module_publish_tests
+    tests/ModulePublishTests.cpp
+)
+
+target_link_libraries(my_world_module_publish_tests
+    PRIVATE
+        my_world_storage_command
+        my_world_compound_module
+        my_world_runtime_registry
+)
+
+add_test(NAME module_publish COMMAND my_world_module_publish_tests)
+set_tests_properties(module_publish PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

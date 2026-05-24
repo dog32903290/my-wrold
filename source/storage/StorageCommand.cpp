@@ -1,9 +1,12 @@
 #include "StorageCommand.h"
 
+#include "CompoundPatch.h"
 #include "InteractionContract.h"
 #include "JsonWriter.h"
+#include "PathResolution.h"
 #include "StorageContract.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -32,6 +35,17 @@ std::filesystem::path resolveNearManifest (const std::string& workManifestPath,
         return targetPath;
 
     return std::filesystem::path (workManifestPath).parent_path() / targetPath;
+}
+
+std::filesystem::path packageRefPath (const std::filesystem::path& moduleManifestPath,
+                                      const std::filesystem::path& libraryPath)
+{
+    std::error_code error;
+    const auto relative = std::filesystem::relative (moduleManifestPath, libraryPath.parent_path(), error);
+    if (! error && ! relative.empty())
+        return relative;
+
+    return moduleManifestPath;
 }
 
 std::filesystem::path saveLogPathForWork (const std::string& workManifestPath)
@@ -104,6 +118,49 @@ bool appendSaveLog (const std::filesystem::path& saveLogPath,
     return true;
 }
 
+bool writeTextFile (const std::filesystem::path& targetPath, const std::string& text, std::string& writeError)
+{
+    std::error_code error;
+    const auto parent = targetPath.parent_path();
+
+    if (! parent.empty())
+        std::filesystem::create_directories (parent, error);
+
+    if (error)
+    {
+        writeError = "could not create directory: " + error.message();
+        return false;
+    }
+
+    const auto tempPath = targetPath.string() + ".tmp";
+    {
+        std::ofstream output (tempPath, std::ios::trunc);
+        if (! output)
+        {
+            writeError = "could not open file for writing: " + tempPath;
+            return false;
+        }
+
+        output << text;
+
+        if (! output)
+        {
+            writeError = "could not write file: " + tempPath;
+            return false;
+        }
+    }
+
+    std::filesystem::rename (tempPath, targetPath, error);
+    if (error)
+    {
+        std::filesystem::remove (tempPath);
+        writeError = "could not replace file: " + error.message();
+        return false;
+    }
+
+    return true;
+}
+
 std::string shellQuoted (const std::string& value)
 {
     std::string quoted = "'";
@@ -118,6 +175,112 @@ std::string shellQuoted (const std::string& value)
 
     quoted += "'";
     return quoted;
+}
+
+bool startsWith (const std::string& text, const std::string& prefix)
+{
+    return text.rfind (prefix, 0) == 0;
+}
+
+const GraphNode* findSessionNode (const GraphSession& session, const std::string& nodeId)
+{
+    const auto found = std::find_if (session.graph.editorGraph.nodes.begin(),
+                                     session.graph.editorGraph.nodes.end(),
+                                     [&nodeId] (const auto& node) {
+                                         return node.id == nodeId;
+                                     });
+
+    return found == session.graph.editorGraph.nodes.end() ? nullptr : &*found;
+}
+
+std::vector<std::string> publicPortIds (const CompoundPatchSpec& spec)
+{
+    std::vector<std::string> result;
+    result.reserve (spec.publicInputs.size() + spec.publicOutputs.size());
+
+    for (const auto& port : spec.publicInputs)
+        result.push_back (port.id);
+
+    for (const auto& port : spec.publicOutputs)
+        result.push_back (port.id);
+
+    return result;
+}
+
+struct SourceCompoundLoadResult
+{
+    bool ok = false;
+    CompoundPatchSpec spec;
+    std::string error;
+};
+
+SourceCompoundLoadResult loadSourceCompoundForNodeType (const std::string& workManifestPath,
+                                                        const WorkProjectManifest& work,
+                                                        const std::string& nodeType)
+{
+    for (const auto& libraryRef : work.moduleLibraries)
+    {
+        const auto libraryResolution = resolvePathNearWithReport (workManifestPath, libraryRef);
+        if (! libraryResolution.found)
+            return { false, {}, describePathResolutionFailure ("module library", libraryResolution) };
+
+        const auto libraryPath = std::filesystem::path (libraryResolution.resolvedPath);
+        const auto library = loadModuleLibraryManifest (libraryPath.string());
+        if (! library.ok)
+            return { false, {}, library.error };
+
+        for (const auto& packageRef : library.manifest.modulePackages)
+        {
+            const auto packageResolution = resolvePathNearWithReport (libraryPath.string(), packageRef);
+            if (! packageResolution.found)
+                return { false, {}, describePathResolutionFailure ("module manifest", packageResolution) };
+
+            const auto packagePath = std::filesystem::path (packageResolution.resolvedPath);
+            const auto package = loadModulePackageManifest (packagePath.string());
+            if (! package.ok)
+                return { false, {}, package.error };
+
+            if (package.manifest.nodeType != nodeType)
+                continue;
+
+            const auto compoundResolution = resolvePathNearWithReport (packagePath.string(), package.manifest.patchPath);
+            if (! compoundResolution.found)
+                return { false, {}, describePathResolutionFailure ("compound patch", compoundResolution) };
+
+            const auto compoundPath = std::filesystem::path (compoundResolution.resolvedPath);
+            const auto compound = loadCompoundPatchSpec (compoundPath.string());
+            if (! compound.ok)
+                return { false, {}, compound.error };
+
+            return { true, compound.spec, {} };
+        }
+    }
+
+    return { false, {}, "could not find source compound module for node type: " + nodeType };
+}
+
+PublishModuleResult finishPublishModule (GraphSession& session,
+                                         bool ok,
+                                         const std::string& status,
+                                         const PublishModuleRequest& request,
+                                         const std::string& sourceNodeType,
+                                         const std::filesystem::path& moduleManifestPath,
+                                         const std::filesystem::path& compoundPatchPath,
+                                         const std::filesystem::path& targetLibraryPath,
+                                         const std::string& error)
+{
+    session.commandLog.push_back ("publish_module:" + status);
+    return { ok,
+             "publish_module",
+             status,
+             request.sourceNodeId,
+             sourceNodeType,
+             request.moduleId,
+             request.nodeType,
+             moduleManifestPath.string(),
+             compoundPatchPath.string(),
+             targetLibraryPath.string(),
+             error };
 }
 
 std::string trimmed (std::string text)
@@ -414,6 +577,243 @@ SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestP
                            saveLogPath,
                            {},
                            commitJob);
+}
+
+PublishModuleResult publishModule (GraphSession& session, const PublishModuleRequest& request)
+{
+    const std::filesystem::path packageDirectory (request.packageDirectory);
+    const auto moduleManifestPath = packageDirectory / "module.json";
+    const auto compoundPatchPath = packageDirectory / "compound.compound.json";
+    const std::filesystem::path targetLibraryPath (request.targetLibraryPath);
+
+    if (request.workManifestPath.empty() || request.sourceNodeId.empty() || request.moduleId.empty()
+        || request.moduleTitle.empty() || request.nodeType.empty() || request.packageDirectory.empty()
+        || request.targetLibraryPath.empty())
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    {},
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    "publish_module request is missing required fields");
+    }
+
+    const auto* sourceNode = findSessionNode (session, request.sourceNodeId);
+    if (sourceNode == nullptr)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    {},
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    "source node not found: " + request.sourceNodeId);
+    }
+
+    if (! startsWith (sourceNode->type, "compound."))
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    "source node is not compound: " + request.sourceNodeId);
+    }
+
+    if (std::filesystem::exists (packageDirectory) && ! request.overwriteExisting)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    "module package already exists: " + packageDirectory.string());
+    }
+
+    const auto work = loadWorkProjectManifest (request.workManifestPath);
+    if (! work.ok)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    work.error);
+    }
+
+    auto sourceCompound = loadSourceCompoundForNodeType (request.workManifestPath,
+                                                        work.manifest,
+                                                        sourceNode->type);
+    if (! sourceCompound.ok)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    sourceCompound.error);
+    }
+
+    auto publishedCompound = sourceCompound.spec;
+    publishedCompound.type = request.nodeType;
+    publishedCompound.displayName = request.moduleTitle;
+
+    if (! isValidCompoundPatchSpec (publishedCompound))
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    "published compound patch failed validation");
+    }
+
+    auto module = makeModulePackage (request.moduleId, request.moduleTitle, "compound.compound.json");
+    module.nodeType = request.nodeType;
+    module.category = "compound";
+    module.subcategory = "published";
+    module.runtimeDomain = "graph";
+    module.previewPolicy = "none";
+    module.publicPorts = publicPortIds (publishedCompound);
+
+    std::string writeError;
+    if (! writeTextFile (compoundPatchPath, makeCompoundPatchJson (publishedCompound), writeError))
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "write-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    writeError);
+    }
+
+    if (! writeTextFile (moduleManifestPath, toJson (module), writeError))
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "write-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    writeError);
+    }
+
+    ModuleLibraryManifest library = makeModuleLibrary ("library.published", "Published Modules", {});
+    if (std::filesystem::exists (targetLibraryPath))
+    {
+        const auto loadedLibrary = loadModuleLibraryManifest (targetLibraryPath.string());
+        if (! loadedLibrary.ok)
+        {
+            return finishPublishModule (session,
+                                        false,
+                                        "validation-failed",
+                                        request,
+                                        sourceNode->type,
+                                        moduleManifestPath,
+                                        compoundPatchPath,
+                                        targetLibraryPath,
+                                        loadedLibrary.error);
+        }
+
+        library = loadedLibrary.manifest;
+    }
+
+    const auto modulePackageRef = packageRefPath (moduleManifestPath, targetLibraryPath).generic_string();
+    if (std::find (library.modulePackages.begin(), library.modulePackages.end(), modulePackageRef)
+        == library.modulePackages.end())
+    {
+        library.modulePackages.push_back (modulePackageRef);
+    }
+
+    if (! writeTextFile (targetLibraryPath, toJson (library), writeError))
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "write-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    writeError);
+    }
+
+    const auto reloadedModule = loadModulePackageManifest (moduleManifestPath.string());
+    if (! reloadedModule.ok)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    reloadedModule.error);
+    }
+
+    const auto reloadedCompound = loadCompoundPatchSpec (compoundPatchPath.string());
+    if (! reloadedCompound.ok)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    reloadedCompound.error);
+    }
+
+    const auto reloadedLibrary = loadModuleLibraryManifest (targetLibraryPath.string());
+    if (! reloadedLibrary.ok)
+    {
+        return finishPublishModule (session,
+                                    false,
+                                    "validation-failed",
+                                    request,
+                                    sourceNode->type,
+                                    moduleManifestPath,
+                                    compoundPatchPath,
+                                    targetLibraryPath,
+                                    reloadedLibrary.error);
+    }
+
+    return finishPublishModule (session,
+                                true,
+                                "published",
+                                request,
+                                sourceNode->type,
+                                moduleManifestPath,
+                                compoundPatchPath,
+                                targetLibraryPath,
+                                {});
 }
 
 SaveLogLoadResult loadSaveLog (const std::string& saveLogPath)

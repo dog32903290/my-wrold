@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
 #include "AIWorkerCommand.h"
+#include "CompoundModule.h"
 #include "CompoundPatch.h"
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
@@ -65,6 +66,11 @@ juce::File c3SaveWorkProofDumpDirectory()
 juce::File c4AIWorkerSaveWorkProofDumpDirectory()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("c4-ai-worker-save-work-proof");
+}
+
+juce::File c5ModulePublishProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c5-module-publish-proof");
 }
 
 juce::File defaultActiveWorkManifestFile()
@@ -351,6 +357,43 @@ std::string makeC4AIWorkerSaveWorkReportJson (bool ok,
     return out.str();
 }
 
+std::string makeC5ModulePublishReportJson (bool ok,
+                                           const PublishModuleResult& publish,
+                                           bool packageReloaded,
+                                           bool libraryReloaded,
+                                           bool visibleRegistryContainsPublishedNode,
+                                           bool runtimeRegistryContainsPublishedNode,
+                                           const std::string& runtimeCoverageStatus,
+                                           bool createdPublishedNode,
+                                           const std::string& graphCommandLogStatus,
+                                           const std::string& error)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c5ModulePublishProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"operation\": " << jsonQuoted (publish.operation) << ",\n";
+    out << "  \"source\": \"PatchDocument\",\n";
+    out << "  \"sourceNodeId\": " << jsonQuoted (publish.sourceNodeId) << ",\n";
+    out << "  \"sourceNodeType\": " << jsonQuoted (publish.sourceNodeType) << ",\n";
+    out << "  \"publishedModuleId\": " << jsonQuoted (publish.moduleId) << ",\n";
+    out << "  \"publishedNodeType\": " << jsonQuoted (publish.publishedNodeType) << ",\n";
+    out << "  \"moduleManifestPath\": " << jsonQuoted (publish.moduleManifestPath) << ",\n";
+    out << "  \"compoundPatchPath\": " << jsonQuoted (publish.compoundPatchPath) << ",\n";
+    out << "  \"targetLibraryPath\": " << jsonQuoted (publish.targetLibraryPath) << ",\n";
+    out << "  \"packageReloaded\": " << (packageReloaded ? "true" : "false") << ",\n";
+    out << "  \"libraryReloaded\": " << (libraryReloaded ? "true" : "false") << ",\n";
+    out << "  \"visibleRegistryContainsPublishedNode\": " << (visibleRegistryContainsPublishedNode ? "true" : "false") << ",\n";
+    out << "  \"runtimeRegistryContainsPublishedNode\": " << (runtimeRegistryContainsPublishedNode ? "true" : "false") << ",\n";
+    out << "  \"runtimeCoverageStatus\": " << jsonQuoted (runtimeCoverageStatus) << ",\n";
+    out << "  \"createdPublishedNode\": " << (createdPublishedNode ? "true" : "false") << ",\n";
+    out << "  \"graphCommandLogStatus\": " << jsonQuoted (graphCommandLogStatus) << ",\n";
+    out << "  \"usesInteractionState\": false,\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 {
     std::string lastError;
@@ -374,6 +417,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpC2StorageProofOnStart,
                               bool dumpC3SaveWorkProofOnStart,
                               bool dumpC4AIWorkerSaveWorkProofOnStart,
+                              bool dumpC5ModulePublishProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -499,6 +543,15 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC4AIWorkerSaveWorkProof();
+        });
+    }
+
+    if (dumpC5ModulePublishProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC5ModulePublishProof();
         });
     }
 
@@ -1270,6 +1323,176 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     }
 
     statusLabel.setText ((ok ? "c4 AI worker proof dumped: " : "c4 AI worker proof mismatch: ")
+                             + directory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpC5ModulePublishProof()
+{
+    const auto directory = c5ModulePublishProofDumpDirectory();
+    const auto reportFile = directory.getChildFile ("module_publish_report.json");
+    const auto packageDirectory = directory.getChildFile ("modules").getChildFile ("published-loudness");
+    const auto libraryFile = directory.getChildFile ("module-libraries").getChildFile ("published.module-library.json");
+    const PublishModuleResult emptyPublish;
+
+    const auto writeFailureReport = [&] (const PublishModuleResult& publish,
+                                         const std::string& message,
+                                         const std::string& runtimeCoverageStatus = {})
+    {
+        const auto report = makeC5ModulePublishReportJson (false,
+                                                           publish,
+                                                           false,
+                                                           false,
+                                                           false,
+                                                           false,
+                                                           runtimeCoverageStatus,
+                                                           false,
+                                                           {},
+                                                           message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c5 module publish proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        writeFailureReport (emptyPublish, "could not clear " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    if (! directory.createDirectory())
+    {
+        writeFailureReport (emptyPublish, "could not create " + directory.getFullPathName().toStdString());
+        return;
+    }
+
+    std::string workManifestPath;
+    PatchDocumentLoadResult loadedPatch;
+    std::string lastError;
+
+    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    {
+        const auto loaded = loadMainPatchDocumentForWork (candidate);
+        if (loaded.ok)
+        {
+            workManifestPath = candidate;
+            loadedPatch = loaded;
+            break;
+        }
+
+        lastError = loaded.error;
+    }
+
+    if (! loadedPatch.ok)
+    {
+        writeFailureReport (emptyPublish, lastError.empty() ? "could not load C2 work fixture" : lastError);
+        return;
+    }
+
+    auto sourceSession = makeGraphSession (loadedPatch.document.graph);
+    PublishModuleRequest request;
+    request.workManifestPath = workManifestPath;
+    request.sourceNodeId = "library_loud1";
+    request.moduleId = "module.published-loudness";
+    request.moduleTitle = "Published Loudness";
+    request.nodeType = "compound.published-loudness";
+    request.packageDirectory = packageDirectory.getFullPathName().toStdString();
+    request.targetLibraryPath = libraryFile.getFullPathName().toStdString();
+    request.overwriteExisting = true;
+
+    const auto publish = publishModule (sourceSession, request);
+    if (! publish.ok)
+    {
+        writeFailureReport (publish, publish.error);
+        return;
+    }
+
+    const auto package = loadModulePackageManifest (publish.moduleManifestPath);
+    const auto library = loadModuleLibraryManifest (publish.targetLibraryPath);
+    const auto loadedSpecs = loadCompoundModuleNodeSpecsFromLibrary (publish.targetLibraryPath);
+    const auto runtime = loadRuntimeRegistryFromModuleLibrary (publish.targetLibraryPath);
+    const auto coverage = runtime.ok ? inspectRuntimeOpCoverage (runtime.registry) : RuntimeOpCoverageResult {};
+    const auto diagnostics = coverage.ok ? makeRuntimeOpModuleDiagnostics (coverage.snapshot)
+                                         : std::vector<RuntimeOpModuleDiagnostic> {};
+
+    const auto visibleRegistryContainsPublishedNode = loadedSpecs.ok
+        && std::any_of (loadedSpecs.specs.begin(),
+                        loadedSpecs.specs.end(),
+                        [&publish] (const auto& spec) {
+                            return spec.type == publish.publishedNodeType;
+                        });
+    const auto runtimeRegistryContainsPublishedNode = runtime.ok
+        && std::any_of (runtime.registry.entries.begin(),
+                        runtime.registry.entries.end(),
+                        [&publish] (const auto& entry) {
+                            return entry.nodeType == publish.publishedNodeType;
+                        });
+    const auto runtimeCoverageStatus = [&diagnostics, &publish]
+    {
+        for (const auto& diagnostic : diagnostics)
+            if (diagnostic.nodeType == publish.publishedNodeType)
+                return diagnostic.status == "runtime-op-ready" ? std::string { "ready" } : diagnostic.status;
+
+        return std::string {};
+    }();
+
+    GraphSession reuseSession = makeGraphSession (makeDefaultShaderOutputGraph());
+    CommandResult createResult { false, "published node spec not loaded" };
+    if (loadedSpecs.ok)
+    {
+        const auto visibleRegistry = mergeNodeSpecs (makeSeedNodeSpecs(), loadedSpecs.specs);
+        createResult = createNode (reuseSession,
+                                   visibleRegistry,
+                                   publish.publishedNodeType,
+                                   "published_loud1",
+                                   { 320.0, 260.0 });
+    }
+
+    const auto graphCommandLogStatus = reuseSession.commandLog.empty() ? std::string {}
+                                                                       : reuseSession.commandLog.back();
+    const auto createdPublishedNode = createResult.ok && graphCommandLogStatus == "create_node";
+    const auto ok = publish.ok
+                    && package.ok
+                    && library.ok
+                    && visibleRegistryContainsPublishedNode
+                    && runtimeRegistryContainsPublishedNode
+                    && runtimeCoverageStatus == "ready"
+                    && createdPublishedNode;
+    const auto error = ok ? std::string {}
+                          : ! package.ok ? package.error
+                          : ! library.ok ? library.error
+                          : ! loadedSpecs.ok ? loadedSpecs.error
+                          : ! runtime.ok ? runtime.error
+                          : ! coverage.ok ? coverage.error
+                          : ! createResult.ok ? createResult.message
+                          : "C5 module publish proof did not match expected publish/reuse evidence";
+
+    const auto report = makeC5ModulePublishReportJson (ok,
+                                                       publish,
+                                                       package.ok,
+                                                       library.ok,
+                                                       visibleRegistryContainsPublishedNode,
+                                                       runtimeRegistryContainsPublishedNode,
+                                                       runtimeCoverageStatus,
+                                                       createdPublishedNode,
+                                                       graphCommandLogStatus,
+                                                       error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c5 module publish proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c5 module publish proof dumped: " : "c5 module publish proof mismatch: ")
                              + directory.getFullPathName(),
                          juce::dontSendNotification);
 

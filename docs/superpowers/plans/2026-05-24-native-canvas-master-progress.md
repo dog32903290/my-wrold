@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 11:36 Asia/Taipei.
+Date: 2026-05-24 11:57 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,9 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+ec3efe2 Close C4 AI worker command proof
+d73b893 Add C4.2 AI worker move_node command
+835ce85 Add C4.1 AI worker save_work contract
 09edd86 Add C3.5 save commit failure proof
 57ba0c5 Add C3.4 background save commit worker
 f163d80 Wire C3.3 visible save_work hand
@@ -72,6 +75,27 @@ Verification run:
 
 Do not reopen C4.1-C4.3 to add natural language parsing, repair loop, remote sync, or additional graph mutation commands.
 
+Current C5 note:
+
+```text
+C5.1 module publish/reuse command + storage/runtime proof is closed locally.
+Active C5 spec:
+- docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md
+Current C5 evidence is in:
+- tests/ModulePublishTests.cpp
+- debug/c5-module-publish-proof/module_publish_report.json
+
+Verification run:
+- `cmake --build build --target my_world_module_publish_tests my_world_save_work_command_tests my_world_compound_module_tests my_world_runtime_registry_tests my-world`
+- `./build/my_world_module_publish_tests`
+- `./build/my_world_save_work_command_tests`
+- `./build/my_world_compound_module_tests`
+- `./build/my_world_runtime_registry_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c5-module-publish-proof-and-exit`
+- `git diff --check`
+- `ctest --test-dir build --output-on-failure`
+```
+
 ## Main Spine
 
 | Lane | Status | Current law / evidence | Next |
@@ -82,7 +106,7 @@ Do not reopen C4.1-C4.3 to add natural language parsing, repair loop, remote syn
 | C2 PatchDocument work persistence | closed | `docs/superpowers/specs/2026-05-24-c2-compound-work-closure.md` | Do not reopen C2 |
 | C3 storage command path | closed | `docs/superpowers/specs/2026-05-24-c3-storage-command-path.md` | Do not reopen C3 |
 | C4 AI worker command path | closed | `docs/superpowers/specs/2026-05-24-c4-ai-worker-command-contract.md` | Do not reopen C4 |
-| C5 module publish/reuse path | planned | not yet specified | write slice spec after C4 closure |
+| C5 module publish/reuse path | closed locally | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | commit when ready |
 | C6 analyzer compound family / AI repair loop closure | planned | not yet specified | split if C5 grows too large |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
@@ -94,7 +118,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-none selected after C4 closure
+none selected after C5 local closure
 ```
 
 C4 proved:
@@ -118,6 +142,20 @@ remote sync
 raw callback-buffer runtime
 ```
 
+Park during C5:
+
+```text
+AI repair loop / retry policy
+AI worker publish_module command
+new analyzer compound family
+multi-node group-to-compound extraction
+publish dialog / browser polish
+remote sync / shared module registry
+RenderBackend extraction
+TiXL browser/search implementation
+raw callback-buffer runtime
+```
+
 ## Conflict Register
 
 | Conflict | Where it appears | Decision |
@@ -128,6 +166,7 @@ raw callback-buffer runtime
 | TiXL ledger is a plan but also tracks progress | `2026-05-24-tixl-parity-construction-ledger.md` | It is a sub-ledger. Start progress from this master plan, then open TiXL ledger only for TiXL-visible parity work. |
 | Skeleton spec can become too long and look like the dashboard | `2026-05-22-native-canvas-skeleton-design.md` | Skeleton is architecture/status evidence. This master plan is the current dashboard. |
 | C4 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Natural language parsing, additional graph mutation commands, repair loop, and remote sync remain parked outside C4. |
+| C5 can be mistaken for new analyzer/module vocabulary work | C5 title vs C6 planned analyzer family | C5.1 only proves publishing and reusing one selected compound source. New analyzer families and repair loop remain C6+. |
 
 ## Plan Inventory
 
@@ -140,6 +179,7 @@ raw callback-buffer runtime
 | `2026-05-22-tooll3-interaction-t0-t7.md` | historical interaction implementation plan | no |
 | `2026-05-24-c2-1-patch-document-boundary.md` | historical C2.1 implementation plan | no |
 | `2026-05-24-c2-compound-work-closure.md` | historical C2 implementation/closure plan | no |
+| `2026-05-24-c5-module-publish-reuse-path.md` | active C5 slice spec | yes, after this master plan |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
 
 ## Next Master-Plan Maintenance
