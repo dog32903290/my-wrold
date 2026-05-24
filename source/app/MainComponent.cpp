@@ -1,6 +1,7 @@
 #include "MainComponent.h"
 
 #include "AIWorkerCommand.h"
+#include "C6AIRepairLoopProofRunner.h"
 #include "C6AnalyzerFamilyProofRunner.h"
 #include "C5ModulePublishProofRunner.h"
 #include "CompoundModule.h"
@@ -116,7 +117,7 @@ juce::File c6AnalyzerFamilyProofDumpDirectory()
 
 juce::File c6AIRepairLoopProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("c6-ai-repair-loop-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (c6AIRepairLoopProofDirectoryName());
 }
 
 juce::File pvDetectorProofDumpDirectory (PVDetectorProofKind kind)
@@ -303,13 +304,6 @@ std::string safeIdentifier (const std::string& text)
 
 constexpr const char* proofWorkerId = "ai-worker-proof";
 constexpr const char* loudnessCompoundNodeId = "library_loud1";
-constexpr const char* c6RepairWorkerId = proofWorkerId;
-constexpr const char* c6RepairId = "c6.2-ai-repair-loop";
-constexpr const char* c6RepairMissingNodeId = "missing_loudness";
-constexpr const char* c6RepairTargetNodeId = loudnessCompoundNodeId;
-constexpr double c6RepairDeltaX = 17.0;
-constexpr double c6RepairDeltaY = 5.0;
-constexpr double c6UnusedRepairDelta = 100.0;
 
 AIWorkerCommandRequest makeAIWorkerMoveNodeRequest (std::string commandId,
                                                     std::string workerId,
@@ -348,34 +342,6 @@ AIWorkerCommandRequest makeC4SaveWorkProofRequest (std::string workManifestPath)
     request.intent = "Persist AI-mutated C2 compound work through the shared save_work command path";
     request.workManifestPath = std::move (workManifestPath);
     return request;
-}
-
-AIWorkerRepairPlan makeC6AIRepairLoopProofPlan()
-{
-    const auto failedAttempt = makeAIWorkerMoveNodeRequest ("c6.2-move-missing-node",
-                                                           c6RepairWorkerId,
-                                                           "First repair attempt intentionally targets a missing node",
-                                                           c6RepairMissingNodeId,
-                                                           c6RepairDeltaX,
-                                                           c6RepairDeltaY);
-    const auto repairedAttempt = makeAIWorkerMoveNodeRequest ("c6.2-move-library-loudness",
-                                                             c6RepairWorkerId,
-                                                             "Second repair attempt targets the loaded loudness node",
-                                                             c6RepairTargetNodeId,
-                                                             c6RepairDeltaX,
-                                                             c6RepairDeltaY);
-    auto unusedAttempt = repairedAttempt;
-    unusedAttempt.commandId = "c6.2-unused-attempt";
-    unusedAttempt.deltaX = c6UnusedRepairDelta;
-    unusedAttempt.deltaY = c6UnusedRepairDelta;
-
-    AIWorkerRepairPlan repairPlan;
-    repairPlan.repairId = c6RepairId;
-    repairPlan.workerId = c6RepairWorkerId;
-    repairPlan.intent = "Repair a failed move_node command by retrying through the shared AI command path";
-    repairPlan.maxAttempts = 3;
-    repairPlan.attempts = { failedAttempt, repairedAttempt, unusedAttempt };
-    return repairPlan;
 }
 
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
@@ -1513,106 +1479,21 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
 void MainComponent::dumpC6AIRepairLoopProof()
 {
     const auto directory = c6AIRepairLoopProofDumpDirectory();
-    const auto reportFile = directory.getChildFile ("ai_repair_loop_report.json");
-    const AIWorkerRepairLoopResult emptyResult;
 
-    const auto writeFailureReport = [&] (const AIWorkerRepairLoopResult& repairResult, const std::string& message)
-    {
-        const auto report = makeC6AIRepairLoopReportJson (false,
-                                                          repairResult,
-                                                          false,
-                                                          0,
-                                                          false,
-                                                          0.0,
-                                                          0.0,
-                                                          message);
-        writeTextFile (reportFile, report);
-        statusLabel.setText ("c6 AI repair loop proof failed: " + juce::String (message),
+    C6AIRepairLoopProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runC6AIRepairLoopProof (request);
+    const auto displayNameString = juce::String (c6AIRepairLoopProofDisplayName());
+
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-    };
-
-    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
-    {
-        writeFailureReport (emptyResult, error);
-        return;
-    }
-
-    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
-    {
-        writeFailureReport (emptyResult, error);
-        return;
-    }
-
-    PatchDocumentLoadResult loadedPatch;
-    std::string lastError;
-    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
-    {
-        const auto loaded = loadMainPatchDocumentForWork (candidate);
-        if (loaded.ok)
-        {
-            loadedPatch = loaded;
-            break;
-        }
-
-        lastError = loaded.error;
-    }
-
-    if (! loadedPatch.ok)
-    {
-        writeFailureReport (emptyResult, lastError.empty() ? "could not load C2 work fixture" : lastError);
-        return;
-    }
-
-    auto session = makeGraphSession (loadedPatch.document.graph);
-
-    const auto repairPlan = makeC6AIRepairLoopProofPlan();
-
-    const auto repairResult = executeAIWorkerRepairLoop (session, repairPlan);
-    const auto* finalNode = findEditorNode (session.graph, c6RepairTargetNodeId);
-    const auto finalNodeX = finalNode == nullptr ? 0.0 : finalNode->position.x;
-    const auto finalNodeY = finalNode == nullptr ? 0.0 : finalNode->position.y;
-    const auto graphMutationApplied = ! repairResult.attempts.empty()
-        && repairResult.attempts.back().commandResult.evidence.graphMutationApplied;
-    const auto firstAttemptFailed = ! repairResult.attempts.empty()
-        && repairResult.attempts.front().status == "failed";
-    const auto ok = repairResult.ok
-                    && repairResult.status == "repaired"
-                    && repairResult.attemptsRun == 2
-                    && repairResult.maxAttempts == 3
-                    && firstAttemptFailed
-                    && repairResult.successfulAttemptIndex == 2
-                    && repairResult.finalOperation == "move_node"
-                    && repairResult.finalCommandLogStatus == "ai_worker_repair_loop:repaired"
-                    && graphMutationApplied
-                    && session.collaborationLog.size() >= 6
-                    && finalNode != nullptr;
-    const auto error = ok ? std::string {}
-                          : ! repairResult.ok ? repairResult.error
-                          : "C6 AI repair loop proof did not match expected retry/repair evidence";
-
-    const auto report = makeC6AIRepairLoopReportJson (ok,
-                                                      repairResult,
-                                                      graphMutationApplied,
-                                                      session.collaborationLog.size(),
-                                                      false,
-                                                      finalNodeX,
-                                                      finalNodeY,
-                                                      error);
-
-    if (! writeTextFile (reportFile, report))
-    {
-        statusLabel.setText ("c6 AI repair loop proof failed: could not write " + reportFile.getFullPathName(),
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
                              juce::dontSendNotification);
-        if (shouldQuitAfterStartupDump)
-            quitAfterDelay();
-        return;
-    }
-
-    statusLabel.setText ((ok ? "c6 AI repair loop proof dumped: " : "c6 AI repair loop proof mismatch: ")
-                             + directory.getFullPathName(),
-                         juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
