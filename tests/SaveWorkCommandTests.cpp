@@ -55,6 +55,12 @@ void copyC2WorkFixture (const std::filesystem::path& workRoot)
                                 workRoot / "patches" / "main.patch.json",
                                 std::filesystem::copy_options::overwrite_existing);
 }
+
+void expectCommandOk (const std::string& command, const std::string& message)
+{
+    const auto exitCode = std::system (command.c_str());
+    expect (exitCode == 0, message);
+}
 }
 
 int main()
@@ -123,6 +129,53 @@ int main()
     expect (loadedSaveLog.entries.front().commitStatus == "not-started", "save log entry commit status reads back");
 
     std::filesystem::remove_all (workRoot);
+
+    const auto gitWorkRoot = std::filesystem::temp_directory_path() / "my-world-c3-save-work-git";
+    std::filesystem::remove_all (gitWorkRoot);
+    copyC2WorkFixture (gitWorkRoot);
+    expectCommandOk ("git -C " + gitWorkRoot.string() + " init --quiet", "init temp work git repo");
+    expectCommandOk ("git -C " + gitWorkRoot.string() + " config user.email c3-save-work@example.local",
+                     "set temp git user email");
+    expectCommandOk ("git -C " + gitWorkRoot.string() + " config user.name C3SaveWork",
+                     "set temp git user name");
+    expectCommandOk ("git -C " + gitWorkRoot.string() + " add myworld.work.json patches/main.patch.json",
+                     "stage temp initial work");
+    expectCommandOk ("git -C " + gitWorkRoot.string() + " commit --quiet -m initial-work",
+                     "commit temp initial work");
+
+    const auto gitWorkManifestPath = gitWorkRoot / "myworld.work.json";
+    const auto gitLoadedMain = myworld::loadMainPatchDocumentForWork (gitWorkManifestPath.string());
+    expect (gitLoadedMain.ok, gitLoadedMain.error);
+
+    auto gitSession = myworld::makeGraphSession (gitLoadedMain.document.graph);
+    expect (myworld::moveNode (gitSession, "library_loud1", 21.0, 9.0).ok,
+            "dirty git graph session before save_work");
+
+    myworld::SaveWorkOptions saveWithCommit;
+    saveWithCommit.startLocalGitCommit = true;
+    saveWithCommit.commitMessage = "C3.4 test save_work";
+
+    const auto gitSave = myworld::saveWork (gitSession, gitWorkManifestPath.string(), saveWithCommit);
+    expect (gitSave.ok, gitSave.error);
+    expect (gitSave.status == "save-ok commit-pending", "git save_work returns commit pending");
+    expect (gitSave.commitStatus == "commit-pending", "git save_work commit status pending");
+    expect (gitSave.commitJob != nullptr, "git save_work returns background commit job");
+
+    const auto commitResult = gitSave.commitJob->wait();
+    expect (commitResult.ok, commitResult.error);
+    expect (commitResult.status == "saved-and-committed", "background git commit final status");
+    expect (! commitResult.commitId.empty(), "background git commit id");
+
+    const auto gitSaveLog = myworld::loadSaveLog (gitSave.saveLogPath);
+    expect (gitSaveLog.ok, gitSaveLog.error);
+    expect (gitSaveLog.entries.size() >= 2, "git save log records pending and final entries");
+    expect (gitSaveLog.entries.back().status == "saved-and-committed", "git save log final status reads back");
+    expect (gitSaveLog.entries.back().commitStatus == "saved-and-committed",
+            "git save log final commit status reads back");
+    expect (gitSaveLog.entries.back().commitId == commitResult.commitId,
+            "git save log final commit id reads back");
+
+    std::filesystem::remove_all (gitWorkRoot);
 
     std::cout << "save_work command contract ok\n";
     return 0;

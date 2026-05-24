@@ -4,11 +4,21 @@
 #include "JsonWriter.h"
 #include "StorageContract.h"
 
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iomanip>
+#include <memory>
 #include <sstream>
+#include <utility>
+
+#if ! defined(_WIN32)
+#include <sys/wait.h>
+#endif
 
 namespace myworld
 {
@@ -49,6 +59,8 @@ bool appendSaveLog (const std::filesystem::path& saveLogPath,
                     const std::string& workManifestPath,
                     const std::string& patchPath,
                     const std::string& status,
+                    const std::string& commitStatus,
+                    const std::string& commitId,
                     const std::string& errorMessage,
                     std::string& writeError)
 {
@@ -73,7 +85,10 @@ bool appendSaveLog (const std::filesystem::path& saveLogPath,
            << "\"status\": " << jsonQuoted (status) << ", "
            << "\"workManifestPath\": " << jsonQuoted (workManifestPath) << ", "
            << "\"patchPath\": " << jsonQuoted (patchPath) << ", "
-           << "\"commitStatus\": \"not-started\"";
+           << "\"commitStatus\": " << jsonQuoted (commitStatus);
+
+    if (! commitId.empty())
+        output << ", \"commitId\": " << jsonQuoted (commitId);
 
     if (! errorMessage.empty())
         output << ", \"error\": " << jsonQuoted (errorMessage);
@@ -87,6 +102,63 @@ bool appendSaveLog (const std::filesystem::path& saveLogPath,
     }
 
     return true;
+}
+
+std::string shellQuoted (const std::string& value)
+{
+    std::string quoted = "'";
+
+    for (const auto character : value)
+    {
+        if (character == '\'')
+            quoted += "'\\''";
+        else
+            quoted.push_back (character);
+    }
+
+    quoted += "'";
+    return quoted;
+}
+
+std::string trimmed (std::string text)
+{
+    while (! text.empty() && std::isspace (static_cast<unsigned char> (text.back())) != 0)
+        text.pop_back();
+
+    auto first = text.begin();
+    while (first != text.end() && std::isspace (static_cast<unsigned char> (*first)) != 0)
+        ++first;
+
+    text.erase (text.begin(), first);
+    return text;
+}
+
+struct ShellResult
+{
+    int exitCode = 1;
+    std::string output;
+};
+
+ShellResult runShellCommand (const std::string& command)
+{
+    auto* pipe = popen ((command + " 2>&1").c_str(), "r");
+    if (pipe == nullptr)
+        return { 1, "could not start command" };
+
+    std::string output;
+    char buffer[256];
+    while (fgets (buffer, sizeof (buffer), pipe) != nullptr)
+        output += buffer;
+
+    const auto closeStatus = pclose (pipe);
+
+#if defined(_WIN32)
+    const auto exitCode = closeStatus;
+#else
+    const auto exitCode = WIFEXITED (closeStatus) ? WEXITSTATUS (closeStatus) : closeStatus;
+#endif
+
+    return { exitCode, output };
 }
 
 std::string jsonStringMember (const std::string& text, const std::string& key)
@@ -146,70 +218,202 @@ SaveLogEntry parseSaveLogEntry (const std::string& line)
              jsonStringMember (line, "workManifestPath"),
              jsonStringMember (line, "patchPath"),
              jsonStringMember (line, "commitStatus"),
+             jsonStringMember (line, "commitId"),
              jsonStringMember (line, "error") };
+}
+
+SaveWorkCommitResult commitSavedWorkInGit (const std::string& workManifestPath,
+                                           const std::string& patchPath,
+                                           const std::filesystem::path& saveLogPath,
+                                           const std::string& commitMessage)
+{
+    const auto workRoot = std::filesystem::path (workManifestPath).parent_path();
+    const auto patchRelative = std::filesystem::relative (std::filesystem::path (patchPath), workRoot).generic_string();
+    const auto logRelative = std::filesystem::relative (saveLogPath, workRoot).generic_string();
+    const auto gitPrefix = "git -C " + shellQuoted (workRoot.string()) + " ";
+
+    const auto addResult = runShellCommand (gitPrefix + "add -- "
+                                            + shellQuoted (patchRelative) + " "
+                                            + shellQuoted (logRelative));
+    if (addResult.exitCode != 0)
+    {
+        std::string logError;
+        appendSaveLog (saveLogPath,
+                       workManifestPath,
+                       patchPath,
+                       "save-ok commit-failed",
+                       "save-ok commit-failed",
+                       {},
+                       addResult.output,
+                       logError);
+        return { false, "save-ok commit-failed", {}, addResult.output };
+    }
+
+    const auto diffResult = runShellCommand (gitPrefix + "diff --cached --quiet -- "
+                                             + shellQuoted (patchRelative) + " "
+                                             + shellQuoted (logRelative));
+    if (diffResult.exitCode == 0)
+        return { true, "clean", {}, {} };
+
+    if (diffResult.exitCode != 1)
+    {
+        std::string logError;
+        appendSaveLog (saveLogPath,
+                       workManifestPath,
+                       patchPath,
+                       "save-ok commit-failed",
+                       "save-ok commit-failed",
+                       {},
+                       diffResult.output,
+                       logError);
+        return { false, "save-ok commit-failed", {}, diffResult.output };
+    }
+
+    const auto commitResult = runShellCommand (gitPrefix + "commit -m "
+                                               + shellQuoted (commitMessage) + " -- "
+                                               + shellQuoted (patchRelative) + " "
+                                               + shellQuoted (logRelative));
+    if (commitResult.exitCode != 0)
+    {
+        std::string logError;
+        appendSaveLog (saveLogPath,
+                       workManifestPath,
+                       patchPath,
+                       "save-ok commit-failed",
+                       "save-ok commit-failed",
+                       {},
+                       commitResult.output,
+                       logError);
+        return { false, "save-ok commit-failed", {}, commitResult.output };
+    }
+
+    const auto revParse = runShellCommand (gitPrefix + "rev-parse HEAD");
+    const auto commitId = trimmed (revParse.output);
+    if (revParse.exitCode != 0 || commitId.empty())
+    {
+        std::string logError;
+        appendSaveLog (saveLogPath,
+                       workManifestPath,
+                       patchPath,
+                       "save-ok commit-failed",
+                       "save-ok commit-failed",
+                       {},
+                       revParse.output,
+                       logError);
+        return { false, "save-ok commit-failed", {}, revParse.output };
+    }
+
+    std::string logError;
+    if (! appendSaveLog (saveLogPath,
+                         workManifestPath,
+                         patchPath,
+                         "saved-and-committed",
+                         "saved-and-committed",
+                         commitId,
+                         {},
+                         logError))
+    {
+        return { false, "save-ok commit-failed", commitId, logError };
+    }
+
+    return { true, "saved-and-committed", commitId, {} };
 }
 
 SaveWorkResult finishSaveWork (GraphSession& session,
                                bool ok,
                                const std::string& status,
+                               const std::string& commitStatus,
                                const std::string& workManifestPath,
                                const std::string& patchPath,
                                const std::filesystem::path& saveLogPath,
-                               const std::string& error)
+                               const std::string& error,
+                               std::shared_ptr<SaveWorkCommitJob> commitJob = {})
 {
     session.commandLog.push_back ("save_work:" + status);
-    return { ok, status, workManifestPath, patchPath, saveLogPath.string(), error };
+    return { ok, status, commitStatus, workManifestPath, patchPath, saveLogPath.string(), error, std::move (commitJob) };
 }
+}
+
+SaveWorkCommitJob::SaveWorkCommitJob (std::future<SaveWorkCommitResult> nextFuture)
+    : future (nextFuture.share())
+{
+}
+
+SaveWorkCommitResult SaveWorkCommitJob::wait() const
+{
+    return future.get();
 }
 
 SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestPath)
 {
+    return saveWork (session, workManifestPath, {});
+}
+
+SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestPath, const SaveWorkOptions& options)
+{
     if (workManifestPath.empty())
-        return finishSaveWork (session, false, "validation-failed", workManifestPath, {}, {}, "work manifest path is required");
+        return finishSaveWork (session, false, "validation-failed", "not-started", workManifestPath, {}, {}, "work manifest path is required");
 
     const auto work = loadWorkProjectManifest (workManifestPath);
     const auto saveLogPath = saveLogPathForWork (workManifestPath);
     if (! work.ok)
-        return finishSaveWork (session, false, "validation-failed", workManifestPath, {}, saveLogPath, work.error);
+        return finishSaveWork (session, false, "validation-failed", "not-started", workManifestPath, {}, saveLogPath, work.error);
 
     const auto patchPath = resolveNearManifest (workManifestPath, work.manifest.mainPatchPath).string();
 
     if (! session.dirty)
     {
         std::string logError;
-        if (! appendSaveLog (saveLogPath, workManifestPath, patchPath, "clean", {}, logError))
-            return finishSaveWork (session, false, "write-failed", workManifestPath, patchPath, saveLogPath, logError);
+        if (! appendSaveLog (saveLogPath, workManifestPath, patchPath, "clean", "not-started", {}, {}, logError))
+            return finishSaveWork (session, false, "write-failed", "not-started", workManifestPath, patchPath, saveLogPath, logError);
 
-        return finishSaveWork (session, true, "clean", workManifestPath, patchPath, saveLogPath, {});
+        return finishSaveWork (session, true, "clean", "not-started", workManifestPath, patchPath, saveLogPath, {});
     }
 
     const auto activePatch = loadPatchDocument (patchPath);
     if (! activePatch.ok)
-        return finishSaveWork (session, false, "validation-failed", workManifestPath, patchPath, saveLogPath, activePatch.error);
+        return finishSaveWork (session, false, "validation-failed", "not-started", workManifestPath, patchPath, saveLogPath, activePatch.error);
 
     const auto document = makePatchDocument (activePatch.document.id, activePatch.document.title, session.graph);
     const auto saveResult = savePatchDocument (patchPath, document);
     if (! saveResult.ok)
     {
         std::string logError;
-        appendSaveLog (saveLogPath, workManifestPath, patchPath, saveResult.status, saveResult.error, logError);
-        return finishSaveWork (session, false, saveResult.status, workManifestPath, patchPath, saveLogPath, saveResult.error);
+        appendSaveLog (saveLogPath, workManifestPath, patchPath, saveResult.status, "not-started", {}, saveResult.error, logError);
+        return finishSaveWork (session, false, saveResult.status, "not-started", workManifestPath, patchPath, saveLogPath, saveResult.error);
     }
 
     const auto reloadedPatch = loadPatchDocument (patchPath);
     if (! reloadedPatch.ok)
     {
         std::string logError;
-        appendSaveLog (saveLogPath, workManifestPath, patchPath, "validation-failed", reloadedPatch.error, logError);
-        return finishSaveWork (session, false, "validation-failed", workManifestPath, patchPath, saveLogPath, reloadedPatch.error);
+        appendSaveLog (saveLogPath, workManifestPath, patchPath, "validation-failed", "not-started", {}, reloadedPatch.error, logError);
+        return finishSaveWork (session, false, "validation-failed", "not-started", workManifestPath, patchPath, saveLogPath, reloadedPatch.error);
     }
 
     std::string logError;
-    if (! appendSaveLog (saveLogPath, workManifestPath, patchPath, saveResult.status, {}, logError))
-        return finishSaveWork (session, false, "write-failed", workManifestPath, patchPath, saveLogPath, logError);
+    const auto initialCommitStatus = options.startLocalGitCommit ? "commit-pending" : "not-started";
+    if (! appendSaveLog (saveLogPath, workManifestPath, patchPath, saveResult.status, initialCommitStatus, {}, {}, logError))
+        return finishSaveWork (session, false, "write-failed", "not-started", workManifestPath, patchPath, saveLogPath, logError);
 
     session.dirty = false;
-    return finishSaveWork (session, true, saveResult.status, workManifestPath, patchPath, saveLogPath, {});
+
+    if (! options.startLocalGitCommit)
+        return finishSaveWork (session, true, saveResult.status, "not-started", workManifestPath, patchPath, saveLogPath, {});
+
+    auto future = std::async (std::launch::async, [workManifestPath, patchPath, saveLogPath, commitMessage = options.commitMessage] {
+        return commitSavedWorkInGit (workManifestPath, patchPath, saveLogPath, commitMessage);
+    });
+    auto commitJob = std::make_shared<SaveWorkCommitJob> (std::move (future));
+    return finishSaveWork (session,
+                           true,
+                           saveResult.status,
+                           "commit-pending",
+                           workManifestPath,
+                           patchPath,
+                           saveLogPath,
+                           {},
+                           commitJob);
 }
 
 SaveLogLoadResult loadSaveLog (const std::string& saveLogPath)

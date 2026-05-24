@@ -90,11 +90,34 @@ rg -n "Save State|Reload State|savedInteractionState" source/ui source/render so
 rg -n "Save Work|requestSaveWork|onSaveWorkRequested|commandModifier" source/ui source/render source/app
 ```
 
-## Parked Outside C3.3
+## C3.4 Closed Slice
 
 ```text
-background local git add/commit worker
-saved-and-committed / save-ok commit-failed transition
+save_work with SaveWorkOptions.startLocalGitCommit
+-> synchronous PatchDocument write returns save-ok commit-pending
+-> background local git add/commit runs inside active work repo
+-> commit job returns saved-and-committed + commit id
+-> save log records pending entry and final committed entry
+```
+
+## C3.4 Evidence
+
+- `SaveWorkOptions` keeps local git commit opt-in, so C3.1/C3.2 default saves still stop at `not-started`.
+- `saveWork(session, manifestPath, options)` returns `commitStatus: commit-pending` and a `SaveWorkCommitJob` when `startLocalGitCommit` is true.
+- The worker runs `git -C <work-root> add/commit` against the active work project files, not the app source repository.
+- `tests/SaveWorkCommandTests.cpp` initializes a temp work git repository, saves a dirty C2 compound work, waits for the background job, verifies `saved-and-committed`, checks a non-empty commit id, and reads the final save log entry back.
+
+## C3.4 Verification Gate
+
+```text
+cmake --build build --target my_world_save_work_command_tests
+./build/my_world_save_work_command_tests
+```
+
+## Parked Outside C3.4
+
+```text
+save-ok commit-failed negative proof
 AI worker save_work caller
 remote push/sync
 ```
@@ -102,9 +125,9 @@ remote push/sync
 ## Next Line
 
 ```text
-C3.4 local git worker:
+C3.5 commit failure proof:
 save-ok commit-pending
--> background local git add/commit in active work repo
--> saved-and-committed or save-ok commit-failed
--> final save log status readable
+-> git worker cannot commit
+-> save-ok commit-failed
+-> failure reason readable from save log
 ```
