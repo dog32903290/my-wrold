@@ -126,7 +126,7 @@ C6 is closed. It did not add natural-language parsing and did not reopen C5.
 C6 post-close hygiene stays contract-neutral:
 - cdb35da extracts repair-loop terminal logging/proof closure and adds rejected-branch tests.
 - 5fb9d66 keeps C6 app proof fixtures local, with no node/runtime/schema change.
-- current C-segment hygiene pass shares C2-C6 proof directory setup, with no proof report schema change.
+- current C-segment hygiene passes share C2-C6 proof directory setup and extract C2-C6 proof report builders into `source/app/ProofReports.*`, with no proof report schema change.
 C6 spec:
 - docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
 C6.1 evidence is in:

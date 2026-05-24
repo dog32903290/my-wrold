@@ -667,6 +667,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             source/app/Main.cpp
             source/app/MainComponent.cpp
+            source/app/ProofReports.cpp
             source/app/PreferencesPanel.cpp
             source/render/OpenGLShaderPreview.cpp
     )
