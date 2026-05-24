@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 14:27 Asia/Taipei.
+Date: 2026-05-24 15:11 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,9 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+311b64e Tidy C proof request fixtures
+2c49f1a Extract C proof reports
+0f81a42 Tidy C proof directory setup
 5fb9d66 Tidy C6 proof fixtures
 cdb35da Tidy C6 repair loop closure
 6939992 Close C6 analyzer family and repair loop
@@ -198,6 +201,7 @@ Latest accepted targeted result:
 | C5 module publish/reuse path | closed | `docs/superpowers/specs/2026-05-24-c5-module-publish-reuse-path.md` | Do not reopen C5 for C6 work |
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
+| H1 post-C three-layer cleanup | next | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | run before R/PV/TiXL unless explicitly overridden |
 | R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
@@ -209,7 +213,9 @@ Current active lane:
 
 ```text
 None after C6 closure.
-Next selectable lane: R runtime/render backbone, PV/analyzer detector expansion, or TiXL sub-ledger work.
+Next selected lane after current C hygiene: H1 post-C three-layer cleanup.
+H1 order: UI overlay split -> RuntimeRegistry split -> StorageContract split.
+Do not start R runtime/render, PV/analyzer detector expansion, or TiXL sub-ledger work before H1 unless explicitly overridden.
 ```
 
 C4 proved:
@@ -231,6 +237,15 @@ visual vocabulary
 TiXL browser/search implementation
 remote sync
 raw callback-buffer runtime
+```
+
+Scheduled before those parked lanes:
+
+```text
+H1 post-C three-layer cleanup
+-> source/ui/ImGuiSmokeOverlay.cpp responsibility split
+-> source/core/RuntimeRegistry.cpp responsibility split
+-> source/storage/StorageContract.cpp serialization split
 ```
 
 Parked after C6:
@@ -270,6 +285,7 @@ raw callback-buffer runtime
 | `2026-05-24-c2-compound-work-closure.md` | historical C2 implementation/closure plan | no |
 | `2026-05-24-c5-module-publish-reuse-path.md` | C5 closure evidence | no, unless auditing C5 evidence |
 | `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
+| `2026-05-24-post-c-three-layer-cleanup.md` | next lane spec after C hygiene | yes, after this master plan when starting H1 |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
 
@@ -306,7 +322,7 @@ debug/c6-ai-repair-loop-proof/ai_repair_loop_report.json
 
 ## Next Handoff Sentence
 
-Open this master plan first. C6 is closed; choose exactly one next lane before implementation and do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. C6 is closed; after current C hygiene, the next selected lane is H1 post-C three-layer cleanup unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
