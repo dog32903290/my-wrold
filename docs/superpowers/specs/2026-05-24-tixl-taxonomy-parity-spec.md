@@ -147,6 +147,27 @@ These must not appear in the default operator browser even if present in the wit
 | operator files beginning with `_` | hidden by default | helper/internal naming | debug/import mode |
 | `flow/skillQuest` | hidden by default | skill/quiz-like material, not default creative operator taxonomy | learning mode |
 
+## P-TAX1 Fixture Evidence
+
+Closed as of 2026-05-25 02:16 Asia/Taipei.
+
+`TAX-001` through `TAX-003` are proven at L1 witness level by:
+
+```text
+fixtures/tixl-witness/operator-browser-taxonomy.json
+tests/TiXLTaxonomyFixtureTests.cpp
+```
+
+Verified acceptance traces:
+
+```text
+category_browser_root_exact_tixl_paths
+category_browser_drilldown_exact_namespace
+hidden_paths_excluded_from_default_browser
+```
+
+This proves the deterministic taxonomy fixture and hidden/default rules. It does not implement the visible browser UI, search ranking, compatible create, or saved graph type mapping.
+
 ## Browser And Search Parity
 
 | Behavior | TiXL witness | Policy | Required My World trace | Blocker |

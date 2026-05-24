@@ -239,6 +239,7 @@ Latest accepted targeted result:
 | MainComponent proof status facade | closed | `docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md`; `finishProofDump()` owns proof result status text and quit-after-dump handling for file-based proof runners; app build and PV attack CLI proof passed | Do not move request construction or proof semantics into the UI facade; next cleanup is path policy extraction |
 | App path policy cleanup | closed | `docs/superpowers/specs/2026-05-25-app-path-policy-cleanup.md`; `AppPaths` owns project root/debug folder/active manifest/candidate roots policy; app build plus C2 and C5 visible CLI proofs passed | Do not add proof runner schemas to path policy; next cleanup is active work save/publish adapter |
 | Active work service cleanup | closed | `docs/superpowers/specs/2026-05-25-active-work-service-cleanup.md`; `ActiveWorkService` owns default active work preparation plus visible save/publish request construction; focused service/storage tests and app build passed | Treat further MainComponent cleanup as a fresh selected lane |
+| P-TAX1 TiXL taxonomy fixture | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `fixtures/tixl-witness/operator-browser-taxonomy.json` plus `tixl_taxonomy_fixture` prove root paths, selected drilldown paths, source commit/counts, hidden exclusions, and alias-not-root rules | Next TiXL parity lane is P-SEARCH1; do not start UI browser polish without selecting a lane |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -248,6 +249,35 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-TAX1 category browser fixture closure as of 2026-05-25 02:16 Asia/Taipei.
+
+P-TAX1 closed.
+Evidence:
+- docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
+- docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
+- fixtures/tixl-witness/operator-browser-taxonomy.json
+- tests/TiXLTaxonomyFixtureTests.cpp
+
+Closed line:
+TiXL `Operators/Lib` witness catalog
+-> deterministic default browser taxonomy fixture
+-> C++ fixture test
+-> TAX-001/TAX-002/TAX-003 proof evidence
+
+Latest verification:
+- `cmake -S . -B build`
+- `cmake --build build --target my_world_tixl_taxonomy_fixture_tests`
+- `ctest --test-dir build --output-on-failure -R tixl_taxonomy_fixture`
+- `./build/my_world_tixl_taxonomy_fixture_tests`
+
+Latest accepted result:
+- `tixl_taxonomy_fixture` passed
+- TAX-001 through TAX-003 are proven at L1 witness level
+
+Next selectable TiXL lane:
+- P-SEARCH1 browser/search/compatible create fixture
+
+Previous closure:
 None after MainComponent 1-4 adapter cleanup as of 2026-05-25 02:05 Asia/Taipei.
 
 Active work service step closed; the requested 1-4 cleanup sequence is complete.
@@ -1324,7 +1354,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after PV-B1.1 node surface geometry closure. Next selectable lanes include MIDI/shader mapping, live callback-buffer runtime, browser polish, or a new analyzer aggregate family, but each needs a fresh active spec before code. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-TAX1 category browser fixture closure. Next selectable TiXL lane is P-SEARCH1 browser/search/compatible create fixture; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

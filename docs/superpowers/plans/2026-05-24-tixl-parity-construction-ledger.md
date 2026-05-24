@@ -73,9 +73,9 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | ID | Feature | Spec row | Witness | Status | Phase | Acceptance trace | Blocker / next proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | WIT-001 | TiXL `Operators/Lib` witness catalog | node function spec catalog rule | `fixtures/tixl-witness/operator-catalog.json` | proven | L1 witness | catalog counts and source commit recorded | none |
-| TAX-001 | Default browser root mirrors TiXL visible roots | taxonomy default table | `Operators/Lib` | planned | L1 witness | `category_browser_root_exact_tixl_paths` | generate canonical visible taxonomy fixture |
-| TAX-002 | TiXL child paths mirror visible taxonomy | taxonomy default table and third-level paths | `Operators/Lib/*` | planned | L1 witness | `category_browser_drilldown_exact_namespace` | fixture must preserve order and path spelling |
-| TAX-003 | Hidden/internal/resource paths excluded from default browser | hidden paths table | `.meta`, `Assets`, `Utils`, `_obsolete`, `_internal`, `flow/skillQuest` | planned | L1 witness | hidden/default fixture assertions | classify witness rows as default, hidden, resource, import-only |
+| TAX-001 | Default browser root mirrors TiXL visible roots | taxonomy default table | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | `category_browser_root_exact_tixl_paths` | none |
+| TAX-002 | TiXL child paths mirror visible taxonomy | taxonomy default table and third-level paths | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | `category_browser_drilldown_exact_namespace` | none |
+| TAX-003 | Hidden/internal/resource paths excluded from default browser | hidden paths table | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | hidden/default fixture assertions | none |
 | TAX-004 | `top.*`, `sop.*`, `mat.*` are aliases, not roots | non-negotiable rules | TiXL taxonomy plus local NodeSpec aliases | partial | L3 visible | alias search returns native saved type | P-SEARCH1 |
 | TAX-005 | 923 operator catalog remains witness, not backlog | node function spec catalog rule | `operator-catalog.json` | proven | L0 law | parked catalog entries do not create runtime rows | none |
 
@@ -185,13 +185,30 @@ fixtures/tixl-witness/operator-browser-taxonomy.json
 tests/TiXLTaxonomyFixtureTests.cpp
 ```
 
-- [ ] Read `fixtures/tixl-witness/operator-catalog.json` and the taxonomy parity spec default/hidden path tables.
-- [ ] Write `tests/TiXLTaxonomyFixtureTests.cpp` with assertions for root paths, selected child paths, hidden paths, source commit, and deterministic order.
-- [ ] Create `fixtures/tixl-witness/operator-browser-taxonomy.json` with root paths, visible children, hidden path patterns, and source metadata.
-- [ ] Add the test target to `CMakeLists.txt`.
-- [ ] Run `cmake --build build --target my_world_tixl_taxonomy_fixture_tests`.
-- [ ] Run `./build/my_world_tixl_taxonomy_fixture_tests`.
-- [ ] Update taxonomy parity spec rows `TAX-001` through `TAX-003` from `planned` to `proven` after the test passes.
+- [x] Read `fixtures/tixl-witness/operator-catalog.json` and the taxonomy parity spec default/hidden path tables.
+- [x] Write `tests/TiXLTaxonomyFixtureTests.cpp` with assertions for root paths, selected child paths, hidden paths, source commit, and deterministic order.
+- [x] Create `fixtures/tixl-witness/operator-browser-taxonomy.json` with root paths, visible children, hidden path patterns, and source metadata.
+- [x] Add the test target to `CMakeLists.txt`.
+- [x] Run `cmake --build build --target my_world_tixl_taxonomy_fixture_tests`.
+- [x] Run `./build/my_world_tixl_taxonomy_fixture_tests`.
+- [x] Update taxonomy parity spec rows `TAX-001` through `TAX-003` from `planned` to `proven` after the test passes.
+
+Closed as of 2026-05-25 02:16 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_tixl_taxonomy_fixture_tests
+ctest --test-dir build --output-on-failure -R tixl_taxonomy_fixture
+./build/my_world_tixl_taxonomy_fixture_tests
+```
+
+Accepted result:
+
+```text
+tixl_taxonomy_fixture passed.
+```
 
 ### P-SEARCH1 Search And Compatible Create Fixture
 

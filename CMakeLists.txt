@@ -574,6 +574,20 @@ set_tests_properties(storage_contract PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_executable(my_world_tixl_taxonomy_fixture_tests
+    tests/TiXLTaxonomyFixtureTests.cpp
+)
+
+target_link_libraries(my_world_tixl_taxonomy_fixture_tests
+    PRIVATE
+        my_world_storage
+)
+
+add_test(NAME tixl_taxonomy_fixture COMMAND my_world_tixl_taxonomy_fixture_tests)
+set_tests_properties(tixl_taxonomy_fixture PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(my_world_patch_document_tests
     tests/PatchDocumentTests.cpp
 )

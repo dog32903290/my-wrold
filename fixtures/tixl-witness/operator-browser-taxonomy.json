@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "kind": "tixl-operator-browser-taxonomy",
+  "source": {
+    "kind": "tixl-witness",
+    "repo": "https://github.com/tixl3d/tixl.git",
+    "commit": "26dc80c7e3a85389f6619ffcd76b1e75e03547aa",
+    "catalogPath": "fixtures/tixl-witness/operator-catalog.json",
+    "scope": "Operators/Lib"
+  },
+  "purpose": "Deterministic default browser taxonomy fixture for TiXL Operators/Lib parity. This is browser/search witness data, not saved graph type law.",
+  "acceptanceTraces": [
+    "category_browser_root_exact_tixl_paths",
+    "category_browser_drilldown_exact_namespace",
+    "hidden_paths_excluded_from_default_browser"
+  ],
+  "counts": {
+    "catalogEntries": 923,
+    "defaultRootCount": 11
+  },
+  "defaultBrowser": {
+    "sourceRoot": "Operators/Lib",
+    "roots": [
+      {
+        "path": "data",
+        "children": ["object"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "data.*",
+        "status": "planned"
+      },
+      {
+        "path": "field",
+        "children": ["adjust", "analyze", "combine", "generate", "render", "space", "use"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "field.*, sdf.*",
+        "status": "planned"
+      },
+      {
+        "path": "flow",
+        "children": ["context"],
+        "rootOperators": true,
+        "mirrorPolicy": "mirror partial",
+        "localInternalMapping": "command.flow.*",
+        "status": "planned"
+      },
+      {
+        "path": "image",
+        "children": ["analyze", "color", "fx", "generate", "transform", "use"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "image.*",
+        "status": "partial"
+      },
+      {
+        "path": "io",
+        "children": ["audio", "dmx", "file", "freed", "http", "input", "json", "midi", "osc", "posistage", "ptz", "serial", "tcp", "udp", "video", "websocket"],
+        "mirrorPolicy": "mirror with platform flags",
+        "localInternalMapping": "io.*",
+        "status": "partial"
+      },
+      {
+        "path": "mesh",
+        "children": ["draw", "generate", "modify"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "mesh.*",
+        "status": "partial"
+      },
+      {
+        "path": "numbers",
+        "children": ["anim", "bool", "color", "curve", "data", "float", "floats", "int", "int2", "ints", "vec2", "vec3", "vec4"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "signal.*, vector.*, color.*",
+        "status": "planned"
+      },
+      {
+        "path": "particle",
+        "children": ["force"],
+        "mirrorPolicy": "mirror, parked runtime",
+        "localInternalMapping": "particle.*",
+        "status": "parked"
+      },
+      {
+        "path": "point",
+        "children": ["combine", "draw", "generate", "helper", "io", "modify", "sim", "transform", "usse"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "point.*",
+        "status": "partial"
+      },
+      {
+        "path": "render",
+        "children": ["analyze", "basic", "camera", "gizmo", "postfx", "scene", "shading", "sprite", "transform", "utils"],
+        "mirrorPolicy": "mirror, runtime parked by RenderBackend",
+        "localInternalMapping": "render.*, command.graph, material.shader",
+        "status": "partial"
+      },
+      {
+        "path": "string",
+        "children": ["buffers", "combine", "convert", "datetime", "list", "logic", "random", "search", "transform"],
+        "mirrorPolicy": "mirror",
+        "localInternalMapping": "text.*, string.*",
+        "status": "planned"
+      }
+    ],
+    "importantThirdLevelPaths": [
+      "image/fx/blur",
+      "image/fx/distort",
+      "image/fx/feedback",
+      "image/fx/glitch",
+      "image/fx/stylize",
+      "image/generate/basic",
+      "image/generate/fractal",
+      "image/generate/load",
+      "image/generate/misc",
+      "image/generate/noise",
+      "image/generate/pattern",
+      "field/generate/sdf",
+      "field/generate/texture",
+      "field/generate/vec3",
+      "numbers/anim/animators",
+      "numbers/anim/time",
+      "numbers/anim/vj",
+      "numbers/bool/combine",
+      "numbers/bool/convert",
+      "numbers/bool/logic",
+      "numbers/bool/process",
+      "numbers/float/adjust",
+      "numbers/float/basic",
+      "numbers/float/logic",
+      "numbers/float/process",
+      "numbers/float/random",
+      "numbers/float/trigonometry",
+      "render/camera/analyze",
+      "string/buffers/convert",
+      "string/buffers/transform"
+    ],
+    "excludedFromDefault": [
+      {
+        "pattern": "Operators/Lib/.meta",
+        "policy": "hidden",
+        "reason": "thumbnails/cache",
+        "futureEntryPoint": "none"
+      },
+      {
+        "pattern": "Operators/Lib/Assets",
+        "policy": "resource",
+        "reason": "resources, shaders, meshes, audio, templates",
+        "futureEntryPoint": "resource/asset browser"
+      },
+      {
+        "pattern": "Operators/Lib/Utils",
+        "policy": "hidden",
+        "reason": "source helpers, no operator triples",
+        "futureEntryPoint": "none"
+      },
+      {
+        "pattern": "*/_",
+        "policy": "hidden/import-only",
+        "reason": "internal implementation helpers",
+        "futureEntryPoint": "debug/import mode"
+      },
+      {
+        "pattern": "*/_obsolete",
+        "policy": "hidden/import-only",
+        "reason": "obsolete compatibility",
+        "futureEntryPoint": "migration mode"
+      },
+      {
+        "pattern": "*/_internal",
+        "policy": "hidden/import-only",
+        "reason": "internal graph helpers",
+        "futureEntryPoint": "debug/import mode"
+      },
+      {
+        "pattern": "*/_experimental",
+        "policy": "hidden/import-only",
+        "reason": "unstable/lab",
+        "futureEntryPoint": "optional lab mode"
+      },
+      {
+        "pattern": "*/obsolete",
+        "policy": "hidden/import-only",
+        "reason": "old compatibility",
+        "futureEntryPoint": "migration mode"
+      },
+      {
+        "pattern": "*/legacy",
+        "policy": "hidden/import-only",
+        "reason": "legacy compatibility",
+        "futureEntryPoint": "migration mode"
+      },
+      {
+        "pattern": "*/experimental",
+        "policy": "hidden/import-only",
+        "reason": "unstable/lab",
+        "futureEntryPoint": "optional lab mode"
+      },
+      {
+        "pattern": "operator-file-prefix:_",
+        "policy": "hidden",
+        "reason": "helper/internal naming",
+        "futureEntryPoint": "debug/import mode"
+      },
+      {
+        "pattern": "flow/skillQuest",
+        "policy": "hidden",
+        "reason": "skill/quiz-like material, not default creative operator taxonomy",
+        "futureEntryPoint": "learning mode"
+      }
+    ]
+  },
+  "aliasRules": [
+    {
+      "alias": "top",
+      "targetRoot": "image",
+      "isDefaultRoot": false,
+      "policy": "search alias only"
+    },
+    {
+      "alias": "sop",
+      "targetRoot": "mesh",
+      "isDefaultRoot": false,
+      "policy": "search alias only"
+    },
+    {
+      "alias": "mat",
+      "targetRoot": "render",
+      "isDefaultRoot": false,
+      "policy": "search alias only"
+    }
+  ],
+  "savedGraphTypeLaw": "TiXL paths and aliases are browser/search labels only; saved graph type remains native My World NodeSpec/module identity."
+}
