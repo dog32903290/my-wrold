@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 15:54 Asia/Taipei.
+Date: 2026-05-24 16:02 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,7 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+90a4b40 Route R runtime render backbone
 a6390b6 Split storage contract serialization
 cff975e Split runtime registry responsibilities
 2c53c05 Split ImGui smoke overlay helpers
@@ -206,7 +207,7 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | roadmap defined | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md` | R1 OpenGL proof backend extraction behind `RenderBackend` |
+| R runtime/render backbone | active | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md` and `docs/superpowers/plans/2026-05-24-r-segment-implementation.md` | R1 OpenGL proof backend extraction behind `RenderBackend` |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
 ## Active Lane Protocol
@@ -216,12 +217,13 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after R0 roadmap routing.
+R1 OpenGL proof backend extraction is in progress.
 H1.1 UI overlay split is closed.
 H1.2 RuntimeRegistry split is closed.
 H1.3 StorageContract split is closed in the current slice.
 R0 runtime/render backbone roadmap spec is closed in the current slice.
-Next candidate lane: R1 OpenGL proof backend extraction behind RenderBackend unless explicitly overridden.
+Active implementation plan:
+- docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 ```
 
 Current R note:
@@ -229,6 +231,9 @@ Current R note:
 ```text
 R0 roadmap spec:
 - docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
+
+R segment implementation plan:
+- docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 R1 first line:
 makeDefaultShaderOutputGraph()
@@ -380,6 +385,7 @@ raw callback-buffer runtime
 | `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
 | `2026-05-24-post-c-three-layer-cleanup.md` | H1 closure evidence | no, unless auditing H1 evidence |
 | `2026-05-24-r-runtime-render-backbone-roadmap.md` | R0 roadmap spec and R1/R2 routing authority | only after this master plan selects R work |
+| `2026-05-24-r-segment-implementation.md` | active R implementation plan | yes, for R1/R2/R3 execution |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
 
@@ -410,11 +416,12 @@ R0 routing owned files:
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
+docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 ```
 
 ## Next Handoff Sentence
 
-Open this master plan first, then `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md`. H1 cleanup and R0 roadmap routing are closed; no implementation lane is active, and the next candidate is R1 OpenGL proof backend extraction behind `RenderBackend` unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first, then `docs/superpowers/plans/2026-05-24-r-segment-implementation.md`. R1 OpenGL proof backend extraction is active; do not start R2 until R1 red/green/proof gates pass and the R1 commit is made. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
