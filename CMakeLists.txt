@@ -136,6 +136,7 @@ set_tests_properties(graph_language PROPERTIES
 )
 
 add_library(my_world_node_specs
+    source/core/NodeSpecBrowser.cpp
     source/core/NodeSpec.cpp
 )
 
@@ -154,6 +155,21 @@ target_link_libraries(my_world_node_spec_tests
 )
 
 add_test(NAME node_specs COMMAND my_world_node_spec_tests)
+
+add_executable(my_world_node_spec_browser_tests
+    tests/NodeSpecBrowserTests.cpp
+)
+
+target_link_libraries(my_world_node_spec_browser_tests
+    PRIVATE
+        my_world_compound_module
+        my_world_storage
+)
+
+add_test(NAME node_spec_browser COMMAND my_world_node_spec_browser_tests)
+set_tests_properties(node_spec_browser PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 add_library(my_world_compound
     source/core/CompoundPatch.cpp

@@ -239,8 +239,9 @@ Latest accepted targeted result:
 | MainComponent proof status facade | closed | `docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md`; `finishProofDump()` owns proof result status text and quit-after-dump handling for file-based proof runners; app build and PV attack CLI proof passed | Do not move request construction or proof semantics into the UI facade; next cleanup is path policy extraction |
 | App path policy cleanup | closed | `docs/superpowers/specs/2026-05-25-app-path-policy-cleanup.md`; `AppPaths` owns project root/debug folder/active manifest/candidate roots policy; app build plus C2 and C5 visible CLI proofs passed | Do not add proof runner schemas to path policy; next cleanup is active work save/publish adapter |
 | Active work service cleanup | closed | `docs/superpowers/specs/2026-05-25-active-work-service-cleanup.md`; `ActiveWorkService` owns default active work preparation plus visible save/publish request construction; focused service/storage tests and app build passed | Treat further MainComponent cleanup as a fresh selected lane |
-| P-TAX1 TiXL taxonomy fixture | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `fixtures/tixl-witness/operator-browser-taxonomy.json` plus `tixl_taxonomy_fixture` prove root paths, selected drilldown paths, source commit/counts, hidden exclusions, and alias-not-root rules | Next TiXL parity lane is P-SEARCH1; do not start UI browser polish without selecting a lane |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
+| P-TAX1 TiXL taxonomy fixture | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `fixtures/tixl-witness/operator-browser-taxonomy.json` plus `tixl_taxonomy_fixture` prove root paths, selected drilldown paths, source commit/counts, hidden exclusions, and alias-not-root rules | P-SEARCH1 is now closed; do not start UI browser polish without selecting a fresh lane |
+| P-SEARCH1 TiXL browser/search/compatible create | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `NodeSpecBrowser` plus `node_spec_browser` prove search, aliases, saved type preservation, and compatible-create candidate filtering | Next TiXL interaction lane is P-OPS1; do not start UI browser polish without a fresh selected lane |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-SEARCH1 closure |
 
 ## Active Lane Protocol
 
@@ -249,6 +250,41 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-SEARCH1 browser/search/compatible create fixture closure as of 2026-05-25 02:27 Asia/Taipei.
+
+P-SEARCH1 closed.
+Evidence:
+- source/core/NodeSpecBrowser.h
+- source/core/NodeSpecBrowser.cpp
+- tests/NodeSpecBrowserTests.cpp
+- fixtures/interaction/tixl-search-compatible-create.behavior.json
+- docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
+- docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
+
+Closed line:
+TiXL-style fuzzy search + namespace/description/alias match
+-> native NodeSpec browser entries
+-> compatible create candidates from dragged output or input context
+-> behavior fixture rows for output drag, input drag, and cancel-without-mutation
+
+Latest verification:
+- `cmake -S . -B build && cmake --build build --target my_world_node_spec_browser_tests` failed RED first on missing `source/core/NodeSpecBrowser.h`
+- `cmake --build build --target my_world_node_spec_browser_tests`
+- `./build/my_world_node_spec_browser_tests`
+- `./build/my_world_interaction_trace_tests`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `node spec browser tests ok`
+- `interaction traces ok`
+- `55/55 tests passed`
+
+Next selectable TiXL lane:
+- P-OPS1 richer graph operation trace
+- P-OUT1 output pinning if output behavior is selected first
+
+Previous closure:
 None after P-TAX1 category browser fixture closure as of 2026-05-25 02:16 Asia/Taipei.
 
 P-TAX1 closed.
@@ -273,9 +309,6 @@ Latest verification:
 Latest accepted result:
 - `tixl_taxonomy_fixture` passed
 - TAX-001 through TAX-003 are proven at L1 witness level
-
-Next selectable TiXL lane:
-- P-SEARCH1 browser/search/compatible create fixture
 
 Previous closure:
 None after MainComponent 1-4 adapter cleanup as of 2026-05-25 02:05 Asia/Taipei.
@@ -1354,7 +1387,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-TAX1 category browser fixture closure. Next selectable TiXL lane is P-SEARCH1 browser/search/compatible create fixture; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-SEARCH1 browser/search/compatible create fixture closure. Next selectable TiXL lanes are P-OPS1 richer graph operation trace or P-OUT1 output pinning; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

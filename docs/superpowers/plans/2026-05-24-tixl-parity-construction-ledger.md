@@ -29,7 +29,7 @@
   - Create: `fixtures/tixl-witness/operator-browser-taxonomy.json`
   - Create: `tests/TiXLTaxonomyFixtureTests.cpp`
   - Modify: `CMakeLists.txt`
-- Future P-SEARCH1 artifacts:
+- P-SEARCH1 artifacts:
   - Modify or create: `source/core/NodeSpecBrowser.h/.cpp`
   - Create: `tests/NodeSpecBrowserTests.cpp`
   - Create: `fixtures/interaction/tixl-search-compatible-create.behavior.json`
@@ -76,7 +76,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | TAX-001 | Default browser root mirrors TiXL visible roots | taxonomy default table | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | `category_browser_root_exact_tixl_paths` | none |
 | TAX-002 | TiXL child paths mirror visible taxonomy | taxonomy default table and third-level paths | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | `category_browser_drilldown_exact_namespace` | none |
 | TAX-003 | Hidden/internal/resource paths excluded from default browser | hidden paths table | `fixtures/tixl-witness/operator-browser-taxonomy.json` | proven | L1 witness | hidden/default fixture assertions | none |
-| TAX-004 | `top.*`, `sop.*`, `mat.*` are aliases, not roots | non-negotiable rules | TiXL taxonomy plus local NodeSpec aliases | partial | L3 visible | alias search returns native saved type | P-SEARCH1 |
+| TAX-004 | `top.*`, `sop.*`, `mat.*` are aliases, not roots | non-negotiable rules | TiXL taxonomy plus local NodeSpec aliases | proven | L1 witness | alias search returns native saved type | `node_spec_browser` proves alias search preserves native saved type; UI browser polish remains separate |
 | TAX-005 | 923 operator catalog remains witness, not backlog | node function spec catalog rule | `operator-catalog.json` | proven | L0 law | parked catalog entries do not create runtime rows | none |
 
 ### Browser, Search, And Compatible Create
@@ -87,10 +87,10 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | BROW-002 | Category drilldown by namespace path | Browser And Search Parity | `SymbolBrowsing` path mutation | planned | L3 visible | `category_browser_drilldown_exact_namespace` | P-TAX1 fixture |
 | BROW-003 | Essential overview rows | Browser And Search Parity | `SymbolTags.Essential` | parked | L3 visible | `category_overview_essential_only` | NodeSpec metadata flag |
 | BROW-004 | Full symbol library namespace tree | Browser And Search Parity | `SymbolLibrary`, `NamespaceTreeNode` | parked | L3 visible | `symbol_library_namespace_tree_root_order` | secondary library UI |
-| SEARCH-001 | Fuzzy search across name, namespace, description | Browser And Search Parity | `SymbolFilter` | planned | L3 visible | `search_fuzzy_name_namespace_description` | NodeSpec browser query helper |
-| SEARCH-002 | Search ranking exact, starts-with, contains, PascalCase | Browser And Search Parity | `SymbolFilter` ranking | planned | L3 visible | `search_ranking_exact_starts_contains_pascal` | fixture order |
-| COMPAT-001 | Drag output to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | partial | L2 command | `compatible_create_from_output_drag` | P-SEARCH1 |
-| COMPAT-002 | Drag input to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | planned | L2 command | `compatible_create_from_input_drag` | P-SEARCH1 |
+| SEARCH-001 | Fuzzy search across name, namespace, description | Browser And Search Parity | `SymbolFilter` | proven | L1 witness | `search_fuzzy_name_namespace_description` | `node_spec_browser` proves query helper behavior; UI event wiring remains separate |
+| SEARCH-002 | Search ranking exact, starts-with, contains, PascalCase | Browser And Search Parity | `SymbolFilter` ranking | proven | L1 witness | `search_ranking_exact_starts_contains_pascal` | `node_spec_browser` proves deterministic fixture order |
+| COMPAT-001 | Drag output to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | proven | L1 witness | `compatible_create_from_output_drag` | `node_spec_browser` proves candidate filtering; mutation still uses existing `create_node+connect` command path |
+| COMPAT-002 | Drag input to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | proven | L1 witness | `compatible_create_from_input_drag` | `node_spec_browser` proves candidate filtering; UI gesture trace remains separate |
 | COMPAT-003 | Split existing connection through browser | Browser And Search Parity | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | partial | L2 command | `compatible_split_connection_insert_node` | P-OPS1 macro command trace |
 | COMPAT-004 | Keyboard create/cancel in browser | Browser And Search Parity | browser keyboard handling | planned | L3 visible | `browser_keyboard_return_escape_no_mutation_on_cancel` | UI event trace schema |
 
@@ -226,13 +226,42 @@ tests/NodeSpecBrowserTests.cpp
 fixtures/interaction/tixl-search-compatible-create.behavior.json
 ```
 
-- [ ] Define `BrowserNodeEntry` from `NodeSpec`, visible taxonomy path, aliases, description, ports, runtime readiness, and hidden/default state.
-- [ ] Write search tests for exact, starts-with, contains, PascalCase, namespace, description, `top.*` alias, and native saved type preservation.
-- [ ] Write compatible-create tests for output context and input context using existing seed specs plus loaded module specs.
-- [ ] Implement the smallest deterministic query helper without coupling it to ImGui.
-- [ ] Add behavior fixture rows for `compatible_create_from_output_drag`, `compatible_create_from_input_drag`, and cancel-without-mutation.
-- [ ] Run `cmake --build build`.
-- [ ] Run `./build/my_world_node_spec_browser_tests` and `./build/my_world_interaction_trace_tests`.
+- [x] Define `BrowserNodeEntry` from `NodeSpec`, visible taxonomy path, aliases, description, ports, runtime readiness, and hidden/default state.
+- [x] Write search tests for exact, starts-with, contains, PascalCase, namespace, description, `top.*` alias, and native saved type preservation.
+- [x] Write compatible-create tests for output context and input context using existing seed specs plus loaded module specs.
+- [x] Implement the smallest deterministic query helper without coupling it to ImGui.
+- [x] Add behavior fixture rows for `compatible_create_from_output_drag`, `compatible_create_from_input_drag`, and cancel-without-mutation.
+- [x] Run `cmake --build build`.
+- [x] Run `./build/my_world_node_spec_browser_tests` and `./build/my_world_interaction_trace_tests`.
+
+Closed as of 2026-05-25 02:27 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_node_spec_browser_tests
+# RED first failed on missing source/core/NodeSpecBrowser.h.
+cmake --build build --target my_world_node_spec_browser_tests
+./build/my_world_node_spec_browser_tests
+./build/my_world_interaction_trace_tests
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+node spec browser tests ok
+interaction traces ok
+55/55 tests passed.
+```
+
+Scope boundary:
+
+```text
+P-SEARCH1 proves deterministic core browser/search/compatible-create candidate logic.
+It does not implement the visible ImGui browser, keyboard navigation, or split-connection macro command.
+```
 
 ### P-OPS1 Richer Graph Operation Trace
 

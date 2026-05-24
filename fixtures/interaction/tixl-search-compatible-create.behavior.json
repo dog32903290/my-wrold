@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "tixl-search-compatible-create-behavior",
+  "source": "TiXL SymbolFilter and PlaceHolderUi behavior adapted to native NodeSpec browser query helper",
+  "traces": [
+    {
+      "name": "compatible_create_from_output_drag",
+      "context": {
+        "direction": "draggedOutput",
+        "dataType": "audio.channels"
+      },
+      "expectedCandidates": [
+        "audio.mono_mix",
+        "compound.loudness",
+        "compound.raw-energy"
+      ],
+      "expectedCommands": [
+        "create_node+connect"
+      ]
+    },
+    {
+      "name": "compatible_create_from_input_drag",
+      "context": {
+        "direction": "draggedInput",
+        "dataType": "signal.float"
+      },
+      "expectedCandidates": [
+        "analyzer.rms",
+        "analyzer.analysis_gain",
+        "analyzer.pre_gate",
+        "signal.smoother",
+        "analyzer.loudness_out",
+        "analyzer.loudness",
+        "compound.loudness",
+        "compound.raw-energy"
+      ],
+      "expectedCommands": [
+        "create_node+connect"
+      ]
+    },
+    {
+      "name": "browser_keyboard_return_escape_no_mutation_on_cancel",
+      "context": {
+        "mode": "search",
+        "query": "top.texture"
+      },
+      "cancelAction": "escape",
+      "mutationExpected": false,
+      "expectedCommands": []
+    }
+  ]
+}

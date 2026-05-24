@@ -168,6 +168,31 @@ hidden_paths_excluded_from_default_browser
 
 This proves the deterministic taxonomy fixture and hidden/default rules. It does not implement the visible browser UI, search ranking, compatible create, or saved graph type mapping.
 
+## P-SEARCH1 Fixture Evidence
+
+Closed as of 2026-05-25 02:27 Asia/Taipei.
+
+Search, alias, and compatible-create candidate filtering are proven at core helper / fixture level by:
+
+```text
+source/core/NodeSpecBrowser.h
+source/core/NodeSpecBrowser.cpp
+tests/NodeSpecBrowserTests.cpp
+fixtures/interaction/tixl-search-compatible-create.behavior.json
+```
+
+Verified acceptance traces:
+
+```text
+search_fuzzy_name_namespace_description
+search_ranking_exact_starts_contains_pascal
+compatible_create_from_output_drag
+compatible_create_from_input_drag
+browser_keyboard_return_escape_no_mutation_on_cancel
+```
+
+This proves deterministic query behavior and native saved type preservation for TiXL-style aliases such as `top.texture -> image.texture`. It does not implement the visible ImGui browser, keyboard focus handling, or split-connection macro command.
+
 ## Browser And Search Parity
 
 | Behavior | TiXL witness | Policy | Required My World trace | Blocker |
@@ -176,12 +201,12 @@ This proves the deterministic taxonomy fixture and hidden/default rules. It does
 | Category drilldown | `SymbolBrowsing` path mutation and active namespace results | mirror | `category_browser_drilldown_exact_namespace` | none |
 | Essential overview rows | `SymbolTags.Essential` for level-one overview | adapt until `NodeSpec` has essential flag | `category_overview_essential_only` | NodeSpec metadata |
 | Full symbol library tree | `SymbolLibrary`, `NamespaceTreeNode` | mirror later as secondary library surface | `symbol_library_namespace_tree_root_order` | full library UI |
-| Fuzzy text search | `SymbolFilter`: subsequence regex, namespace/description match | mirror user-visible behavior, not regex bugs | `search_fuzzy_name_namespace_description` | search fixture |
-| Ranking | exact, starts-with, contains, PascalCase, package boosts | mirror visible fixture order; adapt scoring internals | `search_ranking_exact_starts_contains_pascal` | usage data optional |
-| Output drag to empty canvas | source output type filters candidate inputs | mirror | `compatible_create_from_output_drag` | none |
-| Input drag to empty canvas | target input type filters candidate outputs | mirror | `compatible_create_from_input_drag` | none |
+| Fuzzy text search | `SymbolFilter`: subsequence regex, namespace/description match | mirror user-visible behavior, not regex bugs | `search_fuzzy_name_namespace_description` | P-SEARCH1 core helper proven; UI wiring later |
+| Ranking | exact, starts-with, contains, PascalCase, package boosts | mirror visible fixture order; adapt scoring internals | `search_ranking_exact_starts_contains_pascal` | P-SEARCH1 deterministic helper proven; usage boosts optional later |
+| Output drag to empty canvas | source output type filters candidate inputs | mirror | `compatible_create_from_output_drag` | P-SEARCH1 candidate filter proven; visible browser trigger later |
+| Input drag to empty canvas | target input type filters candidate outputs | mirror | `compatible_create_from_input_drag` | P-SEARCH1 candidate filter proven; visible browser trigger later |
 | Split existing connection through browser | input/output filters plus old-edge removal and two-edge insert | mirror as one macro command | `compatible_split_connection_insert_node` | reconnect/split trace |
-| Keyboard create/cancel | arrows, Return, Escape/click outside | mirror | `browser_keyboard_return_escape_no_mutation_on_cancel` | UI event trace schema |
+| Keyboard create/cancel | arrows, Return, Escape/click outside | mirror | `browser_keyboard_return_escape_no_mutation_on_cancel` | P-SEARCH1 fixture row recorded; UI event trace schema still needed |
 
 ## Graph Interaction Parity
 
@@ -308,24 +333,24 @@ Before adding or changing any visible node/module/browser/search/parameter/outpu
 
 ## Next Lines
 
-The next practical parity proofs are:
+The practical parity proof order is:
 
 ```text
-P-TAX1 category browser fixture:
+P-TAX1 category browser fixture: closed
 Operators/Lib visible taxonomy
 -> generated My World browser taxonomy fixture
 -> hidden/default rules tested
 
-P-SEARCH1 search and compatible-create fixture:
+P-SEARCH1 search and compatible-create fixture: closed at core helper / fixture level
 TiXL-style fuzzy search + namespace match + port-compatible candidate filter
 -> NodeSpec registry query
--> create_node/connect command trace
+-> compatible-create behavior fixture
 
-P-OPS1 richer graph-operation trace:
+P-OPS1 richer graph-operation trace: next selectable
 reconnect, split edge, hidden input picker, multi-input ordering, shake disconnect
 -> one user gesture = one undo unit
 
-P-OUT1 output pinning:
+P-OUT1 output pinning: next selectable
 selection-following output
 -> pin output
 -> selection changes do not change output
