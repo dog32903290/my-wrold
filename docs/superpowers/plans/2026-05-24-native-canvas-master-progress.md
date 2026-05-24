@@ -236,6 +236,7 @@ Latest accepted targeted result:
 | ProofRunSupport PV/PV-B1 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-pv-pvb1.md`; PV detector and PV-B1 runners now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, all PV detector CLI proofs, and PV-B1 CLI proof passed | Do not centralize all proof runner logic; C5/C6 helper cleanup remains separate selected slices |
 | ProofRunSupport C5/C6 cleanup | closed | `docs/superpowers/specs/2026-05-25-proof-run-support-c5-c6.md`; C5 publish and C6 analyzer/repair runners now share proof text/directory/candidate primitives with `ProofRunSupport`; focused tests, app build, all C5/C6 CLI proofs, and full `ctest` 51/51 passed | Do not turn `ProofRunSupport` into a generic proof runner; future cleanup should target adapter duplication |
 | MainComponent startup proof adapter | closed | `docs/superpowers/specs/2026-05-25-startup-proof-adapter-cleanup.md`; `StartupProofOptions` and task mapping now own CLI startup proof selection/order/delays; focused test, app build, and C2 CLI proof passed | Do not move proof runner semantics into startup adapter; next cleanup is proof status facade duplication |
+| MainComponent proof status facade | closed | `docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md`; `finishProofDump()` owns proof result status text and quit-after-dump handling for file-based proof runners; app build and PV attack CLI proof passed | Do not move request construction or proof semantics into the UI facade; next cleanup is path policy extraction |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -245,9 +246,35 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-MainComponent proof adapter cleanup is in progress as of 2026-05-25 01:51 Asia/Taipei.
+MainComponent proof adapter cleanup is in progress as of 2026-05-25 01:54 Asia/Taipei.
 
-Startup proof adapter step closed; next step is proof dump status facade consolidation.
+Proof status facade step closed; next step is app/proof path policy extraction.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-proof-status-facade-cleanup.md
+- docs/superpowers/specs/2026-05-25-startup-proof-adapter-cleanup.md
+
+Closed support line:
+MainComponent repeated proof result status blocks
+-> finishProofDump()
+-> MainComponent status adapter
+-> existing proof runners and artifacts
+
+Latest verification:
+- `cmake --build build --target my-world`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-attack-detector-proof-and-exit`
+- `git diff --check`
+
+Latest accepted result:
+- app build passed
+- PV attack detector proof CLI exited 0 and wrote `debug/pv-attack-detector-proof/attack_detector_report.json`, `cook_order.json`, `errors.json`, and `node_stats.json`
+- `git diff --check` passed
+
+Parked:
+- app/proof path policy still lives in `MainComponent`
+- active work save/publish adapter still lives in `MainComponent`
+
+Previous closure:
+Startup proof adapter step closed as of 2026-05-25 01:51 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-25-startup-proof-adapter-cleanup.md
 
@@ -270,11 +297,6 @@ Latest accepted result:
 - app build passed
 - C2 CLI proof exited 0 and wrote `debug/c2-storage-proof/reload_report.json` plus `saved_main.patch.json`
 - `git diff --check` passed
-
-Parked:
-- proof status/report mapping still has repeated UI facade code in `MainComponent`
-- app/proof path policy still lives in `MainComponent`
-- active work save/publish adapter still lives in `MainComponent`
 
 Previous closure:
 None after ProofRunSupport C5/C6 cleanup as of 2026-05-25 01:40 Asia/Taipei.

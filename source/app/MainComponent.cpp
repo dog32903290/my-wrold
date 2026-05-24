@@ -479,6 +479,27 @@ void MainComponent::dumpProof()
     preview.requestProofDump (directory, graph);
 }
 
+void MainComponent::finishProofDump (const juce::String& displayName,
+                                     const std::string& status,
+                                     const std::string& error,
+                                     const juce::File& directory)
+{
+    if (status == "failed")
+    {
+        statusLabel.setText (displayName + " proof failed: " + juce::String (error),
+                             juce::dontSendNotification);
+    }
+    else
+    {
+        statusLabel.setText (displayName + " proof " + juce::String (status) + ": "
+                                 + directory.getFullPathName(),
+                             juce::dontSendNotification);
+    }
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
 void MainComponent::dumpAudioProof()
 {
     const auto directory = audioProofDumpDirectory();
@@ -492,18 +513,7 @@ void MainComponent::dumpAudioProof()
     request.preferences = performancePreferences;
 
     const auto result = runA1AudioProof (request);
-    const auto displayNameString = juce::String (a1AudioProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (a1AudioProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC2StorageProof()
@@ -515,18 +525,7 @@ void MainComponent::dumpC2StorageProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC2StorageProof (request);
-    const auto displayNameString = juce::String (c2StorageProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c2StorageProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC3SaveWorkProof()
@@ -538,18 +537,7 @@ void MainComponent::dumpC3SaveWorkProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC3SaveWorkProof (request);
-    const auto displayNameString = juce::String (c3SaveWorkProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c3SaveWorkProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC4AIWorkerSaveWorkProof()
@@ -561,18 +549,7 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC4AIWorkerSaveWorkProof (request);
-    const auto displayNameString = juce::String (c4AIWorkerSaveWorkProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c4AIWorkerSaveWorkProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC5ModulePublishProof()
@@ -585,18 +562,10 @@ void MainComponent::dumpC5ModulePublishProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC5ModulePublishProof (request);
-    const auto displayNameString = juce::String (c5ModulePublishProofDisplayName (request.kind));
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c5ModulePublishProofDisplayName (request.kind)),
+                     result.status,
+                     result.error,
+                     directory);
 }
 
 void MainComponent::dumpC5AIWorkerModulePublishProof()
@@ -609,18 +578,10 @@ void MainComponent::dumpC5AIWorkerModulePublishProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC5ModulePublishProof (request);
-    const auto displayNameString = juce::String (c5ModulePublishProofDisplayName (request.kind));
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c5ModulePublishProofDisplayName (request.kind)),
+                     result.status,
+                     result.error,
+                     directory);
 }
 
 void MainComponent::dumpC5VisibleModulePublishProof()
@@ -633,18 +594,10 @@ void MainComponent::dumpC5VisibleModulePublishProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC5ModulePublishProof (request);
-    const auto displayNameString = juce::String (c5ModulePublishProofDisplayName (request.kind));
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + proofDirectory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c5ModulePublishProofDisplayName (request.kind)),
+                     result.status,
+                     result.error,
+                     proofDirectory);
 }
 
 void MainComponent::dumpC6AnalyzerFamilyProof()
@@ -656,18 +609,7 @@ void MainComponent::dumpC6AnalyzerFamilyProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC6AnalyzerFamilyProof (request);
-    const auto displayNameString = juce::String (c6AnalyzerFamilyProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c6AnalyzerFamilyProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC6AIRepairLoopProof()
@@ -679,18 +621,7 @@ void MainComponent::dumpC6AIRepairLoopProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runC6AIRepairLoopProof (request);
-    const auto displayNameString = juce::String (c6AIRepairLoopProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (c6AIRepairLoopProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpPVAttackDetectorProof()
@@ -733,22 +664,7 @@ void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runPVDetectorProof (request);
-    const auto displayName = juce::String (pvDetectorProofDisplayName (kind));
-
-    if (result.status == "failed")
-    {
-        statusLabel.setText (displayName + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    }
-    else
-    {
-        statusLabel.setText (displayName + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-    }
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (pvDetectorProofDisplayName (kind)), result.status, result.error, directory);
 }
 
 void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
@@ -760,18 +676,7 @@ void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
     request.candidateRoots = proofCandidateRoots();
 
     const auto result = runPVB1AnalyzerEnvironmentProof (request);
-    const auto displayNameString = juce::String (pvB1AnalyzerEnvironmentProofDisplayName());
-
-    if (result.status == "failed")
-        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
-                             juce::dontSendNotification);
-    else
-        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
-                                 + directory.getFullPathName(),
-                             juce::dontSendNotification);
-
-    if (shouldQuitAfterStartupDump)
-        quitAfterDelay();
+    finishProofDump (juce::String (pvB1AnalyzerEnvironmentProofDisplayName()), result.status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)

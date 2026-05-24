@@ -11,6 +11,8 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include <string>
+
 namespace myworld
 {
 enum class PVDetectorProofKind;
@@ -47,6 +49,10 @@ private:
     void dumpPVDetectorProof (PVDetectorProofKind kind);
     void scheduleStartupProofs (const StartupProofOptions& options);
     void runStartupProofTask (StartupProofTaskId task);
+    void finishProofDump (const juce::String& displayName,
+                          const std::string& status,
+                          const std::string& error,
+                          const juce::File& directory);
     CommandResult saveActiveWork (GraphSession& session);
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);
