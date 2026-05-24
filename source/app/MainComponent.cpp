@@ -287,20 +287,22 @@ constexpr const char* c6RawEnergyNodeId = "raw_energy1";
 constexpr const char* c6RmsOutputId = "rms";
 constexpr const char* c6PeakOutputId = "peak";
 constexpr const char* c6SampleCountOutputId = "sampleCount";
-constexpr const char* c6RepairWorkerId = "ai-worker-proof";
+constexpr const char* proofWorkerId = "ai-worker-proof";
+constexpr const char* loudnessCompoundNodeId = "library_loud1";
+constexpr const char* c6RepairWorkerId = proofWorkerId;
 constexpr const char* c6RepairId = "c6.2-ai-repair-loop";
 constexpr const char* c6RepairMissingNodeId = "missing_loudness";
-constexpr const char* c6RepairTargetNodeId = "library_loud1";
+constexpr const char* c6RepairTargetNodeId = loudnessCompoundNodeId;
 constexpr double c6RepairDeltaX = 17.0;
 constexpr double c6RepairDeltaY = 5.0;
 constexpr double c6UnusedRepairDelta = 100.0;
 
-AIWorkerCommandRequest makeMoveNodeRepairAttempt (std::string commandId,
-                                                  std::string workerId,
-                                                  std::string intent,
-                                                  std::string nodeId,
-                                                  double deltaX,
-                                                  double deltaY)
+AIWorkerCommandRequest makeAIWorkerMoveNodeRequest (std::string commandId,
+                                                    std::string workerId,
+                                                    std::string intent,
+                                                    std::string nodeId,
+                                                    double deltaX,
+                                                    double deltaY)
 {
     AIWorkerCommandRequest request;
     request.commandId = std::move (commandId);
@@ -313,20 +315,75 @@ AIWorkerCommandRequest makeMoveNodeRepairAttempt (std::string commandId,
     return request;
 }
 
+AIWorkerCommandRequest makeC4MoveNodeProofRequest()
+{
+    return makeAIWorkerMoveNodeRequest ("c4.3-move-node",
+                                        proofWorkerId,
+                                        "Move the loaded loudness compound through the shared interaction command path",
+                                        loudnessCompoundNodeId,
+                                        13.0,
+                                        7.0);
+}
+
+AIWorkerCommandRequest makeC4SaveWorkProofRequest (std::string workManifestPath)
+{
+    AIWorkerCommandRequest request;
+    request.commandId = "c4.3-save-work";
+    request.workerId = proofWorkerId;
+    request.operation = "save_work";
+    request.intent = "Persist AI-mutated C2 compound work through the shared save_work command path";
+    request.workManifestPath = std::move (workManifestPath);
+    return request;
+}
+
+PublishModuleRequest makeC5ModulePublishProofRequest (std::string workManifestPath,
+                                                      std::string packageDirectory,
+                                                      std::string targetLibraryPath)
+{
+    PublishModuleRequest request;
+    request.workManifestPath = std::move (workManifestPath);
+    request.sourceNodeId = loudnessCompoundNodeId;
+    request.moduleId = "module.published-loudness";
+    request.moduleTitle = "Published Loudness";
+    request.nodeType = "compound.published-loudness";
+    request.packageDirectory = std::move (packageDirectory);
+    request.targetLibraryPath = std::move (targetLibraryPath);
+    request.overwriteExisting = true;
+    return request;
+}
+
+AIWorkerCommandRequest makeC5AIWorkerModulePublishProofRequest (std::string packageDirectory,
+                                                                std::string targetLibraryPath)
+{
+    AIWorkerCommandRequest request;
+    request.commandId = "c5.2-publish-module";
+    request.workerId = proofWorkerId;
+    request.operation = "publish_module";
+    request.intent = "Publish the loaded loudness compound through the shared publish_module command path";
+    request.nodeId = loudnessCompoundNodeId;
+    request.moduleId = "module.ai-published-loudness";
+    request.moduleTitle = "AI Published Loudness";
+    request.publishedNodeType = "compound.ai-published-loudness";
+    request.packageDirectory = std::move (packageDirectory);
+    request.targetLibraryPath = std::move (targetLibraryPath);
+    request.overwriteExisting = true;
+    return request;
+}
+
 AIWorkerRepairPlan makeC6AIRepairLoopProofPlan()
 {
-    const auto failedAttempt = makeMoveNodeRepairAttempt ("c6.2-move-missing-node",
-                                                         c6RepairWorkerId,
-                                                         "First repair attempt intentionally targets a missing node",
-                                                         c6RepairMissingNodeId,
-                                                         c6RepairDeltaX,
-                                                         c6RepairDeltaY);
-    const auto repairedAttempt = makeMoveNodeRepairAttempt ("c6.2-move-library-loudness",
+    const auto failedAttempt = makeAIWorkerMoveNodeRequest ("c6.2-move-missing-node",
                                                            c6RepairWorkerId,
-                                                           "Second repair attempt targets the loaded loudness node",
-                                                           c6RepairTargetNodeId,
+                                                           "First repair attempt intentionally targets a missing node",
+                                                           c6RepairMissingNodeId,
                                                            c6RepairDeltaX,
                                                            c6RepairDeltaY);
+    const auto repairedAttempt = makeAIWorkerMoveNodeRequest ("c6.2-move-library-loudness",
+                                                             c6RepairWorkerId,
+                                                             "Second repair attempt targets the loaded loudness node",
+                                                             c6RepairTargetNodeId,
+                                                             c6RepairDeltaX,
+                                                             c6RepairDeltaY);
     auto unusedAttempt = repairedAttempt;
     unusedAttempt.commandId = "c6.2-unused-attempt";
     unusedAttempt.deltaX = c6UnusedRepairDelta;
@@ -1079,21 +1136,8 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     const auto workManifestFile = workDirectory.getChildFile ("myworld.work.json");
     const auto savedPatchFile = patchDirectory.getChildFile ("main.patch.json");
 
-    AIWorkerCommandRequest moveRequest;
-    moveRequest.commandId = "c4.3-move-node";
-    moveRequest.workerId = "ai-worker-proof";
-    moveRequest.operation = "move_node";
-    moveRequest.intent = "Move the loaded loudness compound through the shared interaction command path";
-    moveRequest.nodeId = "library_loud1";
-    moveRequest.deltaX = 13.0;
-    moveRequest.deltaY = 7.0;
-
-    AIWorkerCommandRequest saveRequest;
-    saveRequest.commandId = "c4.3-save-work";
-    saveRequest.workerId = "ai-worker-proof";
-    saveRequest.operation = "save_work";
-    saveRequest.intent = "Persist AI-mutated C2 compound work through the shared save_work command path";
-    saveRequest.workManifestPath = workManifestFile.getFullPathName().toStdString();
+    const auto moveRequest = makeC4MoveNodeProofRequest();
+    const auto saveRequest = makeC4SaveWorkProofRequest (workManifestFile.getFullPathName().toStdString());
 
     const auto allowedOperations = allowedAIWorkerOperations();
     const AIWorkerCommandResult emptyMoveResult;
@@ -1220,8 +1264,8 @@ void MainComponent::dumpC4AIWorkerSaveWorkProof()
     const auto monoMixY = monoMix == nullptr ? 0.0 : monoMix->position.y;
     const auto publicInputEdge = hasEdgeId (reloadedSession.graph, "edge.live_audio.channels.library_loud1.audio.in");
     const auto publicOutputEdge = hasEdgeId (reloadedSession.graph, "edge.library_loud1.out.midi_loudness.value");
-    const auto* savedMovedNode = findEditorNode (reloadedSession.graph, "library_loud1");
-    const auto* activeMovedNode = findEditorNode (activeSession.graph, "library_loud1");
+    const auto* savedMovedNode = findEditorNode (reloadedSession.graph, loudnessCompoundNodeId);
+    const auto* activeMovedNode = findEditorNode (activeSession.graph, loudnessCompoundNodeId);
     const auto savedMoveX = savedMovedNode == nullptr ? 0.0 : savedMovedNode->position.x;
     const auto savedMoveY = savedMovedNode == nullptr ? 0.0 : savedMovedNode->position.y;
     const auto savedMovePersisted = savedMovedNode != nullptr
@@ -1385,15 +1429,9 @@ void MainComponent::dumpC5ModulePublishProof()
     }
 
     auto sourceSession = makeGraphSession (loadedPatch.document.graph);
-    PublishModuleRequest request;
-    request.workManifestPath = workManifestPath;
-    request.sourceNodeId = "library_loud1";
-    request.moduleId = "module.published-loudness";
-    request.moduleTitle = "Published Loudness";
-    request.nodeType = "compound.published-loudness";
-    request.packageDirectory = packageDirectory.getFullPathName().toStdString();
-    request.targetLibraryPath = libraryFile.getFullPathName().toStdString();
-    request.overwriteExisting = true;
+    const auto request = makeC5ModulePublishProofRequest (workManifestPath,
+                                                          packageDirectory.getFullPathName().toStdString(),
+                                                          libraryFile.getFullPathName().toStdString());
 
     const auto publish = publishModule (sourceSession, request);
     if (! publish.ok)
@@ -1501,18 +1539,8 @@ void MainComponent::dumpC5AIWorkerModulePublishProof()
                                                  allowedOperations.end(),
                                                  "publish_module") != allowedOperations.end();
 
-    AIWorkerCommandRequest request;
-    request.commandId = "c5.2-publish-module";
-    request.workerId = "ai-worker-proof";
-    request.operation = "publish_module";
-    request.intent = "Publish the loaded loudness compound through the shared publish_module command path";
-    request.nodeId = "library_loud1";
-    request.moduleId = "module.ai-published-loudness";
-    request.moduleTitle = "AI Published Loudness";
-    request.publishedNodeType = "compound.ai-published-loudness";
-    request.packageDirectory = packageDirectory.getFullPathName().toStdString();
-    request.targetLibraryPath = libraryFile.getFullPathName().toStdString();
-    request.overwriteExisting = true;
+    auto request = makeC5AIWorkerModulePublishProofRequest (packageDirectory.getFullPathName().toStdString(),
+                                                            libraryFile.getFullPathName().toStdString());
 
     const AIWorkerCommandResult emptyResult;
 

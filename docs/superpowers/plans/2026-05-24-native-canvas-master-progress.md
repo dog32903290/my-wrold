@@ -127,6 +127,7 @@ C6 post-close hygiene stays contract-neutral:
 - cdb35da extracts repair-loop terminal logging/proof closure and adds rejected-branch tests.
 - 5fb9d66 keeps C6 app proof fixtures local, with no node/runtime/schema change.
 - current C-segment hygiene passes share C2-C6 proof directory setup and extract C2-C6 proof report builders into `source/app/ProofReports.*`, with no proof report schema change.
+- current C-segment hygiene also extracts C4/C5 proof request fixture builders in `source/app/MainComponent.cpp`, with no command payload or proof flow change.
 C6 spec:
 - docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md
 C6.1 evidence is in:
