@@ -6,6 +6,7 @@
 #include "InteractionContract.h"
 #include "JsonWriter.h"
 #include "RuntimeRegistry.h"
+#include "StorageCommand.h"
 #include "StorageContract.h"
 
 #include <algorithm>
@@ -54,6 +55,11 @@ juce::File c2StorageProofDumpDirectory()
     return projectDirectory().getChildFile ("debug").getChildFile ("c2-storage-proof");
 }
 
+juce::File c3SaveWorkProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("c3-save-work-proof");
+}
+
 juce::File parentDirectory (juce::File file, const int levels)
 {
     for (int i = 0; i < levels; ++i)
@@ -97,6 +103,17 @@ bool writeTextFile (const juce::File& file, const std::string& text)
     return file.replaceWithText (juce::String::fromUTF8 (text.c_str()), false, false, "\n");
 }
 
+bool copyTextFile (const juce::File& source, const juce::File& target)
+{
+    if (! target.getParentDirectory().createDirectory())
+        return false;
+
+    if (target.existsAsFile() && ! target.deleteFile())
+        return false;
+
+    return source.copyFileTo (target);
+}
+
 std::string makeC2StorageReportJson (bool ok,
                                      const std::string& workManifestPath,
                                      const std::string& savedPatchPath,
@@ -135,6 +152,58 @@ std::string makeC2StorageReportJson (bool ok,
     return out.str();
 }
 
+std::string makeC3SaveWorkReportJson (bool ok,
+                                      const std::string& workManifestPath,
+                                      const std::string& savedPatchPath,
+                                      const std::string& saveLogPath,
+                                      const std::string& saveStatus,
+                                      const std::string& commandLogStatus,
+                                      const SaveLogLoadResult& saveLog,
+                                      const GraphSession& session,
+                                      bool publicInputEdge,
+                                      bool publicOutputEdge,
+                                      bool monoMixLayout,
+                                      double monoMixX,
+                                      double monoMixY,
+                                      const std::string& error)
+{
+    const auto saveLogStatus = saveLog.entries.empty() ? std::string {}
+                                                       : saveLog.entries.back().status;
+    const auto commitStatus = saveLog.entries.empty() ? std::string {}
+                                                      : saveLog.entries.back().commitStatus;
+
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"c3SaveWorkProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"source\": \"PatchDocument\",\n";
+    out << "  \"usesInteractionState\": false,\n";
+    out << "  \"workManifestPath\": " << jsonQuoted (workManifestPath) << ",\n";
+    out << "  \"savedPatchPath\": " << jsonQuoted (savedPatchPath) << ",\n";
+    out << "  \"saveLogPath\": " << jsonQuoted (saveLogPath) << ",\n";
+    out << "  \"saveStatus\": " << jsonQuoted (saveStatus) << ",\n";
+    out << "  \"commandLogStatus\": " << jsonQuoted (commandLogStatus) << ",\n";
+    out << "  \"saveLogOk\": " << (saveLog.ok ? "true" : "false") << ",\n";
+    out << "  \"saveLogEntries\": " << saveLog.entries.size() << ",\n";
+    out << "  \"saveLogStatus\": " << jsonQuoted (saveLogStatus) << ",\n";
+    out << "  \"commitStatus\": " << jsonQuoted (commitStatus) << ",\n";
+    out << "  \"editorNodeCount\": " << session.graph.editorGraph.nodes.size() << ",\n";
+    out << "  \"editorEdgeCount\": " << session.graph.editorGraph.edges.size() << ",\n";
+    out << "  \"runtimeNodeCount\": " << session.graph.runtimeGraph.nodes.size() << ",\n";
+    out << "  \"runtimeEdgeCount\": " << session.graph.runtimeGraph.edges.size() << ",\n";
+    out << "  \"publicInputEdge\": " << (publicInputEdge ? "true" : "false") << ",\n";
+    out << "  \"publicOutputEdge\": " << (publicOutputEdge ? "true" : "false") << ",\n";
+    out << "  \"expandedLayout\": {\n";
+    out << "    \"nodeId\": \"library_loud1/mono_mix\",\n";
+    out << "    \"matches\": " << (monoMixLayout ? "true" : "false") << ",\n";
+    out << "    \"x\": " << monoMixX << ",\n";
+    out << "    \"y\": " << monoMixY << "\n";
+    out << "  },\n";
+    out << "  \"error\": " << jsonQuoted (error) << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 {
     std::string lastError;
@@ -156,6 +225,7 @@ RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
 MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpAudioProofOnStart,
                               bool dumpC2StorageProofOnStart,
+                              bool dumpC3SaveWorkProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -256,6 +326,15 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC2StorageProof();
+        });
+    }
+
+    if (dumpC3SaveWorkProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpC3SaveWorkProof();
         });
     }
 
@@ -579,6 +658,202 @@ void MainComponent::dumpC2StorageProof()
     }
 
     statusLabel.setText ((ok ? "c2 storage proof dumped: " : "c2 storage proof mismatch: ")
+                             + directory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpC3SaveWorkProof()
+{
+    const auto directory = c3SaveWorkProofDumpDirectory();
+    const auto workDirectory = directory.getChildFile ("work");
+    const auto patchDirectory = workDirectory.getChildFile ("patches");
+    const auto reportFile = directory.getChildFile ("save_work_report.json");
+    const auto workManifestFile = workDirectory.getChildFile ("myworld.work.json");
+    const auto savedPatchFile = patchDirectory.getChildFile ("main.patch.json");
+
+    if (directory.exists() && ! directory.deleteRecursively())
+    {
+        statusLabel.setText ("c3 save_work proof failed: could not clear " + directory.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    if (! patchDirectory.createDirectory())
+    {
+        statusLabel.setText ("c3 save_work proof failed: could not create " + patchDirectory.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    std::string lastError;
+    bool copiedFixture = false;
+    for (const auto& candidate : repoCandidatePaths ("fixtures/storage/c2-compound-work/myworld.work.json"))
+    {
+        const auto sourceManifest = juce::File (candidate);
+        const auto sourcePatch = sourceManifest.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
+        copiedFixture = copyTextFile (sourceManifest, workManifestFile) && copyTextFile (sourcePatch, savedPatchFile);
+        if (copiedFixture)
+            break;
+
+        lastError = "could not copy C2 work fixture from " + candidate;
+    }
+
+    if (! copiedFixture)
+    {
+        const SaveLogLoadResult emptySaveLog;
+        const auto report = makeC3SaveWorkReportJson (false,
+                                                      workManifestFile.getFullPathName().toStdString(),
+                                                      savedPatchFile.getFullPathName().toStdString(),
+                                                      {},
+                                                      {},
+                                                      {},
+                                                      emptySaveLog,
+                                                      makeGraphSession (GraphContract {}),
+                                                      false,
+                                                      false,
+                                                      false,
+                                                      0.0,
+                                                      0.0,
+                                                      lastError.empty() ? "could not copy C3 work fixture" : lastError);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c3 save_work proof failed: " + juce::String (lastError), juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    const auto loadedPatch = loadMainPatchDocumentForWork (workManifestFile.getFullPathName().toStdString());
+    if (! loadedPatch.ok)
+    {
+        const SaveLogLoadResult emptySaveLog;
+        const auto report = makeC3SaveWorkReportJson (false,
+                                                      workManifestFile.getFullPathName().toStdString(),
+                                                      savedPatchFile.getFullPathName().toStdString(),
+                                                      {},
+                                                      {},
+                                                      {},
+                                                      emptySaveLog,
+                                                      makeGraphSession (GraphContract {}),
+                                                      false,
+                                                      false,
+                                                      false,
+                                                      0.0,
+                                                      0.0,
+                                                      loadedPatch.error);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c3 save_work proof failed: " + juce::String (loadedPatch.error), juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    auto activeSession = makeGraphSession (loadedPatch.document.graph);
+    const auto moveResult = moveNode (activeSession, "library_loud1", 13.0, 7.0);
+    if (! moveResult.ok)
+    {
+        const SaveLogLoadResult emptySaveLog;
+        const auto report = makeC3SaveWorkReportJson (false,
+                                                      workManifestFile.getFullPathName().toStdString(),
+                                                      savedPatchFile.getFullPathName().toStdString(),
+                                                      {},
+                                                      {},
+                                                      {},
+                                                      emptySaveLog,
+                                                      activeSession,
+                                                      false,
+                                                      false,
+                                                      false,
+                                                      0.0,
+                                                      0.0,
+                                                      moveResult.message);
+        writeTextFile (reportFile, report);
+        statusLabel.setText ("c3 save_work proof failed: " + juce::String (moveResult.message), juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    const auto saveResult = saveWork (activeSession, workManifestFile.getFullPathName().toStdString());
+    const auto reloadedPatch = loadPatchDocument (savedPatchFile.getFullPathName().toStdString());
+    const auto saveLog = loadSaveLog (saveResult.saveLogPath);
+    auto reloadedSession = reloadedPatch.ok ? makeGraphSession (reloadedPatch.document.graph) : makeGraphSession (GraphContract {});
+
+    CompoundPatchLoadResult loadedCompound;
+    for (const auto& candidate : repoCandidatePaths ("fixtures/compounds/loudness.compound.json"))
+    {
+        const auto loaded = loadCompoundPatchSpec (candidate);
+        if (loaded.ok)
+        {
+            loadedCompound = loaded;
+            break;
+        }
+
+        lastError = loaded.error;
+    }
+
+    const auto relayoutGraph = loadedCompound.ok
+        ? makeCompoundPatchInteractionGraph (loadedCompound.spec, "library_loud1", reloadedSession.graph)
+        : GraphContract {};
+    const auto* monoMix = findEditorNode (relayoutGraph, "library_loud1/mono_mix");
+    const auto monoMixX = monoMix == nullptr ? 0.0 : monoMix->position.x;
+    const auto monoMixY = monoMix == nullptr ? 0.0 : monoMix->position.y;
+    const auto publicInputEdge = hasEdgeId (reloadedSession.graph, "edge.live_audio.channels.library_loud1.audio.in");
+    const auto publicOutputEdge = hasEdgeId (reloadedSession.graph, "edge.library_loud1.out.midi_loudness.value");
+    const auto monoMixLayout = monoMix != nullptr && monoMixX == 358.0 && monoMixY == 146.0;
+    const auto graphCountsMatch = reloadedSession.graph.editorGraph.edges.size()
+                                  == reloadedSession.graph.runtimeGraph.edges.size();
+    const auto commandLogStatus = activeSession.commandLog.empty() ? std::string {} : activeSession.commandLog.back();
+    const auto saveLogStatus = saveLog.entries.empty() ? std::string {} : saveLog.entries.back().status;
+    const auto saveLogCommitStatus = saveLog.entries.empty() ? std::string {} : saveLog.entries.back().commitStatus;
+    const auto ok = saveResult.ok
+                    && reloadedPatch.ok
+                    && saveLog.ok
+                    && commandLogStatus == "save_work:save-ok commit-pending"
+                    && saveLogStatus == "save-ok commit-pending"
+                    && saveLogCommitStatus == "not-started"
+                    && publicInputEdge
+                    && publicOutputEdge
+                    && monoMixLayout
+                    && graphCountsMatch;
+    const auto error = ok ? std::string {}
+                          : ! saveResult.ok ? saveResult.error
+                          : ! reloadedPatch.ok ? reloadedPatch.error
+                          : ! saveLog.ok ? saveLog.error
+                          : ! loadedCompound.ok ? lastError
+                          : "C3 save_work proof did not match expected command/storage evidence";
+
+    const auto report = makeC3SaveWorkReportJson (ok,
+                                                  workManifestFile.getFullPathName().toStdString(),
+                                                  savedPatchFile.getFullPathName().toStdString(),
+                                                  saveResult.saveLogPath,
+                                                  saveResult.status,
+                                                  commandLogStatus,
+                                                  saveLog,
+                                                  reloadedSession,
+                                                  publicInputEdge,
+                                                  publicOutputEdge,
+                                                  monoMixLayout,
+                                                  monoMixX,
+                                                  monoMixY,
+                                                  error);
+
+    if (! writeTextFile (reportFile, report))
+    {
+        statusLabel.setText ("c3 save_work proof failed: could not write " + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((ok ? "c3 save_work proof dumped: " : "c3 save_work proof mismatch: ")
                              + directory.getFullPathName(),
                          juce::dontSendNotification);
 

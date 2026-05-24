@@ -1,7 +1,7 @@
 # Native Canvas Skeleton Design
 
 Date: 2026-05-22
-Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, and C3.1 save_work command contract are implemented and verified. Raw callback-buffer runtime execution, visible Command+S/background local git commit path, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as C3.2+ or later high-risk work.
+Status: V1 shader preview proof, S0 storage proof, G0 graph language proof, A0 ImGui workspace, A1 audio/MIDI proof, C1.1-C1.24 loudness compound proof closure, Tooll3 T0-T7 interaction core, visible T0-T7 canvas workspace, Tooll3 skin parity P0-P7 first pass, H1-H4 hygiene cleanup, C2.1-C2.4 compound work PatchDocument closure, C3.1 save_work command contract, and C3.2 save log/app proof are implemented and verified. Raw callback-buffer runtime execution, visible Command+S/background local git commit path, RenderBackend extraction, production node previews, 13-patch analyzer expansion, AI worker command loop, full JSON parser/library replacement, broad enum/hash typing, and full ImGui component split are parked as C3.3+ or later high-risk work.
 
 ## Purpose
 
@@ -36,6 +36,7 @@ C1 compound proof   closed through loaded runtime, public ports, persistence, la
 H1-H4 hygiene       low/medium-risk cleanup complete and verified
 C2 storage proof    closed through formal PatchDocument file save/reload and app proof dump
 C3.1 save command   proven through save_work -> PatchDocument write/reload + save log
+C3.2 save proof     proven through structured save log readback + app proof dump
 ```
 
 已鎖定:
@@ -72,12 +73,13 @@ C3.1 save command   proven through save_work -> PatchDocument write/reload + sav
 - C2.3 work manifest main patch reload is implemented: `loadWorkProjectManifest()` parses `fixtures/storage/c2-compound-work/myworld.work.json`, keeps module-library refs as work-level data, and `loadMainPatchDocumentForWork()` resolves `patches/main.patch.json` relative to the work manifest.
 - C2.4 app-level storage proof dump is implemented: `--dump-c2-storage-proof-and-exit` loads the C2 work fixture, saves `debug/c2-storage-proof/saved_main.patch.json`, reloads it, and writes `debug/c2-storage-proof/reload_report.json` with `ok: true`, `source: PatchDocument`, `usesInteractionState: false`, public-port evidence, and `library_loud1/mono_mix` layout evidence.
 - C3.1 save_work command contract is implemented: `StorageCommand::saveWork()` takes a dirty `GraphSession` plus active `WorkProject` manifest path, writes the main patch through `savePatchDocument()`, reload-validates the saved `PatchDocument`, clears dirty state, records `save_work:save-ok commit-pending`, and appends `.myworld/save_log.jsonl`.
+- C3.2 save log readback and app proof are implemented: `loadSaveLog()` reads `.myworld/save_log.jsonl` into structured entries, and `--dump-c3-save-work-proof-and-exit` writes `debug/c3-save-work-proof/save_work_report.json` proving command log status, save log status, PatchDocument reload, public ports, and expanded child layout.
 - Latest C2 verification: `cmake --build build --target my-world my_world_patch_document_tests`, `./build/my_world_patch_document_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c2-storage-proof-and-exit`.
-- Latest C3.1 verification: `cmake --build build --target my_world_save_work_command_tests` and `./build/my_world_save_work_command_tests`.
+- Latest C3.2 verification: `cmake --build build --target my-world my_world_save_work_command_tests`, `./build/my_world_save_work_command_tests`, and `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c3-save-work-proof-and-exit`.
 
 正在試壓:
 
-- Whether C3.2 should wire visible `Command+S` first or add an app-level `save_work` proof dump first.
+- Whether C3.3 should wire both visible Save Work button and `Command+S`, or keep keyboard support as the only visible trigger.
 - Whether P-SEARCH1 browser/search work should wait for the patch-document boundary, now that `NodeSpecQueries` exists as the small shared query helper.
 
 還沒承重:
@@ -88,12 +90,12 @@ C3.1 save command   proven through save_work -> PatchDocument write/reload + sav
 - App audio proof feeds loaded runtime execution from a non-realtime snapshot-shaped input; raw callback-buffer capture and live UI cached runtime snapshots are still parked.
 - Collapsed compound ports are command/hit-test backed and persist through interaction state; deeper visual grouping is still parked.
 - Expanded child node positions persist per compound instance; expanded view pan/zoom is still session-local.
-- C3.1 proves the `save_work` command boundary only. Visible `Command+S`, app-level save proof dump, background local git commit, final `saved-and-committed` / `save-ok commit-failed` transition, and AI worker caller are still not implemented.
+- C3.1-C3.2 prove the `save_work` command boundary, structured save log readback, and app proof dump only. Visible `Command+S`, background local git commit, final `saved-and-committed` / `save-ok commit-failed` transition, and AI worker caller are still not implemented.
 - High-risk cleanup is intentionally parked: no full ImGui component split, graph schema rewrite, JSON library swap, enum/hash migration, or ownership model rewrite until a proof line requires it.
 
 下一根線:
 
-- C3.2 visible/app save_work path: `active work project in app -> save_work trigger/proof command -> same StorageCommand boundary -> proof dump includes save log evidence`.
+- C3.3 visible save_work hand: `visible Save Work / Command+S trigger -> same StorageCommand boundary -> no interaction-state-v1 save path`.
 
 ## First Stage Proofs
 
@@ -128,6 +130,7 @@ Contract:
 - Proven: `ModuleLibraryManifest` serializes/parses/loads as a storage-backed index of module package paths, with `fixtures/module-libraries/default.module-library.json` as the first default library.
 - Proven: C2.1-C2.4 patch documents now serialize/load `GraphContract` through `PatchDocument`, including node positions, collapsed compound state, params, port bindings, root edges, runtime graph, fixture-backed compound child layout evidence, active file save/reload, work-manifest main-patch resolution, and app-level C2 proof dumps.
 - Proven: C3.1 `save_work` command writes the work main patch through the formal `PatchDocument` API, reload-validates it, records command/save log status, preserves compound public ports and expanded child layout, and leaves background git commit parked.
+- Proven: C3.2 reads save logs back through `loadSaveLog()` and app-level `--dump-c3-save-work-proof-and-exit` records command/save-log/reload evidence in `debug/c3-save-work-proof/save_work_report.json`.
 - Forbidden: graph state that only exists inside UI widgets, ImGui ids, or in-memory node objects.
 
 Current storage execution plan:

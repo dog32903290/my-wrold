@@ -17,6 +17,7 @@ public:
     MainComponent (bool dumpProofOnStart = false,
                    bool dumpAudioProofOnStart = false,
                    bool dumpC2StorageProofOnStart = false,
+                   bool dumpC3SaveWorkProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -28,6 +29,7 @@ private:
     void dumpProof();
     void dumpAudioProof();
     void dumpC2StorageProof();
+    void dumpC3SaveWorkProof();
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void startAudioInput();

@@ -115,6 +115,13 @@ int main()
     expect (saveLog.find ("\"status\": \"save-ok commit-pending\"") != std::string::npos,
             "save log records save_work status");
 
+    const auto loadedSaveLog = myworld::loadSaveLog (saveLogPath.string());
+    expect (loadedSaveLog.ok, loadedSaveLog.error);
+    expect (loadedSaveLog.entries.size() == 1, "save log has one entry");
+    expect (loadedSaveLog.entries.front().command == "save_work", "save log entry command reads back");
+    expect (loadedSaveLog.entries.front().status == "save-ok commit-pending", "save log entry status reads back");
+    expect (loadedSaveLog.entries.front().commitStatus == "not-started", "save log entry commit status reads back");
+
     std::filesystem::remove_all (workRoot);
 
     std::cout << "save_work command contract ok\n";

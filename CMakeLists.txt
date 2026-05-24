@@ -628,7 +628,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_preferences
             my_world_runtime_registry
-            my_world_storage
+            my_world_storage_command
             my_world_imgui
             juce::juce_audio_devices
             juce::juce_audio_utils

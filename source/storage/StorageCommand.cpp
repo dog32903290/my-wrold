@@ -89,6 +89,66 @@ bool appendSaveLog (const std::filesystem::path& saveLogPath,
     return true;
 }
 
+std::string jsonStringMember (const std::string& text, const std::string& key)
+{
+    const auto keyToken = "\"" + key + "\"";
+    const auto keyPosition = text.find (keyToken);
+    if (keyPosition == std::string::npos)
+        return {};
+
+    const auto colon = text.find (':', keyPosition + keyToken.size());
+    if (colon == std::string::npos)
+        return {};
+
+    auto valuePosition = colon + 1;
+    while (valuePosition < text.size() && std::isspace (static_cast<unsigned char> (text[valuePosition])) != 0)
+        ++valuePosition;
+
+    if (valuePosition >= text.size() || text[valuePosition] != '"')
+        return {};
+
+    std::string result;
+    ++valuePosition;
+
+    while (valuePosition < text.size())
+    {
+        const auto current = text[valuePosition++];
+
+        if (current == '"')
+            return result;
+
+        if (current != '\\' || valuePosition >= text.size())
+        {
+            result.push_back (current);
+            continue;
+        }
+
+        const auto escaped = text[valuePosition++];
+        switch (escaped)
+        {
+            case '"':  result.push_back ('"'); break;
+            case '\\': result.push_back ('\\'); break;
+            case 'n':  result.push_back ('\n'); break;
+            case 'r':  result.push_back ('\r'); break;
+            case 't':  result.push_back ('\t'); break;
+            default:   result.push_back (escaped); break;
+        }
+    }
+
+    return {};
+}
+
+SaveLogEntry parseSaveLogEntry (const std::string& line)
+{
+    return { jsonStringMember (line, "timestamp"),
+             jsonStringMember (line, "command"),
+             jsonStringMember (line, "status"),
+             jsonStringMember (line, "workManifestPath"),
+             jsonStringMember (line, "patchPath"),
+             jsonStringMember (line, "commitStatus"),
+             jsonStringMember (line, "error") };
+}
+
 SaveWorkResult finishSaveWork (GraphSession& session,
                                bool ok,
                                const std::string& status,
@@ -150,5 +210,30 @@ SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestP
 
     session.dirty = false;
     return finishSaveWork (session, true, saveResult.status, workManifestPath, patchPath, saveLogPath, {});
+}
+
+SaveLogLoadResult loadSaveLog (const std::string& saveLogPath)
+{
+    std::ifstream input (saveLogPath);
+    if (! input)
+        return { false, {}, "could not open save log: " + saveLogPath };
+
+    SaveLogLoadResult result;
+    result.ok = true;
+
+    std::string line;
+    while (std::getline (input, line))
+    {
+        if (line.find_first_not_of (" \t\r\n") == std::string::npos)
+            continue;
+
+        auto entry = parseSaveLogEntry (line);
+        if (entry.command.empty() || entry.status.empty())
+            return { false, {}, "could not parse save log entry: " + line };
+
+        result.entries.push_back (std::move (entry));
+    }
+
+    return result;
 }
 }

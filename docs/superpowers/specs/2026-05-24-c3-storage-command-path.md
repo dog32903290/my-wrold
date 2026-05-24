@@ -41,11 +41,33 @@ cmake --build build --target my_world_save_work_command_tests
 ./build/my_world_save_work_command_tests
 ```
 
-## Parked Outside C3.1
+## C3.2 Closed Slice
 
 ```text
-visible Command+S wiring
-app-level save_work proof dump
+save_work save log
+-> structured save log readback API
+-> app proof command
+-> debug/c3-save-work-proof/save_work_report.json
+-> report proves command log, save log, PatchDocument reload, public ports, expanded child layout
+```
+
+## C3.2 Evidence
+
+- `loadSaveLog()` reads `.myworld/save_log.jsonl` back into `SaveLogEntry` records with `command`, `status`, `commitStatus`, work manifest path, and patch path.
+- `--dump-c3-save-work-proof-and-exit` copies the C2 compound work fixture into `debug/c3-save-work-proof/work`, dirties a fresh `GraphSession`, runs the same `saveWork()` boundary, reloads `patches/main.patch.json`, reads `.myworld/save_log.jsonl`, and writes `debug/c3-save-work-proof/save_work_report.json`.
+- The C3.2 app proof reports `ok: true`, `source: PatchDocument`, `usesInteractionState: false`, `commandLogStatus: save_work:save-ok commit-pending`, `saveLogStatus: save-ok commit-pending`, `commitStatus: not-started`, public-port edges, and `library_loud1/mono_mix` layout at `358,146`.
+
+## C3.2 Verification Gate
+
+```text
+cmake --build build --target my-world my_world_save_work_command_tests
+./build/my_world_save_work_command_tests
+./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-c3-save-work-proof-and-exit
+```
+
+## Parked Outside C3.2
+
+```text
 background local git add/commit worker
 saved-and-committed / save-ok commit-failed transition
 AI worker save_work caller
@@ -55,9 +77,8 @@ remote push/sync
 ## Next Line
 
 ```text
-C3.2 visible/app save_work path:
-active work project in app
--> user-visible save_work trigger or proof command
+C3.3 visible save_work hand:
+visible Save Work / Command+S trigger
 -> same StorageCommand boundary
--> proof dump includes save log evidence
+-> no interaction-state-v1 save path
 ```

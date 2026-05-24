@@ -24,12 +24,15 @@ public:
         const auto dumpProofAndExit = commandLine.contains ("--dump-proof-and-exit");
         const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and-exit");
         const auto dumpC2StorageProofAndExit = commandLine.contains ("--dump-c2-storage-proof-and-exit");
-        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit;
+        const auto dumpC3SaveWorkProofAndExit = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
+        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
+                                          || dumpC3SaveWorkProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
                                                    dumpAudioProofAndExit,
                                                    dumpC2StorageProofAndExit,
+                                                   dumpC3SaveWorkProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -51,6 +54,7 @@ private:
                     bool dumpProofAndExit,
                     bool dumpAudioProofAndExit,
                     bool dumpC2StorageProofAndExit,
+                    bool dumpC3SaveWorkProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -60,6 +64,7 @@ private:
             setContentOwned (new MainComponent (dumpProofAndExit,
                                                 dumpAudioProofAndExit,
                                                 dumpC2StorageProofAndExit,
+                                                dumpC3SaveWorkProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());
