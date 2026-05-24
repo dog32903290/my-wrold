@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 15:28 Asia/Taipei.
+Date: 2026-05-24 15:54 Asia/Taipei.
 
 Branch:
 
@@ -44,6 +44,7 @@ codex/tooll3-interaction-t0-t7
 Latest known commits:
 
 ```text
+a6390b6 Split storage contract serialization
 cff975e Split runtime registry responsibilities
 2c53c05 Split ImGui smoke overlay helpers
 bbadbe8 Schedule post-C three-layer cleanup
@@ -205,7 +206,7 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | roadmap only | skeleton spec parks RenderBackend/Metal | write roadmap spec after C lane stabilizes |
+| R runtime/render backbone | roadmap defined | `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md` | R1 OpenGL proof backend extraction behind `RenderBackend` |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
 
 ## Active Lane Protocol
@@ -215,11 +216,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after H1 closure.
+None after R0 roadmap routing.
 H1.1 UI overlay split is closed.
 H1.2 RuntimeRegistry split is closed.
 H1.3 StorageContract split is closed in the current slice.
-Next candidate lane: R runtime/render backbone roadmap spec unless explicitly overridden.
+R0 runtime/render backbone roadmap spec is closed in the current slice.
+Next candidate lane: R1 OpenGL proof backend extraction behind RenderBackend unless explicitly overridden.
+```
+
+Current R note:
+
+```text
+R0 roadmap spec:
+- docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
+
+R1 first line:
+makeDefaultShaderOutputGraph()
+-> OpenGL proof backend behind RenderBackend
+-> debug/v1-shader-proof/frame.png + cook_order.json + node_stats.json still pass
+
+R2 first new runtime-node line:
+fixtures/runtime/top_constant_to_output.graph.json
+-> headless image.constant runtime
+-> debug/r2-top-constant/texture_summary.json + cook_order.json + node_stats.json + errors.json
+
+Do not implement Metal, image.blur, node thumbnails, SOP/MAT/POINT, or render export before R1 closes.
 ```
 
 Current H1.1 note:
@@ -342,6 +363,7 @@ raw callback-buffer runtime
 | Skeleton spec can become too long and look like the dashboard | `2026-05-22-native-canvas-skeleton-design.md` | Skeleton is architecture/status evidence. This master plan is the current dashboard. |
 | C4 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Repair-loop orchestration moved to C6.2. Natural language parsing, additional graph mutation commands, and remote sync remain parked outside C4/C6. |
 | C5 can be mistaken for new analyzer/module vocabulary work | C5 title vs C6 analyzer family | C5.1 only proves publishing and reusing one selected compound source. C6.1 owns the analyzer family seed; detector semantics remain future PV work. |
+| TiXL node-function spec names `top_constant_to_output` as the first runtime slice, while skeleton spec blocks production visual work on RenderBackend extraction | `2026-05-23-node-function-spec-from-tixl.md` vs `2026-05-22-native-canvas-skeleton-design.md` | R roadmap resolves this by making R1 the backend ownership extraction for existing V1 proof, then R2 the first new headless runtime-node slice. |
 
 ## Plan Inventory
 
@@ -357,6 +379,7 @@ raw callback-buffer runtime
 | `2026-05-24-c5-module-publish-reuse-path.md` | C5 closure evidence | no, unless auditing C5 evidence |
 | `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
 | `2026-05-24-post-c-three-layer-cleanup.md` | H1 closure evidence | no, unless auditing H1 evidence |
+| `2026-05-24-r-runtime-render-backbone-roadmap.md` | R0 roadmap spec and R1/R2 routing authority | only after this master plan selects R work |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
 
@@ -382,9 +405,16 @@ source/ui/ImGuiSmokeOverlay.*
 CMakeLists.txt
 ```
 
+R0 routing owned files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
+```
+
 ## Next Handoff Sentence
 
-Open this master plan first. H1 post-C three-layer cleanup is closed; no lane is active, and the next candidate is an R runtime/render backbone roadmap spec unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first, then `docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md`. H1 cleanup and R0 roadmap routing are closed; no implementation lane is active, and the next candidate is R1 OpenGL proof backend extraction behind `RenderBackend` unless explicitly overridden. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
