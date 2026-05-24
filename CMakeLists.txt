@@ -56,6 +56,26 @@ set_tests_properties(path_resolution PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_startup_proof
+    source/app/StartupProof.cpp
+)
+
+target_include_directories(my_world_startup_proof
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+)
+
+add_executable(my_world_startup_proof_tests
+    tests/StartupProofTests.cpp
+)
+
+target_link_libraries(my_world_startup_proof_tests
+    PRIVATE
+        my_world_startup_proof
+)
+
+add_test(NAME startup_proof COMMAND my_world_startup_proof_tests)
+
 add_library(my_world_core
     source/core/GraphContract.cpp
 )
@@ -1285,6 +1305,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
 
     target_link_libraries(my-world
         PRIVATE
+            my_world_startup_proof
             my_world_preferences
             my_world_runtime_registry
             my_world_proof_reports

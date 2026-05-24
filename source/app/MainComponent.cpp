@@ -266,28 +266,11 @@ std::string safeIdentifier (const std::string& text)
 
 }
 
-MainComponent::MainComponent (bool dumpProofOnStart,
-                              bool dumpAudioProofOnStart,
-                              bool dumpC2StorageProofOnStart,
-                              bool dumpC3SaveWorkProofOnStart,
-                              bool dumpC4AIWorkerSaveWorkProofOnStart,
-                              bool dumpC5ModulePublishProofOnStart,
-                              bool dumpC5AIWorkerModulePublishProofOnStart,
-                              bool dumpC5VisibleModulePublishProofOnStart,
-                              bool dumpC6AnalyzerFamilyProofOnStart,
-                              bool dumpC6AIRepairLoopProofOnStart,
-                              bool dumpPVAttackDetectorProofOnStart,
-                              bool dumpPVDensityDetectorProofOnStart,
-                              bool dumpPVSilenceDetectorProofOnStart,
-                              bool dumpPVSustainDetectorProofOnStart,
-                              bool dumpPVResidueDetectorProofOnStart,
-                              bool dumpPVAggregatePressureProofOnStart,
-                              bool dumpPVB1AnalyzerEnvironmentProofOnStart,
-                              bool quitAfterStartupDump)
+MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
       performancePreferences (makeDefaultPerformancePreferences()),
-      shouldQuitAfterStartupDump (quitAfterStartupDump)
+      shouldQuitAfterStartupDump (startupProofOptions.quitAfterStartupDump)
 {
     graphLabel.setText ("node canvas workspace",
                         juce::dontSendNotification);
@@ -374,158 +357,7 @@ MainComponent::MainComponent (bool dumpProofOnStart,
     applyMidiPreferences (preferencesPanel.getMidiPreferences());
     startTimerHz (30);
 
-    if (dumpProofOnStart)
-    {
-        juce::Timer::callAfterDelay (750, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpProof();
-        });
-    }
-
-    if (dumpAudioProofOnStart)
-    {
-        juce::Timer::callAfterDelay (2500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpAudioProof();
-        });
-    }
-
-    if (dumpC2StorageProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC2StorageProof();
-        });
-    }
-
-    if (dumpC3SaveWorkProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC3SaveWorkProof();
-        });
-    }
-
-    if (dumpC4AIWorkerSaveWorkProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC4AIWorkerSaveWorkProof();
-        });
-    }
-
-    if (dumpC5ModulePublishProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC5ModulePublishProof();
-        });
-    }
-
-    if (dumpC5AIWorkerModulePublishProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC5AIWorkerModulePublishProof();
-        });
-    }
-
-    if (dumpC5VisibleModulePublishProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC5VisibleModulePublishProof();
-        });
-    }
-
-    if (dumpC6AnalyzerFamilyProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC6AnalyzerFamilyProof();
-        });
-    }
-
-    if (dumpC6AIRepairLoopProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpC6AIRepairLoopProof();
-        });
-    }
-
-    if (dumpPVAttackDetectorProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVAttackDetectorProof();
-        });
-    }
-
-    if (dumpPVDensityDetectorProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVDensityDetectorProof();
-        });
-    }
-
-    if (dumpPVSilenceDetectorProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVSilenceDetectorProof();
-        });
-    }
-
-    if (dumpPVSustainDetectorProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVSustainDetectorProof();
-        });
-    }
-
-    if (dumpPVResidueDetectorProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVResidueDetectorProof();
-        });
-    }
-
-    if (dumpPVAggregatePressureProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVAggregatePressureProof();
-        });
-    }
-
-    if (dumpPVB1AnalyzerEnvironmentProofOnStart)
-    {
-        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
-        {
-            if (safe != nullptr)
-                safe->dumpPVB1AnalyzerEnvironmentProof();
-        });
-    }
+    scheduleStartupProofs (startupProofOptions);
 
     setSize (1440, 860);
 }
@@ -541,6 +373,78 @@ MainComponent::~MainComponent()
 void MainComponent::paint (juce::Graphics& g)
 {
     g.fillAll (juce::Colour::fromRGB (13, 15, 20));
+}
+
+void MainComponent::scheduleStartupProofs (const StartupProofOptions& options)
+{
+    for (const auto& task : startupProofTasks (options))
+    {
+        juce::Timer::callAfterDelay (task.delayMilliseconds,
+                                     [safe = juce::Component::SafePointer<MainComponent> (this),
+                                      taskId = task.id]
+        {
+            if (safe != nullptr)
+                safe->runStartupProofTask (taskId);
+        });
+    }
+}
+
+void MainComponent::runStartupProofTask (StartupProofTaskId task)
+{
+    switch (task)
+    {
+        case StartupProofTaskId::v1Shader:
+            dumpProof();
+            break;
+        case StartupProofTaskId::a1Audio:
+            dumpAudioProof();
+            break;
+        case StartupProofTaskId::c2Storage:
+            dumpC2StorageProof();
+            break;
+        case StartupProofTaskId::c3SaveWork:
+            dumpC3SaveWorkProof();
+            break;
+        case StartupProofTaskId::c4AIWorkerSaveWork:
+            dumpC4AIWorkerSaveWorkProof();
+            break;
+        case StartupProofTaskId::c5ModulePublish:
+            dumpC5ModulePublishProof();
+            break;
+        case StartupProofTaskId::c5AIWorkerModulePublish:
+            dumpC5AIWorkerModulePublishProof();
+            break;
+        case StartupProofTaskId::c5VisibleModulePublish:
+            dumpC5VisibleModulePublishProof();
+            break;
+        case StartupProofTaskId::c6AnalyzerFamily:
+            dumpC6AnalyzerFamilyProof();
+            break;
+        case StartupProofTaskId::c6AIRepairLoop:
+            dumpC6AIRepairLoopProof();
+            break;
+        case StartupProofTaskId::pvAttackDetector:
+            dumpPVAttackDetectorProof();
+            break;
+        case StartupProofTaskId::pvDensityDetector:
+            dumpPVDensityDetectorProof();
+            break;
+        case StartupProofTaskId::pvSilenceDetector:
+            dumpPVSilenceDetectorProof();
+            break;
+        case StartupProofTaskId::pvSustainDetector:
+            dumpPVSustainDetectorProof();
+            break;
+        case StartupProofTaskId::pvResidueDetector:
+            dumpPVResidueDetectorProof();
+            break;
+        case StartupProofTaskId::pvAggregatePressure:
+            dumpPVAggregatePressureProof();
+            break;
+        case StartupProofTaskId::pvB1AnalyzerEnvironment:
+            dumpPVB1AnalyzerEnvironmentProof();
+            break;
+    }
 }
 
 void MainComponent::resized()

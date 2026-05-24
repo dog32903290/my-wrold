@@ -6,6 +6,7 @@
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
 #include "StorageCommand.h"
+#include "StartupProof.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -18,24 +19,7 @@ class MainComponent final : public juce::Component,
                             private juce::Timer
 {
 public:
-    MainComponent (bool dumpProofOnStart = false,
-                   bool dumpAudioProofOnStart = false,
-                   bool dumpC2StorageProofOnStart = false,
-                   bool dumpC3SaveWorkProofOnStart = false,
-                   bool dumpC4AIWorkerSaveWorkProofOnStart = false,
-                   bool dumpC5ModulePublishProofOnStart = false,
-                   bool dumpC5AIWorkerModulePublishProofOnStart = false,
-                   bool dumpC5VisibleModulePublishProofOnStart = false,
-                   bool dumpC6AnalyzerFamilyProofOnStart = false,
-                   bool dumpC6AIRepairLoopProofOnStart = false,
-                   bool dumpPVAttackDetectorProofOnStart = false,
-                   bool dumpPVDensityDetectorProofOnStart = false,
-                   bool dumpPVSilenceDetectorProofOnStart = false,
-                   bool dumpPVSustainDetectorProofOnStart = false,
-                   bool dumpPVResidueDetectorProofOnStart = false,
-                   bool dumpPVAggregatePressureProofOnStart = false,
-                   bool dumpPVB1AnalyzerEnvironmentProofOnStart = false,
-                   bool quitAfterStartupDump = false);
+    explicit MainComponent (StartupProofOptions startupProofOptions = {});
     ~MainComponent() override;
 
     void paint (juce::Graphics& g) override;
@@ -61,6 +45,8 @@ private:
     void dumpPVAggregatePressureProof();
     void dumpPVB1AnalyzerEnvironmentProof();
     void dumpPVDetectorProof (PVDetectorProofKind kind);
+    void scheduleStartupProofs (const StartupProofOptions& options);
+    void runStartupProofTask (StartupProofTaskId task);
     CommandResult saveActiveWork (GraphSession& session);
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);

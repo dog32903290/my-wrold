@@ -10,6 +10,35 @@ juce::String displayName()
 {
     return juce::String::fromUTF8 ("\xe6\x88\x91\xe7\x9a\x84\xe4\xb8\x96\xe7\x95\x8c");
 }
+
+StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& commandLine)
+{
+    StartupProofOptions options;
+    options.dumpV1ShaderProof = commandLine.contains ("--dump-proof-and-exit");
+    options.dumpA1AudioProof = commandLine.contains ("--dump-audio-proof-and-exit");
+    options.dumpC2StorageProof = commandLine.contains ("--dump-c2-storage-proof-and-exit");
+    options.dumpC3SaveWorkProof = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
+    options.dumpC4AIWorkerSaveWorkProof = commandLine.contains ("--dump-c4-ai-worker-save-work-proof-and-exit");
+    options.dumpC5ModulePublishProof = commandLine.contains ("--dump-c5-module-publish-proof-and-exit");
+    options.dumpC5AIWorkerModulePublishProof = commandLine.contains (
+        "--dump-c5-ai-worker-module-publish-proof-and-exit");
+    options.dumpC5VisibleModulePublishProof = commandLine.contains (
+        "--dump-c5-visible-module-publish-proof-and-exit");
+    options.dumpC6AnalyzerFamilyProof = commandLine.contains ("--dump-c6-analyzer-family-proof-and-exit");
+    options.dumpC6AIRepairLoopProof = commandLine.contains ("--dump-c6-ai-repair-loop-proof-and-exit");
+    options.dumpPVAttackDetectorProof = commandLine.contains ("--dump-pv-attack-detector-proof-and-exit");
+    options.dumpPVDensityDetectorProof = commandLine.contains ("--dump-pv-density-detector-proof-and-exit");
+    options.dumpPVSilenceDetectorProof = commandLine.contains ("--dump-pv-silence-detector-proof-and-exit");
+    options.dumpPVSustainDetectorProof = commandLine.contains ("--dump-pv-sustain-detector-proof-and-exit");
+    options.dumpPVResidueDetectorProof = commandLine.contains ("--dump-pv-residue-detector-proof-and-exit");
+    options.dumpPVAggregatePressureProof = commandLine.contains (
+        "--dump-pv-aggregate-pressure-proof-and-exit");
+    options.dumpPVB1AnalyzerEnvironmentProof = commandLine.contains (
+        "--dump-pv-b1-analyzer-environment-proof-and-exit");
+    options.quitAfterStartupDump = hasStartupProofRequest (options);
+
+    return options;
+}
 }
 
 class MyWorldApplication final : public juce::JUCEApplication
@@ -21,67 +50,8 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
-        const auto dumpProofAndExit = commandLine.contains ("--dump-proof-and-exit");
-        const auto dumpAudioProofAndExit = commandLine.contains ("--dump-audio-proof-and-exit");
-        const auto dumpC2StorageProofAndExit = commandLine.contains ("--dump-c2-storage-proof-and-exit");
-        const auto dumpC3SaveWorkProofAndExit = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
-        const auto dumpC4AIWorkerSaveWorkProofAndExit = commandLine.contains ("--dump-c4-ai-worker-save-work-proof-and-exit");
-        const auto dumpC5ModulePublishProofAndExit = commandLine.contains ("--dump-c5-module-publish-proof-and-exit");
-        const auto dumpC5AIWorkerModulePublishProofAndExit = commandLine.contains (
-            "--dump-c5-ai-worker-module-publish-proof-and-exit");
-        const auto dumpC5VisibleModulePublishProofAndExit = commandLine.contains (
-            "--dump-c5-visible-module-publish-proof-and-exit");
-        const auto dumpC6AnalyzerFamilyProofAndExit = commandLine.contains (
-            "--dump-c6-analyzer-family-proof-and-exit");
-        const auto dumpC6AIRepairLoopProofAndExit = commandLine.contains (
-            "--dump-c6-ai-repair-loop-proof-and-exit");
-        const auto dumpPVAttackDetectorProofAndExit = commandLine.contains (
-            "--dump-pv-attack-detector-proof-and-exit");
-        const auto dumpPVDensityDetectorProofAndExit = commandLine.contains (
-            "--dump-pv-density-detector-proof-and-exit");
-        const auto dumpPVSilenceDetectorProofAndExit = commandLine.contains (
-            "--dump-pv-silence-detector-proof-and-exit");
-        const auto dumpPVSustainDetectorProofAndExit = commandLine.contains (
-            "--dump-pv-sustain-detector-proof-and-exit");
-        const auto dumpPVResidueDetectorProofAndExit = commandLine.contains (
-            "--dump-pv-residue-detector-proof-and-exit");
-        const auto dumpPVAggregatePressureProofAndExit = commandLine.contains (
-            "--dump-pv-aggregate-pressure-proof-and-exit");
-        const auto dumpPVB1AnalyzerEnvironmentProofAndExit = commandLine.contains (
-            "--dump-pv-b1-analyzer-environment-proof-and-exit");
-        const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
-                                          || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit
-                                          || dumpC5ModulePublishProofAndExit || dumpC5AIWorkerModulePublishProofAndExit
-                                          || dumpC5VisibleModulePublishProofAndExit
-                                          || dumpC6AnalyzerFamilyProofAndExit
-                                          || dumpC6AIRepairLoopProofAndExit
-                                          || dumpPVAttackDetectorProofAndExit
-                                          || dumpPVDensityDetectorProofAndExit
-                                          || dumpPVSilenceDetectorProofAndExit
-                                          || dumpPVSustainDetectorProofAndExit
-                                          || dumpPVResidueDetectorProofAndExit
-                                          || dumpPVAggregatePressureProofAndExit
-                                          || dumpPVB1AnalyzerEnvironmentProofAndExit;
-
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
-                                                   dumpProofAndExit,
-                                                   dumpAudioProofAndExit,
-                                                   dumpC2StorageProofAndExit,
-                                                   dumpC3SaveWorkProofAndExit,
-                                                   dumpC4AIWorkerSaveWorkProofAndExit,
-                                                   dumpC5ModulePublishProofAndExit,
-                                                   dumpC5AIWorkerModulePublishProofAndExit,
-                                                   dumpC5VisibleModulePublishProofAndExit,
-                                                   dumpC6AnalyzerFamilyProofAndExit,
-                                                   dumpC6AIRepairLoopProofAndExit,
-                                                   dumpPVAttackDetectorProofAndExit,
-                                                   dumpPVDensityDetectorProofAndExit,
-                                                   dumpPVSilenceDetectorProofAndExit,
-                                                   dumpPVSustainDetectorProofAndExit,
-                                                   dumpPVResidueDetectorProofAndExit,
-                                                   dumpPVAggregatePressureProofAndExit,
-                                                   dumpPVB1AnalyzerEnvironmentProofAndExit,
-                                                   quitAfterStartupDump);
+                                                   startupProofOptionsFromCommandLine (commandLine));
     }
 
     void shutdown() override
@@ -98,48 +68,13 @@ private:
     class MainWindow final : public juce::DocumentWindow
     {
     public:
-        MainWindow (juce::String name,
-                    bool dumpProofAndExit,
-                    bool dumpAudioProofAndExit,
-                    bool dumpC2StorageProofAndExit,
-                    bool dumpC3SaveWorkProofAndExit,
-                    bool dumpC4AIWorkerSaveWorkProofAndExit,
-                    bool dumpC5ModulePublishProofAndExit,
-                    bool dumpC5AIWorkerModulePublishProofAndExit,
-                    bool dumpC5VisibleModulePublishProofAndExit,
-                    bool dumpC6AnalyzerFamilyProofAndExit,
-                    bool dumpC6AIRepairLoopProofAndExit,
-                    bool dumpPVAttackDetectorProofAndExit,
-                    bool dumpPVDensityDetectorProofAndExit,
-                    bool dumpPVSilenceDetectorProofAndExit,
-                    bool dumpPVSustainDetectorProofAndExit,
-                    bool dumpPVResidueDetectorProofAndExit,
-                    bool dumpPVAggregatePressureProofAndExit,
-                    bool dumpPVB1AnalyzerEnvironmentProofAndExit,
-                    bool quitAfterStartupDump)
+        MainWindow (juce::String name, StartupProofOptions startupProofOptions)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
                               DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent (dumpProofAndExit,
-                                                dumpAudioProofAndExit,
-                                                dumpC2StorageProofAndExit,
-                                                dumpC3SaveWorkProofAndExit,
-                                                dumpC4AIWorkerSaveWorkProofAndExit,
-                                                dumpC5ModulePublishProofAndExit,
-                                                dumpC5AIWorkerModulePublishProofAndExit,
-                                                dumpC5VisibleModulePublishProofAndExit,
-                                                dumpC6AnalyzerFamilyProofAndExit,
-                                                dumpC6AIRepairLoopProofAndExit,
-                                                dumpPVAttackDetectorProofAndExit,
-                                                dumpPVDensityDetectorProofAndExit,
-                                                dumpPVSilenceDetectorProofAndExit,
-                                                dumpPVSustainDetectorProofAndExit,
-                                                dumpPVResidueDetectorProofAndExit,
-                                                dumpPVAggregatePressureProofAndExit,
-                                                dumpPVB1AnalyzerEnvironmentProofAndExit,
-                                                quitAfterStartupDump),
+            setContentOwned (new MainComponent (startupProofOptions),
                              true);
             centreWithSize (getWidth(), getHeight());
             setResizable (true, true);
