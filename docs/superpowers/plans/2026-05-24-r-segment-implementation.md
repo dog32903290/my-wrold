@@ -48,7 +48,7 @@ Split / compound decision: single source node; no compound
 - Create: `tests/RenderBackendContractTests.cpp`
 - Modify: `CMakeLists.txt`
 
-- [ ] **Step 1: Write the failing contract test**
+- [x] **Step 1: Write the failing contract test**
 
 Create `tests/RenderBackendContractTests.cpp` with a fake backend that overrides:
 
@@ -72,7 +72,7 @@ captureFrame returns width 2, height 1, and 8 RGBA bytes
 release changes lastStatus() to "released"
 ```
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run:
 
@@ -82,7 +82,7 @@ cmake --build build --target my_world_render_backend_contract_tests
 
 Expected: fail because `RenderFrameInput`, `CapturedFrame`, and the richer virtual methods do not exist yet.
 
-- [ ] **Step 3: Implement minimal contract**
+- [x] **Step 3: Implement minimal contract**
 
 Update `source/render/RenderBackend.h` with:
 
@@ -94,7 +94,7 @@ class RenderBackend;
 
 The interface must include backend name, last status, compile, resize, render, capture, and release. Keep the type free of JUCE so fake/headless tests can use it.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 Run:
 
@@ -105,7 +105,7 @@ cmake --build build --target my_world_render_backend_contract_tests
 
 Expected: executable prints `render backend contract ok`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Commit only the contract test, `RenderBackend.h`, `CMakeLists.txt`, and this plan checkbox update.
 
