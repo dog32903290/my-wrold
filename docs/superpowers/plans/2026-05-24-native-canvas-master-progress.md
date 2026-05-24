@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 00:48 Asia/Taipei.
+Date: 2026-05-25 00:54 Asia/Taipei.
 
 Branch:
 
@@ -238,6 +238,7 @@ Latest accepted targeted result:
 | C4 AI worker save-work proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c4-ai-worker-save-work-proof-harness-extraction.md`; `C4AIWorkerSaveWorkProofRunner` owns fixture copy, move/save AI command proof, storage reload, layout evidence, and report writing; focused test, app build, and C4 CLI proof passed | Do not reopen C4 AI command semantics; C2-C3/V1 proof harness cleanup remain separate selected lanes |
 | C3 save-work proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c3-save-work-proof-harness-extraction.md`; `C3SaveWorkProofRunner` owns fixture copy, move/save command proof, storage reload, layout evidence, and report writing; focused test, app build, and C3 CLI proof passed | Do not reopen C3 storage command semantics; C2/V1 proof harness cleanup remain separate selected lanes |
 | C2 storage proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-c2-storage-proof-harness-extraction.md`; `C2StorageProofRunner` owns fixture lookup, patch save/reload, layout evidence, and report writing; focused test, app build, and C2 CLI proof passed | Do not reopen C2 storage semantics; V1/A1 proof harness cleanup remain separate selected lanes |
+| A1 audio proof harness extraction | closed | `docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md`; `A1AudioProofRunner` owns runtime registry lookup, synthetic runtime execution, audio stats, compound, runtime execution, and bridge artifact writing; focused test, app build, and A1 CLI proof passed | Do not reopen A1 analyzer/runtime semantics; V1 proof harness cleanup remains separate selected lane |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
@@ -247,8 +248,43 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after C2 storage proof harness extraction as of 2026-05-25 00:48 Asia/Taipei.
+None after A1 audio proof harness extraction as of 2026-05-25 00:54 Asia/Taipei.
 
+A1 audio proof harness extraction closed as of 2026-05-25 00:54 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-25-a1-audio-proof-harness-extraction.md
+
+Closed proof line:
+A1AudioProofRunRequest
+-> runA1AudioProof()
+-> analyzer snapshot + loaded runtime execution
+-> audio_stats.json / loudness_compound.json / loudness_runtime_execution.json / loudness_runtime_bridge.json
+-> MainComponent status facade
+
+Latest verification:
+- `cmake -S . -B build` red before runner source existed, then green after implementation
+- `cmake --build build --target my_world_a1_audio_proof_runner_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "a1_audio_proof_runner|audio_analyzer_state|runtime_registry|performance_preferences"`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-audio-proof-and-exit`
+- `git diff --check`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `a1_audio_proof_runner` passed
+- `audio_analyzer_state` passed
+- `runtime_registry` passed
+- `performance_preferences` passed
+- app build passed
+- CLI A1 audio proof exited 0 and wrote all four artifacts with `kind: "runtimeExecution"`, `nodeType: "compound.loudness"`, and `kind: "loudnessRuntimeBridge"`
+- full `ctest` passed 49/49
+- `git diff --check` passed
+
+Parked:
+- V1 shader proof remains tied to `OpenGLShaderPreview`
+
+Previous closure:
 C2 storage proof harness extraction closed as of 2026-05-25 00:48 Asia/Taipei.
 Spec / closure evidence:
 - docs/superpowers/specs/2026-05-25-c2-storage-proof-harness-extraction.md

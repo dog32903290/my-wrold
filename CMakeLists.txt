@@ -891,6 +891,39 @@ set_tests_properties(c6_ai_repair_loop_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_a1_audio_proof_runner
+    source/app/A1AudioProofRunner.cpp
+)
+
+target_include_directories(my_world_a1_audio_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/preferences
+)
+
+target_link_libraries(my_world_a1_audio_proof_runner
+    PUBLIC
+        my_world_preferences
+        my_world_runtime_registry
+)
+
+add_executable(my_world_a1_audio_proof_runner_tests
+    tests/A1AudioProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_a1_audio_proof_runner_tests
+    PRIVATE
+        my_world_a1_audio_proof_runner
+)
+
+add_test(NAME a1_audio_proof_runner
+         COMMAND my_world_a1_audio_proof_runner_tests)
+set_tests_properties(a1_audio_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_c2_storage_proof_runner
     source/app/C2StorageProofRunner.cpp
 )
@@ -1191,6 +1224,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
+            my_world_a1_audio_proof_runner
             my_world_c2_storage_proof_runner
             my_world_c3_save_work_proof_runner
             my_world_c4_ai_worker_save_work_proof_runner

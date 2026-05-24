@@ -1,5 +1,6 @@
 #include "MainComponent.h"
 
+#include "A1AudioProofRunner.h"
 #include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
 #include "C4AIWorkerSaveWorkProofRunner.h"
@@ -70,7 +71,7 @@ juce::File proofDumpDirectory()
 
 juce::File audioProofDumpDirectory()
 {
-    return projectDirectory().getChildFile ("debug").getChildFile ("a1-audio-proof");
+    return projectDirectory().getChildFile ("debug").getChildFile (a1AudioProofDirectoryName());
 }
 
 juce::File c2StorageProofDumpDirectory()
@@ -152,11 +153,6 @@ juce::File parentDirectory (juce::File file, const int levels)
         file = file.getParentDirectory();
 
     return file;
-}
-
-juce::String defaultModuleLibraryPath()
-{
-    return "fixtures/module-libraries/default.module-library.json";
 }
 
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
@@ -266,23 +262,6 @@ std::string safeIdentifier (const std::string& text)
     }
 
     return result.empty() ? "module" : result;
-}
-
-RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
-{
-    std::string lastError;
-
-    for (const auto& path : moduleLibraryCandidatePaths (defaultModuleLibraryPath()))
-    {
-        const auto registry = loadRuntimeRegistryFromModuleLibrary (path);
-        if (registry.ok)
-            return registry;
-
-        lastError = registry.error;
-    }
-
-    return { false, {}, lastError.empty() ? "could not load module library: " + defaultModuleLibraryPath().toStdString()
-                                          : lastError };
 }
 
 }
@@ -600,100 +579,24 @@ void MainComponent::dumpAudioProof()
 {
     const auto directory = audioProofDumpDirectory();
 
-    if (! directory.createDirectory())
-    {
-        statusLabel.setText ("audio proof failed: could not create " + directory.getFullPathName(),
+    A1AudioProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+    request.snapshot = audioInputAnalyzer.getSnapshot();
+    request.sampleRate = audioInputAnalyzer.getSampleRate();
+    request.bufferSize = audioInputAnalyzer.getBufferSize();
+    request.preferences = performancePreferences;
+
+    const auto result = runA1AudioProof (request);
+    const auto displayNameString = juce::String (a1AudioProofDisplayName());
+
+    if (result.status == "failed")
+        statusLabel.setText (displayNameString + " proof failed: " + juce::String (result.error),
                              juce::dontSendNotification);
-        return;
-    }
-
-    const auto snapshot = audioInputAnalyzer.getSnapshot();
-    const auto runtimeRegistry = loadAudioProofRuntimeRegistry();
-
-    if (! runtimeRegistry.ok)
-    {
-        statusLabel.setText ("audio proof failed: " + juce::String (runtimeRegistry.error),
+    else
+        statusLabel.setText (displayNameString + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
                              juce::dontSendNotification);
-        return;
-    }
-
-    const auto runtimeInput = makeRuntimeSyntheticAudioInputFromAnalyzerSnapshot (snapshot, 64);
-    const auto runtimeExecution = executeRuntimeRegistryWithSyntheticAudio (runtimeRegistry.registry, runtimeInput);
-
-    if (! runtimeExecution.ok)
-    {
-        statusLabel.setText ("audio proof failed: " + juce::String (runtimeExecution.error),
-                             juce::dontSendNotification);
-        return;
-    }
-
-    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (runtimeExecution.snapshot, snapshot);
-    const auto json = juce::String()
-        + "{\n"
-        + "  \"sampleRate\": " + juce::String (audioInputAnalyzer.getSampleRate(), 0) + ",\n"
-        + "  \"bufferSize\": " + juce::String (audioInputAnalyzer.getBufferSize()) + ",\n"
-        + "  \"rms\": " + juce::String (snapshot.rms, 6) + ",\n"
-        + "  \"peak\": " + juce::String (snapshot.peak, 6) + ",\n"
-        + "  \"loudness\": " + juce::String (snapshot.loudness, 6) + ",\n"
-        + "  \"gate\": " + juce::String (snapshot.gate, 6) + ",\n"
-        + "  \"confidence\": " + juce::String (snapshot.confidence, 6) + ",\n"
-        + "  \"active\": " + juce::String (snapshot.active ? "true" : "false") + ",\n"
-        + "  \"analysisGain\": " + juce::String (performancePreferences.audio.analysisGain, 3) + ",\n"
-        + "  \"midi\": {\n"
-        + "    \"streamEnabled\": " + juce::String (performancePreferences.midi.streamEnabled ? "true" : "false") + ",\n"
-        + "    \"mapModeEnabled\": " + juce::String (performancePreferences.midi.mapModeEnabled ? "true" : "false") + ",\n"
-        + "    \"channel\": " + juce::String (performancePreferences.midi.channel) + ",\n"
-        + "    \"loudnessCc\": " + juce::String (performancePreferences.midi.loudnessCc) + ",\n"
-        + "    \"mapCc\": " + juce::String (performancePreferences.midi.mapCc) + ",\n"
-        + "    \"outputName\": \"" + juce::String (performancePreferences.midi.outputName) + "\"\n"
-        + "  },\n"
-        + "  \"sampleCounter\": " + juce::String (static_cast<juce::int64> (snapshot.sampleCounter)) + "\n"
-        + "}\n";
-
-    const auto audioStatsFile = directory.getChildFile ("audio_stats.json");
-    const auto loudnessCompoundFile = directory.getChildFile ("loudness_compound.json");
-    const auto loudnessRuntimeExecutionFile = directory.getChildFile ("loudness_runtime_execution.json");
-    const auto loudnessRuntimeBridgeFile = directory.getChildFile ("loudness_runtime_bridge.json");
-
-    if (! audioStatsFile.replaceWithText (json, false, false, "\n"))
-    {
-        statusLabel.setText ("audio proof failed: could not write " + audioStatsFile.getFullPathName(),
-                             juce::dontSendNotification);
-        return;
-    }
-
-    if (! loudnessCompoundFile.replaceWithText (juce::String::fromUTF8 (makeCompoundPatchJson (makeLoudnessCompoundPatchSpec()).c_str()),
-                                                false,
-                                                false,
-                                                "\n"))
-    {
-        statusLabel.setText ("audio proof failed: could not write " + loudnessCompoundFile.getFullPathName(),
-                             juce::dontSendNotification);
-        return;
-    }
-
-    const auto runtimeExecutionJson = makeRuntimeExecutionJson (runtimeExecution.snapshot);
-
-    if (! loudnessRuntimeExecutionFile.replaceWithText (juce::String::fromUTF8 (runtimeExecutionJson.c_str()),
-                                                        false,
-                                                        false,
-                                                        "\n"))
-    {
-        statusLabel.setText ("audio proof failed: could not write " + loudnessRuntimeExecutionFile.getFullPathName(),
-                             juce::dontSendNotification);
-        return;
-    }
-
-    const auto runtimeBridgeJson = makeLoudnessRuntimeBridgeJson (bridge);
-
-    if (! loudnessRuntimeBridgeFile.replaceWithText (juce::String::fromUTF8 (runtimeBridgeJson.c_str()), false, false, "\n"))
-    {
-        statusLabel.setText ("audio proof failed: could not write " + loudnessRuntimeBridgeFile.getFullPathName(),
-                             juce::dontSendNotification);
-        return;
-    }
-
-    statusLabel.setText ("audio proof dumped: " + directory.getFullPathName(), juce::dontSendNotification);
 
     if (shouldQuitAfterStartupDump)
         quitAfterDelay();
