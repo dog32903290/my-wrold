@@ -11,3 +11,4 @@ debug/
 *.log
 imgui.ini
 .codegraph/
+/.myworld/flow/
