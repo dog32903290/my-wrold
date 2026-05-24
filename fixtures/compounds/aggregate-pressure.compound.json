@@ -1,0 +1,59 @@
+{
+  "type": "compound.aggregate-pressure",
+  "displayName": "Aggregate Pressure",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "attack", "type": "analyzer.attack", "role": "Detect current entry force" },
+    { "id": "density", "type": "analyzer.density", "role": "Track recent entry crowding" },
+    { "id": "sustain", "type": "analyzer.sustain", "role": "Track held energy" },
+    { "id": "silence", "type": "analyzer.silence", "role": "Clear pressure on stable silence" },
+    { "id": "residue", "type": "analyzer.residue", "role": "Track tail pressure" },
+    { "id": "aggregate_pressure", "type": "analyzer.aggregate_pressure", "role": "Combine weighted pressure components" },
+    { "id": "aggregate_pressure_out", "type": "analyzer.aggregate_pressure_out", "role": "Publish aggregate pressure public outputs" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "attack.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "attack.peak", "dataType": "signal.float" },
+    { "from": "mono_mix.sampleCount", "to": "attack.sampleCount", "dataType": "signal.float" },
+    { "from": "attack.onset_event", "to": "density.onset_event", "dataType": "event.trigger" },
+    { "from": "attack.attack_value", "to": "density.attack_value", "dataType": "signal.float" },
+    { "from": "rms.rms", "to": "sustain.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "sustain.peak", "dataType": "signal.float" },
+    { "from": "rms.rms", "to": "silence.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "silence.peak", "dataType": "signal.float" },
+    { "from": "rms.rms", "to": "residue.rms", "dataType": "signal.float" },
+    { "from": "sustain.sustain_envelope", "to": "residue.sustain_envelope", "dataType": "signal.float" },
+    { "from": "silence.silence_state", "to": "residue.silence_state", "dataType": "signal.float" },
+    { "from": "rms.rms", "to": "aggregate_pressure.rms", "dataType": "signal.float" },
+    { "from": "attack.attack_value", "to": "aggregate_pressure.attack_value", "dataType": "signal.float" },
+    { "from": "density.density_value", "to": "aggregate_pressure.density_value", "dataType": "signal.float" },
+    { "from": "sustain.sustain_envelope", "to": "aggregate_pressure.sustain_envelope", "dataType": "signal.float" },
+    { "from": "residue.residue_envelope", "to": "aggregate_pressure.residue_envelope", "dataType": "signal.float" },
+    { "from": "silence.silence_state", "to": "aggregate_pressure.silence_state", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.pressure_value", "to": "aggregate_pressure_out.pressure_value", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.energy_component", "to": "aggregate_pressure_out.energy_component", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.attack_component", "to": "aggregate_pressure_out.attack_component", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.density_component", "to": "aggregate_pressure_out.density_component", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.sustain_component", "to": "aggregate_pressure_out.sustain_component", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.residue_component", "to": "aggregate_pressure_out.residue_component", "dataType": "signal.float" },
+    { "from": "aggregate_pressure.confidence", "to": "aggregate_pressure_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "pressure_value", "label": "Pressure Value", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.pressure_value" },
+    { "id": "energy_component", "label": "Energy Component", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.energy_component" },
+    { "id": "attack_component", "label": "Attack Component", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.attack_component" },
+    { "id": "density_component", "label": "Density Component", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.density_component" },
+    { "id": "sustain_component", "label": "Sustain Component", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.sustain_component" },
+    { "id": "residue_component", "label": "Residue Component", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.residue_component" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "aggregate_pressure_out.confidence" }
+  ]
+}

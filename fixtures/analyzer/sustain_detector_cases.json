@@ -1,0 +1,78 @@
+{
+  "kind": "analyzerSustainDetectorFixture",
+  "id": "fixture.pv-sustain-detector-cases",
+  "frameIntervalMs": 100,
+  "parameters": {
+    "floor": 0.02,
+    "holdMs": 300,
+    "releaseMs": 200,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "held_active_reaches_sustain",
+      "frames": [
+        { "rms": 0.03, "peak": 0.04 },
+        { "rms": 0.05, "peak": 0.07 },
+        { "rms": 0.06, "peak": 0.08 },
+        { "rms": 0.05, "peak": 0.07 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "sustainStateLast": true,
+        "sustainTimerMsLast": 300,
+        "sustainEnvelopeLast": 1
+      }
+    },
+    {
+      "id": "short_active_not_sustain",
+      "frames": [
+        { "rms": 0.04, "peak": 0.05 },
+        { "rms": 0.05, "peak": 0.07 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "sustainStateLast": false,
+        "sustainTimerMsLast": 100
+      }
+    },
+    {
+      "id": "quiet_gap_resets_timer",
+      "frames": [
+        { "rms": 0.05, "peak": 0.07 },
+        { "rms": 0.06, "peak": 0.08 },
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.05, "peak": 0.07 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "sustainStateLast": false,
+        "sustainTimerMsLast": 100
+      }
+    },
+    {
+      "id": "noise_below_floor_not_sustain",
+      "frames": [
+        { "rms": 0.01, "peak": 0.015 },
+        { "rms": 0.015, "peak": 0.018 },
+        { "rms": 0.018, "peak": 0.02 },
+        { "rms": 0.019, "peak": 0.021 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "sustainStateLast": false,
+        "sustainTimerMsLast": 0
+      }
+    },
+    {
+      "id": "missing_rms_failure",
+      "frames": [
+        { "peak": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:rms"
+      }
+    }
+  ]
+}

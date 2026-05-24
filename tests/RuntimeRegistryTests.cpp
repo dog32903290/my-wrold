@@ -33,6 +33,17 @@ void expectContains (const std::string& text, const std::string& expected, const
     expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
 }
 
+bool containsRuntimeOp (const std::vector<myworld::RuntimeOpCatalogEntry>& catalog,
+                        const std::string& nodeType,
+                        const std::string& runtimeOp)
+{
+    for (const auto& entry : catalog)
+        if (entry.nodeType == nodeType && entry.runtimeOp == runtimeOp)
+            return true;
+
+    return false;
+}
+
 myworld::RuntimeRegistry makeRegistryWithUnsupportedRuntimeOp (myworld::RuntimeRegistry registry)
 {
     auto& entry = registry.entries.front();
@@ -126,7 +137,7 @@ int main()
     expectContains (dryRunJson, "\"childId\": \"loudness_out\"", "runtime dry-run json");
 
     const auto runtimeOpCatalog = myworld::makeRuntimeOpCatalog();
-    expect (runtimeOpCatalog.size() == 8, "runtime op catalog count");
+    expect (runtimeOpCatalog.size() >= 20, "runtime op catalog count");
     expectEqual (runtimeOpCatalog.front().nodeType, "audio.input", "runtime op catalog first node type");
     expectEqual (runtimeOpCatalog.front().runtimeOp, "synthetic.audio.input", "runtime op catalog first id");
     expectEqual (runtimeOpCatalog.back().nodeType,
@@ -135,6 +146,20 @@ int main()
     expectEqual (runtimeOpCatalog.back().runtimeOp,
                  "synthetic.analyzer.loudness_out",
                  "runtime op catalog last id");
+    expect (containsRuntimeOp (runtimeOpCatalog, "analyzer.attack", "synthetic.analyzer.attack"),
+            "runtime op catalog contains attack");
+    expect (containsRuntimeOp (runtimeOpCatalog, "analyzer.density", "synthetic.analyzer.density"),
+            "runtime op catalog contains density");
+    expect (containsRuntimeOp (runtimeOpCatalog, "analyzer.silence", "synthetic.analyzer.silence"),
+            "runtime op catalog contains silence");
+    expect (containsRuntimeOp (runtimeOpCatalog, "analyzer.sustain", "synthetic.analyzer.sustain"),
+            "runtime op catalog contains sustain");
+    expect (containsRuntimeOp (runtimeOpCatalog, "analyzer.residue", "synthetic.analyzer.residue"),
+            "runtime op catalog contains residue");
+    expect (containsRuntimeOp (runtimeOpCatalog,
+                               "analyzer.aggregate_pressure",
+                               "synthetic.analyzer.aggregate_pressure"),
+            "runtime op catalog contains aggregate pressure");
 
     const auto runtimeOpCatalogJson = myworld::makeRuntimeOpCatalogJson (runtimeOpCatalog);
     expectContains (runtimeOpCatalogJson, "\"kind\": \"runtimeOpCatalog\"", "runtime op catalog json");
@@ -144,6 +169,24 @@ int main()
                     "runtime op catalog json");
     expectContains (runtimeOpCatalogJson,
                     "\"runtimeOp\": \"synthetic.analyzer.raw_energy_out\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.attack\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.density\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.silence\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.sustain\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.residue\"",
+                    "runtime op catalog json");
+    expectContains (runtimeOpCatalogJson,
+                    "\"runtimeOp\": \"synthetic.analyzer.aggregate_pressure\"",
                     "runtime op catalog json");
 
     const auto coverage = myworld::inspectRuntimeOpCoverage (registryResult.registry);

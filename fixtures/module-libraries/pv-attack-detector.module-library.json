@@ -1,0 +1,9 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-attack-detector",
+  "title": "PV Attack Detector",
+  "modulePackages": [
+    "modules/raw-energy/module.json",
+    "modules/attack/module.json"
+  ]
+}

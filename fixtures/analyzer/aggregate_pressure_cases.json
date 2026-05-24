@@ -1,0 +1,144 @@
+{
+  "kind": "analyzerAggregatePressureFixture",
+  "id": "fixture.pv-aggregate-pressure-cases",
+  "parameters": {
+    "energyScale": 4.0,
+    "energyWeight": 0.25,
+    "attackWeight": 0.25,
+    "densityWeight": 0.20,
+    "sustainWeight": 0.20,
+    "residueWeight": 0.10,
+    "silenceClears": true,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "high_pressure_all_components",
+      "frame": {
+        "rms": 0.20,
+        "attack_value": 0.90,
+        "density_value": 0.50,
+        "sustain_envelope": 0.80,
+        "residue_envelope": 0.20,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": true,
+        "pressureValue": 0.705,
+        "energyComponent": 0.20,
+        "attackComponent": 0.225,
+        "densityComponent": 0.10,
+        "sustainComponent": 0.16,
+        "residueComponent": 0.02
+      }
+    },
+    {
+      "id": "attack_spike_pressure",
+      "frame": {
+        "rms": 0.03,
+        "attack_value": 1.00,
+        "density_value": 0.25,
+        "sustain_envelope": 0.10,
+        "residue_envelope": 0.00,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": true,
+        "pressureValue": 0.35,
+        "energyComponent": 0.03,
+        "attackComponent": 0.25,
+        "densityComponent": 0.05,
+        "sustainComponent": 0.02,
+        "residueComponent": 0.00
+      }
+    },
+    {
+      "id": "residue_tail_pressure",
+      "frame": {
+        "rms": 0.01,
+        "attack_value": 0.00,
+        "density_value": 0.00,
+        "sustain_envelope": 0.20,
+        "residue_envelope": 0.60,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": true,
+        "pressureValue": 0.11,
+        "energyComponent": 0.01,
+        "attackComponent": 0.00,
+        "densityComponent": 0.00,
+        "sustainComponent": 0.04,
+        "residueComponent": 0.06
+      }
+    },
+    {
+      "id": "silence_clears_pressure",
+      "frame": {
+        "rms": 0.20,
+        "attack_value": 0.90,
+        "density_value": 0.50,
+        "sustain_envelope": 0.80,
+        "residue_envelope": 0.20,
+        "silence_state": true
+      },
+      "expect": {
+        "aggregateOk": true,
+        "pressureValue": 0.00,
+        "energyComponent": 0.00,
+        "attackComponent": 0.00,
+        "densityComponent": 0.00,
+        "sustainComponent": 0.00,
+        "residueComponent": 0.00
+      }
+    },
+    {
+      "id": "overrange_inputs_clamp",
+      "frame": {
+        "rms": 1.0,
+        "attack_value": 1.4,
+        "density_value": 2.0,
+        "sustain_envelope": 1.2,
+        "residue_envelope": 0.5,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": true,
+        "pressureValue": 0.95,
+        "energyComponent": 0.25,
+        "attackComponent": 0.25,
+        "densityComponent": 0.20,
+        "sustainComponent": 0.20,
+        "residueComponent": 0.05
+      }
+    },
+    {
+      "id": "missing_rms_failure",
+      "frame": {
+        "attack_value": 0.9,
+        "density_value": 0.5,
+        "sustain_envelope": 0.8,
+        "residue_envelope": 0.2,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": false,
+        "diagnostic": "missing_input:rms"
+      }
+    },
+    {
+      "id": "missing_attack_value_failure",
+      "frame": {
+        "rms": 0.20,
+        "density_value": 0.5,
+        "sustain_envelope": 0.8,
+        "residue_envelope": 0.2,
+        "silence_state": false
+      },
+      "expect": {
+        "aggregateOk": false,
+        "diagnostic": "missing_input:attack_value"
+      }
+    }
+  ]
+}

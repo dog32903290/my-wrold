@@ -1,0 +1,78 @@
+{
+  "kind": "analyzerSilenceDetectorFixture",
+  "id": "fixture.pv-silence-detector-cases",
+  "frameIntervalMs": 100,
+  "parameters": {
+    "floor": 0.02,
+    "holdMs": 300,
+    "releaseMs": 100,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "quiet_holds_until_silence",
+      "frames": [
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.0, "peak": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "silenceStateLast": true,
+        "silenceTimerMsLast": 300
+      }
+    },
+    {
+      "id": "active_resets_timer",
+      "frames": [
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.12, "peak": 0.20 },
+        { "rms": 0.0, "peak": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "silenceStateLast": false,
+        "silenceTimerMsLast": 100
+      }
+    },
+    {
+      "id": "brief_gap_not_silence",
+      "frames": [
+        { "rms": 0.12, "peak": 0.18 },
+        { "rms": 0.0, "peak": 0.0 },
+        { "rms": 0.0, "peak": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "silenceStateLast": false,
+        "silenceTimerMsLast": 200
+      }
+    },
+    {
+      "id": "noise_floor_above_floor",
+      "frames": [
+        { "rms": 0.03, "peak": 0.04 },
+        { "rms": 0.035, "peak": 0.05 },
+        { "rms": 0.03, "peak": 0.04 },
+        { "rms": 0.032, "peak": 0.045 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "silenceStateLast": false,
+        "silenceTimerMsLast": 0
+      }
+    },
+    {
+      "id": "missing_rms_failure",
+      "frames": [
+        { "peak": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:rms"
+      }
+    }
+  ]
+}

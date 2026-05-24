@@ -1,0 +1,80 @@
+{
+  "kind": "analyzerDensityDetectorFixture",
+  "id": "fixture.pv-density-detector-cases",
+  "frameIntervalMs": 100,
+  "parameters": {
+    "windowMs": 400,
+    "maxEvents": 4,
+    "releaseMs": 200,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "no_onsets",
+      "frames": [
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "eventCountLast": 0,
+        "densityValueLast": 0.0
+      }
+    },
+    {
+      "id": "three_onsets_inside_window",
+      "frames": [
+        { "onset_event": 1, "attack_value": 0.3 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 1, "attack_value": 0.4 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 1, "attack_value": 0.5 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "eventCountLast": 3,
+        "densityValueLast": 0.75
+      }
+    },
+    {
+      "id": "old_onset_expires",
+      "frames": [
+        { "onset_event": 1, "attack_value": 0.7 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 },
+        { "onset_event": 0, "attack_value": 0.0 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "eventCountLast": 0,
+        "densityValueLast": 0.0
+      }
+    },
+    {
+      "id": "ignores_attack_envelope_without_onset",
+      "frames": [
+        { "onset_event": 0, "attack_value": 0.8, "attack_envelope": 0.8 },
+        { "onset_event": 0, "attack_value": 0.7, "attack_envelope": 0.7 },
+        { "onset_event": 0, "attack_value": 0.6, "attack_envelope": 0.6 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "eventCountLast": 0,
+        "densityValueLast": 0.0
+      }
+    },
+    {
+      "id": "missing_onset_failure",
+      "frames": [
+        { "attack_value": 0.5 }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:onset_event"
+      }
+    }
+  ]
+}

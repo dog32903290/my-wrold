@@ -1,0 +1,20 @@
+{
+  "kind": "modulePackage",
+  "id": "module.density",
+  "title": "Density",
+  "nodeType": "compound.density",
+  "patchPath": "fixtures/compounds/density.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.density.md",
+  "category": "compound",
+  "subcategory": "detector",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "onset_event",
+    "attack_value",
+    "density_value",
+    "event_count",
+    "density_envelope",
+    "confidence"
+  ]
+}

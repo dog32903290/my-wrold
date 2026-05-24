@@ -1,0 +1,15 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-analyzer-visible",
+  "title": "PV Analyzer Visible Catalog",
+  "modulePackages": [
+    "modules/loudness/module.json",
+    "modules/raw-energy/module.json",
+    "modules/attack/module.json",
+    "modules/density/module.json",
+    "modules/silence/module.json",
+    "modules/sustain/module.json",
+    "modules/residue/module.json",
+    "modules/aggregate-pressure/module.json"
+  ]
+}

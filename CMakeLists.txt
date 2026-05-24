@@ -445,7 +445,13 @@ target_link_libraries(my_world_tooll3_skin_tests
 add_test(NAME tooll3_skin_contract COMMAND my_world_tooll3_skin_tests)
 
 add_library(my_world_audio
+    source/audio/AnalyzerAggregatePressure.cpp
     source/audio/AudioAnalyzerState.cpp
+    source/audio/AnalyzerAttackDetector.cpp
+    source/audio/AnalyzerDensityDetector.cpp
+    source/audio/AnalyzerResidueDetector.cpp
+    source/audio/AnalyzerSilenceDetector.cpp
+    source/audio/AnalyzerSustainDetector.cpp
 )
 
 target_include_directories(my_world_audio
@@ -627,6 +633,173 @@ set_tests_properties(analyzer_compound_family PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_analyzer_detector_fixture
+    source/core/AnalyzerAggregatePressureFixture.cpp
+    source/core/AnalyzerDetectorFixture.cpp
+    source/core/AnalyzerDensityDetectorFixture.cpp
+    source/core/AnalyzerResidueDetectorFixture.cpp
+    source/core/AnalyzerSilenceDetectorFixture.cpp
+    source/core/AnalyzerSustainDetectorFixture.cpp
+)
+
+target_include_directories(my_world_analyzer_detector_fixture
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_analyzer_detector_fixture
+    PUBLIC
+        my_world_runtime_registry
+        my_world_storage
+        my_world_json
+)
+
+add_executable(my_world_analyzer_detector_tests
+    tests/AnalyzerDetectorTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_detector_tests
+    PRIVATE
+        my_world_runtime_registry
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_detector COMMAND my_world_analyzer_detector_tests)
+set_tests_properties(analyzer_detector PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_analyzer_density_detector_tests
+    tests/AnalyzerDensityDetectorTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_density_detector_tests
+    PRIVATE
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_density_detector COMMAND my_world_analyzer_density_detector_tests)
+set_tests_properties(analyzer_density_detector PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_analyzer_silence_detector_tests
+    tests/AnalyzerSilenceDetectorTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_silence_detector_tests
+    PRIVATE
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_silence_detector COMMAND my_world_analyzer_silence_detector_tests)
+set_tests_properties(analyzer_silence_detector PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_analyzer_sustain_detector_tests
+    tests/AnalyzerSustainDetectorTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_sustain_detector_tests
+    PRIVATE
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_sustain_detector COMMAND my_world_analyzer_sustain_detector_tests)
+set_tests_properties(analyzer_sustain_detector PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_analyzer_residue_detector_tests
+    tests/AnalyzerResidueDetectorTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_residue_detector_tests
+    PRIVATE
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_residue_detector COMMAND my_world_analyzer_residue_detector_tests)
+set_tests_properties(analyzer_residue_detector PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_analyzer_aggregate_pressure_tests
+    tests/AnalyzerAggregatePressureTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_aggregate_pressure_tests
+    PRIVATE
+        my_world_analyzer_detector_fixture
+)
+
+add_test(NAME analyzer_aggregate_pressure COMMAND my_world_analyzer_aggregate_pressure_tests)
+set_tests_properties(analyzer_aggregate_pressure PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_library(my_world_analyzer_visible_catalog
+    source/core/AnalyzerVisibleCatalog.cpp
+)
+
+target_include_directories(my_world_analyzer_visible_catalog
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_analyzer_visible_catalog
+    PUBLIC
+        my_world_runtime_registry
+        my_world_interaction
+        my_world_json
+)
+
+add_executable(my_world_analyzer_visible_catalog_tests
+    tests/AnalyzerVisibleCatalogTests.cpp
+)
+
+target_link_libraries(my_world_analyzer_visible_catalog_tests
+    PRIVATE
+        my_world_analyzer_visible_catalog
+)
+
+add_test(NAME analyzer_visible_catalog COMMAND my_world_analyzer_visible_catalog_tests)
+set_tests_properties(analyzer_visible_catalog PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_library(my_world_pv_detector_proof_runner
+    source/app/PVDetectorProofRunner.cpp
+)
+
+target_include_directories(my_world_pv_detector_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_pv_detector_proof_runner
+    PUBLIC
+        my_world_analyzer_detector_fixture
+)
+
+add_executable(my_world_pv_detector_proof_runner_tests
+    tests/PVDetectorProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_pv_detector_proof_runner_tests
+    PRIVATE
+        my_world_pv_detector_proof_runner
+)
+
+add_test(NAME pv_detector_proof_runner COMMAND my_world_pv_detector_proof_runner_tests)
+set_tests_properties(pv_detector_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_ai_worker
     source/ai/AIWorkerCommand.cpp
 )
@@ -765,6 +938,8 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
         PRIVATE
             my_world_preferences
             my_world_runtime_registry
+            my_world_analyzer_visible_catalog
+            my_world_pv_detector_proof_runner
             my_world_ai_worker
             my_world_storage_command
             my_world_imgui

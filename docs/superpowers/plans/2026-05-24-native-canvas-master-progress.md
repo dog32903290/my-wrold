@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-24 16:02 Asia/Taipei.
+Date: 2026-05-24 22:12 Asia/Taipei.
 
 Branch:
 
@@ -41,9 +41,25 @@ Branch:
 codex/tooll3-interaction-t0-t7
 ```
 
+Local repo relocation note:
+
+```text
+2026-05-24 17:21 Asia/Taipei:
+Current working repo is /Users/chenbaiwei/Projects/my-world.
+Historical docs also mention /Users/chenbaiwei/Desktop/我的世界 and /Users/chenbaiwei/Projects/我的世界.
+Treat those as path breadcrumbs, not current working-directory truth.
+For future path/build/debug-output bugs, check:
+docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
+```
+
 Latest known commits:
 
 ```text
+5cc6399 Close R runtime render backbone
+ebeab9f Add R2 headless render runtime
+d884f2d Close R1 OpenGL render backend
+94fc456 Add render backend contract
+fd1e972 Plan R segment implementation
 90a4b40 Route R runtime render backbone
 a6390b6 Split storage contract serialization
 cff975e Split runtime registry responsibilities
@@ -197,7 +213,7 @@ Latest accepted targeted result:
 
 | Lane | Status | Current law / evidence | Next |
 | --- | --- | --- | --- |
-| V1 visual proof | proven | `--dump-proof-and-exit` | R lane will absorb runtime/render ownership later |
+| V1 visual proof | proven | `--dump-proof-and-exit` | R lane absorbed runtime/render ownership through R3 |
 | A1 audio proof | proven | `--dump-audio-proof-and-exit` | Raw callback-buffer runtime remains parked |
 | C1 compound core | closed | `docs/superpowers/specs/2026-05-24-c1-24-compound-proof-closure.md` | Do not reopen C1 |
 | C2 PatchDocument work persistence | closed | `docs/superpowers/specs/2026-05-24-c2-compound-work-closure.md` | Do not reopen C2 |
@@ -207,8 +223,15 @@ Latest accepted targeted result:
 | C6.1 analyzer compound family seed | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for detector semantics |
 | C6.2 AI repair loop closure | closed | `docs/superpowers/specs/2026-05-24-c6-analyzer-compound-family.md` | do not reopen for natural-language parsing |
 | H1 post-C three-layer cleanup | closed | `docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md` | Do not reopen for R/PV/TiXL work |
-| R runtime/render backbone | closed | R1 closed: OpenGL proof now runs behind `RenderBackend`; R2 closed: headless `image.constant -> output.texture_summary` writes debug artifacts; R3 closed: V1/R2 proof JSON fields are compatible; `ctest` 33/33 | Select next lane explicitly |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 when not colliding with C4 |
+| R runtime/render backbone | closed | R1 closed: OpenGL proof now runs behind `RenderBackend`; R2 closed: headless `image.constant -> output.texture_summary` writes debug artifacts; R3 closed: V1/R2 proof JSON fields are compatible; `ctest` 33/33 | Do not reopen for PV work |
+| PV/analyzer detector expansion | closed | `docs/superpowers/specs/2026-05-24-pv-analyzer-detector-expansion-closure.md`; attack/density/silence focused tests and app proof dumps passed; `ctest` 36/36 | Do not reopen for sustain/aggregate/UI mapping without a new selected lane |
+| PV/sustain detector | closed | `docs/superpowers/specs/2026-05-24-pv-analyzer-sustain-detector-closure.md`; focused tests and app proof dump passed; `ctest` 37/37 | Do not reopen for residue/aggregate/UI mapping without a new selected lane |
+| PV/residue detector | closed | `docs/superpowers/specs/2026-05-24-pv-analyzer-residue-detector-closure.md`; focused tests and app proof dump passed; `ctest` 38/38 | Do not reopen for aggregate/UI mapping without a new selected lane |
+| PV/aggregate pressure | closed | `docs/superpowers/specs/2026-05-24-pv-analyzer-aggregate-pressure-closure.md`; focused tests and app proof dump passed; `ctest` 39/39 | Do not reopen for UI/MIDI/shader mapping without a new selected lane |
+| PV-B1 analyzer environment promotion | closed | `docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md`; focused test and app proof dump passed; V1 runtime UI diagnostics include PV compounds; `ctest` 40/40 | Do not reopen for MIDI/shader/live callback work without a new selected lane |
+| PV-B1.1 node surface geometry | closed | `docs/superpowers/specs/2026-05-24-pv-b1-node-surface-geometry.md`; TiXL-style `NodeSpec -> CanvasNodeSurfaceGeometry -> draw/hit-test`; focused tests, app build, PV-B1 proof, full `ctest` 40/40, `git diff --check` passed | Do not reopen for broader skin, thumbnails, MIDI/shader mapping, or TiXL runtime work without a new selected lane |
+| PV proof harness extraction | closed | `docs/superpowers/specs/2026-05-24-pv-proof-harness-extraction.md`; `PVDetectorProofRunner` owns detector proof runtime/fixture/artifact orchestration; focused tests, app build, and attack CLI proof passed | Do not reopen detector semantics; C2-C6/PV-B1/V1 proof harness cleanup remain separate selected lanes |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | P-TAX1 only after next active lane is selected |
 
 ## Active Lane Protocol
 
@@ -217,15 +240,241 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after R3 closure.
+None after PV proof harness extraction as of 2026-05-24 23:17 Asia/Taipei.
+
+PV proof harness extraction closed as of 2026-05-24 23:17 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-24-pv-proof-harness-extraction.md
+
+Closed proof line:
+PVDetectorProofRunRequest
+-> runPVDetectorProof()
+-> detector runtime registry + fixture proof
+-> report/cook_order/node_stats/errors artifacts
+-> MainComponent status facade
+
+Latest verification:
+- `cmake --build build --target my_world_pv_detector_proof_runner_tests`
+- `ctest --test-dir build --output-on-failure -R pv_detector_proof_runner`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "analyzer_detector|analyzer_density_detector|analyzer_silence_detector|analyzer_sustain_detector|analyzer_residue_detector|analyzer_aggregate_pressure|pv_detector_proof_runner"`
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-pv-attack-detector-proof-and-exit`
+
+Latest accepted result:
+- `pv_detector_proof_runner` passed
+- focused analyzer/PV tests: 7/7 passed
+- app build passed
+- CLI attack proof exited 0 and wrote `debug/pv-attack-detector-proof/attack_detector_report.json` with `ok: true`
+
+Parked:
+- C2-C6 proof orchestration remains in `MainComponent`
+- PV-B1 analyzer environment proof remains in `MainComponent`
+- V1 shader proof remains tied to `OpenGLShaderPreview`
+
+Previous closure:
+PV-B1.1 node surface geometry closed as of 2026-05-24 22:33 Asia/Taipei.
+Spec / closure evidence:
+- docs/superpowers/specs/2026-05-24-pv-b1-node-surface-geometry.md
+
+Closed proof line:
+GraphNode + NodeSpec
+-> CanvasNodeSurfaceGeometry
+-> ImGui node drawing
+-> InteractionContract hit-test / portCenter
+
+Latest accepted verification:
+- focused geometry + hit-test tests passed
+- app target built
+- PV-B1 analyzer environment proof exited 0 and wrote `ok: true`
+- full ctest passed 40/40
+- git diff --check passed
+
+Closed boundary:
+This lane only fixes node surface geometry for visible PV/analyzer compounds. It does not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime code, relocation-note behavior, flow-runner behavior, or `AGENTS.md` changes.
+
+PV-B1 analyzer environment promotion closed as of 2026-05-24 22:12 Asia/Taipei.
+Closure spec:
+- docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md
+
+Initial PV-B1 spec:
+- docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion.md
+
+Closed proof line:
+fixtures/module-libraries/pv-analyzer-visible.module-library.json
+-> visible node browser/create registry
+-> debug/pv-b1-analyzer-environment-proof/analyzer_environment_report.json
+
+Contract:
+closed analyzer module packages
+-> visible NodeSpec catalog + runtime-op diagnostics
+-> createNode command path for compound.loudness, compound.raw-energy, compound.attack, compound.density, compound.silence, compound.sustain, compound.residue, compound.aggregate-pressure
+
+This lane did not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL, or flow-runner behavior.
+
+Latest accepted verification:
+- focused analyzer visible catalog test passed
+- app proof dump for PV-B1 analyzer environment exited 0 and wrote `ok: true`
+- V1 proof dump still exited 0 and runtime UI diagnostics include PV compounds as runtime ready
+- ctest passed 40/40
+
+PV/aggregate pressure closed as of 2026-05-24 21:05 Asia/Taipei.
+Closure spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-aggregate-pressure-closure.md
+
+Initial aggregate spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-aggregate-pressure.md
+
+Closed proof line:
+fixtures/analyzer/aggregate_pressure_cases.json
+-> analyzer.aggregate_pressure runtime aggregate
+-> debug/pv-aggregate-pressure-proof/aggregate_pressure_report.json + cook_order.json + node_stats.json + errors.json
+
+Contract:
+raw-energy.rms + attack_value + density_value + sustain_envelope + residue_envelope + silence_state
+-> analyzer.aggregate_pressure
+-> pressure_value + energy_component + attack_component + density_component + sustain_component + residue_component + confidence
+
+This lane did not implement UI promotion, MIDI mapping, shader uniform mapping, browser promotion, or live callback-buffer runtime.
+
+Latest accepted verification:
+- focused aggregate test passed
+- runtime registry test passed
+- app proof dump for aggregate pressure exited 0 and wrote `ok: true`
+- ctest passed 39/39
+
+PV/residue detector closed as of 2026-05-24 19:55 Asia/Taipei.
+Closure spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-residue-detector-closure.md
+
+Initial residue spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-residue-detector.md
+
+Closed proof line:
+fixtures/analyzer/residue_detector_cases.json
+-> analyzer.residue runtime detector
+-> debug/pv-residue-detector-proof/residue_detector_report.json + cook_order.json + node_stats.json + errors.json
+
+Contract:
+raw-energy.rms + sustain_envelope, optionally cleared by silence_state
+-> analyzer.residue
+-> residue_state + residue_envelope + residue_timer_ms + confidence
+
+This lane did not implement aggregate pressure, UI smoothing, MIDI mapping, shader uniform mapping, or live callback-buffer runtime.
+
+Latest accepted verification:
+- focused residue test passed
+- runtime registry test passed
+- app proof dump for residue exited 0 and wrote `ok: true`
+- ctest passed 38/38
+
+PV/sustain detector closed as of 2026-05-24 19:09 Asia/Taipei.
+Closure spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-sustain-detector-closure.md
+
+Initial sustain spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-sustain-detector.md
+
+Closed proof line:
+fixtures/analyzer/sustain_detector_cases.json
+-> analyzer.sustain runtime detector
+-> debug/pv-sustain-detector-proof/sustain_detector_report.json + cook_order.json + node_stats.json + errors.json
+
+Contract:
+raw-energy.rms held above floor for holdMs
+-> analyzer.sustain
+-> sustain_state + sustain_timer_ms + sustain_envelope + confidence
+
+This lane must not consume UI-smoothed loudness, attack envelope, density value, or silence output as detector truth.
+
+Latest accepted verification:
+- focused sustain test passed
+- runtime registry test passed
+- app proof dump for sustain exited 0 and wrote `ok: true`
+- ctest passed 37/37
+
+PV/analyzer detector expansion closed as of 2026-05-24 18:28 Asia/Taipei.
+Closure spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-detector-expansion-closure.md
+
+Initial attack spec:
+- docs/superpowers/specs/2026-05-24-pv-analyzer-attack-detector.md
+
+Closed proof lines:
+fixtures/analyzer/attack_detector_cases.json
+-> analyzer.attack runtime detector
+-> debug/pv-attack-detector-proof/attack_detector_report.json + cook_order.json + node_stats.json + errors.json
+
+fixtures/analyzer/density_detector_cases.json
+-> analyzer.density runtime detector
+-> debug/pv-density-detector-proof/density_detector_report.json + cook_order.json + node_stats.json + errors.json
+
+fixtures/analyzer/silence_detector_cases.json
+-> analyzer.silence runtime detector
+-> debug/pv-silence-detector-proof/silence_detector_report.json + cook_order.json + node_stats.json + errors.json
+
+Latest accepted verification:
+- focused attack/density/silence tests passed
+- app proof dumps for attack/density/silence exited 0 and wrote `ok: true`
+- ctest passed 36/36
+- git diff --check passed
+
 H1.1 UI overlay split is closed.
 H1.2 RuntimeRegistry split is closed.
 H1.3 StorageContract split is closed in the current slice.
 R0 runtime/render backbone roadmap spec is closed in the current slice.
 R1 OpenGL proof backend extraction is closed in d884f2d.
 R2 headless image.constant runtime proof is closed in ebeab9f.
-R3 runtime/render proof compatibility closure is closed in the current slice.
-No active implementation plan until the next lane is explicitly selected.
+R3 runtime/render proof compatibility closure is closed in 5cc6399.
+```
+
+Current PV note:
+
+```text
+Current PV analyzer line has closed detector, aggregate, and environment-promotion contracts:
+
+attack:
+raw-energy.rms / raw-energy.peak
+-> analyzer.attack
+-> onset_event + attack_value + attack_envelope + confidence
+
+density:
+attack.onset_event
+-> analyzer.density
+-> density_value + event_count + density_envelope + confidence
+
+silence:
+raw-energy.rms below floor for holdMs
+-> analyzer.silence
+-> silence_state + silence_timer_ms + confidence
+
+sustain:
+raw-energy.rms above floor for holdMs
+-> analyzer.sustain
+-> sustain_state + sustain_timer_ms + sustain_envelope + confidence
+
+residue:
+raw-energy.rms + sustain_envelope, optionally cleared by silence_state
+-> analyzer.residue
+-> residue_state + residue_envelope + residue_timer_ms + confidence
+
+aggregate_pressure:
+raw-energy.rms + attack_value + density_value + sustain_envelope + residue_envelope + silence_state
+-> analyzer.aggregate_pressure
+-> pressure_value + energy_component + attack_component + density_component + sustain_component + residue_component + confidence
+
+Density proof explicitly says `usesAttackEnvelopeForDetector: false`.
+Attack proof explicitly says `usesOutputSmoothingForDetector: false`.
+Silence proof explicitly says it uses raw RMS and does not implement attack/density.
+Sustain proof explicitly says it uses raw RMS and does not use attack onset or silence state for detector truth.
+Residue proof explicitly says it uses raw RMS + sustain envelope, uses silence state only to clear, and does not use output smoothing.
+Aggregate pressure proof explicitly says it uses raw RMS + detector states and does not use output smoothing for the aggregate.
+
+PV-B1:
+fixtures/module-libraries/pv-analyzer-visible.module-library.json
+-> visible node browser/create registry
+-> compound.loudness + compound.raw-energy + compound.attack + compound.density + compound.silence + compound.sustain + compound.residue + compound.aggregate-pressure are runtime ready and create-enabled
+
+PV-B1 proof explicitly says it adds no analyzer DSP, MIDI mapping, shader uniform mapping, or live callback runtime.
 ```
 
 Current R note:
@@ -382,11 +631,10 @@ H1 post-C three-layer cleanup
 Parked after C6:
 
 ```text
-attack / density / sustain / silence compound semantics
+MIDI mapping and shader uniform mapping
 multi-node group-to-compound extraction
-publish dialog / browser polish beyond the visible proof hand
+browser polish beyond analyzer admission/create proof
 remote sync / shared module registry
-RenderBackend extraction
 TiXL browser/search implementation
 raw callback-buffer runtime
 ```
@@ -403,6 +651,11 @@ raw callback-buffer runtime
 | C4 closes save_work and move_node only, not the full AI worker loop | C4 spec vs future AI worker expectations | Repair-loop orchestration moved to C6.2. Natural language parsing, additional graph mutation commands, and remote sync remain parked outside C4/C6. |
 | C5 can be mistaken for new analyzer/module vocabulary work | C5 title vs C6 analyzer family | C5.1 only proves publishing and reusing one selected compound source. C6.1 owns the analyzer family seed; detector semantics remain future PV work. |
 | TiXL node-function spec names `top_constant_to_output` as the first runtime slice, while skeleton spec blocks production visual work on RenderBackend extraction | `2026-05-23-node-function-spec-from-tixl.md` vs `2026-05-22-native-canvas-skeleton-design.md` | R roadmap resolves this by making R1 the backend ownership extraction for existing V1 proof, then R2 the first new headless runtime-node slice. |
+| PV work was parked until explicitly selected | master plan parked PV before R closed | Resolved and closed through attack/density/silence. Sustain, residue, aggregate pressure, UI promotion, live callback-buffer work, and shader/MIDI mapping remain parked. |
+| Sustain was selected after detector expansion closure | PV closure parked sustain until a new selected lane | Resolved and closed by `docs/superpowers/specs/2026-05-24-pv-analyzer-sustain-detector-closure.md`. Residue, aggregate pressure, UI promotion, shader/MIDI mapping, and live callback-buffer work remain parked. |
+| Residue was selected after sustain closure | Sustain closure parked residue until a new selected lane | Resolved and closed by `docs/superpowers/specs/2026-05-24-pv-analyzer-residue-detector-closure.md`. Aggregate pressure, UI promotion, shader/MIDI mapping, and live callback-buffer work remain parked. |
+| Aggregate pressure was selected after residue closure | Residue closure parked aggregate pressure until a new selected lane | Resolved and closed by `docs/superpowers/specs/2026-05-24-pv-analyzer-aggregate-pressure-closure.md`. UI promotion, shader/MIDI mapping, live callback-buffer work, and additional aggregate families remain parked. |
+| Analyzer environment promotion was selected after aggregate pressure closure | Aggregate closure parked browser/UI promotion until a new selected lane | Resolved and closed by `docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md`. Browser polish, MIDI mapping, shader mapping, live callback-buffer work, and additional aggregate families remain parked. |
 
 ## Plan Inventory
 
@@ -417,45 +670,94 @@ raw callback-buffer runtime
 | `2026-05-24-c2-compound-work-closure.md` | historical C2 implementation/closure plan | no |
 | `2026-05-24-c5-module-publish-reuse-path.md` | C5 closure evidence | no, unless auditing C5 evidence |
 | `2026-05-24-c6-analyzer-compound-family.md` | C6 closure evidence | no, unless auditing C6 evidence |
+| `2026-05-24-pv-analyzer-attack-detector.md` | initial PV attack detector contract | no, unless auditing attack contract |
+| `2026-05-24-pv-analyzer-detector-expansion-closure.md` | PV attack/density/silence closure evidence | no, unless auditing PV closure |
+| `2026-05-24-pv-analyzer-sustain-detector.md` | PV sustain detector contract | no, unless auditing sustain |
+| `2026-05-24-pv-analyzer-sustain-detector-closure.md` | PV sustain closure evidence | no, unless auditing sustain closure |
+| `2026-05-24-pv-analyzer-residue-detector.md` | PV residue detector contract | no, unless auditing residue |
+| `2026-05-24-pv-analyzer-residue-detector-closure.md` | PV residue closure evidence | no, unless auditing residue closure |
+| `2026-05-24-pv-analyzer-aggregate-pressure.md` | initial PV aggregate pressure contract | no, unless auditing aggregate pressure |
+| `2026-05-24-pv-analyzer-aggregate-pressure-closure.md` | PV aggregate pressure closure evidence | no, unless auditing aggregate pressure closure |
+| `2026-05-24-pv-b1-analyzer-environment-promotion.md` | initial PV-B1 analyzer environment promotion contract | no, unless auditing PV-B1 |
+| `2026-05-24-pv-b1-analyzer-environment-promotion-closure.md` | PV-B1 analyzer environment promotion closure evidence | no, unless auditing PV-B1 closure |
 | `2026-05-24-post-c-three-layer-cleanup.md` | H1 closure evidence | no, unless auditing H1 evidence |
-| `2026-05-24-r-runtime-render-backbone-roadmap.md` | R0 roadmap spec and R1/R2 routing authority | only after this master plan selects R work |
-| `2026-05-24-r-segment-implementation.md` | active R implementation plan | yes, for R1/R2/R3 execution |
+| `2026-05-24-r-runtime-render-backbone-roadmap.md` | R closure evidence and historical routing | no, unless auditing R evidence |
+| `2026-05-24-r-segment-implementation.md` | R implementation/closure history | no, unless auditing R evidence |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
-| `2026-05-24-tixl-parity-construction-ledger.md` | active sub-ledger for TiXL-visible parity | only from this master plan |
+| `2026-05-24-tixl-parity-construction-ledger.md` | TiXL-visible parity sub-ledger, not the current active lane | only from this master plan |
 
 ## Session Safety
 
-Files outside C cleanup ownership that this pass must not edit or include unless explicitly requested:
+Files outside PV detector expansion ownership that this pass must not edit or include unless explicitly requested:
 
 ```text
 AGENTS.md
+docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 docs/superpowers/plans/2026-05-24-flow-runner-automation.md
 scripts/
 tests/test_myworld_flow.py
 ```
 
-H cleanup owned files:
+PV analyzer owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-24-pv-analyzer-attack-detector.md
+docs/superpowers/specs/2026-05-24-pv-analyzer-detector-expansion-closure.md
+docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion.md
+docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md
+docs/nodes/analyzer.attack.md
+docs/nodes/analyzer.density.md
+docs/nodes/analyzer.silence.md
+fixtures/analyzer/
+fixtures/compounds/attack.compound.json
+fixtures/compounds/density.compound.json
+fixtures/compounds/silence.compound.json
+fixtures/compounds/sustain.compound.json
+fixtures/compounds/residue.compound.json
+fixtures/compounds/aggregate-pressure.compound.json
+fixtures/module-libraries/pv-analyzer-visible.module-library.json
+fixtures/module-libraries/pv-*-detector.module-library.json
+fixtures/module-libraries/pv-aggregate-pressure.module-library.json
+fixtures/modules/attack/
+fixtures/modules/density/
+fixtures/modules/silence/
+fixtures/modules/sustain/
+fixtures/modules/residue/
+fixtures/modules/aggregate-pressure/
+source/audio/Analyzer*Detector.*
+source/audio/AnalyzerAggregatePressure.*
+source/core/Analyzer*DetectorFixture.*
+source/core/AnalyzerAggregatePressureFixture.*
+source/core/AnalyzerVisibleCatalog.*
+source/core/RuntimeRegistrySynthetic.cpp
+source/app/Main.*
+source/render/OpenGLShaderPreview.cpp
+CMakeLists.txt
+tests/Analyzer*DetectorTests.cpp
+tests/AnalyzerVisibleCatalogTests.cpp
+tests/RuntimeRegistryTests.cpp
+```
+
+Closed H cleanup files, do not edit for PV:
+
+```text
 docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md
 source/core/RuntimeRegistry.*
 source/storage/StorageContract.*
 source/ui/ImGuiSmokeOverlay.*
-CMakeLists.txt
 ```
 
-R0 routing owned files:
+Closed R routing files, do not edit for PV:
 
 ```text
-docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
 docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 ```
 
 ## Next Handoff Sentence
 
-Open this master plan first. R runtime/render backbone is closed through R3; select the next lane explicitly before editing. Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, and PV/TiXL work remain parked until selected. Do not touch the flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after PV-B1.1 node surface geometry closure. Next selectable lanes include MIDI/shader mapping, live callback-buffer runtime, browser polish, or a new analyzer aggregate family, but each needs a fresh active spec before code. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
@@ -467,4 +769,4 @@ After the next lane finishes:
    - move the active lane from `in progress` to `closed` or `blocked`;
    - record proof commands;
    - set the next active lane explicitly.
-4. Do not start R/PV/TiXL implementation until the active lane row is updated.
+4. Do not start MIDI/shader mapping, live callback-buffer runtime, TiXL, browser polish, or another analyzer family until a new active lane row is updated.

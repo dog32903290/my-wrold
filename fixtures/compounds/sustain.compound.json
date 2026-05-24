@@ -1,0 +1,32 @@
+{
+  "type": "compound.sustain",
+  "displayName": "Sustain",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "sustain", "type": "analyzer.sustain", "role": "Detect held active energy from raw RMS" },
+    { "id": "sustain_out", "type": "analyzer.sustain_out", "role": "Publish sustain detector public outputs" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "sustain.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "sustain.peak", "dataType": "signal.float" },
+    { "from": "sustain.sustain_state", "to": "sustain_out.sustain_state", "dataType": "signal.float" },
+    { "from": "sustain.sustain_timer_ms", "to": "sustain_out.sustain_timer_ms", "dataType": "signal.float" },
+    { "from": "sustain.sustain_envelope", "to": "sustain_out.sustain_envelope", "dataType": "signal.float" },
+    { "from": "sustain.confidence", "to": "sustain_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "sustain_state", "label": "Sustain State", "dataType": "signal.float", "direction": "out", "mapsTo": "sustain_out.sustain_state" },
+    { "id": "sustain_timer_ms", "label": "Sustain Timer Ms", "dataType": "signal.float", "direction": "out", "mapsTo": "sustain_out.sustain_timer_ms" },
+    { "id": "sustain_envelope", "label": "Sustain Envelope", "dataType": "signal.float", "direction": "out", "mapsTo": "sustain_out.sustain_envelope" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "sustain_out.confidence" }
+  ]
+}

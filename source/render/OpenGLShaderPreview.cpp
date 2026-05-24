@@ -3,6 +3,7 @@
 #include "CompoundModule.h"
 #include "RuntimeRegistry.h"
 
+#include <algorithm>
 #include <atomic>
 #include <iterator>
 #include <vector>
@@ -62,6 +63,19 @@ juce::String missingRuntimeOpModuleLibraryPath()
     return "fixtures/module-libraries/missing-runtimeop.module-library.json";
 }
 
+juce::String pvAnalyzerVisibleModuleLibraryPath()
+{
+    return "fixtures/module-libraries/pv-analyzer-visible.module-library.json";
+}
+
+std::vector<juce::String> visibleModuleLibraryPaths()
+{
+    return {
+        defaultModuleLibraryPath(),
+        pvAnalyzerVisibleModuleLibraryPath()
+    };
+}
+
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
 {
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
@@ -97,18 +111,28 @@ void appendRuntimeOpModuleDiagnostics (std::vector<RuntimeOpModuleDiagnostic>& d
         return;
 
     auto nextDiagnostics = makeRuntimeOpModuleDiagnostics (coverage.snapshot);
-    diagnostics.insert (diagnostics.end(),
-                        std::make_move_iterator (nextDiagnostics.begin()),
-                        std::make_move_iterator (nextDiagnostics.end()));
+    for (auto& diagnostic : nextDiagnostics)
+    {
+        const auto alreadyPresent = std::any_of (diagnostics.begin(),
+                                                 diagnostics.end(),
+                                                 [&diagnostic] (const auto& existing) {
+                                                     return existing.nodeType == diagnostic.nodeType;
+                                                 });
+        if (! alreadyPresent)
+            diagnostics.push_back (std::move (diagnostic));
+    }
 }
 
 std::vector<RuntimeOpModuleDiagnostic> loadRuntimeOpModuleDiagnostics()
 {
     std::vector<RuntimeOpModuleDiagnostic> diagnostics;
 
-    const auto runtimeRegistry = loadRuntimeRegistryFromCandidates (defaultModuleLibraryPath());
-    if (runtimeRegistry.ok)
-        appendRuntimeOpModuleDiagnostics (diagnostics, inspectRuntimeOpCoverage (runtimeRegistry.registry));
+    for (const auto& libraryPath : visibleModuleLibraryPaths())
+    {
+        const auto runtimeRegistry = loadRuntimeRegistryFromCandidates (libraryPath);
+        if (runtimeRegistry.ok)
+            appendRuntimeOpModuleDiagnostics (diagnostics, inspectRuntimeOpCoverage (runtimeRegistry.registry));
+    }
 
     const auto missingRuntimeOpRegistry = loadRuntimeRegistryFromCandidates (missingRuntimeOpModuleLibraryPath());
     if (missingRuntimeOpRegistry.ok)
@@ -119,16 +143,22 @@ std::vector<RuntimeOpModuleDiagnostic> loadRuntimeOpModuleDiagnostics()
 
 std::vector<NodeSpec> loadVisibleNodeSpecs()
 {
-    const auto seedSpecs = makeSeedNodeSpecs();
+    auto visibleSpecs = makeSeedNodeSpecs();
 
-    for (const auto& path : moduleLibraryCandidatePaths (defaultModuleLibraryPath()))
+    for (const auto& libraryPath : visibleModuleLibraryPaths())
     {
-        const auto modules = loadCompoundModuleNodeSpecsFromLibrary (path);
-        if (modules.ok)
-            return mergeNodeSpecs (seedSpecs, modules.specs);
+        for (const auto& path : moduleLibraryCandidatePaths (libraryPath))
+        {
+            const auto modules = loadCompoundModuleNodeSpecsFromLibrary (path);
+            if (modules.ok)
+            {
+                visibleSpecs = mergeNodeSpecs (std::move (visibleSpecs), modules.specs);
+                break;
+            }
+        }
     }
 
-    return seedSpecs;
+    return visibleSpecs;
 }
 
 RuntimeRegistry loadVisibleRuntimeRegistry()
@@ -378,14 +408,10 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     const auto missingRuntimeOpCoverage = missingRuntimeOpRegistry.ok
                                               ? inspectRuntimeOpCoverage (missingRuntimeOpRegistry.registry)
                                               : RuntimeOpCoverageResult {};
-    auto runtimeUiDiagnostics = makeRuntimeOpModuleDiagnostics (runtimeOpCoverage.snapshot);
-    if (! missingRuntimeOpCoverage.snapshot.entries.empty())
-    {
-        auto missingDiagnostics = makeRuntimeOpModuleDiagnostics (missingRuntimeOpCoverage.snapshot);
-        runtimeUiDiagnostics.insert (runtimeUiDiagnostics.end(),
-                                     std::make_move_iterator (missingDiagnostics.begin()),
-                                     std::make_move_iterator (missingDiagnostics.end()));
-    }
+    auto runtimeUiDiagnostics = runtimeOpDiagnostics.empty()
+                                    ? makeRuntimeOpModuleDiagnostics (runtimeOpCoverage.snapshot)
+                                    : runtimeOpDiagnostics;
+    appendRuntimeOpModuleDiagnostics (runtimeUiDiagnostics, missingRuntimeOpCoverage);
     const auto missingRuntimeOpDryRun = missingRuntimeOpRegistry.ok
                                             ? dryRunRuntimeRegistry (missingRuntimeOpRegistry.registry)
                                             : RuntimeDryRunResult {};

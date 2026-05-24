@@ -192,14 +192,14 @@ double distanceToSegmentSquared (CanvasPoint point, CanvasPoint a, CanvasPoint b
     return distanceSquared (point, { a.x + vx * t, a.y + vy * t });
 }
 
-bool pointInNodeBody (CanvasPoint point, const GraphNode& node)
+bool pointInNodeBody (CanvasPoint point, const GraphNode& node, const NodeSpec* spec)
 {
-    return canvasPointInNodeBody ({ point.x, point.y }, node);
+    return canvasPointInNodeBody ({ point.x, point.y }, node, spec);
 }
 
-CanvasPoint portCenterForIndex (const GraphNode& node, const std::string& direction, size_t index)
+CanvasPoint portCenterForIndex (const GraphNode& node, const NodeSpec* spec, const std::string& direction, size_t index)
 {
-    const auto point = canvasPortCenterForIndex (node, direction, index);
+    const auto point = canvasPortCenterForIndex (node, spec, direction, index);
     return { point.x, point.y };
 }
 
@@ -217,11 +217,11 @@ PortCenterResult portCenterInternal (const GraphContract& graph,
 
     for (size_t index = 0; index < spec->outputs.size(); ++index)
         if (spec->outputs[index].id == portId)
-            return { true, portCenterForIndex (*node, "out", index) };
+            return { true, portCenterForIndex (*node, spec, "out", index) };
 
     for (size_t index = 0; index < spec->inputs.size(); ++index)
         if (spec->inputs[index].id == portId)
-            return { true, portCenterForIndex (*node, "in", index) };
+            return { true, portCenterForIndex (*node, spec, "in", index) };
 
     return {};
 }
@@ -799,14 +799,14 @@ HitTestResult hitTestGraph (const GraphContract& graph,
 
         for (size_t index = 0; index < spec->outputs.size(); ++index)
         {
-            const auto center = portCenterForIndex (node, "out", index);
+            const auto center = portCenterForIndex (node, spec, "out", index);
             if (distanceSquared (point, center) <= portRadiusSquared)
                 return { HitTestKind::outputPort, node.id, node.id + "." + spec->outputs[index].id, {} };
         }
 
         for (size_t index = 0; index < spec->inputs.size(); ++index)
         {
-            const auto center = portCenterForIndex (node, "in", index);
+            const auto center = portCenterForIndex (node, spec, "in", index);
             if (distanceSquared (point, center) <= portRadiusSquared)
                 return { HitTestKind::inputPort, node.id, node.id + "." + spec->inputs[index].id, {} };
         }
@@ -821,7 +821,7 @@ HitTestResult hitTestGraph (const GraphContract& graph,
     }
 
     for (const auto& node : graph.editorGraph.nodes)
-        if (pointInNodeBody (point, node))
+        if (pointInNodeBody (point, node, specForNode (graph, specs, node.id)))
             return { HitTestKind::nodeBody, node.id, {}, {} };
 
     return {};

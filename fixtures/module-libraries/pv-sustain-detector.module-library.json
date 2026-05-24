@@ -1,0 +1,8 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-sustain-detector",
+  "title": "PV Sustain Detector",
+  "modulePackages": [
+    "modules/sustain/module.json"
+  ]
+}

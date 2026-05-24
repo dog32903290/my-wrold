@@ -1,0 +1,19 @@
+{
+  "kind": "modulePackage",
+  "id": "module.sustain",
+  "title": "Sustain",
+  "nodeType": "compound.sustain",
+  "patchPath": "fixtures/compounds/sustain.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.sustain.md",
+  "category": "compound",
+  "subcategory": "detector",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "sustain_state",
+    "sustain_timer_ms",
+    "sustain_envelope",
+    "confidence"
+  ]
+}

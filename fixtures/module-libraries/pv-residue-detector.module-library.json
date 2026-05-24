@@ -1,0 +1,8 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-residue-detector",
+  "title": "PV Residue Detector",
+  "modulePackages": [
+    "modules/residue/module.json"
+  ]
+}

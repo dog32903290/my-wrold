@@ -35,12 +35,33 @@ public:
             "--dump-c6-analyzer-family-proof-and-exit");
         const auto dumpC6AIRepairLoopProofAndExit = commandLine.contains (
             "--dump-c6-ai-repair-loop-proof-and-exit");
+        const auto dumpPVAttackDetectorProofAndExit = commandLine.contains (
+            "--dump-pv-attack-detector-proof-and-exit");
+        const auto dumpPVDensityDetectorProofAndExit = commandLine.contains (
+            "--dump-pv-density-detector-proof-and-exit");
+        const auto dumpPVSilenceDetectorProofAndExit = commandLine.contains (
+            "--dump-pv-silence-detector-proof-and-exit");
+        const auto dumpPVSustainDetectorProofAndExit = commandLine.contains (
+            "--dump-pv-sustain-detector-proof-and-exit");
+        const auto dumpPVResidueDetectorProofAndExit = commandLine.contains (
+            "--dump-pv-residue-detector-proof-and-exit");
+        const auto dumpPVAggregatePressureProofAndExit = commandLine.contains (
+            "--dump-pv-aggregate-pressure-proof-and-exit");
+        const auto dumpPVB1AnalyzerEnvironmentProofAndExit = commandLine.contains (
+            "--dump-pv-b1-analyzer-environment-proof-and-exit");
         const auto quitAfterStartupDump = dumpProofAndExit || dumpAudioProofAndExit || dumpC2StorageProofAndExit
                                           || dumpC3SaveWorkProofAndExit || dumpC4AIWorkerSaveWorkProofAndExit
                                           || dumpC5ModulePublishProofAndExit || dumpC5AIWorkerModulePublishProofAndExit
                                           || dumpC5VisibleModulePublishProofAndExit
                                           || dumpC6AnalyzerFamilyProofAndExit
-                                          || dumpC6AIRepairLoopProofAndExit;
+                                          || dumpC6AIRepairLoopProofAndExit
+                                          || dumpPVAttackDetectorProofAndExit
+                                          || dumpPVDensityDetectorProofAndExit
+                                          || dumpPVSilenceDetectorProofAndExit
+                                          || dumpPVSustainDetectorProofAndExit
+                                          || dumpPVResidueDetectorProofAndExit
+                                          || dumpPVAggregatePressureProofAndExit
+                                          || dumpPVB1AnalyzerEnvironmentProofAndExit;
 
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
                                                    dumpProofAndExit,
@@ -53,6 +74,13 @@ public:
                                                    dumpC5VisibleModulePublishProofAndExit,
                                                    dumpC6AnalyzerFamilyProofAndExit,
                                                    dumpC6AIRepairLoopProofAndExit,
+                                                   dumpPVAttackDetectorProofAndExit,
+                                                   dumpPVDensityDetectorProofAndExit,
+                                                   dumpPVSilenceDetectorProofAndExit,
+                                                   dumpPVSustainDetectorProofAndExit,
+                                                   dumpPVResidueDetectorProofAndExit,
+                                                   dumpPVAggregatePressureProofAndExit,
+                                                   dumpPVB1AnalyzerEnvironmentProofAndExit,
                                                    quitAfterStartupDump);
     }
 
@@ -81,6 +109,13 @@ private:
                     bool dumpC5VisibleModulePublishProofAndExit,
                     bool dumpC6AnalyzerFamilyProofAndExit,
                     bool dumpC6AIRepairLoopProofAndExit,
+                    bool dumpPVAttackDetectorProofAndExit,
+                    bool dumpPVDensityDetectorProofAndExit,
+                    bool dumpPVSilenceDetectorProofAndExit,
+                    bool dumpPVSustainDetectorProofAndExit,
+                    bool dumpPVResidueDetectorProofAndExit,
+                    bool dumpPVAggregatePressureProofAndExit,
+                    bool dumpPVB1AnalyzerEnvironmentProofAndExit,
                     bool quitAfterStartupDump)
             : DocumentWindow (std::move (name),
                               juce::Colour::fromRGB (13, 15, 20),
@@ -97,6 +132,13 @@ private:
                                                 dumpC5VisibleModulePublishProofAndExit,
                                                 dumpC6AnalyzerFamilyProofAndExit,
                                                 dumpC6AIRepairLoopProofAndExit,
+                                                dumpPVAttackDetectorProofAndExit,
+                                                dumpPVDensityDetectorProofAndExit,
+                                                dumpPVSilenceDetectorProofAndExit,
+                                                dumpPVSustainDetectorProofAndExit,
+                                                dumpPVResidueDetectorProofAndExit,
+                                                dumpPVAggregatePressureProofAndExit,
+                                                dumpPVB1AnalyzerEnvironmentProofAndExit,
                                                 quitAfterStartupDump),
                              true);
             centreWithSize (getWidth(), getHeight());

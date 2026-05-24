@@ -1,0 +1,19 @@
+{
+  "kind": "modulePackage",
+  "id": "module.attack",
+  "title": "Attack",
+  "nodeType": "compound.attack",
+  "patchPath": "fixtures/compounds/attack.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.attack.md",
+  "category": "compound",
+  "subcategory": "detector",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "onset_event",
+    "attack_value",
+    "attack_envelope",
+    "confidence"
+  ]
+}

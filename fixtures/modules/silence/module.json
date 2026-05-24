@@ -1,0 +1,18 @@
+{
+  "kind": "modulePackage",
+  "id": "module.silence",
+  "title": "Silence",
+  "nodeType": "compound.silence",
+  "patchPath": "fixtures/compounds/silence.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.silence.md",
+  "category": "compound",
+  "subcategory": "detector",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "silence_state",
+    "silence_timer_ms",
+    "confidence"
+  ]
+}

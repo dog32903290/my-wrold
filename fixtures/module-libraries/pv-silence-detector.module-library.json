@@ -1,0 +1,8 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-silence-detector",
+  "title": "PV Silence Detector",
+  "modulePackages": [
+    "modules/silence/module.json"
+  ]
+}

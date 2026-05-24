@@ -1,11 +1,13 @@
 #include "MainComponent.h"
 
 #include "AIWorkerCommand.h"
+#include "AnalyzerVisibleCatalog.h"
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
 #include "InteractionContract.h"
+#include "PVDetectorProofRunner.h"
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
 #include "StorageCommand.h"
@@ -112,6 +114,16 @@ juce::File c6AIRepairLoopProofDumpDirectory()
     return projectDirectory().getChildFile ("debug").getChildFile ("c6-ai-repair-loop-proof");
 }
 
+juce::File pvDetectorProofDumpDirectory (PVDetectorProofKind kind)
+{
+    return projectDirectory().getChildFile ("debug").getChildFile (pvDetectorProofDirectoryName (kind));
+}
+
+juce::File pvB1AnalyzerEnvironmentProofDumpDirectory()
+{
+    return projectDirectory().getChildFile ("debug").getChildFile ("pv-b1-analyzer-environment-proof");
+}
+
 juce::File defaultActiveWorkManifestFile()
 {
     return projectDirectory().getChildFile ("debug").getChildFile ("c3-active-work").getChildFile ("myworld.work.json");
@@ -145,6 +157,11 @@ juce::String analyzerFamilyModuleLibraryPath()
     return "fixtures/module-libraries/analyzer-family.module-library.json";
 }
 
+juce::String pvAnalyzerVisibleModuleLibraryPath()
+{
+    return "fixtures/module-libraries/pv-analyzer-visible.module-library.json";
+}
+
 std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& libraryPath)
 {
     const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
@@ -159,6 +176,17 @@ std::vector<std::string> moduleLibraryCandidatePaths (const juce::String& librar
 std::vector<std::string> repoCandidatePaths (const juce::String& relativePath)
 {
     return moduleLibraryCandidatePaths (relativePath);
+}
+
+std::vector<std::filesystem::path> pvDetectorProofCandidateRoots()
+{
+    const auto executableDir = juce::File::getSpecialLocation (juce::File::currentExecutableFile).getParentDirectory();
+
+    return {
+        projectDirectory().getFullPathName().toStdString(),
+        juce::File::getCurrentWorkingDirectory().getFullPathName().toStdString(),
+        parentDirectory (executableDir, 5).getFullPathName().toStdString()
+    };
 }
 
 bool hasEdgeId (const GraphContract& graph, const std::string& edgeId)
@@ -426,6 +454,7 @@ RuntimeRegistryLoadResult loadAudioProofRuntimeRegistry()
     return { false, {}, lastError.empty() ? "could not load module library: " + defaultModuleLibraryPath().toStdString()
                                           : lastError };
 }
+
 }
 
 MainComponent::MainComponent (bool dumpProofOnStart,
@@ -438,6 +467,13 @@ MainComponent::MainComponent (bool dumpProofOnStart,
                               bool dumpC5VisibleModulePublishProofOnStart,
                               bool dumpC6AnalyzerFamilyProofOnStart,
                               bool dumpC6AIRepairLoopProofOnStart,
+                              bool dumpPVAttackDetectorProofOnStart,
+                              bool dumpPVDensityDetectorProofOnStart,
+                              bool dumpPVSilenceDetectorProofOnStart,
+                              bool dumpPVSustainDetectorProofOnStart,
+                              bool dumpPVResidueDetectorProofOnStart,
+                              bool dumpPVAggregatePressureProofOnStart,
+                              bool dumpPVB1AnalyzerEnvironmentProofOnStart,
                               bool quitAfterStartupDump)
     : preferencesPanel (audioDeviceManager),
       graph (makeDefaultShaderOutputGraph()),
@@ -616,6 +652,69 @@ MainComponent::MainComponent (bool dumpProofOnStart,
         {
             if (safe != nullptr)
                 safe->dumpC6AIRepairLoopProof();
+        });
+    }
+
+    if (dumpPVAttackDetectorProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVAttackDetectorProof();
+        });
+    }
+
+    if (dumpPVDensityDetectorProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVDensityDetectorProof();
+        });
+    }
+
+    if (dumpPVSilenceDetectorProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVSilenceDetectorProof();
+        });
+    }
+
+    if (dumpPVSustainDetectorProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVSustainDetectorProof();
+        });
+    }
+
+    if (dumpPVResidueDetectorProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVResidueDetectorProof();
+        });
+    }
+
+    if (dumpPVAggregatePressureProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVAggregatePressureProof();
+        });
+    }
+
+    if (dumpPVB1AnalyzerEnvironmentProofOnStart)
+    {
+        juce::Timer::callAfterDelay (500, [safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            if (safe != nullptr)
+                safe->dumpPVB1AnalyzerEnvironmentProof();
         });
     }
 
@@ -2048,6 +2147,127 @@ void MainComponent::dumpC6AIRepairLoopProof()
     }
 
     statusLabel.setText ((ok ? "c6 AI repair loop proof dumped: " : "c6 AI repair loop proof mismatch: ")
+                             + directory.getFullPathName(),
+                         juce::dontSendNotification);
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpPVAttackDetectorProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::attack);
+}
+
+void MainComponent::dumpPVDensityDetectorProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::density);
+}
+
+void MainComponent::dumpPVSilenceDetectorProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::silence);
+}
+
+void MainComponent::dumpPVSustainDetectorProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::sustain);
+}
+
+void MainComponent::dumpPVResidueDetectorProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::residue);
+}
+
+void MainComponent::dumpPVAggregatePressureProof()
+{
+    dumpPVDetectorProof (PVDetectorProofKind::aggregatePressure);
+}
+
+void MainComponent::dumpPVDetectorProof (PVDetectorProofKind kind)
+{
+    const auto directory = pvDetectorProofDumpDirectory (kind);
+
+    PVDetectorProofRunRequest request;
+    request.kind = kind;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = pvDetectorProofCandidateRoots();
+
+    const auto result = runPVDetectorProof (request);
+    const auto displayName = juce::String (pvDetectorProofDisplayName (kind));
+
+    if (result.status == "failed")
+    {
+        statusLabel.setText (displayName + " proof failed: " + juce::String (result.error),
+                             juce::dontSendNotification);
+    }
+    else
+    {
+        statusLabel.setText (displayName + " proof " + juce::String (result.status) + ": "
+                                 + directory.getFullPathName(),
+                             juce::dontSendNotification);
+    }
+
+    if (shouldQuitAfterStartupDump)
+        quitAfterDelay();
+}
+
+void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
+{
+    const auto directory = pvB1AnalyzerEnvironmentProofDumpDirectory();
+    const auto reportFile = directory.getChildFile ("analyzer_environment_report.json");
+
+    const auto writeFailureReport = [&] (const std::string& message)
+    {
+        AnalyzerVisibleCatalogProof failure;
+        failure.libraryPath = pvAnalyzerVisibleModuleLibraryPath().toStdString();
+        failure.requiredNodeTypes = pvB1AnalyzerRequiredNodeTypes();
+        failure.error = message;
+        writeTextFile (reportFile, makeAnalyzerVisibleCatalogProofJson (failure));
+        statusLabel.setText ("PV-B1 analyzer environment proof failed: " + juce::String (message),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+    };
+
+    if (const auto error = clearDirectoryIfExists (directory); ! error.empty())
+    {
+        writeFailureReport (error);
+        return;
+    }
+
+    if (const auto error = createDirectoryIfMissing (directory); ! error.empty())
+    {
+        writeFailureReport (error);
+        return;
+    }
+
+    AnalyzerVisibleCatalogProof proof;
+    std::string lastError;
+    for (const auto& candidate : repoCandidatePaths (pvAnalyzerVisibleModuleLibraryPath()))
+    {
+        proof = proveAnalyzerVisibleCatalog (candidate);
+        if (proof.ok)
+            break;
+
+        lastError = proof.error;
+    }
+
+    if (! proof.ok && proof.error.empty())
+        proof.error = lastError.empty() ? "could not load PV-B1 analyzer visible module library" : lastError;
+
+    if (! writeTextFile (reportFile, makeAnalyzerVisibleCatalogProofJson (proof)))
+    {
+        statusLabel.setText ("PV-B1 analyzer environment proof failed: could not write "
+                                 + reportFile.getFullPathName(),
+                             juce::dontSendNotification);
+        if (shouldQuitAfterStartupDump)
+            quitAfterDelay();
+        return;
+    }
+
+    statusLabel.setText ((proof.ok ? "PV-B1 analyzer environment proof dumped: "
+                                   : "PV-B1 analyzer environment proof mismatch: ")
                              + directory.getFullPathName(),
                          juce::dontSendNotification);
 

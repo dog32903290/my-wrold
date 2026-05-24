@@ -1,0 +1,19 @@
+{
+  "kind": "modulePackage",
+  "id": "module.residue",
+  "title": "Residue",
+  "nodeType": "compound.residue",
+  "patchPath": "fixtures/compounds/residue.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.residue.md",
+  "category": "compound",
+  "subcategory": "detector",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "residue_state",
+    "residue_envelope",
+    "residue_timer_ms",
+    "confidence"
+  ]
+}

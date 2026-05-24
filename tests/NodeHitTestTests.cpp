@@ -1,3 +1,4 @@
+#include "CanvasGeometry.h"
 #include "GraphContract.h"
 #include "InteractionContract.h"
 #include "NodeSpec.h"
@@ -51,6 +52,32 @@ int main()
     hit = myworld::hitTestGraph (session.graph, specs, {}, { 260.0, 110.0 });
     expect (hit.kind == myworld::HitTestKind::edge, "edge hit");
     expect (hit.edgeId == "edge.shader1.output.out1.input", "edge id hit");
+
+    myworld::NodeSpec attackSpec;
+    attackSpec.type = "compound.attack";
+    attackSpec.displayName = "Attack";
+    attackSpec.inputs.push_back ({ "audio.onset_event", "audio.onset_event", "event.pulse", "in" });
+    attackSpec.outputs.push_back ({ "onset_event", "onset_event", "event.pulse", "out" });
+    attackSpec.outputs.push_back ({ "attack_value", "attack_value", "signal.float", "out" });
+    attackSpec.outputs.push_back ({ "attack_envelope", "attack_envelope", "signal.float", "out" });
+    attackSpec.outputs.push_back ({ "confidence", "confidence", "signal.float", "out" });
+
+    myworld::GraphContract analyzerGraph;
+    analyzerGraph.editorGraph.nodes.push_back ({ "compound_attack4", "compound.attack", {}, { 40.0, 50.0 } });
+    analyzerGraph.runtimeGraph.nodes = analyzerGraph.editorGraph.nodes;
+
+    const auto analyzerSpecs = std::vector<myworld::NodeSpec> { attackSpec };
+    const auto finalOutput = myworld::canvasPortCenterForIndex (analyzerGraph.editorGraph.nodes.front(),
+                                                                &attackSpec,
+                                                                "out",
+                                                                3);
+    hit = myworld::hitTestGraph (analyzerGraph, analyzerSpecs, {}, { finalOutput.x, finalOutput.y });
+    expect (hit.kind == myworld::HitTestKind::outputPort, "dynamic analyzer output port hit");
+    expect (hit.endpoint == "compound_attack4.confidence", "dynamic analyzer output endpoint");
+
+    hit = myworld::hitTestGraph (analyzerGraph, analyzerSpecs, {}, { finalOutput.x - 16.0, finalOutput.y });
+    expect (hit.kind == myworld::HitTestKind::nodeBody, "dynamic analyzer body includes final output row");
+    expect (hit.nodeId == "compound_attack4", "dynamic analyzer body node id");
 
     std::cout << "node hit tests ok\n";
     return 0;

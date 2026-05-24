@@ -1,0 +1,33 @@
+{
+  "type": "compound.attack",
+  "displayName": "Attack",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "attack", "type": "analyzer.attack", "role": "Detect trusted rising sound entries" },
+    { "id": "attack_out", "type": "analyzer.attack_out", "role": "Publish attack detector public outputs" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "attack.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "attack.peak", "dataType": "signal.float" },
+    { "from": "mono_mix.sampleCount", "to": "attack.sampleCount", "dataType": "signal.float" },
+    { "from": "attack.onset_event", "to": "attack_out.onset_event", "dataType": "event.trigger" },
+    { "from": "attack.attack_value", "to": "attack_out.attack_value", "dataType": "signal.float" },
+    { "from": "attack.attack_envelope", "to": "attack_out.attack_envelope", "dataType": "signal.float" },
+    { "from": "attack.confidence", "to": "attack_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "onset_event", "label": "Onset Event", "dataType": "event.trigger", "direction": "out", "mapsTo": "attack_out.onset_event" },
+    { "id": "attack_value", "label": "Attack Value", "dataType": "signal.float", "direction": "out", "mapsTo": "attack_out.attack_value" },
+    { "id": "attack_envelope", "label": "Attack Envelope", "dataType": "signal.float", "direction": "out", "mapsTo": "attack_out.attack_envelope" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "attack_out.confidence" }
+  ]
+}

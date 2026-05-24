@@ -1,0 +1,8 @@
+{
+  "kind": "moduleLibrary",
+  "id": "library.pv-aggregate-pressure",
+  "title": "PV Aggregate Pressure",
+  "modulePackages": [
+    "modules/aggregate-pressure/module.json"
+  ]
+}

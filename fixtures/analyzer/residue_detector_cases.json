@@ -1,0 +1,92 @@
+{
+  "kind": "analyzerResidueDetectorFixture",
+  "id": "fixture.pv-residue-detector-cases",
+  "frameIntervalMs": 100,
+  "parameters": {
+    "floor": 0.02,
+    "armThreshold": 0.6,
+    "residueThreshold": 0.1,
+    "decayMs": 200,
+    "silenceClears": true,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "sustained_drop_creates_residue",
+      "frames": [
+        { "rms": 0.06, "sustain_envelope": 0.8, "silence_state": false },
+        { "rms": 0.07, "sustain_envelope": 1.0, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.7, "silence_state": false }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "residueStateLast": true,
+        "residueTimerMsLast": 100,
+        "residueEnvelopeLast": 0.5
+      }
+    },
+    {
+      "id": "residue_decays_below_threshold",
+      "frames": [
+        { "rms": 0.07, "sustain_envelope": 1.0, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.7, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.4, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.2, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.1, "silence_state": false }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "residueStateLast": false,
+        "residueTimerMsLast": 400,
+        "residueEnvelopeLast": 0.0625
+      }
+    },
+    {
+      "id": "silence_state_clears_residue",
+      "frames": [
+        { "rms": 0.07, "sustain_envelope": 1.0, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.7, "silence_state": false },
+        { "rms": 0.0, "sustain_envelope": 0.0, "silence_state": true }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "residueStateLast": false,
+        "residueTimerMsLast": 0,
+        "residueEnvelopeLast": 0
+      }
+    },
+    {
+      "id": "short_unsustained_drop_no_residue",
+      "frames": [
+        { "rms": 0.06, "sustain_envelope": 0.2, "silence_state": false },
+        { "rms": 0.01, "sustain_envelope": 0.2, "silence_state": false }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "residueStateLast": false,
+        "residueTimerMsLast": 0,
+        "residueEnvelopeLast": 0
+      }
+    },
+    {
+      "id": "missing_rms_failure",
+      "frames": [
+        { "sustain_envelope": 1.0, "silence_state": false }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:rms"
+      }
+    },
+    {
+      "id": "missing_sustain_envelope_failure",
+      "frames": [
+        { "rms": 0.01, "silence_state": false }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:sustain_envelope"
+      }
+    }
+  ]
+}

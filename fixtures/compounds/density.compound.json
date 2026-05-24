@@ -1,0 +1,27 @@
+{
+  "type": "compound.density",
+  "displayName": "Density",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "density", "type": "analyzer.density", "role": "Track trusted onset event density over a short window" },
+    { "id": "density_out", "type": "analyzer.density_out", "role": "Publish density detector public outputs" }
+  ],
+  "internalEdges": [
+    { "from": "onset_event", "to": "density.onset_event", "dataType": "event.trigger" },
+    { "from": "attack_value", "to": "density.attack_value", "dataType": "signal.float" },
+    { "from": "density.density_value", "to": "density_out.density_value", "dataType": "signal.float" },
+    { "from": "density.event_count", "to": "density_out.event_count", "dataType": "signal.float" },
+    { "from": "density.density_envelope", "to": "density_out.density_envelope", "dataType": "signal.float" },
+    { "from": "density.confidence", "to": "density_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "onset_event", "label": "Onset Event", "dataType": "event.trigger", "direction": "in", "mapsTo": "density.onset_event" },
+    { "id": "attack_value", "label": "Attack Value", "dataType": "signal.float", "direction": "in", "mapsTo": "density.attack_value" }
+  ],
+  "publicOutputs": [
+    { "id": "density_value", "label": "Density Value", "dataType": "signal.float", "direction": "out", "mapsTo": "density_out.density_value" },
+    { "id": "event_count", "label": "Event Count", "dataType": "signal.float", "direction": "out", "mapsTo": "density_out.event_count" },
+    { "id": "density_envelope", "label": "Density Envelope", "dataType": "signal.float", "direction": "out", "mapsTo": "density_out.density_envelope" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "density_out.confidence" }
+  ]
+}

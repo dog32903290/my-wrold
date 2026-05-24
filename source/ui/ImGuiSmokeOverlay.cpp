@@ -809,15 +809,47 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                                     : outputDataTypeForEndpoint (canvasSession.graph,
                                                                  nodeSpecs,
                                                                  draggingConnectionEndpoint);
+    const auto toScreenMin = [&] (CanvasNodeBounds bounds)
+    {
+        return toImVec ({ bounds.x, bounds.y }, canvasSession.view, origin);
+    };
+    const auto toScreenMax = [&] (CanvasNodeBounds bounds)
+    {
+        return toImVec ({ bounds.x + bounds.width, bounds.y + bounds.height }, canvasSession.view, origin);
+    };
+    const auto drawClippedText = [&] (CanvasNodeBounds bounds, ImU32 colour, const std::string& text, bool alignRight)
+    {
+        if (text.empty() || canvasSession.view.scale < 0.80)
+            return;
+
+        const auto min = toScreenMin (bounds);
+        const auto max = toScreenMax (bounds);
+
+        if (max.x <= min.x || max.y <= min.y)
+            return;
+
+        const auto labelSize = ImGui::CalcTextSize (text.c_str());
+        const auto textX = alignRight ? std::max (min.x, max.x - labelSize.x) : min.x;
+        const ImVec4 clipRect { min.x, min.y, max.x, max.y };
+        drawList.AddText (ImGui::GetFont(),
+                          ImGui::GetFontSize(),
+                          { textX, min.y },
+                          colour,
+                          text.c_str(),
+                          nullptr,
+                          0.0f,
+                          &clipRect);
+    };
 
     for (const auto& node : canvasSession.graph.editorGraph.nodes)
     {
+        auto displayNode = node;
         const auto position = displayedPosition (node, draggingNodeId, dragCanvasDelta);
-        const auto topLeft = toImVec (position, canvasSession.view, origin);
-        const auto& geometry = defaultCanvasGeometry();
-        const auto bottomRight = ImVec2 (topLeft.x + static_cast<float> (geometry.nodeWidth),
-                                         topLeft.y + static_cast<float> (geometry.nodeHeight));
+        displayNode.position = { position.x, position.y };
         const auto* spec = findNodeSpec (nodeSpecs, node.type);
+        const auto surface = canvasNodeSurfaceGeometry (displayNode, spec);
+        const auto topLeft = toScreenMin (surface.bounds);
+        const auto bottomRight = toScreenMax (surface.bounds);
         const auto primaryDataType = primaryDataTypeForSpec (spec);
         const auto selected = std::find (canvasSession.selectedNodeIds.begin(),
                                          canvasSession.selectedNodeIds.end(),
@@ -833,52 +865,46 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
                           static_cast<float> (skin.cornerRadius),
                           0,
                           static_cast<float> (skin.borderWidth));
-        drawList.AddText ({ topLeft.x + 12.0f, topLeft.y + 10.0f },
-                          rgba (skin.label),
-                          node.id.c_str());
-        drawList.AddText ({ topLeft.x + 12.0f, topLeft.y + 32.0f },
-                          rgba (skin.secondaryLabel),
-                          node.type.c_str());
+        drawClippedText (surface.titleBounds, rgba (skin.label), node.id, false);
 
         if (spec == nullptr)
             continue;
 
-        for (size_t index = 0; index < spec->inputs.size(); ++index)
+        for (size_t index = 0; index < surface.inputRows.size(); ++index)
         {
-            const auto centerY = topLeft.y + 30.0f + static_cast<float> (index) * 18.0f;
             const auto compatible = sourceDataType.empty() || spec->inputs[index].dataType == sourceDataType;
             const auto portSkin = makeTooll3PortSkin (spec->inputs[index].dataType,
                                                       compatible,
                                                       ! draggingConnectionEndpoint.empty());
+            const auto stripMin = toScreenMin (surface.inputRows[index].stripBounds);
+            const auto stripMax = toScreenMax (surface.inputRows[index].stripBounds);
             drawPortStrip (drawList,
-                           { topLeft.x, centerY - 7.0f },
-                           { topLeft.x + static_cast<float> (portSkin.stripWidth), centerY + 7.0f },
+                           stripMin,
+                           stripMax,
                            portSkin);
 
-            if (canvasSession.view.scale >= 0.80)
-                drawList.AddText ({ topLeft.x + 10.0f, centerY - 7.0f },
-                                  rgba (portSkin.label),
-                                  spec->inputs[index].id.c_str());
+            drawClippedText (surface.inputRows[index].labelBounds,
+                             rgba (portSkin.label),
+                             surface.inputRows[index].label,
+                             false);
         }
 
-        for (size_t index = 0; index < spec->outputs.size(); ++index)
+        for (size_t index = 0; index < surface.outputRows.size(); ++index)
         {
-            const auto centerY = topLeft.y + 30.0f + static_cast<float> (index) * 18.0f;
             const auto endpoint = node.id + "." + spec->outputs[index].id;
             const auto activePort = endpoint == draggingConnectionEndpoint;
             const auto portSkin = makeTooll3PortSkin (spec->outputs[index].dataType, true, activePort);
+            const auto stripMin = toScreenMin (surface.outputRows[index].stripBounds);
+            const auto stripMax = toScreenMax (surface.outputRows[index].stripBounds);
             drawPortStrip (drawList,
-                           { bottomRight.x - static_cast<float> (portSkin.stripWidth), centerY - 7.0f },
-                           { bottomRight.x, centerY + 7.0f },
+                           stripMin,
+                           stripMax,
                            portSkin);
 
-            if (canvasSession.view.scale >= 0.80)
-            {
-                const auto labelSize = ImGui::CalcTextSize (spec->outputs[index].id.c_str());
-                drawList.AddText ({ bottomRight.x - labelSize.x - 10.0f, centerY - 7.0f },
-                                  rgba (portSkin.label),
-                                  spec->outputs[index].id.c_str());
-            }
+            drawClippedText (surface.outputRows[index].labelBounds,
+                             rgba (portSkin.label),
+                             surface.outputRows[index].label,
+                             true);
         }
     }
 

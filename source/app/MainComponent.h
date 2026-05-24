@@ -12,6 +12,8 @@
 
 namespace myworld
 {
+enum class PVDetectorProofKind;
+
 class MainComponent final : public juce::Component,
                             private juce::Timer
 {
@@ -26,6 +28,13 @@ public:
                    bool dumpC5VisibleModulePublishProofOnStart = false,
                    bool dumpC6AnalyzerFamilyProofOnStart = false,
                    bool dumpC6AIRepairLoopProofOnStart = false,
+                   bool dumpPVAttackDetectorProofOnStart = false,
+                   bool dumpPVDensityDetectorProofOnStart = false,
+                   bool dumpPVSilenceDetectorProofOnStart = false,
+                   bool dumpPVSustainDetectorProofOnStart = false,
+                   bool dumpPVResidueDetectorProofOnStart = false,
+                   bool dumpPVAggregatePressureProofOnStart = false,
+                   bool dumpPVB1AnalyzerEnvironmentProofOnStart = false,
                    bool quitAfterStartupDump = false);
     ~MainComponent() override;
 
@@ -44,6 +53,14 @@ private:
     void dumpC5VisibleModulePublishProof();
     void dumpC6AnalyzerFamilyProof();
     void dumpC6AIRepairLoopProof();
+    void dumpPVAttackDetectorProof();
+    void dumpPVDensityDetectorProof();
+    void dumpPVSilenceDetectorProof();
+    void dumpPVSustainDetectorProof();
+    void dumpPVResidueDetectorProof();
+    void dumpPVAggregatePressureProof();
+    void dumpPVB1AnalyzerEnvironmentProof();
+    void dumpPVDetectorProof (PVDetectorProofKind kind);
     CommandResult saveActiveWork (GraphSession& session);
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     PublishModuleResult publishSelectedModuleResult (GraphSession& session, const std::string& sourceNodeId);

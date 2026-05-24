@@ -1,0 +1,22 @@
+{
+  "kind": "modulePackage",
+  "id": "module.aggregate-pressure",
+  "title": "Aggregate Pressure",
+  "nodeType": "compound.aggregate-pressure",
+  "patchPath": "fixtures/compounds/aggregate-pressure.compound.json",
+  "humanDocPath": "docs/nodes/analyzer.aggregate-pressure.md",
+  "category": "compound",
+  "subcategory": "aggregate",
+  "runtimeDomain": "audioAnalysis",
+  "previewPolicy": "meter_scope",
+  "publicPorts": [
+    "audio.in",
+    "pressure_value",
+    "energy_component",
+    "attack_component",
+    "density_component",
+    "sustain_component",
+    "residue_component",
+    "confidence"
+  ]
+}

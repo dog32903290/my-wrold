@@ -1,0 +1,82 @@
+{
+  "kind": "analyzerAttackDetectorFixture",
+  "id": "fixture.pv-attack-detector-cases",
+  "frameIntervalMs": 40,
+  "parameters": {
+    "floor": 0.02,
+    "riseThreshold": 0.08,
+    "debounceMs": 80,
+    "releaseMs": 120,
+    "outputSmoothMs": 0
+  },
+  "cases": [
+    {
+      "id": "quiet_no_input",
+      "frames": [
+        { "rms": 0.0, "peak": 0.0, "sampleCount": 4 },
+        { "rms": 0.0, "peak": 0.0, "sampleCount": 4 },
+        { "rms": 0.0, "peak": 0.0, "sampleCount": 4 },
+        { "rms": 0.0, "peak": 0.0, "sampleCount": 4 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "onsetEventCount": 0,
+        "confidenceLast": 0.0
+      }
+    },
+    {
+      "id": "single_clean_entry",
+      "frames": [
+        { "rms": 0.01, "peak": 0.02, "sampleCount": 4 },
+        { "rms": 0.02, "peak": 0.03, "sampleCount": 4 },
+        { "rms": 0.18, "peak": 0.25, "sampleCount": 4 },
+        { "rms": 0.22, "peak": 0.30, "sampleCount": 4 },
+        { "rms": 0.20, "peak": 0.28, "sampleCount": 4 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "onsetEventCount": 1,
+        "firstOnsetFrame": 2,
+        "attackValueMin": 0.10
+      }
+    },
+    {
+      "id": "steady_loud_no_retrigger",
+      "frames": [
+        { "rms": 0.20, "peak": 0.24, "sampleCount": 4 },
+        { "rms": 0.21, "peak": 0.25, "sampleCount": 4 },
+        { "rms": 0.205, "peak": 0.245, "sampleCount": 4 },
+        { "rms": 0.20, "peak": 0.24, "sampleCount": 4 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "onsetEventCount": 0,
+        "reason": "delta below riseThreshold"
+      }
+    },
+    {
+      "id": "micro_wiggle_below_threshold",
+      "frames": [
+        { "rms": 0.015, "peak": 0.02, "sampleCount": 4 },
+        { "rms": 0.025, "peak": 0.03, "sampleCount": 4 },
+        { "rms": 0.018, "peak": 0.022, "sampleCount": 4 },
+        { "rms": 0.028, "peak": 0.034, "sampleCount": 4 }
+      ],
+      "expect": {
+        "detectorOk": true,
+        "onsetEventCount": 0,
+        "reason": "below floor/riseThreshold"
+      }
+    },
+    {
+      "id": "missing_rms_failure",
+      "frames": [
+        { "peak": 0.25, "sampleCount": 4 }
+      ],
+      "expect": {
+        "detectorOk": false,
+        "diagnostic": "missing_input:rms"
+      }
+    }
+  ]
+}

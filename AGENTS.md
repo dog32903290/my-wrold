@@ -5,7 +5,9 @@
 討論或實作本 repo 時，先用：
 
 - `native-canvas-spine` — 本 repo 是「柏為的畫布」native 化的新身體；第一階段鎖 shader preview、audio analyzer spine、compound patcher、AI worker commandGraph。
+- `node-contract-architect` — 設計或審核任何 node / compound 時用；先說它回答什麼問題、輸入輸出、參數分類、失敗行為與證據，避免 Magic node 黑盒化。
 - `cpp-patch-runtime` — 設計 graph contract、runtimeGraph、headless/debug proof、C++ runtime 邊界時用。
+- `triage-review-advice` — 檢查 C++ code hygiene、AI 味、維護性、重構建議與修法風險時用；不要用大拆檔替代 contract 修正。
 - `low-latency-audio-spine` — 涉及 CoreAudio、MIDI、buffer size、realtime callback、device routing 時用。
 - `analyzer-patch-architect` — 拆 loudness / attack / density / sustain / silence 等 analyzer patch 時用。
 
@@ -42,6 +44,7 @@ loudness compound patcher -> expanded child patchers -> collapsed public ports
 ## 結構規則
 
 - C++ UI 要 data-driven。不要把 UI、runtime、serialization、ports 全寫進巨大 node class。
+- 每個 NodeSpec / compound 都要有 node contract：回答一個問題、命名輸入輸出、分類參數、定義 failure / diagnostics / proof。
 - 所有改 graph 的行為都走 command path。AI worker、UI、人手 script 不准各走一條。
 - Graph 至少分清：`editorGraph`、`runtimeGraph`、`commandGraph`、`collaborationLog`。
 - Compound patcher 是第一階段骨架，不是之後的整理功能。

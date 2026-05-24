@@ -1,0 +1,30 @@
+{
+  "type": "compound.silence",
+  "displayName": "Silence",
+  "collapsedByDefault": true,
+  "children": [
+    { "id": "audio_in", "type": "audio.input", "role": "Raw audio input adapter" },
+    { "id": "mono_mix", "type": "audio.mono_mix", "role": "Fold channels into one mono analysis lane" },
+    { "id": "rms", "type": "analyzer.rms", "role": "Measure raw RMS and peak facts" },
+    { "id": "silence", "type": "analyzer.silence", "role": "Detect sustained quiet state from raw RMS" },
+    { "id": "silence_out", "type": "analyzer.silence_out", "role": "Publish silence detector public outputs" }
+  ],
+  "internalEdges": [
+    { "from": "audio.in", "to": "audio_in.input", "dataType": "audio.channels" },
+    { "from": "audio_in.channels", "to": "mono_mix.input", "dataType": "audio.channels" },
+    { "from": "mono_mix.mono", "to": "rms.input", "dataType": "audio.mono" },
+    { "from": "rms.rms", "to": "silence.rms", "dataType": "signal.float" },
+    { "from": "rms.peak", "to": "silence.peak", "dataType": "signal.float" },
+    { "from": "silence.silence_state", "to": "silence_out.silence_state", "dataType": "signal.float" },
+    { "from": "silence.silence_timer_ms", "to": "silence_out.silence_timer_ms", "dataType": "signal.float" },
+    { "from": "silence.confidence", "to": "silence_out.confidence", "dataType": "signal.float" }
+  ],
+  "publicInputs": [
+    { "id": "audio.in", "label": "Audio In", "dataType": "audio.channels", "direction": "in", "mapsTo": "audio_in.input" }
+  ],
+  "publicOutputs": [
+    { "id": "silence_state", "label": "Silence State", "dataType": "signal.float", "direction": "out", "mapsTo": "silence_out.silence_state" },
+    { "id": "silence_timer_ms", "label": "Silence Timer Ms", "dataType": "signal.float", "direction": "out", "mapsTo": "silence_out.silence_timer_ms" },
+    { "id": "confidence", "label": "Confidence", "dataType": "signal.float", "direction": "out", "mapsTo": "silence_out.confidence" }
+  ]
+}
