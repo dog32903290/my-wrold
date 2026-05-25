@@ -13,7 +13,7 @@ using namespace storage_contract_internal;
 
 PatchDocument makePatchDocument (const std::string& id, const std::string& title, const GraphContract& graph)
 {
-    return makePatchDocument (id, title, graph, {});
+    return makePatchDocument (id, title, graph, {}, {});
 }
 
 PatchDocument makePatchDocument (const std::string& id,
@@ -21,7 +21,16 @@ PatchDocument makePatchDocument (const std::string& id,
                                  const GraphContract& graph,
                                  const OutputViewState& outputView)
 {
-    return { id, title, graph.version, graph, outputView };
+    return makePatchDocument (id, title, graph, outputView, {});
+}
+
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView,
+                                 const TimelineState& timeline)
+{
+    return { id, title, graph.version, graph, outputView, sanitizedTimelineState (timeline) };
 }
 
 namespace
@@ -31,6 +40,18 @@ void appendOutputViewJson (std::ostringstream& out, const OutputViewState& outpu
     out << "{ \"pinned\": " << (outputView.pinned ? "true" : "false")
         << ", \"followedNodeId\": " << jsonQuoted (outputView.followedNodeId)
         << ", \"pinnedNodeId\": " << jsonQuoted (outputView.pinnedNodeId) << " }";
+}
+
+void appendTimelineJson (std::ostringstream& out, const TimelineState& timeline)
+{
+    const auto sanitized = sanitizedTimelineState (timeline);
+    out << "{ \"bpm\": " << sanitized.bpm
+        << ", \"framesPerSecond\": " << sanitized.framesPerSecond
+        << ", \"beatsPerBar\": " << sanitized.beatsPerBar
+        << ", \"positionBars\": " << sanitized.positionBars
+        << ", \"loopStartBars\": " << sanitized.loopStartBars
+        << ", \"loopEndBars\": " << sanitized.loopEndBars
+        << ", \"looping\": " << (sanitized.looping ? "true" : "false") << " }";
 }
 
 OutputViewState parseOutputView (const JsonValue& root)
@@ -48,6 +69,24 @@ OutputViewState parseOutputView (const JsonValue& root)
         outputView.pinned = false;
 
     return outputView;
+}
+
+TimelineState parseTimeline (const JsonValue& root)
+{
+    TimelineState timeline;
+    const auto* jsonTimeline = member (root, "timeline");
+    if (jsonTimeline == nullptr || jsonTimeline->kind != JsonValue::Kind::object)
+        return timeline;
+
+    timeline.bpm = numberMember (*jsonTimeline, "bpm", timeline.bpm);
+    timeline.framesPerSecond = numberMember (*jsonTimeline, "framesPerSecond", timeline.framesPerSecond);
+    timeline.beatsPerBar = numberMember (*jsonTimeline, "beatsPerBar", timeline.beatsPerBar);
+    timeline.positionBars = numberMember (*jsonTimeline, "positionBars", timeline.positionBars);
+    timeline.loopStartBars = numberMember (*jsonTimeline, "loopStartBars", timeline.loopStartBars);
+    timeline.loopEndBars = numberMember (*jsonTimeline, "loopEndBars", timeline.loopEndBars);
+    timeline.looping = boolMember (*jsonTimeline, "looping", timeline.looping);
+
+    return sanitizedTimelineState (timeline);
 }
 }
 }
@@ -86,6 +125,9 @@ std::string toJson (const PatchDocument& document)
     out << ",\n";
     out << "  \"outputView\": ";
     appendOutputViewJson (out, document.outputView);
+    out << ",\n";
+    out << "  \"timeline\": ";
+    appendTimelineJson (out, document.timeline);
     out << "\n";
     out << "}\n";
     return out.str();
@@ -111,6 +153,7 @@ PatchDocumentLoadResult parsePatchDocument (const std::string& text)
     document.version = intMember (root, "version", 1);
     document.graph.version = document.version;
     document.outputView = parseOutputView (root);
+    document.timeline = parseTimeline (root);
 
     if (document.id.empty() || document.title.empty())
         return { false, {}, "patch document is missing required identity fields" };

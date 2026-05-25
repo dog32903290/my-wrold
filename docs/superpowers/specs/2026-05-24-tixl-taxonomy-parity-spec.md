@@ -399,6 +399,31 @@ select_changes_output_pin_freezes_output_reload
 
 This proves selection-following output state, pin-to-selected-node, pinned output staying fixed across later selection changes, unpin returning to the current selected node, PatchDocument roundtrip, saveWork roundtrip, and visible workspace state display/control. It does not implement multiple output slots, final eval start pinning, image canvas view modes, screenshot/render toolbar commands, resolution presets, or render/export process states.
 
+## P-TIME1 Fixture Evidence
+
+Closed as of 2026-05-25 09:35 Asia/Taipei.
+
+Bars-native timeline state is proven at core, commandGraph, storage, and saveWork level by:
+
+```text
+source/core/TimelineState.h
+source/core/TimelineState.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/storage/StorageContract.h
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+tests/TimelineStateTests.cpp
+```
+
+Verified acceptance trace:
+
+```text
+bars_seconds_frames_conversion_bpm_fps
+```
+
+This proves bars as canonical timeline storage, seconds/frames as deterministic views, bpm/fps/position/loop edits through commandGraph, invalid timeline edit rejection without command logging, undo/redo for timeline edits, PatchDocument roundtrip, and saveWork roundtrip. It does not implement transport playback, IO indicators, playhead UI, keyframes, curves, clips, time warp, render/export settings, audio soundtrack sync, BPM detection/tapping, or live IO bus behavior.
+
 ## Output, Timeline, And Live Performance Parity
 
 | Feature | TiXL witness | Policy | Current status | Required trace | Blocker |
@@ -410,8 +435,8 @@ This proves selection-following output state, pin-to-selected-node, pinned outpu
 | Resolution presets | Fill, 1:1, aspect ratios, 480p/720p/1080p/4k/8k, custom | mirror later | parked | `requested_resolution_preset_roundtrip` | RenderBackend/output state |
 | Render/export window | video/image sequence, Bars/Secs/Frames, FPS, resolution %, motion blur, audio | mirror taxonomy, park implementation | parked | `render_settings_roundtrip_frame_count` | RenderBackend + timeline |
 | Render process states | NoOutputWindow, NoValidOutputType, ReadyForExport, Exporting | mirror later | parked | `invalid_output_blocks_render_state` | active output type system |
-| Time model/display | bars canonical; seconds/frames are views | mirror when timeline begins | parked | `bars_seconds_frames_conversion_bpm_fps` | timeline model |
-| Playback controls | play, reverse, speed, stop/reset, stepping, loop, idle motion, IO indicator | mirror gradually | partial/parked | `transport_play_loop_io_indicator` | timeline + IO bus |
+| Time model/display | bars canonical; seconds/frames are views | mirror when timeline begins | proven at core/storage/command level | `bars_seconds_frames_conversion_bpm_fps` | transport/render/export parked |
+| Playback controls | play, reverse, speed, stop/reset, stepping, loop, idle motion, IO indicator | mirror gradually | partial/parked | `transport_play_loop_io_indicator` | transport UI + IO bus |
 | Keyframes / curves | add/change/delete/move, interpolation, tangents, copy/paste | parked | parked | `keyframe_curve_undo_redo_exact` | animation data model |
 | Time clips / time warp | trim/stretch/remap/split/delete/warp handles | parked | parked | `time_clip_retime_no_overlap` | timeline phase |
 | Composition audio source | soundtrack vs external device, sync mode, BPM, tapping, gain/decay | mirror A1 input/gain now, park advanced | partial | `audio_input_to_meter_to_uniform` | live sample-window runner |
@@ -493,8 +518,14 @@ ParamSpec type/range
 -> set_param command
 -> save/load preserves typed value
 
+P-TIME1 bars-native timeline model: closed at core/storage/command level
+positionBars/loopBars
+-> seconds/frames derived from bpm/fps
+-> timeline commandGraph edits with undo/redo
+-> save/load preserves timeline state
+
 Next selectable parity line:
-P-TIME1 bars-native timeline model.
+No active parity line until selected. Closest ordered lanes are P-VAR1 presets/snapshots foundation or TIME-002 transport playback controls.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.

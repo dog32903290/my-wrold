@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <set>
 #include <sstream>
@@ -26,6 +27,7 @@ GraphSession::Snapshot snapshotOf (const GraphSession& session)
     return { session.graph,
              session.view,
              session.outputView,
+             session.timeline,
              session.selectedNodeIds,
              session.selectedEdgeIds,
              session.currentPatchPath,
@@ -37,6 +39,7 @@ void restoreSnapshot (GraphSession& session, const GraphSession::Snapshot& snaps
     session.graph = snapshot.graph;
     session.view = snapshot.view;
     session.outputView = snapshot.outputView;
+    session.timeline = snapshot.timeline;
     session.selectedNodeIds = snapshot.selectedNodeIds;
     session.selectedEdgeIds = snapshot.selectedEdgeIds;
     session.currentPatchPath = snapshot.currentPatchPath;
@@ -1225,6 +1228,46 @@ CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId
     return commitCommand (session, "reset_port_binding", before);
 }
 
+CommandResult setTimelineTempo (GraphSession& session, double bpm)
+{
+    const auto before = snapshotOf (session);
+    const auto result = setTimelineTempo (session.timeline, bpm);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "set_timeline_tempo", before);
+}
+
+CommandResult setTimelineFramesPerSecond (GraphSession& session, double framesPerSecond)
+{
+    const auto before = snapshotOf (session);
+    const auto result = setTimelineFramesPerSecond (session.timeline, framesPerSecond);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "set_timeline_fps", before);
+}
+
+CommandResult setTimelinePositionBars (GraphSession& session, double positionBars)
+{
+    const auto before = snapshotOf (session);
+    const auto result = setTimelinePositionBars (session.timeline, positionBars);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "set_timeline_position", before);
+}
+
+CommandResult setTimelineLoop (GraphSession& session, double startBars, double endBars, bool looping)
+{
+    const auto before = snapshotOf (session);
+    const auto result = setTimelineLoop (session.timeline, startBars, endBars, looping);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "set_timeline_loop", before);
+}
+
 bool undo (GraphSession& session)
 {
     if (session.undoStack.empty())
@@ -1375,8 +1418,16 @@ std::string markSavedAndCommitted (GraphSession& session)
 std::string serializeInteractionState (const GraphSession& session)
 {
     std::ostringstream out;
+    out << std::setprecision (15);
     out << "interaction-state-v1\n";
     out << "dirty\t" << (session.dirty ? "1" : "0") << "\n";
+    out << "timeline\t" << session.timeline.bpm << "\t"
+        << session.timeline.framesPerSecond << "\t"
+        << session.timeline.beatsPerBar << "\t"
+        << session.timeline.positionBars << "\t"
+        << session.timeline.loopStartBars << "\t"
+        << session.timeline.loopEndBars << "\t"
+        << (session.timeline.looping ? "1" : "0") << "\n";
 
     for (const auto& pathItem : session.currentPatchPath)
         out << "path\t" << pathItem << "\n";
@@ -1427,6 +1478,16 @@ GraphSession deserializeInteractionState (const std::string& encoded)
         {
             session.dirty = fields[1] == "1";
         }
+        else if (fields[0] == "timeline" && fields.size() >= 8)
+        {
+            session.timeline.bpm = std::stod (fields[1]);
+            session.timeline.framesPerSecond = std::stod (fields[2]);
+            session.timeline.beatsPerBar = std::stod (fields[3]);
+            session.timeline.positionBars = std::stod (fields[4]);
+            session.timeline.loopStartBars = std::stod (fields[5]);
+            session.timeline.loopEndBars = std::stod (fields[6]);
+            session.timeline.looping = fields[7] == "1";
+        }
         else if (fields[0] == "path" && fields.size() >= 2)
         {
             session.currentPatchPath.push_back (fields[1]);
@@ -1457,6 +1518,7 @@ GraphSession deserializeInteractionState (const std::string& encoded)
 
     syncRuntimeFromEditor (graph);
     session.graph = graph;
+    session.timeline = sanitizedTimelineState (session.timeline);
     return session;
 }
 

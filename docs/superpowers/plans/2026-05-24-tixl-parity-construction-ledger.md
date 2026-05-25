@@ -147,8 +147,8 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | OUT-005 | Resolution presets | Output parity | output settings | parked | L3 visible | `requested_resolution_preset_roundtrip` | output state model |
 | OUT-006 | Render/export window | Output parity | render export files | parked | L4 live | `render_settings_roundtrip_frame_count` | RenderBackend plus timeline |
 | OUT-007 | Render process states | Output parity | render state model | parked | L4 live | `invalid_output_blocks_render_state` | active output type system |
-| TIME-001 | Bars are canonical timeline truth; seconds/frames are views | Timeline parity | timeline files | parked | L2 command | `bars_seconds_frames_conversion_bpm_fps` | timeline model |
-| TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | partial/parked | L4 live | `transport_play_loop_io_indicator` | timeline plus IO bus |
+| TIME-001 | Bars are canonical timeline truth; seconds/frames are views | Timeline parity | timeline files | proven | L2 command | `bars_seconds_frames_conversion_bpm_fps` | P-TIME1 closed; transport/render/export remain separate |
+| TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | partial/parked | L4 live | `transport_play_loop_io_indicator` | timeline model proven; transport UI and IO bus parked |
 | TIME-003 | Keyframes and curves | Timeline parity | animation commands | parked | L2 command | `keyframe_curve_undo_redo_exact` | animation data model |
 | TIME-004 | Time clips and time warp | Timeline parity | time clip files | parked | L2 command | `time_clip_retime_no_overlap` | timeline phase |
 | LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial | L4 live | `audio_input_to_meter_to_uniform` | live sample-window runner |
@@ -508,6 +508,65 @@ P-PARAM1B proves deterministic typed control mapping and value normalization for
 It does not implement enum flag sets, native file chooser dialogs, specialized list/curve/gradient/ADSR editors, parameter grouping/relevancy metadata, extract-value-node commands, preset/snapshot capture, or variation blending.
 ```
 
+### P-TIME1 Bars-Native Timeline Model
+
+Claim:
+
+```text
+Bars are the canonical timeline truth; seconds and frames are deterministic views derived from bpm, beats-per-bar, and fps, and timeline edits survive command undo/redo plus PatchDocument/saveWork roundtrip.
+```
+
+Evidence target:
+
+```text
+source/core/TimelineState.h/.cpp
+source/core/InteractionContract.h/.cpp
+source/storage/StorageContract.h
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+tests/TimelineStateTests.cpp
+```
+
+- [x] Write RED tests for bars/seconds/frames conversion, bpm/fps command edits, invalid edit rejection, undo/redo, PatchDocument roundtrip, and saveWork roundtrip.
+- [x] Implement `TimelineState` as core data with bars-native fields.
+- [x] Add commandGraph verbs for tempo, fps, positionBars, and loopBars edits.
+- [x] Store timeline state in `PatchDocument`.
+- [x] Preserve timeline state through `save_work`.
+- [x] Run `cmake --build build --target my_world_timeline_state_tests`.
+- [x] Run `./build/my_world_timeline_state_tests`.
+- [x] Run focused storage/command tests.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-TIME1 closed as of 2026-05-25 09:35 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_timeline_state_tests
+# RED first failed on missing source/core/TimelineState.h.
+cmake --build build --target my_world_timeline_state_tests
+./build/my_world_timeline_state_tests
+ctest --test-dir build --output-on-failure -R "timeline_state|output_view_state|save_work_command|graph_commands"
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+timeline state ok
+4/4 focused tests passed.
+59/59 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-TIME1 proves the bars-native timeline data model, deterministic bars/seconds/frames conversion, command-backed bpm/fps/position/loop edits, undo/redo, PatchDocument roundtrip, and saveWork roundtrip.
+It does not implement transport playback, IO indicators, playhead UI, keyframes, curves, clips, time warp, render/export settings, audio soundtrack sync, BPM detection/tapping, or live IO bus behavior.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -520,8 +579,8 @@ The next plans should be created only when the previous queue item has proof evi
 | 4 | P-OUT1 output pinning | current live compound runtime surface is stable | Output behavior affects workspace composition |
 | 5 | P-PARAM1A parameter row states | P-SEARCH1 and P-OPS1 | Inspector actions need commandGraph verbs and NodeSpec metadata |
 | 6 | P-PARAM1B typed parameter controls | P-PARAM1A | Typed edit normalization should precede presets/snapshots |
-| 7 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
-| 8 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
+| 7 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
+| 8 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
 | 9 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
 
 ## Self-Review

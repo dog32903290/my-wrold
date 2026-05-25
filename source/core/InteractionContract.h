@@ -3,6 +3,7 @@
 #include "GraphContract.h"
 #include "NodeSpec.h"
 #include "OutputViewState.h"
+#include "TimelineState.h"
 
 #include <string>
 #include <vector>
@@ -84,6 +85,7 @@ struct GraphSession
     GraphContract graph;
     CanvasViewState view;
     OutputViewState outputView;
+    TimelineState timeline;
     std::vector<std::string> selectedNodeIds;
     std::vector<std::string> selectedEdgeIds;
     std::vector<std::string> currentPatchPath;
@@ -96,6 +98,7 @@ struct GraphSession
         GraphContract graph;
         CanvasViewState view;
         OutputViewState outputView;
+        TimelineState timeline;
         std::vector<std::string> selectedNodeIds;
         std::vector<std::string> selectedEdgeIds;
         std::vector<std::string> currentPatchPath;
@@ -241,6 +244,10 @@ CommandResult setPortBinding (GraphSession& session,
                               const std::string& bindingMode,
                               const std::string& value);
 CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId, const std::string& portId);
+CommandResult setTimelineTempo (GraphSession& session, double bpm);
+CommandResult setTimelineFramesPerSecond (GraphSession& session, double framesPerSecond);
+CommandResult setTimelinePositionBars (GraphSession& session, double positionBars);
+CommandResult setTimelineLoop (GraphSession& session, double startBars, double endBars, bool looping);
 bool undo (GraphSession& session);
 bool redo (GraphSession& session);
 GraphInvariantReport validateGraphInvariants (const GraphContract& graph, const std::vector<NodeSpec>& specs);

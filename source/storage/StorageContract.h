@@ -2,6 +2,7 @@
 
 #include "GraphContract.h"
 #include "OutputViewState.h"
+#include "TimelineState.h"
 
 #include <string>
 #include <vector>
@@ -34,6 +35,7 @@ struct PatchDocument
     int version = 1;
     GraphContract graph;
     OutputViewState outputView;
+    TimelineState timeline;
 };
 
 struct ModulePackageManifest
@@ -100,6 +102,11 @@ PatchDocument makePatchDocument (const std::string& id,
                                  const std::string& title,
                                  const GraphContract& graph,
                                  const OutputViewState& outputView);
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView,
+                                 const TimelineState& timeline);
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath);
 ModuleLibraryManifest makeModuleLibrary (const std::string& id,
                                          const std::string& title,

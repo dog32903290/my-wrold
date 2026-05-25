@@ -540,7 +540,8 @@ SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestP
     const auto document = makePatchDocument (activePatch.document.id,
                                              activePatch.document.title,
                                              session.graph,
-                                             session.outputView);
+                                             session.outputView,
+                                             session.timeline);
     const auto saveResult = savePatchDocument (patchPath, document);
     if (! saveResult.ok)
     {
