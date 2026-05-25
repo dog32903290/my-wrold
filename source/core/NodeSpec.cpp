@@ -19,7 +19,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             1,
             {},
             { { "output", "Output", "texture.rgba", "out" } },
-            { { "source", "Source", "text.glsl", "", "" } }
+            { { "source", "Source", "text.glsl", "", "", "Shader", "Editable fragment shader source.", true } }
         },
         {
             "output.preview",
@@ -45,7 +45,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             1,
             {},
             { { "channels", "Channels", "audio.channels", "out" } },
-            { { "device", "Device", "string", "system", "" } }
+            { { "device", "Device", "string", "system", "", "Device", "Audio input device name.", true } }
         },
         {
             "audio.mono_mix",
@@ -87,7 +87,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             1,
             { { "input", "Input", "signal.float", "in" } },
             { { "out", "Out", "signal.float", "out" } },
-            { { "gain", "Gain", "float", "1.0", "0.0..8.0" } }
+            { { "gain", "Gain", "float", "1.0", "0.0..8.0", "Calibration", "Scales measured signal before later analysis." } }
         },
         {
             "analyzer.pre_gate",
@@ -105,8 +105,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
                 { "confidence", "Confidence", "signal.float", "out" }
             },
             {
-                { "threshold", "Threshold", "float", "0.0001", "0.0..1.0" },
-                { "hysteresis", "Hysteresis", "float", "0.01", "0.0..0.2" }
+                { "threshold", "Threshold", "float", "0.0001", "0.0..1.0", "Gate", "Minimum signal before gate opens." },
+                { "hysteresis", "Hysteresis", "float", "0.01", "0.0..0.2", "Gate", "Offset that keeps the gate from flickering." }
             }
         },
         {
@@ -120,7 +120,7 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             1,
             { { "input", "Input", "signal.float", "in" } },
             { { "out", "Out", "signal.float", "out" } },
-            { { "smooth", "Smooth", "float", "0.2", "0.0..1.0" } }
+            { { "smooth", "Smooth", "float", "0.2", "0.0..1.0", "Smoothing", "Amount of temporal smoothing applied to the signal." } }
         },
         {
             "analyzer.loudness_out",
@@ -159,8 +159,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             { { "input", "Input", "audio.mono", "in" } },
             { { "out", "Loudness", "signal.float", "out" } },
             {
-                { "curve", "Curve", "float", "1.0", "0.25..4.0" },
-                { "smooth", "Smooth", "float", "0.2", "0.0..1.0" }
+                { "curve", "Curve", "float", "1.0", "0.25..4.0", "Shaping", "Response curve applied to measured loudness." },
+                { "smooth", "Smooth", "float", "0.2", "0.0..1.0", "Shaping", "Amount of temporal smoothing applied to loudness." }
             }
         },
         {
@@ -194,8 +194,8 @@ std::vector<NodeSpec> makeSeedNodeSpecs()
             { { "value", "Value", "signal.float", "in" } },
             {},
             {
-                { "channel", "Channel", "int", "1", "1..16" },
-                { "cc", "CC", "int", "1", "0..127" }
+                { "channel", "Channel", "int", "1", "1..16", "MIDI", "MIDI channel used for outgoing control change messages." },
+                { "cc", "CC", "int", "1", "0..127", "MIDI", "Control change number written by this node." }
             }
         },
         {

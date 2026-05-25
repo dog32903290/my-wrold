@@ -32,6 +32,9 @@ struct ParameterRowState
     std::string value;
     std::string stateLabel;
     std::string dataType;
+    std::string group;
+    std::string description;
+    bool excludeFromPresets = false;
 };
 
 std::string parameterRowStateLabel (ParameterRowValueState state);

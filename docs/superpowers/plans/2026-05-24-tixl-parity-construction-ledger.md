@@ -121,13 +121,13 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 
 | ID | Feature | Spec row | Witness | Status | Phase | Acceptance trace | Blocker / next proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | row state and typed core controls proven; richer layout/metadata remains PARAM-007 |
+| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | row state, typed controls, and metadata foundation proven; richer layout remains parked |
 | PARAM-002 | Row states: normal, connected, animated, default/reset | Parameter parity | input UI state | proven | L3 visible | `default_manual_connected_animated_undo` | none for current row-state layer |
 | PARAM-003 | Type color families | Parameter parity | `TypeUiProperties` | partial | L3 visible | `port_type_family_visual_mapping` | TypeSpec color map |
 | PARAM-004 | Scalar/vector controls | Parameter parity | typed input UIs | proven | L3 visible | `typed_scalar_vector_param_roundtrip` | dedicated vector UI polish remains later |
 | PARAM-005 | Enum, string, path, multiline controls | Parameter parity | typed input UIs | proven | L3 visible | `typed_text_enum_path_param_roundtrip` | enum flags and native file picker remain parked |
 | PARAM-006 | Lists, curves, gradients, ADSR | Parameter parity | specialized input UIs | parked | L3 visible | `list_curve_gradient_adsr_roundtrip` | curve/gradient value types |
-| PARAM-007 | Parameter metadata: groups, relevancy, descriptions, exclude from presets | Parameter parity | input metadata | planned | L3 visible | `nodespec_parameter_metadata_visibility` | NodeSpec metadata extension |
+| PARAM-007 | Parameter metadata: groups, relevancy, descriptions, exclude from presets | Parameter parity | input metadata | proven foundation | L3 visible | `nodespec_parameter_metadata_visibility` | richer metadata layout polish remains parked |
 | PARAM-008 | Input operations menu | Parameter parity | input context menu | partial | L2 command | `reset_param_set_default_extract_value_node` | command verbs for extract/reset |
 | VAR-001 | Presets and snapshots are separate concepts | Variation parity | `VariationsWindow` | proven foundation | L3 visible | `presets_vs_snapshots_context_switch` | variation canvas UI remains VAR-004 |
 | VAR-002 | Preset capture and apply | Variation parity | `SymbolVariationPool` | proven foundation | L2 command | `create_apply_preset_capture_report` | preset browser/blend remains parked |
@@ -689,7 +689,55 @@ Scope boundary:
 
 ```text
 P-VAR1 proves preset/snapshot separation, preset capture/apply for supported non-default params, snapshot capture/apply for enabled nodes, commandGraph logging, undo for apply, capture skip reasons, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption.
-It does not implement parameter metadata UI, preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+P-PARAM007 proves NodeSpec-owned parameter metadata at row state, visible inspector grouping/description tooltip, relevancy filtering, and preset exclusion level.
+Open variation work still includes preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+```
+
+### P-PARAM007 Parameter Metadata Foundation
+
+Claim:
+
+```text
+NodeSpec owns parameter metadata so the inspector and preset capture read one contract instead of side options.
+```
+
+Evidence target:
+
+```text
+source/core/NodeSpec.h
+source/core/NodeSpec.cpp
+source/core/ParameterRowState.h
+source/core/ParameterRowState.cpp
+source/core/InteractionContract.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+tests/ParameterMetadataTests.cpp
+```
+
+- [x] Write RED tests for metadata groups/descriptions, relevance filtering, and ParamSpec-owned preset exclusion.
+- [x] Add `ParamSpec` metadata fields for group, description, preset exclusion, and value-based visibility.
+- [x] Carry metadata through `ParameterRowState`.
+- [x] Hide irrelevant parameter rows from `parameterRowsForNode`.
+- [x] Wire visible inspector grouping and description tooltips to row metadata.
+- [x] Make `createPreset` respect `ParamSpec::excludeFromPresets` while preserving `VariationCaptureOptions`.
+- [x] Run `ctest --test-dir build --output-on-failure -R "node_specs|node_spec_browser|node_spec_queries|parameter_metadata|parameter_row_state|parameter_controls|variation_state"`.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-PARAM007 closed as of 2026-05-25 10:10 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+nodespec_parameter_metadata_visibility
+create_apply_preset_capture_report
+```
+
+Scope boundary:
+
+```text
+P-PARAM007 proves groups, descriptions, relevance filtering by another parameter value, and NodeSpec-owned preset exclusion at core/visible-state/capture level.
+It does not implement richer inspector layout controls, collapsible groups, expression-based relevance rules, preset thumbnails, variation canvas CRUD, hover preview, Alt blend, or browser preset creation.
+Latest accepted result: 7/7 focused tests passed; 62/62 full tests passed.
 ```
 
 ## Downstream Plan Order
@@ -706,7 +754,8 @@ The next plans should be created only when the previous queue item has proof evi
 | 6 | P-PARAM1B typed parameter controls | P-PARAM1A | Typed edit normalization should precede presets/snapshots |
 | 7 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
 | 8 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
-| 9 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
+| 9 | P-PARAM007 parameter metadata | P-VAR1 | Preset capture should read NodeSpec-owned exclusion and inspector metadata before variation CRUD |
+| 10 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
 
 ## Self-Review
 

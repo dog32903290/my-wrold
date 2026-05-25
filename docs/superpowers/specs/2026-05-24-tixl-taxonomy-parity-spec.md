@@ -475,7 +475,31 @@ create_apply_preset_capture_report
 create_apply_snapshot_enabled_children
 ```
 
-This proves presets and snapshots as separate variation lists, command-backed preset capture/apply, command-backed snapshot capture/apply, supported non-default param capture, enabled-node snapshot capture, skip reasons `default`, `excludedFromPresets`, `unsupportedType`, and `missingInput`, undo for apply, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption. It does not implement parameter metadata UI, preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+This proves presets and snapshots as separate variation lists, command-backed preset capture/apply, command-backed snapshot capture/apply, supported non-default param capture, enabled-node snapshot capture, skip reasons `default`, `excludedFromPresets`, `unsupportedType`, and `missingInput`, undo for apply, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption. It does not implement preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+
+## P-PARAM007 Fixture Evidence
+
+Closed as of 2026-05-25 10:10 Asia/Taipei.
+
+Parameter metadata is proven at NodeSpec, row-state, visible inspector, and preset capture level by:
+
+```text
+source/core/NodeSpec.h
+source/core/NodeSpec.cpp
+source/core/ParameterRowState.h
+source/core/ParameterRowState.cpp
+source/core/InteractionContract.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+tests/ParameterMetadataTests.cpp
+```
+
+Verified acceptance trace:
+
+```text
+nodespec_parameter_metadata_visibility
+```
+
+This proves parameter groups, descriptions, value-based relevance filtering, and `excludeFromPresets` owned by `ParamSpec` instead of an external capture-only list. It does not implement collapsible metadata groups, expression-based relevance rules, variation canvas CRUD, thumbnails, hover preview, Alt blend, or preset creation from the symbol browser.
 
 ## Output, Timeline, And Live Performance Parity
 
@@ -589,8 +613,14 @@ preset/snapshot records
 -> capture skip reasons
 -> save/load preserves variation library
 
+P-PARAM007 parameter metadata: closed at core/visible-state/capture level
+ParamSpec metadata
+-> ParameterRowState metadata
+-> inspector grouping/description tooltip
+-> preset capture reads NodeSpec-owned exclusion
+
 Next selectable parity line:
-No active parity line until selected. Closest ordered lanes are VAR-004 variation canvas CRUD or PARAM-007 parameter metadata.
+No active parity line until selected. Closest ordered lane is VAR-004 variation canvas CRUD.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.

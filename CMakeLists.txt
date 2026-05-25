@@ -423,6 +423,17 @@ target_link_libraries(my_world_parameter_control_tests
 
 add_test(NAME parameter_controls COMMAND my_world_parameter_control_tests)
 
+add_executable(my_world_parameter_metadata_tests
+    tests/ParameterMetadataTests.cpp
+)
+
+target_link_libraries(my_world_parameter_metadata_tests
+    PRIVATE
+        my_world_storage_command
+)
+
+add_test(NAME parameter_metadata COMMAND my_world_parameter_metadata_tests)
+
 add_executable(my_world_graph_command_tests
     tests/GraphCommandTests.cpp
 )

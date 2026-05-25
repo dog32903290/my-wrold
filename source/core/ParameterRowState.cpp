@@ -15,6 +15,15 @@ const GraphNode::ParamValue* findParamValue (const GraphNode& node, const std::s
     return found == node.params.end() ? nullptr : &*found;
 }
 
+const ParamSpec* findParamSpec (const std::vector<ParamSpec>& params, const std::string& paramId)
+{
+    const auto found = std::find_if (params.begin(), params.end(), [&paramId] (const auto& param) {
+        return param.id == paramId;
+    });
+
+    return found == params.end() ? nullptr : &*found;
+}
+
 const GraphNode::PortBindingValue* findPortBindingValue (const GraphNode& node, const std::string& portId)
 {
     const auto found = std::find_if (node.portBindings.begin(), node.portBindings.end(), [&portId] (const auto& binding) {
@@ -46,6 +55,33 @@ ParameterRowValueState stateForBindingMode (const std::string& bindingMode)
 
     return ParameterRowValueState::defaultValue;
 }
+
+std::string paramValueOrDefault (const GraphNode& node,
+                                 const std::vector<ParamSpec>& params,
+                                 const std::string& paramId)
+{
+    if (const auto* stored = findParamValue (node, paramId))
+        return stored->value;
+
+    if (const auto* spec = findParamSpec (params, paramId))
+        return spec->defaultValue;
+
+    return {};
+}
+
+bool paramIsVisibleForNode (const GraphNode& node,
+                            const std::vector<ParamSpec>& params,
+                            const ParamSpec& param)
+{
+    if (param.visibleWhenParamId.empty())
+        return true;
+
+    const auto controller = paramValueOrDefault (node, params, param.visibleWhenParamId);
+    if (controller.empty())
+        return true;
+
+    return controller == param.visibleWhenValue;
+}
 }
 
 std::string parameterRowStateLabel (ParameterRowValueState state)
@@ -75,7 +111,10 @@ ParameterRowState parameterRowForParam (const GraphNode& node, const ParamSpec& 
         param.label.empty() ? param.id : param.label,
         stored == nullptr ? param.defaultValue : stored->value,
         parameterRowStateLabel (valueState),
-        param.dataType
+        param.dataType,
+        param.group,
+        param.description,
+        param.excludeFromPresets
     };
 }
 
@@ -121,7 +160,8 @@ std::vector<ParameterRowState> parameterRowsForNode (const GraphContract& graph,
     rows.reserve (spec.params.size() + spec.inputs.size());
 
     for (const auto& param : spec.params)
-        rows.push_back (parameterRowForParam (node, param));
+        if (paramIsVisibleForNode (node, spec.params, param))
+            rows.push_back (parameterRowForParam (node, param));
 
     for (const auto& input : spec.inputs)
         rows.push_back (parameterRowForInput (graph, node, input));

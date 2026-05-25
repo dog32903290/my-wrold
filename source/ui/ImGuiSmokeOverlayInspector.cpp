@@ -86,12 +86,24 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     }
     else
     {
+        std::string currentParamGroup;
         for (const auto& param : spec->params)
         {
             const auto* row = rowFor ("param." + param.id);
-            const auto value = row == nullptr ? param.defaultValue : row->value;
-            const auto state = row == nullptr ? "missing" : row->stateLabel;
-            drawInspectorRow (param.id, compactInspectorValue (param, value), state);
+            if (row == nullptr)
+                continue;
+
+            const auto group = row->group.empty() ? std::string { "Parameters" } : row->group;
+            if (group != currentParamGroup)
+            {
+                ImGui::SeparatorText (group.c_str());
+                currentParamGroup = group;
+            }
+
+            const auto value = row->value;
+            drawInspectorRow (param.id, compactInspectorValue (param, value), row->stateLabel);
+            if (! row->description.empty() && ImGui::IsItemHovered())
+                ImGui::SetTooltip ("%s", row->description.c_str());
 
             if (param.dataType == "text.glsl")
                 continue;

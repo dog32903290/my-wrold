@@ -249,7 +249,8 @@ Latest accepted targeted result:
 | P-TIME1 bars-native timeline model | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `TimelineState` plus `timeline_state`, command undo/redo, PatchDocument roundtrip, and saveWork roundtrip prove bars as canonical and seconds/frames as derived views | No active parity lane selected after P-TIME1 |
 | P-TIME2 transport playback controls | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `TimelineState` transport fields plus `transport_controls`, bottom transport UI, PatchDocument roundtrip, and saveWork roundtrip prove play/pause/stop/step/reverse/loop controls | Next requested lane is P-VAR1 presets/snapshots foundation |
 | P-VAR1 presets/snapshots foundation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `VariationState` plus `variation_state`, command create/apply, skip reasons, PatchDocument roundtrip, saveWork roundtrip, and left-rail state consumption prove presets/snapshots foundation | No active parity lane selected after P-VAR1 |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-VAR1 closure |
+| P-PARAM007 parameter metadata | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParamSpec` metadata plus `parameter_metadata` prove groups, descriptions, value-based relevance filtering, inspector grouping/tooltips, and NodeSpec-owned preset exclusion | Next selectable parity lane is VAR-004 variation canvas CRUD |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-PARAM007 closure |
 
 ## Active Lane Protocol
 
@@ -258,46 +259,43 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-VAR1 presets/snapshots foundation closure as of 2026-05-25 09:57 Asia/Taipei.
+None after P-PARAM007 parameter metadata closure as of 2026-05-25 10:10 Asia/Taipei.
 
-P-VAR1 closed.
+P-PARAM007 closed.
 Evidence:
-- source/core/VariationState.h
-- source/core/VariationState.cpp
-- source/core/InteractionContract.h
+- source/core/NodeSpec.h
+- source/core/NodeSpec.cpp
+- source/core/ParameterRowState.h
+- source/core/ParameterRowState.cpp
 - source/core/InteractionContract.cpp
-- source/storage/StorageContract.h
-- source/storage/StorageContractPatchDocument.cpp
-- source/storage/StorageCommand.cpp
-- source/ui/ImGuiSmokeOverlay.cpp
-- tests/VariationStateTests.cpp
+- source/ui/ImGuiSmokeOverlayInspector.cpp
+- tests/ParameterMetadataTests.cpp
 - docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
 - docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
 
 Closed line:
-preset/snapshot records
--> create/apply commandGraph verbs
--> capture skip reasons
--> undo restores applied preset state
--> PatchDocument and saveWork preserve variation library
+ParamSpec metadata
+-> row state carries group/description/exclude
+-> visibleWhen filters irrelevant parameter rows
+-> inspector groups visible metadata rows
+-> createPreset honors NodeSpec-owned preset exclusion
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_variation_state_tests` failed RED first on missing `source/core/VariationState.h`
-- `cmake --build build --target my_world_variation_state_tests`
-- `./build/my_world_variation_state_tests`
-- `cmake --build build --target my_world_variation_state_tests my_world_parameter_control_tests my_world_parameter_row_state_tests my_world_save_work_command_tests my_world_patch_document_tests my_world_imgui`
-- `ctest --test-dir build --output-on-failure -R "variation_state|parameter_controls|parameter_row_state|save_work_command|patch_document"`
+- `cmake -S . -B build && cmake --build build --target my_world_parameter_metadata_tests` failed RED first on missing `ParamSpec` metadata fields.
+- `cmake --build build --target my_world_parameter_metadata_tests`
+- `ctest --test-dir build --output-on-failure -R "parameter_metadata"`
+- `ctest --test-dir build --output-on-failure -R "node_specs|node_spec_browser|node_spec_queries|parameter_metadata|parameter_row_state|parameter_controls|variation_state"`
+- `cmake --build build --target my_world_imgui`
 - `cmake --build build`
 - `ctest --test-dir build --output-on-failure`
 
 Latest accepted result:
-- `variation state ok`
-- `5/5 focused tests passed`
-- `61/61 full tests passed`
+- `parameter metadata ok`
+- `7/7 focused tests passed`
+- `62/62 full tests passed`
 
 Next selectable lane:
 - VAR-004 variation canvas CRUD
-- PARAM-007 parameter metadata
 
 Previous closure:
 None after P-OPS1A reconnect/split macro closure as of 2026-05-25 08:36 Asia/Taipei.
@@ -1472,7 +1470,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-VAR1 presets/snapshots foundation closure. The next lane must be selected explicitly; closest ordered choices are VAR-004 variation canvas CRUD or PARAM-007 parameter metadata. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-PARAM007 parameter metadata closure. The next lane must be selected explicitly; closest ordered choice is VAR-004 variation canvas CRUD. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

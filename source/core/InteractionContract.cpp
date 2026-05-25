@@ -1376,7 +1376,7 @@ CommandResult createPreset (GraphSession& session,
 
     for (const auto& param : spec.params)
     {
-        if (containsString (options.excludedParamIds, param.id))
+        if (param.excludeFromPresets || containsString (options.excludedParamIds, param.id))
         {
             appendSkippedValue (record, nodeId, param.id, VariationSkipReason::excludedFromPresets);
             continue;

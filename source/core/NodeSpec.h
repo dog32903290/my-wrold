@@ -20,6 +20,11 @@ struct ParamSpec
     std::string dataType;
     std::string defaultValue;
     std::string range;
+    std::string group;
+    std::string description;
+    bool excludeFromPresets = false;
+    std::string visibleWhenParamId;
+    std::string visibleWhenValue;
 };
 
 struct NodeSpec
