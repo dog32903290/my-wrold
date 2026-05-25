@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "graph": {
+    "ioMappings": [
+      {
+        "id": "uniform.loudness",
+        "source": {
+          "endpoint": "compound.loudness.out",
+          "dataType": "signal.float",
+          "streamKind": "continuous"
+        },
+        "target": {
+          "id": "shader.preview.main",
+          "kind": "shader.uniform",
+          "uniformName": "u_loudness",
+          "dataType": "signal.float"
+        },
+        "range": {
+          "inputMin": 0.0,
+          "inputMax": 1.0
+        }
+      }
+    ]
+  }
+}
