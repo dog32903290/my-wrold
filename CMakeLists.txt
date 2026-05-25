@@ -85,6 +85,7 @@ add_library(my_world_core
     source/core/LiveIOMidiTeach.cpp
     source/core/LiveIOMidiOutputInventory.cpp
     source/core/LiveIOMidiSendProof.cpp
+    source/core/LiveIOOscReceiver.cpp
     source/core/LiveIOSendAdapter.cpp
     source/core/LiveIOStatusIndicator.cpp
     source/core/OutputViewState.cpp
@@ -430,6 +431,17 @@ target_link_libraries(my_world_live_io_midi_teach_tests
 )
 
 add_test(NAME live_io_midi_teach COMMAND my_world_live_io_midi_teach_tests)
+
+add_executable(my_world_live_io_osc_receiver_tests
+    tests/LiveIOOscReceiverTests.cpp
+)
+
+target_link_libraries(my_world_live_io_osc_receiver_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_osc_receiver COMMAND my_world_live_io_osc_receiver_tests)
 
 add_executable(my_world_live_io_control_dispatcher_tests
     tests/LiveIOControlDispatcherTests.cpp

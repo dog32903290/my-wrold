@@ -105,24 +105,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 14:53 Asia/Taipei, P-LIVE14 is committed and pushed in `5d57a75`. Current dirty files, if any, belong to the closed P-LIVE15 external OSC target send proof lane.
+As of 2026-05-25 15:00 Asia/Taipei, P-LIVE15 is committed and pushed in `5b35fcc`. Current dirty files, if any, belong to the closed P-LIVE16 OSC receive spine lane.
 
 ```text
-P-LIVE15 owned files:
+P-LIVE16 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md
-- source/core/LiveIOControlDispatcher.h
-- source/core/LiveIOControlDispatcher.cpp
-- source/core/LiveIOControlPump.h
-- source/core/LiveIOControlPump.cpp
-- source/core/LiveIOControlTimer.h
-- source/core/LiveIOControlTimer.cpp
-- source/app/LiveIOAppController.h
-- source/app/LiveIOAppController.cpp
-- tests/LiveIOAppControllerTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md
+- source/core/LiveIOOscReceiver.h
+- source/core/LiveIOOscReceiver.cpp
+- tests/LiveIOOscReceiverTests.cpp
+- CMakeLists.txt
 ```
 
-Do not add always-on OSC receive/server, realtime callback delivery, or broader MIDI output operators in P-LIVE15.
+Do not connect OSC receive to realtime callbacks or build UI/server lifecycle in P-LIVE16.
 
 Current C4 note:
 
@@ -326,7 +321,8 @@ Latest accepted targeted result:
 | P-LIVE13 arbitrary binding MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md`; `armLiveIOMidiTeachForBinding()` learns a CC for an arbitrary binding id and `applyLiveIOMidiTeachToBindings()` updates only the matching `midi.cc` binding; focused tests, app build, and `ctest` 73/73 passed | UI binding chooser, OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE14 OSC target preferences | closed | `docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md`; `LiveIOPreferences` stores OSC host/port/loudness address, save/load roundtrips them, and app OSC binding uses the configured address while external send remains parked; focused tests, app build, and `ctest` 73/73 passed | UI fields, external OSC send proof, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE15 external OSC target send proof | closed | `docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md`; controlled app timer carries OSC host/port/address into an injected sender, proving external target routing without adding a server or realtime callback delivery; focused tests, app build, and `ctest` 73/73 passed | Always-on OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE15 closure |
+| P-LIVE16 OSC receive spine | closed | `docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md`; `LiveIOOscReceiver` opens/polls/closes a controlled UDP receiver, decodes OSC float datagrams, and emits matching `LiveIOValueFrame` values; focused tests, app build, and `ctest` 74/74 passed | UI/server lifecycle, broader MIDI output operators, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE16 closure |
 
 ## Active Lane Protocol
 
@@ -335,7 +331,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE15 external OSC target send proof closure as of 2026-05-25 14:53 Asia/Taipei.
+None after P-LIVE16 OSC receive spine closure as of 2026-05-25 15:00 Asia/Taipei.
 
 P-LIVE13 arbitrary binding MIDI teach closed.
 Evidence:
@@ -427,9 +423,38 @@ Latest accepted result:
 - `73/73 tests passed`
 - `git diff --check passed`
 
+P-LIVE16 OSC receive spine closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md
+- source/core/LiveIOOscReceiver.h
+- source/core/LiveIOOscReceiver.cpp
+- tests/LiveIOOscReceiverTests.cpp
+- CMakeLists.txt
+
+Closed line:
+OSC float datagram
+-> controlled UDP receiver poll
+-> decoded address/value
+-> LiveIOValueFrame for graph/control use
+-> no realtime callback delivery
+
+Latest verification:
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_osc_receiver_tests` failed RED first on missing `source/core/LiveIOOscReceiver.cpp`.
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_osc_receiver_tests && ./build/my_world_live_io_osc_receiver_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "live_io_osc_receiver|live_io_send_adapter"`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted result:
+- `live io osc receiver ok`
+- app target `my-world` builds.
+- `74/74 tests passed`
+- `git diff --check passed`
+
 Next selectable lane:
 - None selected.
-- Always-on OSC receive/server, realtime callback delivery, and broader MIDI output operators remain parked.
+- Realtime callback delivery and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
