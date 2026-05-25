@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 02:14 Asia/Taipei.
+Date: 2026-05-26 02:27 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/project4-project-segment-closure
+codex/open1-created-project-workbench-open-proof
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-PROJECT4 project segment closure (closed locally)
+OPEN1 created project workbench open proof (closed locally)
+742a87f Close PROJECT segment
 de9eb57 Add PROJECT3 project creation status
 6c83112 Add PROJECT2 project creation proof
 088f823 Add PROJECT1 explicit project creation
@@ -153,14 +154,20 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 02:14 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, and PROJECT1-PROJECT4 are closed locally and not pushed. Current branch is `codex/project4-project-segment-closure`; do not push unless explicitly requested.
+As of 2026-05-26 02:27 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1 are closed locally and not pushed. Current branch is `codex/open1-created-project-workbench-open-proof`; do not push unless explicitly requested.
 
 ```text
-PROJECT4 owned files:
+OPEN1 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-project4-project-segment-closure.md
+- docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md
+- source/app/CreatedProjectOpenProofRunner.*
+- source/app/Main.*
+- source/app/StartupProof.*
+- tests/CreatedProjectOpenProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
 ```
-PROJECT4 did not add behavior or touch source files. It closes the PROJECT segment after PROJECT1-PROJECT3.
+OPEN1 did not add project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
 
 Current C4 note:
 
@@ -406,6 +413,7 @@ Latest accepted targeted result:
 | PROJECT2 project creation proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md`; `ProjectCreationProofRunner` creates a repeatable proof project through `createActiveWorkProject()`, writes `project_creation_report.json`, proves loader readback and no-overwrite status, and app flag `--dump-project-creation-proof-and-exit` dumps `debug/project-creation-proof/project_creation_report.json`; `ctest` 88/88 passed | App UI/dialogs, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | PROJECT3 project creation status integration | closed locally | `docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md`; `ProjectCreationProofRunResult` now carries status text, `project_creation_report.json` writes the same text, and `MainComponent::dumpProjectCreationProof()` uses it through the existing proof status adapter; `ctest` 88/88 passed | App UI/dialogs, active-work mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | PROJECT4 project segment closure | closed locally | `docs/superpowers/specs/2026-05-26-project4-project-segment-closure.md`; closes PROJECT1-PROJECT3 as the project creation service/proof/status segment without adding behavior or touching source files | Future project work should leave the PROJECT prefix and choose a fresh surface such as SAVE, OPEN, UI, STATUS, GRAPH, or RUNTIME |
+| OPEN1 created project workbench open proof | closed locally | `docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md`; `CreatedProjectOpenProofRunner` creates a fresh work project, opens it through `openCurrentWorkbenchSession()`, writes `created_project_open_report.json`, and app flag `--dump-created-project-open-proof-and-exit` dumps `debug/created-project-open-proof/created_project_open_report.json`; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -415,9 +423,39 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after PROJECT4 project segment closure as of 2026-05-26 02:14 Asia/Taipei. Not pushed.
+None after OPEN1 created project workbench open proof closure as of 2026-05-26 02:27 Asia/Taipei. Not pushed.
 
 Latest closure:
+OPEN1 created project workbench open proof closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md
+- source/app/CreatedProjectOpenProofRunner.*
+- source/app/Main.*
+- source/app/StartupProof.*
+- tests/CreatedProjectOpenProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
+
+Closed line:
+OPEN1 proof flag/test
+-> createActiveWorkProject()
+-> openCurrentWorkbenchSession(created manifest)
+-> created_project_open_report.json
+
+Latest accepted result:
+- Red test failed because CreatedProjectOpenProofRunner.h did not exist.
+- cmake --build build --target my_world_created_project_open_proof_runner_tests && ./build/my_world_created_project_open_proof_runner_tests passed.
+- cmake --build build --target my_world_startup_proof_tests my_world_created_project_open_proof_runner_tests && ./build/my_world_startup_proof_tests && ./build/my_world_created_project_open_proof_runner_tests passed.
+- cmake --build build --target my-world passed, with the existing duplicate static-library linker warning.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-created-project-open-proof-and-exit passed.
+- created_project_open_report.json read back with ok: true, creationStatus: created, openStatus: ready, workSource: active-work, workSourceStatus: active-work-opened, documentId: patch.open1-main, graphIOMappingStatus: valid, graphIOMappingCount: 1, validGraphIOMappingCount: 1, and statusText: created project open ready: work.project-open1 -> patch.open1-main source active-work-opened mappings 1/1.
+- PROJECT creation proof and stable app workbench proof still passed and read back their expected fields.
+- ctest --test-dir build --output-on-failure -R "created_project_open_proof_runner|project_creation_proof_runner|app_workbench_session_proof_runner|startup_proof" passed 4/4.
+- ctest --test-dir build --output-on-failure passed 89/89.
+- git diff --check passed.
+
+Previous closure:
 PROJECT4 project segment closure closed locally.
 Evidence:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -3040,14 +3078,21 @@ raw callback-buffer runtime
 | `2026-05-26-project2-project-creation-proof-artifact.md` | PROJECT2 project creation proof artifact closure evidence | no, unless auditing PROJECT2 evidence |
 | `2026-05-26-project3-project-creation-status-integration.md` | PROJECT3 project creation status integration closure evidence | no, unless auditing PROJECT3 evidence |
 | `2026-05-26-project4-project-segment-closure.md` | PROJECT4 closure marker for PROJECT1-PROJECT3 project creation segment | no, unless auditing PROJECT segment closure |
+| `2026-05-26-open1-created-project-workbench-open-proof.md` | OPEN1 created project workbench open proof closure evidence | no, unless auditing OPEN1 evidence |
 
 ## Session Safety
 
-PROJECT4 owned files:
+OPEN1 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-project4-project-segment-closure.md
+docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md
+source/app/CreatedProjectOpenProofRunner.*
+source/app/Main.*
+source/app/StartupProof.*
+tests/CreatedProjectOpenProofRunnerTests.cpp
+tests/StartupProofTests.cpp
+CMakeLists.txt
 ```
 
 Avoid unrelated files and parked lanes:
@@ -3065,7 +3110,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after PROJECT4 project segment closure on `codex/project4-project-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, and PROJECT1-PROJECT4 are local-only commits; do not push unless explicitly requested. Treat the PROJECT segment as closed: explicit project creation service, repeatable proof artifact, app proof flag, and status text are proven. Future work should leave the PROJECT prefix and choose a fresh surface such as SAVE, OPEN, UI, STATUS, GRAPH, or RUNTIME. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after OPEN1 created project workbench open proof closure on `codex/open1-created-project-workbench-open-proof`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1 are local-only commits; do not push unless explicitly requested. OPEN1 proves created project -> workbench session open using the existing open spine. Recommended next selected lane is `OPEN2 explicit open request/status` only if a non-proof explicit open API/status should be added; otherwise choose a fresh surface by the next bearing line. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

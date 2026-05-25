@@ -28,10 +28,11 @@ int main()
     selected.dumpC2StorageProof = true;
     selected.dumpAPPWorkbenchSessionProof = true;
     selected.dumpProjectCreationProof = true;
+    selected.dumpCreatedProjectOpenProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 6, "selected options should create six tasks");
+    expect (selectedTasks.size() == 7, "selected options should create seven tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -46,6 +47,9 @@ int main()
     expect (selectedTasks[5].id == myworld::StartupProofTaskId::projectCreation,
             "project creation task should be selected");
     expect (selectedTasks[5].delayMilliseconds == 500, "project creation task should keep 500ms startup delay");
+    expect (selectedTasks[6].id == myworld::StartupProofTaskId::createdProjectOpen,
+            "created project open task should be selected");
+    expect (selectedTasks[6].delayMilliseconds == 500, "created project open task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -70,9 +74,10 @@ int main()
     all.dumpAPP2WorkbenchOpenStatusProof = true;
     all.dumpAPPWorkbenchSessionProof = true;
     all.dumpProjectCreationProof = true;
+    all.dumpCreatedProjectOpenProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 22, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 23, "all options should create every startup proof task");
 
     return 0;
 }

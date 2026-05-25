@@ -13,6 +13,7 @@
 #include "C5ModulePublishProofRunner.h"
 #include "CompoundModule.h"
 #include "CompoundPatch.h"
+#include "CreatedProjectOpenProofRunner.h"
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
 #include "InteractionContract.h"
@@ -303,6 +304,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::projectCreation:
             dumpProjectCreationProof();
+            break;
+        case StartupProofTaskId::createdProjectOpen:
+            dumpCreatedProjectOpenProof();
             break;
     }
 }
@@ -627,6 +631,25 @@ void MainComponent::dumpProjectCreationProof()
 
     const auto status = result.statusText.empty() ? result.status : result.statusText;
     finishProofDump (juce::String (projectCreationProofDisplayName()), status, result.error, directory);
+}
+
+void MainComponent::dumpCreatedProjectOpenProof()
+{
+    const auto directory = proofDumpDirectory (createdProjectOpenProofDirectoryName());
+
+    CreatedProjectOpenProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runCreatedProjectOpenProof (request);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (createdProjectOpenProofDisplayName()), "failed", result.statusText, directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (createdProjectOpenProofDisplayName()), status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
