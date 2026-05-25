@@ -2,6 +2,7 @@
 
 #include "AudioInputAnalyzer.h"
 #include "InteractionContract.h"
+#include "LiveIOControlTimer.h"
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
@@ -61,6 +62,7 @@ private:
     void updateAudioMeters();
     void applyMidiPreferences (MidiPreferences preferences);
     void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
+    void tickLiveIOControlDryRun (const AudioAnalyzerSnapshot& snapshot);
 
     OpenGLShaderPreview preview;
     juce::AudioDeviceManager audioDeviceManager;
@@ -81,6 +83,8 @@ private:
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;
     juce::String midiStatus = "midi off";
+    LiveIOControlTimerState liveIOTimerState;
+    juce::String liveIOStatus = "live io dry-run idle";
     bool shouldQuitAfterStartupDump = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

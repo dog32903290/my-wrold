@@ -151,11 +151,11 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | proven for transport controls | L4 live | `transport_play_loop_io_indicator` | P-TIME2 closed for play/pause/stop/step/loop; IO bus indicator remains parked |
 | TIME-003 | Keyframes and curves | Timeline parity | animation commands | parked | L2 command | `keyframe_curve_undo_redo_exact` | animation data model |
 | TIME-004 | Time clips and time warp | Timeline parity | time clip files | parked | L2 command | `time_clip_retime_no_overlap` | timeline phase |
-| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping/pump | L4 live | `audio_input_to_meter_to_uniform`, `live_io_control_pump_snapshot_frames` | P-LIVE3 proves analyzer snapshots can feed the live IO pump; actual app timer wiring and realtime callback delivery remain parked |
+| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping/pump/timer dry-run | L4 live | `audio_input_to_meter_to_uniform`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run` | P-LIVE4 proves app timer snapshots can drive live IO dry-run state; realtime callback delivery remains parked |
 | LIVE-002 | Global audio mixers | Live parity | mixer settings | parked | L4 live | `audio_mixer_mute_route` | audio graph/mix bus |
 | LIVE-003 | MIDI input taxonomy and teach | Live parity | MIDI input UI | partial | L4 live | `teach_midi_cc_binding_flash` | MIDI input manager |
-| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven controlled CC output | L4 live | `loudness_cc_output_stream_enabled`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames` | P-LIVE3 proves analyzer snapshot pump into MIDI sink; teach mode, app timer wiring, realtime wiring, and broader output operators remain parked |
-| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback/dispatch sink | L4 live | `osc_address_to_signal_value`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames` | P-LIVE1.3 proves localhost OSC float send/receive loopback; P-LIVE3 proves analyzer snapshot pump into OSC sink; external UDP receive/send remains parked |
+| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven controlled CC output plus timer dry-run | L4 live | `loudness_cc_output_stream_enabled`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run` | P-LIVE4 proves app timer dry-run counts can reach the MIDI control boundary; teach mode, realtime wiring, real timer dispatch, and broader output operators remain parked |
+| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback/dispatch sink plus timer dry-run | L4 live | `osc_address_to_signal_value`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run` | P-LIVE1.3 proves localhost OSC float send/receive loopback; P-LIVE4 proves app timer dry-run counts can reach the OSC control boundary; external UDP receive/send remains parked |
 | LIVE-006 | Audio analyzer/operator family | Live parity | `io/audio`, `AudioReaction`, `DetectBpm` | partial/proven loudness | L4 live | `loaded_loudness_outputs_drive_live_surface` | C1.19/C1.20 line |
 | LIVE-007 | Exported executable and live show controls | Live parity | executable settings | parked | L4 live | `exported_show_keyboard_playback` | packaging/runtime mode |
 
@@ -168,7 +168,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
 | NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
-| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOControlDispatcher` / `LiveIOControlPump` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames` | app timer wiring, MIDI teach mode, realtime callback delivery, live UI mapping, and broader MIDI/OSC live IO remain parked |
+| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOControlDispatcher` / `LiveIOControlPump` / `LiveIOControlTimer` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run` | real app timer dispatch, MIDI teach mode, realtime callback delivery, full live UI mapping, and broader MIDI/OSC live IO remain parked |
 
 ## Immediate Work Queue
 
@@ -1228,6 +1228,47 @@ It does not wire `MainComponent::timerCallback()`, deliver from the realtime aud
 Latest accepted result: live io control pump ok; live io proof runner ok; app proof dump wrote live_io_control_pump_report.json with tickCount=5, frameCount=3, inactiveTickCount=1, tickRateLimitedCount=1, midiSentCount=3, oscSentCount=3; 69/69 tests passed; git diff --check passed.
 ```
 
+### P-LIVE4 App Timer Dry-Run Wiring
+
+Claim:
+
+```text
+The app timer can drive live IO dry-run state from the current analyzer snapshot without adding real MIDI/OSC dispatch to the new timer path or touching the realtime callback.
+```
+
+Evidence target:
+
+```text
+source/core/LiveIOControlTimer.h
+source/core/LiveIOControlTimer.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/LiveIOControlTimerTests.cpp
+docs/superpowers/specs/2026-05-25-p-live4-app-timer-dry-run.md
+```
+
+- [x] Write RED tests for pumped, tick-rate-limited, inactive, disabled, and JSON timer state.
+- [x] Add `LiveIOControlTimer` as a pure non-JUCE dry-run timer contract over `AudioAnalyzerSnapshot`.
+- [x] Wire `MainComponent::timerCallback()` through `updateAudioMeters()` into `tickLiveIOControlDryRun()`.
+- [x] Keep the new timer path dry-run by using injected fake MIDI/OSC senders only.
+
+P-LIVE4 closed as app timer dry-run wiring as of 2026-05-25 13:02 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+live_io_app_timer_dry_run
+live_io_timer_state_json
+```
+
+Scope boundary:
+
+```text
+P-LIVE4 proves the app has a timer-driven live IO body and readable status state.
+It does not send real MIDI/OSC from the new timer path, deliver from the realtime audio callback, implement MIDI teach/learn mode, add external OSC targets, or add a full live UI indicator.
+Latest accepted result: live io control timer ok; app target builds; live IO CLI proof exits successfully; 70/70 tests passed; git diff --check passed.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -1247,7 +1288,7 @@ The next plans should be created only when the previous queue item has proof evi
 | 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
 | 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
 | 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
-| 14 | P-LIVE MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, P-LIVE1.5 controlled MIDI open/send, P-LIVE2 control-rate dispatcher, and P-LIVE3 analyzer snapshot pump; app timer wiring, teach mode, and realtime callback delivery remain later |
+| 14 | P-LIVE MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, P-LIVE1.5 controlled MIDI open/send, P-LIVE2 control-rate dispatcher, P-LIVE3 analyzer snapshot pump, and P-LIVE4 app timer dry-run body; real timer dispatch, teach mode, full UI indicator, and realtime callback delivery remain later |
 
 ## Self-Review
 

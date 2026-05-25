@@ -22,6 +22,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace myworld
 {
@@ -47,6 +48,15 @@ void configureMeterLabel (juce::Label& label, juce::String text)
     label.setText (std::move (text), juce::dontSendNotification);
     label.setColour (juce::Label::textColourId, juce::Colour::fromRGB (202, 211, 226));
     label.setFont (monoFont (13.0f));
+}
+
+std::vector<LiveIOBinding> makeAppLiveIOBindings()
+{
+    return {
+        makeLiveIOMidiCcBinding ("midi.loudness", "out", 1, 20),
+        makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"),
+        makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness")
+    };
 }
 
 }
@@ -575,7 +585,8 @@ void MainComponent::updateAudioMeters()
     activeLabel.setText (juce::String ("active ") + (snapshot.active ? "yes" : "no"), juce::dontSendNotification);
     preview.setLoudness (snapshot.loudness);
     sendMidiForSnapshot (snapshot);
-    midiStatusLabel.setText (midiStatus, juce::dontSendNotification);
+    tickLiveIOControlDryRun (snapshot);
+    midiStatusLabel.setText (midiStatus + " / " + liveIOStatus, juce::dontSendNotification);
 
     const auto sampleRate = audioInputAnalyzer.getSampleRate();
 
@@ -637,5 +648,30 @@ void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
     midiStatus = "midi ch" + juce::String (frame.channel)
                  + " cc" + juce::String (frame.cc)
                  + " " + juce::String (frame.value);
+}
+
+void MainComponent::tickLiveIOControlDryRun (const AudioAnalyzerSnapshot& snapshot)
+{
+    LiveIOControlTimerDryRunConfig config;
+    config.bindings = makeAppLiveIOBindings();
+    config.tickIntervalMs = 50;
+    config.dispatchMinIntervalMs = 0;
+    config.enabled = true;
+
+    const auto nowMs = static_cast<std::int64_t> (juce::Time::getMillisecondCounterHiRes());
+    const auto result = tickLiveIOControlTimerDryRun (liveIOTimerState, config, nowMs, snapshot);
+
+    if (! result.ok)
+    {
+        liveIOStatus = "live io dry failed";
+        return;
+    }
+
+    liveIOStatus = "live io dry "
+                   + juce::String (result.status)
+                   + " m"
+                   + juce::String (liveIOTimerState.midiDryRunCount)
+                   + " o"
+                   + juce::String (liveIOTimerState.oscDryRunCount);
 }
 }

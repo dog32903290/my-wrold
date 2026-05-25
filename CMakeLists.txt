@@ -81,6 +81,7 @@ add_library(my_world_core
     source/core/LiveIOBus.cpp
     source/core/LiveIOControlDispatcher.cpp
     source/core/LiveIOControlPump.cpp
+    source/core/LiveIOControlTimer.cpp
     source/core/LiveIOMidiOutputInventory.cpp
     source/core/LiveIOMidiSendProof.cpp
     source/core/LiveIOSendAdapter.cpp
@@ -438,6 +439,17 @@ target_link_libraries(my_world_live_io_control_pump_tests
 )
 
 add_test(NAME live_io_control_pump COMMAND my_world_live_io_control_pump_tests)
+
+add_executable(my_world_live_io_control_timer_tests
+    tests/LiveIOControlTimerTests.cpp
+)
+
+target_link_libraries(my_world_live_io_control_timer_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_control_timer COMMAND my_world_live_io_control_timer_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp
