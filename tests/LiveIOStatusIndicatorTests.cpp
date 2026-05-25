@@ -101,22 +101,28 @@ int main()
     realtime.status = "delivered";
     realtime.sequence = 6;
     realtime.droppedSnapshots = 1;
+    realtime.skippedSnapshots = 1;
+    realtime.overwrittenSnapshots = 0;
 
     const auto realtimeState = myworld::withLiveIORealtimeTelemetry (dryRun, realtime);
-    expectEqual (realtimeState.text, "live io dry pumped m3 o2 rt delivered s6 d1", "realtime text");
+    expectEqual (realtimeState.text, "live io dry pumped m3 o2 rt delivered s6 skip1 over0", "realtime text");
     expectEqual (realtimeState.realtimeStatus, "delivered", "realtime status");
     expect (realtimeState.realtimeSequence == 6, "realtime sequence");
     expect (realtimeState.realtimeDroppedSnapshots == 1, "realtime dropped snapshots");
+    expect (realtimeState.realtimeSkippedSnapshots == 1, "realtime skipped snapshots");
+    expect (realtimeState.realtimeOverwrittenSnapshots == 0, "realtime overwritten snapshots");
 
     const auto json = myworld::makeLiveIOStatusIndicatorJson (realtimeState);
     expectContains (json, "\"kind\": \"liveIOStatusIndicator\"", "indicator json kind");
-    expectContains (json, "\"text\": \"live io dry pumped m3 o2 rt delivered s6 d1\"", "indicator json text");
+    expectContains (json, "\"text\": \"live io dry pumped m3 o2 rt delivered s6 skip1 over0\"", "indicator json text");
     expectContains (json, "\"tone\": \"dry_run\"", "indicator json tone");
     expectContains (json, "\"midiCount\": 3", "indicator json midi count");
     expectContains (json, "\"oscCount\": 2", "indicator json osc count");
     expectContains (json, "\"realtimeStatus\": \"delivered\"", "indicator json realtime status");
     expectContains (json, "\"realtimeSequence\": 6", "indicator json realtime sequence");
     expectContains (json, "\"realtimeDroppedSnapshots\": 1", "indicator json realtime dropped");
+    expectContains (json, "\"realtimeSkippedSnapshots\": 1", "indicator json realtime skipped");
+    expectContains (json, "\"realtimeOverwrittenSnapshots\": 0", "indicator json realtime overwritten");
 
     std::cout << "live io status indicator ok\n";
     return 0;

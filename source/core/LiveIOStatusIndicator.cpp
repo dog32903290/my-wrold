@@ -106,6 +106,8 @@ LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
     state.realtimeStatus = telemetry.status;
     state.realtimeSequence = telemetry.sequence;
     state.realtimeDroppedSnapshots = telemetry.droppedSnapshots;
+    state.realtimeSkippedSnapshots = telemetry.skippedSnapshots;
+    state.realtimeOverwrittenSnapshots = telemetry.overwrittenSnapshots;
 
     if (! state.realtimeStatus.empty())
     {
@@ -113,7 +115,8 @@ LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
         text << state.text
              << " rt " << state.realtimeStatus
              << " s" << state.realtimeSequence
-             << " d" << state.realtimeDroppedSnapshots;
+             << " skip" << state.realtimeSkippedSnapshots
+             << " over" << state.realtimeOverwrittenSnapshots;
         state.text = text.str();
     }
 
@@ -135,7 +138,9 @@ std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& sta
     out << "  \"sampleCounter\": " << state.sampleCounter << ",\n";
     out << "  \"realtimeStatus\": " << jsonQuoted (state.realtimeStatus) << ",\n";
     out << "  \"realtimeSequence\": " << state.realtimeSequence << ",\n";
-    out << "  \"realtimeDroppedSnapshots\": " << state.realtimeDroppedSnapshots << "\n";
+    out << "  \"realtimeDroppedSnapshots\": " << state.realtimeDroppedSnapshots << ",\n";
+    out << "  \"realtimeSkippedSnapshots\": " << state.realtimeSkippedSnapshots << ",\n";
+    out << "  \"realtimeOverwrittenSnapshots\": " << state.realtimeOverwrittenSnapshots << "\n";
     out << "}\n";
     return out.str();
 }

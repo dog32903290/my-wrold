@@ -74,8 +74,21 @@ int main()
     auto second = delivery.consumeLatest (lastSeenSequence);
     expect (second.available, "second realtime snapshot is available");
     expectEqual (static_cast<int> (second.snapshot.sampleCounter), 192, "second sample counter");
-    expectEqual (static_cast<int> (second.droppedSnapshots), 1, "single-slot overwrite reports dropped snapshot");
-    expectEqual (makeAudioRealtimeDeliveryStatusText (second), "rt delivered seq 6 drop 1", "delivery status text");
+    expectEqual (static_cast<int> (second.skippedSnapshots), 1, "multi-slot reports skipped unread snapshot");
+    expectEqual (static_cast<int> (second.overwrittenSnapshots), 0, "multi-slot keeps unread snapshot within capacity");
+    expectEqual (makeAudioRealtimeDeliveryStatusText (second), "rt delivered seq 6 skip 1 over 0", "delivery status text");
+
+    delivery.publishFromRealtime (makeSnapshot (1.0f, true, 256));
+    delivery.publishFromRealtime (makeSnapshot (1.0f, true, 320));
+    delivery.publishFromRealtime (makeSnapshot (1.0f, true, 384));
+    delivery.publishFromRealtime (makeSnapshot (1.0f, true, 448));
+    delivery.publishFromRealtime (makeSnapshot (1.0f, true, 512));
+
+    auto overflow = delivery.consumeLatest (lastSeenSequence);
+    expect (overflow.available, "overflow realtime snapshot is available");
+    expectEqual (static_cast<int> (overflow.snapshot.sampleCounter), 512, "overflow returns latest sample counter");
+    expectEqual (static_cast<int> (overflow.skippedSnapshots), 3, "overflow reports skipped snapshots still in buffer window");
+    expectEqual (static_cast<int> (overflow.overwrittenSnapshots), 1, "overflow reports overwritten snapshot beyond buffer capacity");
 
     myworld::LiveIOControlTimerConfig config;
     config.bindings = {

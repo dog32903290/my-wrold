@@ -20,6 +20,8 @@ struct LiveIOStatusIndicatorState
     std::string realtimeStatus;
     std::uint64_t realtimeSequence = 0;
     std::uint64_t realtimeDroppedSnapshots = 0;
+    std::uint64_t realtimeSkippedSnapshots = 0;
+    std::uint64_t realtimeOverwrittenSnapshots = 0;
 };
 
 struct LiveIORealtimeIndicatorTelemetry
@@ -27,6 +29,8 @@ struct LiveIORealtimeIndicatorTelemetry
     std::string status;
     std::uint64_t sequence = 0;
     std::uint64_t droppedSnapshots = 0;
+    std::uint64_t skippedSnapshots = 0;
+    std::uint64_t overwrittenSnapshots = 0;
 };
 
 LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (

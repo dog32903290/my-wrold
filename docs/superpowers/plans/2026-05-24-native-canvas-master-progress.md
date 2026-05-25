@@ -71,6 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+dca3f31 Show realtime delivery in live IO status
+9113fee Add realtime delivery status telemetry
 0d31a2e Add realtime live IO snapshot delivery
 5895944 Add broader live IO MIDI operators
 f52a3a1 Add live IO OSC receive spine
@@ -113,20 +115,22 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE19 is committed in `9113fee`. Current dirty files, if any, should belong to the closing P-LIVE20 live IO realtime indicator lane.
+As of 2026-05-25, P-LIVE20 is committed in `dca3f31`. Current dirty files, if any, should belong to the active P-LIVE21 realtime delivery backpressure lane.
 
 ```text
-P-LIVE20 owned files:
+P-LIVE21 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md
+- docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md
+- source/audio/AudioRealtimeDelivery.h
+- source/audio/AudioRealtimeDelivery.cpp
 - source/core/LiveIOStatusIndicator.h
 - source/core/LiveIOStatusIndicator.cpp
 - source/app/MainComponent.cpp
-- source/app/MainComponent.h
+- tests/AudioRealtimeDeliveryTests.cpp
 - tests/LiveIOStatusIndicatorTests.cpp
 ```
 
-Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE20.
+Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE21.
 
 Current C4 note:
 
@@ -335,7 +339,8 @@ Latest accepted targeted result:
 | P-LIVE18 realtime callback delivery | closed | `docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md`; `AudioInputAnalyzer` publishes callback snapshots into `AudioRealtimeDelivery`, `MainComponent` consumes completed sequences on the app timer, and `LiveIOControlTimer` remains outside the callback; focused test and app build passed | Direct realtime MIDI/OSC send, multi-slot backpressure telemetry, and delivery UI remain parked |
 | P-LIVE19 realtime delivery status | closed | `docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md`; `AudioRealtimeDeliveryResult` reports empty/writing/repeated/delivered state, completed sequence, and coarse single-slot dropped snapshot count, and the app timer shows it in the audio status label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
 | P-LIVE20 live IO realtime indicator | closed | `docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md`; app-side `AudioRealtimeDeliveryResult` telemetry flows into existing live IO status indicator text/json and the live IO label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE20 closure |
+| P-LIVE21 realtime delivery backpressure | closed | `docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md`; `AudioRealtimeDelivery` now uses four fixed slots and reports skipped vs overwritten snapshots separately into the existing live IO indicator; focused tests and app build passed | Sequential catch-up API, dynamic queues, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE21 closure |
 
 ## Active Lane Protocol
 
@@ -344,6 +349,36 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE21 realtime delivery backpressure closure as of 2026-05-25.
+
+P-LIVE21 realtime delivery backpressure closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md
+- source/audio/AudioRealtimeDelivery.h
+- source/audio/AudioRealtimeDelivery.cpp
+- source/core/LiveIOStatusIndicator.h
+- source/core/LiveIOStatusIndicator.cpp
+- source/app/MainComponent.cpp
+- tests/AudioRealtimeDeliveryTests.cpp
+- tests/LiveIOStatusIndicatorTests.cpp
+
+Closed line:
+audio callback snapshots
+-> bounded multi-slot delivery slots
+-> app timer consume latest completed snapshot
+-> skipped / overwritten telemetry
+-> existing live IO status label
+
+Latest accepted result:
+- RED first on missing `AudioRealtimeDeliveryResult::skippedSnapshots` and `overwrittenSnapshots`.
+- RED first on missing `LiveIORealtimeIndicatorTelemetry` skipped/overwritten fields.
+- focused `audio_realtime_delivery` and `live_io_status_indicator` tests passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE20 live IO realtime indicator closure as of 2026-05-25.
 
 P-LIVE20 live IO realtime indicator closed.
@@ -2003,7 +2038,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE20 live IO realtime indicator closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE21 realtime delivery backpressure closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

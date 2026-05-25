@@ -76,6 +76,8 @@ LiveIORealtimeIndicatorTelemetry makeRealtimeIndicatorTelemetry (
     telemetry.status = audioRealtimeDeliveryStatusToString (realtime.status);
     telemetry.sequence = realtime.sequence;
     telemetry.droppedSnapshots = realtime.droppedSnapshots;
+    telemetry.skippedSnapshots = realtime.skippedSnapshots;
+    telemetry.overwrittenSnapshots = realtime.overwrittenSnapshots;
     return telemetry;
 }
 
