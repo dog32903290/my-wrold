@@ -42,6 +42,8 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
         "--dump-app2-workbench-open-status-proof-and-exit");
     options.dumpAPPWorkbenchSessionProof = commandLine.contains (
         "--dump-app-workbench-session-proof-and-exit");
+    options.dumpProjectCreationProof = commandLine.contains (
+        "--dump-project-creation-proof-and-exit");
     options.quitAfterStartupDump = hasStartupProofRequest (options);
 
     return options;

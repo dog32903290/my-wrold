@@ -56,6 +56,7 @@ private:
     void dumpAPP1WorkbenchSessionProof();
     void dumpAPP2WorkbenchOpenStatusProof();
     void dumpAPPWorkbenchSessionProof();
+    void dumpProjectCreationProof();
     void dumpPVDetectorProof (PVDetectorProofKind kind);
     void scheduleStartupProofs (const StartupProofOptions& options);
     void runStartupProofTask (StartupProofTaskId task);

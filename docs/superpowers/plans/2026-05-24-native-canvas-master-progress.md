@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 01:56 Asia/Taipei.
+Date: 2026-05-26 02:05 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/project1-explicit-project-creation-contract
+codex/project2-project-creation-proof-artifact
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-PROJECT1 explicit project creation contract (closed locally)
+PROJECT2 project creation proof artifact (closed locally)
+088f823 Add PROJECT1 explicit project creation
 78727be Close ACTIVE segment
 6184a0d Add ACTIVE2 preparation diagnostics proof
 b0b1009 Add ACTIVE1 active work preparation
@@ -150,16 +151,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 01:56 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, and PROJECT1 are closed locally and not pushed. Current branch is `codex/project1-explicit-project-creation-contract`; do not push unless explicitly requested.
+As of 2026-05-26 02:05 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, and PROJECT2 are closed locally and not pushed. Current branch is `codex/project2-project-creation-proof-artifact`; do not push unless explicitly requested.
 
 ```text
-PROJECT1 owned files:
+PROJECT2 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-project1-explicit-project-creation-contract.md
-- source/app/ActiveWorkService.*
-- tests/ActiveWorkServiceTests.cpp
+- docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md
+- source/app/ProjectCreationProofRunner.*
+- source/app/Main.*
+- source/app/StartupProof.*
+- tests/ProjectCreationProofRunnerTests.cpp
+- CMakeLists.txt
 ```
-PROJECT1 did not add app UI, save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP.
+PROJECT2 did not add app UI, save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP.
 
 Current C4 note:
 
@@ -402,6 +406,7 @@ Latest accepted targeted result:
 | ACTIVE2 preparation diagnostics proof | closed locally | `docs/superpowers/specs/2026-05-26-active2-preparation-diagnostics-proof.md`; `ActiveWorkPreparationResult` now carries diagnostics and stable app proof writes `active_work_preparation_report.json` beside the session report, while the session report still reads `active-work-opened`; `ctest` 87/87 passed | Save mutation changes, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | ACTIVE3 active segment closure | closed locally | `docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md`; closes ACTIVE1-ACTIVE2 as the app startup active-work preparation/readback segment; stable app proof still writes both active-work preparation and workbench session reports; `ctest` 87/87 passed | Future active-work work should choose a specific surface, such as explicit project creation UX or save integration review |
 | PROJECT1 explicit project creation contract | closed locally | `docs/superpowers/specs/2026-05-26-project1-explicit-project-creation-contract.md`; `ActiveWorkService` creates explicit work project scaffolds with `myworld.work.json` and `patches/main.patch.json`, returns status/path/diagnostic evidence, blocks overwrite unless requested, and proves readback through existing loaders; stable app proof passed; `ctest` 87/87 passed | App UI/dialogs, environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
+| PROJECT2 project creation proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md`; `ProjectCreationProofRunner` creates a repeatable proof project through `createActiveWorkProject()`, writes `project_creation_report.json`, proves loader readback and no-overwrite status, and app flag `--dump-project-creation-proof-and-exit` dumps `debug/project-creation-proof/project_creation_report.json`; `ctest` 88/88 passed | App UI/dialogs, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -411,9 +416,41 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after PROJECT1 explicit project creation contract closure as of 2026-05-26 01:56 Asia/Taipei. Not pushed.
+None after PROJECT2 project creation proof artifact closure as of 2026-05-26 02:05 Asia/Taipei. Not pushed.
 
 Latest closure:
+PROJECT2 project creation proof artifact closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md
+- source/app/ProjectCreationProofRunner.*
+- source/app/Main.*
+- source/app/StartupProof.*
+- tests/ProjectCreationProofRunnerTests.cpp
+- CMakeLists.txt
+
+Closed line:
+PROJECT2 proof flag/test
+-> ProjectCreationProofRunner
+-> createActiveWorkProject()
+-> project_creation_report.json
+-> loader readback evidence
+
+Latest accepted result:
+- Red test failed because ProjectCreationProofRunner.h did not exist.
+- Repeat-run red test failed with active work project files already exist.
+- cmake --build build --target my_world_project_creation_proof_runner_tests && ./build/my_world_project_creation_proof_runner_tests passed.
+- ./build/my_world_startup_proof_tests passed.
+- cmake --build build --target my-world passed, with the existing duplicate static-library linker warning.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-project-creation-proof-and-exit passed twice in a row.
+- project_creation_report.json read back with ok: true, status: created, manifestExists: true, patchExists: true, workId: work.project2-proof, patchId: patch.project2-main, duplicateStatus: already-exists, and diagnostics including createActiveWorkProjectStatus=created.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed.
+- Stable app workbench proof still wrote active_work_preparation_report.json and workbench_open_status_report.json with expected active-work status.
+- ctest --test-dir build --output-on-failure -R "project_creation_proof_runner|startup_proof|app_workbench_session_proof_runner|active_work_service" passed 4/4.
+- ctest --test-dir build --output-on-failure passed 88/88.
+- git diff --check passed.
+
+Previous closure:
 PROJECT1 explicit project creation contract closed locally.
 Evidence:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -2956,16 +2993,20 @@ raw callback-buffer runtime
 | `2026-05-26-active2-preparation-diagnostics-proof.md` | ACTIVE2 preparation diagnostics proof closure evidence | no, unless auditing ACTIVE2 evidence |
 | `2026-05-26-active3-active-segment-closure.md` | ACTIVE3 closure marker for ACTIVE1-ACTIVE2 app startup active-work segment | no, unless auditing ACTIVE segment closure |
 | `2026-05-26-project1-explicit-project-creation-contract.md` | PROJECT1 explicit project creation contract closure evidence | no, unless auditing PROJECT1 evidence |
+| `2026-05-26-project2-project-creation-proof-artifact.md` | PROJECT2 project creation proof artifact closure evidence | no, unless auditing PROJECT2 evidence |
 
 ## Session Safety
 
-PROJECT1 owned files:
+PROJECT2 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-project1-explicit-project-creation-contract.md
-source/app/ActiveWorkService.*
-tests/ActiveWorkServiceTests.cpp
+docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md
+source/app/ProjectCreationProofRunner.*
+source/app/Main.*
+source/app/StartupProof.*
+tests/ProjectCreationProofRunnerTests.cpp
+CMakeLists.txt
 ```
 
 Avoid unrelated files and parked lanes:
@@ -2983,7 +3024,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after PROJECT1 explicit project creation contract closure on `codex/project1-explicit-project-creation-contract`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, and PROJECT1 are local-only commits; do not push unless explicitly requested. Recommended next selected lane is `PROJECT2 project creation proof artifact/status` if the project creation surface should become dumpable/readable without adding UI. Do not add app UI, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after PROJECT2 project creation proof artifact closure on `codex/project2-project-creation-proof-artifact`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, and PROJECT2 are local-only commits; do not push unless explicitly requested. Recommended next selected lane is `PROJECT3 project creation status integration` only if the service/proof should become visible to app status without adding UI mutation; otherwise choose a fresh lane by surface. Do not add app UI, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

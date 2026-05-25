@@ -20,6 +20,7 @@
 #include "PVB1AnalyzerEnvironmentProofRunner.h"
 #include "PVDetectorProofRunner.h"
 #include "ProofReports.h"
+#include "ProjectCreationProofRunner.h"
 #include "RuntimeRegistry.h"
 #include "ShaderPreviewInputBridge.h"
 
@@ -299,6 +300,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::appWorkbenchSession:
             dumpAPPWorkbenchSessionProof();
+            break;
+        case StartupProofTaskId::projectCreation:
+            dumpProjectCreationProof();
             break;
     }
 }
@@ -605,6 +609,17 @@ void MainComponent::dumpAPPWorkbenchSessionProof()
 
     const auto result = runAppWorkbenchSessionProof (proofRequest);
     finishProofDump (juce::String (appWorkbenchSessionProofDisplayName()), result.status, result.error, directory);
+}
+
+void MainComponent::dumpProjectCreationProof()
+{
+    const auto directory = proofDumpDirectory (projectCreationProofDirectoryName());
+
+    ProjectCreationProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+
+    const auto result = runProjectCreationProof (request);
+    finishProofDump (juce::String (projectCreationProofDisplayName()), result.status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)

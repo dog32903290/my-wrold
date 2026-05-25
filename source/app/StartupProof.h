@@ -26,7 +26,8 @@ enum class StartupProofTaskId
     pvB1AnalyzerEnvironment,
     app1WorkbenchSession,
     app2WorkbenchOpenStatus,
-    appWorkbenchSession
+    appWorkbenchSession,
+    projectCreation
 };
 
 struct StartupProofTask
@@ -58,6 +59,7 @@ struct StartupProofOptions
     bool dumpAPP1WorkbenchSessionProof = false;
     bool dumpAPP2WorkbenchOpenStatusProof = false;
     bool dumpAPPWorkbenchSessionProof = false;
+    bool dumpProjectCreationProof = false;
     bool quitAfterStartupDump = false;
 };
 

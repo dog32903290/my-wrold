@@ -1095,6 +1095,39 @@ set_tests_properties(app_workbench_session_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_project_creation_proof_runner
+    source/app/ActiveWorkService.cpp
+    source/app/AppPaths.cpp
+    source/app/ProjectCreationProofRunner.cpp
+)
+
+target_include_directories(my_world_project_creation_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_project_creation_proof_runner
+    PUBLIC
+        my_world_proof_run_support
+        my_world_work_project_resolver
+        my_world_storage_command
+        juce::juce_core
+)
+
+add_executable(my_world_project_creation_proof_runner_tests
+    tests/ProjectCreationProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_project_creation_proof_runner_tests
+    PRIVATE
+        my_world_project_creation_proof_runner
+)
+
+add_test(NAME project_creation_proof_runner
+         COMMAND my_world_project_creation_proof_runner_tests)
+
 add_library(my_world_headless_render_runtime
     source/render/HeadlessRenderRuntime.cpp
 )
@@ -2000,6 +2033,7 @@ if(MY_WORLD_HAVE_JUCE)
             my_world_app2_workbench_open_status_proof_runner
             my_world_workbench_app_controller
             my_world_app_workbench_session_proof_runner
+            my_world_project_creation_proof_runner
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
