@@ -99,6 +99,22 @@ LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (
     return indicator;
 }
 
+LiveIOStatusIndicatorState withLiveIOOutputOperator (
+    LiveIOStatusIndicatorState state,
+    const std::string& outputOperator)
+{
+    state.outputOperator = outputOperator;
+
+    if (! state.outputOperator.empty())
+    {
+        std::ostringstream text;
+        text << state.text << " op " << state.outputOperator;
+        state.text = text.str();
+    }
+
+    return state;
+}
+
 LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
     LiveIOStatusIndicatorState state,
     const LiveIORealtimeIndicatorTelemetry& telemetry)
@@ -133,6 +149,7 @@ std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& sta
     out << "  \"mode\": " << jsonQuoted (state.mode) << ",\n";
     out << "  \"status\": " << jsonQuoted (state.status) << ",\n";
     out << "  \"tone\": " << jsonQuoted (state.tone) << ",\n";
+    out << "  \"outputOperator\": " << jsonQuoted (state.outputOperator) << ",\n";
     out << "  \"midiCount\": " << state.midiCount << ",\n";
     out << "  \"oscCount\": " << state.oscCount << ",\n";
     out << "  \"sampleCounter\": " << state.sampleCounter << ",\n";

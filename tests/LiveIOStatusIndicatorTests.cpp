@@ -62,6 +62,10 @@ int main()
     expectEqual (dryRun.oscCount, 2, "dry-run osc count");
     expect (dryRun.sampleCounter == 256, "dry-run sample counter");
 
+    const auto operatorState = myworld::withLiveIOOutputOperator (dryRun, "osc.float");
+    expectEqual (operatorState.text, "live io dry pumped m3 o2 op osc.float", "operator text");
+    expectEqual (operatorState.outputOperator, "osc.float", "operator field");
+
     myworld::LiveIOControlTimerState controlledState;
     controlledState.lastStatus = "controlled_sent";
     controlledState.lastMessage = "live_io_timer_controlled_sent";
@@ -123,6 +127,9 @@ int main()
     expectContains (json, "\"realtimeDroppedSnapshots\": 1", "indicator json realtime dropped");
     expectContains (json, "\"realtimeSkippedSnapshots\": 1", "indicator json realtime skipped");
     expectContains (json, "\"realtimeOverwrittenSnapshots\": 0", "indicator json realtime overwritten");
+
+    const auto operatorJson = myworld::makeLiveIOStatusIndicatorJson (operatorState);
+    expectContains (operatorJson, "\"outputOperator\": \"osc.float\"", "indicator json operator");
 
     std::cout << "live io status indicator ok\n";
     return 0;

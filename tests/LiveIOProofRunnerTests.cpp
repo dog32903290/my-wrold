@@ -195,6 +195,8 @@ int main()
                     "app timer midi status");
     expectContains (appTimerMidiReport, "\"sendMode\": \"controlled_send\"",
                     "app timer midi send mode");
+    expectContains (appTimerMidiReport, "\"outputOperator\": \"midi.cc\"",
+                    "app timer midi output operator");
     expectContains (appTimerMidiReport, "\"midiControlledSendCount\": 1",
                     "app timer midi controlled count");
     expectContains (appTimerMidiReport, "\"oscControlledSendCount\": 0",
@@ -214,6 +216,8 @@ int main()
                     "app timer osc timer status");
     expectContains (appTimerOscReport, "\"sendMode\": \"controlled_send\"",
                     "app timer osc send mode");
+    expectContains (appTimerOscReport, "\"outputOperator\": \"osc.float\"",
+                    "app timer osc output operator");
     expectContains (appTimerOscReport, "\"midiControlledSendCount\": 0",
                     "app timer osc midi count");
     expectContains (appTimerOscReport, "\"oscControlledSendCount\": 1",

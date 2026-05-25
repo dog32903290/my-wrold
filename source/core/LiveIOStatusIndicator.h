@@ -14,6 +14,7 @@ struct LiveIOStatusIndicatorState
     std::string mode;
     std::string status;
     std::string tone;
+    std::string outputOperator;
     int midiCount = 0;
     int oscCount = 0;
     std::uint64_t sampleCounter = 0;
@@ -36,6 +37,10 @@ struct LiveIORealtimeIndicatorTelemetry
 LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (
     const LiveIOControlTimerState& state,
     LiveIOControlTimerSendMode sendMode);
+
+LiveIOStatusIndicatorState withLiveIOOutputOperator (
+    LiveIOStatusIndicatorState state,
+    const std::string& outputOperator);
 
 LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
     LiveIOStatusIndicatorState state,

@@ -180,7 +180,9 @@ LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& req
         config,
         request.timestampMs,
         request.snapshot);
-    result.indicator = makeLiveIOStatusIndicatorState (timerState, liveIOSendMode);
+    result.indicator = withLiveIOOutputOperator (
+        makeLiveIOStatusIndicatorState (timerState, liveIOSendMode),
+        liveIOOutputOperatorPreferenceToString (preferences.liveIO.outputOperator));
     return result;
 }
 

@@ -663,7 +663,8 @@ std::string makeOscLoopbackProofJson (const OscLoopbackProof& proof)
     return out.str();
 }
 
-std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state)
+std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state,
+                                       const std::string& outputOperator)
 {
     std::ostringstream out;
     out << std::fixed << std::setprecision (6);
@@ -673,6 +674,7 @@ std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state)
     out << "  \"status\": " << jsonQuoted (state.lastStatus) << ",\n";
     out << "  \"message\": " << jsonQuoted (state.lastMessage) << ",\n";
     out << "  \"sendMode\": " << jsonQuoted (state.lastSendMode) << ",\n";
+    out << "  \"outputOperator\": " << jsonQuoted (outputOperator) << ",\n";
     out << "  \"tickCount\": " << state.tickCount << ",\n";
     out << "  \"pumpCount\": " << state.pumpCount << ",\n";
     out << "  \"midiDryRunCount\": " << state.midiDryRunCount << ",\n";
@@ -689,7 +691,8 @@ std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state)
     return out.str();
 }
 
-std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& proof)
+std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& proof,
+                                              const std::string& outputOperator)
 {
     std::ostringstream out;
     out << std::fixed << std::setprecision (6);
@@ -700,6 +703,7 @@ std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& pr
     out << "  \"timerStatus\": " << jsonQuoted (proof.timerState.lastStatus) << ",\n";
     out << "  \"message\": " << jsonQuoted (proof.timerState.lastMessage) << ",\n";
     out << "  \"sendMode\": " << jsonQuoted (proof.timerState.lastSendMode) << ",\n";
+    out << "  \"outputOperator\": " << jsonQuoted (outputOperator) << ",\n";
     out << "  \"tickCount\": " << proof.timerState.tickCount << ",\n";
     out << "  \"pumpCount\": " << proof.timerState.pumpCount << ",\n";
     out << "  \"midiControlledSendCount\": " << proof.timerState.midiControlledSendCount << ",\n";
@@ -830,11 +834,11 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOAppTimerMidiReportFileName,
-            makeAppTimerMidiProofJson (appTimerMidiState)
+            makeAppTimerMidiProofJson (appTimerMidiState, "midi.cc")
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOAppTimerOscLoopbackReportFileName,
-            makeAppTimerOscLoopbackProofJson (appTimerOscLoopbackProof)
+            makeAppTimerOscLoopbackProofJson (appTimerOscLoopbackProof, "osc.float")
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,

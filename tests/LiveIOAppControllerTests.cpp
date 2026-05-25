@@ -91,7 +91,8 @@ int main()
 
     const auto dry = controller.tick (dryRequest);
     expect (dry.tick.ok, dry.tick.message);
-    expectEqual (dry.indicator.text, "live io dry pumped m1 o0", "dry-run indicator text");
+    expectEqual (dry.indicator.text, "live io dry pumped m1 o0 op midi.cc", "dry-run indicator text");
+    expectEqual (dry.indicator.outputOperator, "midi.cc", "dry-run operator");
     expectEqual (dry.indicator.tone, "dry_run", "dry-run indicator tone");
 
     preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::midiNoteOn;
@@ -101,7 +102,10 @@ int main()
     noteRequest.timestampMs = 60;
     const auto noteDry = controller.tick (noteRequest);
     expect (noteDry.tick.ok, noteDry.tick.message);
-    expectEqual (noteDry.indicator.text, "live io dry pumped m2 o0", "MIDI note operator still uses MIDI lane only");
+    expectEqual (noteDry.indicator.text,
+                 "live io dry pumped m2 o0 op midi.note_on",
+                 "MIDI note operator still uses MIDI lane only");
+    expectEqual (noteDry.indicator.outputOperator, "midi.note_on", "MIDI note operator field");
 
     preferences.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
     preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::midiCc;
@@ -128,7 +132,9 @@ int main()
     const auto controlled = controller.tick (sendRequest);
     expect (controlled.tick.ok, controlled.tick.message);
     expectEqual (sentCount, 1, "controlled send count");
-    expectEqual (controlled.indicator.text, "live io send controlled_sent m1 o0", "controlled indicator text");
+    expectEqual (controlled.indicator.text,
+                 "live io send controlled_sent m1 o0 op midi.cc",
+                 "controlled indicator text");
     expectEqual (controlled.indicator.tone, "sending", "controlled indicator tone");
 
     preferences.liveIO.oscHost = "192.168.1.24";
@@ -160,7 +166,10 @@ int main()
     const auto externalOsc = controller.tick (oscRequest);
     expect (externalOsc.tick.ok, externalOsc.tick.message);
     expectEqual (externalOscSendCount, 1, "controlled external osc send count");
-    expectEqual (externalOsc.indicator.text, "live io send controlled_sent m1 o1", "OSC operator uses OSC lane");
+    expectEqual (externalOsc.indicator.text,
+                 "live io send controlled_sent m1 o1 op osc.float",
+                 "OSC operator uses OSC lane");
+    expectEqual (externalOsc.indicator.outputOperator, "osc.float", "OSC operator field");
 
     preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::shaderUniform;
     controller.applyLiveIOPreferences (preferences.liveIO);
@@ -170,7 +179,10 @@ int main()
     shaderRequest.timestampMs = 240;
     const auto shader = controller.tick (shaderRequest);
     expect (shader.tick.ok, shader.tick.message);
-    expectEqual (shader.indicator.text, "live io send controlled_sent m1 o1", "shader operator does not send MIDI or OSC");
+    expectEqual (shader.indicator.text,
+                 "live io send controlled_sent m1 o1 op shader.uniform",
+                 "shader operator does not send MIDI or OSC");
+    expectEqual (shader.indicator.outputOperator, "shader.uniform", "shader operator field");
 
     preferences.liveIO.oscHost = "127.0.0.1";
     preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::oscFloat;
