@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+318b100 Bridge live IO uniforms into shader preview
 2bd8e8a Add shader preview smoke read
 1bd20d5 Add shader preview input bridge contract
 6f3f995 Add shader uniform proof artifact
@@ -352,7 +353,8 @@ Latest accepted targeted result:
 | P-LIVE29 shader preview smoke-read | closed | `docs/superpowers/specs/2026-05-25-p-live29-shader-preview-smoke-read.md`; `ShaderPreviewInputBridge` can convert a `u_loudness` snapshot into `RenderFrameInput`, and a fake render backend reads the value in a smoke test | OpenGL backend wiring, live binding, and visual reaction remain parked |
 | P-LIVE30 A1 to V1 handoff closure | closed | `docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md`; closes the P-LIVE lane at app/control-rate handoff: loudness now has live IO evidence, standalone uniform artifact, preview input bridge, and render-side smoke-read | Next work should leave P-LIVE naming and open an `AV1 audio-to-visual bridge` lane for real preview reaction |
 | AV1 audio-to-visual bridge | closed | `docs/superpowers/specs/2026-05-25-av1-audio-to-visual-bridge.md`; `MainComponent::tickLiveIOControl()` feeds `shader.uniform` evidence into `OpenGLShaderPreview::setInputSnapshot()`, and preview converts the snapshot through `ShaderPreviewInputBridge` before updating its render loudness input | Pixel-diff visual proof, graph node mapping, OpenGL uniform list expansion, and Metal remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE30 closure |
+| AV2 visual reaction proof | closed | `docs/superpowers/specs/2026-05-25-av2-visual-reaction-proof.md`; V1 proof artifacts can now write `visual_reaction.json` comparing quiet/loud frames with changed pixel count and mean absolute pixel delta | Real OpenGL offscreen capture pair, shader preview live binding, graph node mapping, and Metal remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after AV2 closure |
 
 ## Active Lane Protocol
 
@@ -361,6 +363,30 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after AV2 visual reaction proof closure as of 2026-05-25.
+
+AV2 visual reaction proof closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-av2-visual-reaction-proof.md
+- source/render/V1ShaderProofArtifacts.h
+- source/render/V1ShaderProofArtifacts.cpp
+- tests/V1ShaderProofArtifactsTests.cpp
+
+Closed line:
+quiet/loud proof frames
+-> V1ShaderProofArtifacts
+-> visual_reaction.json
+-> changedPixels + meanAbsDelta
+
+Latest accepted result:
+- RED first on missing V1 visual reaction request fields.
+- focused `v1_shader_proof_artifacts` test passed.
+- app target `my-world` builds.
+- `77/77 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after AV1 audio-to-visual bridge closure as of 2026-05-25.
 
 AV1 audio-to-visual bridge closed.
@@ -2317,7 +2343,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after AV1 audio-to-visual bridge closure. The P-LIVE lane is closed. The next audio-to-visual work should be an explicit AV lane, likely AV2 visual reaction proof. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after AV2 visual reaction proof closure. The P-LIVE lane is closed. The next audio-to-visual work should be an explicit AV lane, likely AV3 real OpenGL capture pair. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

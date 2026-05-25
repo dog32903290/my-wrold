@@ -1,6 +1,7 @@
 #include "V1ShaderProofArtifacts.h"
 
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 #include <system_error>
 
@@ -105,6 +106,60 @@ bool writePngFile (const std::filesystem::path& path, const juce::Image& image)
     return pngFormat.writeImageToStream (image, *output);
 }
 
+bool hasVisualReactionFrames (const V1ShaderProofArtifactRequest& request)
+{
+    return request.quietFrameImage.isValid()
+        && request.loudFrameImage.isValid()
+        && request.quietFrameImage.getWidth() == request.loudFrameImage.getWidth()
+        && request.quietFrameImage.getHeight() == request.loudFrameImage.getHeight();
+}
+
+std::string makeVisualReactionJson (const V1ShaderProofArtifactRequest& request)
+{
+    const auto width = request.quietFrameImage.getWidth();
+    const auto height = request.quietFrameImage.getHeight();
+    const auto pixelCount = width * height;
+    int changedPixels = 0;
+    double deltaSum = 0.0;
+
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            const auto quiet = request.quietFrameImage.getPixelAt (x, y);
+            const auto loud = request.loudFrameImage.getPixelAt (x, y);
+            const auto delta = (std::abs (static_cast<int> (quiet.getRed()) - static_cast<int> (loud.getRed()))
+                              + std::abs (static_cast<int> (quiet.getGreen()) - static_cast<int> (loud.getGreen()))
+                              + std::abs (static_cast<int> (quiet.getBlue()) - static_cast<int> (loud.getBlue())))
+                              / (3.0 * 255.0);
+            if (delta > 0.0)
+                ++changedPixels;
+            deltaSum += delta;
+        }
+    }
+
+    const auto loudnessDelta = request.loudLoudness - request.quietLoudness;
+    const auto meanAbsDelta = pixelCount > 0 ? deltaSum / static_cast<double> (pixelCount) : 0.0;
+    const auto ok = pixelCount > 0 && loudnessDelta != 0.0f && changedPixels > 0;
+
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"v1VisualReactionProof\",\n";
+    out << "  \"ok\": " << (ok ? "true" : "false") << ",\n";
+    out << "  \"status\": " << (ok ? "\"changed\"" : "\"unchanged\"") << ",\n";
+    out << "  \"quietLoudness\": " << request.quietLoudness << ",\n";
+    out << "  \"loudLoudness\": " << request.loudLoudness << ",\n";
+    out << "  \"loudnessDelta\": " << loudnessDelta << ",\n";
+    out << "  \"width\": " << width << ",\n";
+    out << "  \"height\": " << height << ",\n";
+    out << "  \"pixelCount\": " << pixelCount << ",\n";
+    out << "  \"changedPixels\": " << changedPixels << ",\n";
+    out << "  \"meanAbsDelta\": " << meanAbsDelta << "\n";
+    out << "}\n";
+    return out.str();
+}
+
 V1ShaderProofArtifactResult makeInitialResult (const V1ShaderProofArtifactRequest& request)
 {
     V1ShaderProofArtifactResult result;
@@ -125,6 +180,8 @@ V1ShaderProofArtifactResult makeInitialResult (const V1ShaderProofArtifactReques
         request.outputDirectory / "runtime_registry.json",
         request.outputDirectory / "runtime_ui_diagnostics.json"
     };
+    if (hasVisualReactionFrames (request))
+        result.artifactPaths.push_back (request.outputDirectory / "visual_reaction.json");
     return result;
 }
 
@@ -240,6 +297,9 @@ V1ShaderProofArtifactResult writeV1ShaderProofArtifacts (const V1ShaderProofArti
                                                   && writeTextFile (
                                                       request.outputDirectory / "runtime_missing_runtimeop_execution.json",
                                                       makeRuntimeExecutionJson (missingRuntimeOpExecution.snapshot));
+    const auto visualReactionWritten = ! hasVisualReactionFrames (request)
+                                       || writeTextFile (request.outputDirectory / "visual_reaction.json",
+                                                         makeVisualReactionJson (request));
     const auto frameWritten = writePngFile (request.outputDirectory / "frame.png", request.frameImage);
 
     std::vector<std::string> missing;
@@ -256,6 +316,7 @@ V1ShaderProofArtifactResult writeV1ShaderProofArtifacts (const V1ShaderProofArti
     if (! missingRuntimeOpCoverageWritten) missing.push_back ("runtime_missing_runtimeop_coverage.json");
     if (! missingRuntimeOpDryRunWritten) missing.push_back ("runtime_missing_runtimeop_dry_run.json");
     if (! missingRuntimeOpExecutionWritten) missing.push_back ("runtime_missing_runtimeop_execution.json");
+    if (! visualReactionWritten) missing.push_back ("visual_reaction.json");
     if (! frameWritten) missing.push_back ("frame.png");
 
     result.ok = missing.empty();

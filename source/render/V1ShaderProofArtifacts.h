@@ -24,6 +24,10 @@ struct V1ShaderProofArtifactRequest
     unsigned int frameIndex = 0;
     std::string backendName;
     std::string backendStatus;
+    juce::Image quietFrameImage;
+    juce::Image loudFrameImage;
+    float quietLoudness = 0.0f;
+    float loudLoudness = 0.0f;
     CompoundPatchSpec loudnessCompound;
     std::vector<RuntimeOpModuleDiagnostic> runtimeOpDiagnostics;
 };
