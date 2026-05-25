@@ -28,6 +28,7 @@ GraphSession::Snapshot snapshotOf (const GraphSession& session)
              session.view,
              session.outputView,
              session.timeline,
+             session.variations,
              session.selectedNodeIds,
              session.selectedEdgeIds,
              session.currentPatchPath,
@@ -40,6 +41,7 @@ void restoreSnapshot (GraphSession& session, const GraphSession::Snapshot& snaps
     session.view = snapshot.view;
     session.outputView = snapshot.outputView;
     session.timeline = snapshot.timeline;
+    session.variations = snapshot.variations;
     session.selectedNodeIds = snapshot.selectedNodeIds;
     session.selectedEdgeIds = snapshot.selectedEdgeIds;
     session.currentPatchPath = snapshot.currentPatchPath;
@@ -350,6 +352,44 @@ bool eraseParam (GraphNode& node, const std::string& paramId)
         return param.id == paramId;
     }), node.params.end());
     return node.params.size() != originalSize;
+}
+
+const std::string* paramValueForNode (const GraphNode& node, const std::string& paramId)
+{
+    for (const auto& param : node.params)
+        if (param.id == paramId)
+            return &param.value;
+
+    return nullptr;
+}
+
+bool containsString (const std::vector<std::string>& values, const std::string& value)
+{
+    return std::find (values.begin(), values.end(), value) != values.end();
+}
+
+bool variationIdExists (const std::vector<VariationRecord>& records, const std::string& id)
+{
+    return std::any_of (records.begin(), records.end(), [&] (const auto& record) {
+        return record.id == id;
+    });
+}
+
+const VariationRecord* variationById (const std::vector<VariationRecord>& records, const std::string& id)
+{
+    const auto found = std::find_if (records.begin(), records.end(), [&] (const auto& record) {
+        return record.id == id;
+    });
+
+    return found == records.end() ? nullptr : &*found;
+}
+
+void appendSkippedValue (VariationRecord& record,
+                         const std::string& nodeId,
+                         const std::string& paramId,
+                         VariationSkipReason reason)
+{
+    record.skippedValues.push_back ({ nodeId, paramId, reason });
 }
 
 void upsertPortBinding (GraphNode& node,
@@ -1306,6 +1346,146 @@ CommandResult setTimelineLoop (GraphSession& session, double startBars, double e
         return { false, result.message };
 
     return commitCommand (session, "set_timeline_loop", before);
+}
+
+CommandResult createPreset (GraphSession& session,
+                            const std::string& nodeId,
+                            const NodeSpec& spec,
+                            const std::string& presetId,
+                            const std::string& title,
+                            const VariationCaptureOptions& options)
+{
+    if (presetId.empty() || title.empty())
+        return { false, "preset id and title are required" };
+
+    if (variationIdExists (session.variations.presets, presetId))
+        return { false, "preset already exists: " + presetId };
+
+    const auto* node = findEditorNode (session.graph, nodeId);
+    if (node == nullptr)
+        return { false, "missing node: " + nodeId };
+
+    if (node->type != spec.type)
+        return { false, "node spec mismatch for preset: " + nodeId };
+
+    VariationRecord record;
+    record.id = presetId;
+    record.title = title;
+    record.kind = VariationKind::preset;
+    record.enabledNodeIds = { nodeId };
+
+    for (const auto& param : spec.params)
+    {
+        if (containsString (options.excludedParamIds, param.id))
+        {
+            appendSkippedValue (record, nodeId, param.id, VariationSkipReason::excludedFromPresets);
+            continue;
+        }
+
+        if (! isPresetSupportedParamType (param.dataType))
+        {
+            appendSkippedValue (record, nodeId, param.id, VariationSkipReason::unsupportedType);
+            continue;
+        }
+
+        const auto* value = paramValueForNode (*node, param.id);
+        if (value == nullptr)
+        {
+            appendSkippedValue (record,
+                                nodeId,
+                                param.id,
+                                param.defaultValue.empty() ? VariationSkipReason::missingInput
+                                                           : VariationSkipReason::defaultValue);
+            continue;
+        }
+
+        if (*value == param.defaultValue)
+        {
+            appendSkippedValue (record, nodeId, param.id, VariationSkipReason::defaultValue);
+            continue;
+        }
+
+        record.values.push_back ({ nodeId, param.id, *value });
+    }
+
+    const auto before = snapshotOf (session);
+    session.variations.presets.push_back (record);
+    return commitCommand (session, "create_preset", before);
+}
+
+CommandResult applyPreset (GraphSession& session, const std::string& presetId)
+{
+    const auto* preset = variationById (session.variations.presets, presetId);
+    if (preset == nullptr)
+        return { false, "missing preset: " + presetId };
+
+    for (const auto& value : preset->values)
+        if (findEditorNode (session.graph, value.nodeId) == nullptr)
+            return { false, "missing preset target node: " + value.nodeId };
+
+    const auto before = snapshotOf (session);
+    for (const auto& value : preset->values)
+        if (auto* node = findEditorNode (session.graph, value.nodeId))
+            upsertParam (*node, value.paramId, value.value);
+
+    return commitCommand (session, "apply_preset", before);
+}
+
+CommandResult createSnapshot (GraphSession& session,
+                              const std::string& snapshotId,
+                              const std::string& title,
+                              const std::vector<std::string>& enabledNodeIds)
+{
+    if (snapshotId.empty() || title.empty())
+        return { false, "snapshot id and title are required" };
+
+    if (enabledNodeIds.empty())
+        return { false, "snapshot requires at least one enabled node" };
+
+    if (variationIdExists (session.variations.snapshots, snapshotId))
+        return { false, "snapshot already exists: " + snapshotId };
+
+    for (const auto& nodeId : enabledNodeIds)
+        if (findEditorNode (session.graph, nodeId) == nullptr)
+            return { false, "missing snapshot node: " + nodeId };
+
+    VariationRecord record;
+    record.id = snapshotId;
+    record.title = title;
+    record.kind = VariationKind::snapshot;
+    record.enabledNodeIds = enabledNodeIds;
+
+    for (const auto& nodeId : enabledNodeIds)
+    {
+        const auto* node = findEditorNode (session.graph, nodeId);
+        if (node == nullptr)
+            continue;
+
+        for (const auto& param : node->params)
+            record.values.push_back ({ nodeId, param.id, param.value });
+    }
+
+    const auto before = snapshotOf (session);
+    session.variations.snapshots.push_back (record);
+    return commitCommand (session, "create_snapshot", before);
+}
+
+CommandResult applySnapshot (GraphSession& session, const std::string& snapshotId)
+{
+    const auto* snapshot = variationById (session.variations.snapshots, snapshotId);
+    if (snapshot == nullptr)
+        return { false, "missing snapshot: " + snapshotId };
+
+    for (const auto& nodeId : snapshot->enabledNodeIds)
+        if (findEditorNode (session.graph, nodeId) == nullptr)
+            return { false, "missing snapshot target node: " + nodeId };
+
+    const auto before = snapshotOf (session);
+    for (const auto& value : snapshot->values)
+        if (auto* node = findEditorNode (session.graph, value.nodeId))
+            upsertParam (*node, value.paramId, value.value);
+
+    return commitCommand (session, "apply_snapshot", before);
 }
 
 bool undo (GraphSession& session)

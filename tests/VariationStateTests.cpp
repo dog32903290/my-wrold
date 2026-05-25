@@ -1,0 +1,194 @@
+#include "InteractionContract.h"
+#include "GraphEndpoint.h"
+#include "StorageCommand.h"
+#include "StorageContract.h"
+#include "VariationState.h"
+
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <string>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+
+const myworld::GraphNode& requireNode (const myworld::GraphContract& graph, const std::string& nodeId)
+{
+    const auto* node = myworld::findEditorNode (graph, nodeId);
+    expect (node != nullptr, "missing node " + nodeId);
+    return *node;
+}
+
+std::string paramValue (const myworld::GraphNode& node, const std::string& paramId)
+{
+    for (const auto& param : node.params)
+        if (param.id == paramId)
+            return param.value;
+
+    return {};
+}
+
+bool hasSkipReason (const myworld::VariationRecord& record,
+                    const std::string& paramId,
+                    myworld::VariationSkipReason reason)
+{
+    for (const auto& skipped : record.skippedValues)
+        if (skipped.paramId == paramId && skipped.reason == reason)
+            return true;
+
+    return false;
+}
+
+void writeText (const std::filesystem::path& path, const std::string& text)
+{
+    std::filesystem::create_directories (path.parent_path());
+    std::ofstream output (path, std::ios::trunc);
+    expect (static_cast<bool> (output), "open " + path.string());
+    output << text;
+    expect (static_cast<bool> (output), "write " + path.string());
+}
+}
+
+int main()
+{
+    myworld::NodeSpec spec;
+    spec.type = "test.variation";
+    spec.displayName = "Variation Test";
+    spec.params = {
+        { "gain", "Gain", "float", "1.0", "0.0..8.0" },
+        { "mode", "Mode", "enum", "soft", "soft|hard" },
+        { "secret", "Secret", "string", "", "" },
+        { "curve", "Curve", "curve", "", "" },
+        { "empty", "Empty", "float", "", "" },
+        { "threshold", "Threshold", "float", "0.5", "0.0..1.0" }
+    };
+
+    auto session = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    const std::vector<myworld::NodeSpec> specs { spec };
+    expect (myworld::createNode (session, specs, "test.variation", "var1", { 120.0, 160.0 }).ok,
+            "create variation node");
+    expect (myworld::setParam (session, "var1", "gain", "2.5").ok, "set gain");
+    expect (myworld::setParam (session, "var1", "mode", "hard").ok, "set mode");
+    expect (myworld::setParam (session, "var1", "secret", "keep-out").ok, "set secret");
+    expect (myworld::setParam (session, "var1", "curve", "0,1,0").ok, "set curve");
+
+    myworld::VariationCaptureOptions presetOptions;
+    presetOptions.excludedParamIds = { "secret" };
+    expect (myworld::createPreset (session, "var1", spec, "preset.hot", "Hot", presetOptions).ok,
+            "create preset");
+    expect (session.commandLog.back() == "create_preset", "create preset command logged");
+    expect (session.variations.presets.size() == 1, "preset stored separately");
+    expect (session.variations.snapshots.empty(), "snapshot list remains separate");
+
+    const auto& preset = session.variations.presets.front();
+    expect (preset.kind == myworld::VariationKind::preset, "preset kind");
+    expect (preset.values.size() == 2, "preset captures two non-default supported values");
+    expect (hasSkipReason (preset, "secret", myworld::VariationSkipReason::excludedFromPresets),
+            "preset records excluded skip");
+    expect (hasSkipReason (preset, "curve", myworld::VariationSkipReason::unsupportedType),
+            "preset records unsupported skip");
+    expect (hasSkipReason (preset, "empty", myworld::VariationSkipReason::missingInput),
+            "preset records missing input skip");
+    expect (hasSkipReason (preset, "threshold", myworld::VariationSkipReason::defaultValue),
+            "preset records default skip");
+
+    expect (myworld::setParam (session, "var1", "gain", "7.0").ok, "change gain before apply");
+    expect (myworld::setParam (session, "var1", "mode", "soft").ok, "change mode before apply");
+    expect (myworld::applyPreset (session, "preset.hot").ok, "apply preset");
+    expect (session.commandLog.back() == "apply_preset", "apply preset command logged");
+    expect (paramValue (requireNode (session.graph, "var1"), "gain") == "2.5", "preset restores gain");
+    expect (paramValue (requireNode (session.graph, "var1"), "mode") == "hard", "preset restores mode");
+    expect (paramValue (requireNode (session.graph, "var1"), "secret") == "keep-out", "preset does not touch excluded");
+    expect (myworld::undo (session), "undo apply preset");
+    expect (paramValue (requireNode (session.graph, "var1"), "gain") == "7.0", "undo restores gain");
+
+    expect (myworld::setParam (session, "var1", "gain", "3.0").ok, "set snapshot gain");
+    expect (myworld::createSnapshot (session, "snapshot.one", "One", { "var1" }).ok, "create snapshot");
+    expect (session.commandLog.back() == "create_snapshot", "create snapshot command logged");
+    expect (session.variations.snapshots.size() == 1, "snapshot stored separately");
+    expect (session.variations.snapshots.front().kind == myworld::VariationKind::snapshot, "snapshot kind");
+    expect (session.variations.snapshots.front().enabledNodeIds.size() == 1, "snapshot records enabled node");
+
+    expect (myworld::setParam (session, "var1", "gain", "6.0").ok, "change gain before snapshot apply");
+    expect (myworld::applySnapshot (session, "snapshot.one").ok, "apply snapshot");
+    expect (session.commandLog.back() == "apply_snapshot", "apply snapshot command logged");
+    expect (paramValue (requireNode (session.graph, "var1"), "gain") == "3.0", "snapshot restores gain");
+
+    const auto document = myworld::makePatchDocument ("patch.variations",
+                                                      "Variations",
+                                                      session.graph,
+                                                      session.outputView,
+                                                      session.timeline,
+                                                      session.variations);
+    const auto json = myworld::toJson (document);
+    expect (json.find ("\"presets\"") != std::string::npos, "json writes presets");
+    expect (json.find ("\"snapshots\"") != std::string::npos, "json writes snapshots");
+    const auto parsed = myworld::parsePatchDocument (json);
+    expect (parsed.ok, parsed.error);
+    expect (parsed.document.variations.presets.size() == 1, "patch reloads presets");
+    expect (parsed.document.variations.snapshots.size() == 1, "patch reloads snapshots");
+    expect (parsed.document.variations.presets.front().values.size() == 2, "patch reloads preset values");
+    expect (parsed.document.variations.presets.front().skippedValues.size() == 4, "patch reloads skip reasons");
+
+    const auto preserveRoot = std::filesystem::temp_directory_path() / "my-world-variation-preserve-tests";
+    std::filesystem::remove_all (preserveRoot);
+    const auto preserveManifestPath = preserveRoot / "myworld.work.json";
+    const auto preservePatchPath = preserveRoot / "patches" / "main.patch.json";
+
+    writeText (preserveManifestPath,
+               myworld::toJson (myworld::makeMinimalWorkProject ("work.variation-preserve",
+                                                                  "Variation Preserve Work")));
+    const auto preserveInitialSave = myworld::savePatchDocument (preservePatchPath.string(), document);
+    expect (preserveInitialSave.ok, preserveInitialSave.error);
+
+    const auto preserveLoaded = myworld::loadMainPatchDocumentForWork (preserveManifestPath.string());
+    expect (preserveLoaded.ok, preserveLoaded.error);
+    auto shallowSession = myworld::makeGraphSession (preserveLoaded.document.graph);
+    shallowSession.dirty = true;
+    const auto preserveSave = myworld::saveWork (shallowSession, preserveManifestPath.string());
+    expect (preserveSave.ok, preserveSave.error);
+
+    const auto preserveReloaded = myworld::loadMainPatchDocumentForWork (preserveManifestPath.string());
+    expect (preserveReloaded.ok, preserveReloaded.error);
+    expect (preserveReloaded.document.variations.presets.size() == 1,
+            "save_work preserves existing presets when session was not variation-hydrated");
+    expect (preserveReloaded.document.variations.snapshots.size() == 1,
+            "save_work preserves existing snapshots when session was not variation-hydrated");
+
+    std::filesystem::remove_all (preserveRoot);
+
+    const auto root = std::filesystem::temp_directory_path() / "my-world-variation-state-tests";
+    std::filesystem::remove_all (root);
+    const auto manifestPath = root / "myworld.work.json";
+    const auto patchPath = root / "patches" / "main.patch.json";
+
+    writeText (manifestPath, myworld::toJson (myworld::makeMinimalWorkProject ("work.variation", "Variation Work")));
+    const auto initialSave = myworld::savePatchDocument (
+        patchPath.string(),
+        myworld::makePatchDocument ("patch.variation-main",
+                                    "Variation Main",
+                                    myworld::makeDefaultShaderOutputGraph()));
+    expect (initialSave.ok, initialSave.error);
+
+    const auto saveResult = myworld::saveWork (session, manifestPath.string());
+    expect (saveResult.ok, saveResult.error);
+
+    const auto reloadedMain = myworld::loadMainPatchDocumentForWork (manifestPath.string());
+    expect (reloadedMain.ok, reloadedMain.error);
+    expect (reloadedMain.document.variations.presets.size() == 1, "save_work preserves presets");
+    expect (reloadedMain.document.variations.snapshots.size() == 1, "save_work preserves snapshots");
+
+    std::filesystem::remove_all (root);
+
+    std::cout << "variation state ok\n";
+    return 0;
+}

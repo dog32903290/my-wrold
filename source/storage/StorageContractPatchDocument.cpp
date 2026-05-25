@@ -13,7 +13,7 @@ using namespace storage_contract_internal;
 
 PatchDocument makePatchDocument (const std::string& id, const std::string& title, const GraphContract& graph)
 {
-    return makePatchDocument (id, title, graph, {}, {});
+    return makePatchDocument (id, title, graph, {}, {}, {});
 }
 
 PatchDocument makePatchDocument (const std::string& id,
@@ -21,7 +21,7 @@ PatchDocument makePatchDocument (const std::string& id,
                                  const GraphContract& graph,
                                  const OutputViewState& outputView)
 {
-    return makePatchDocument (id, title, graph, outputView, {});
+    return makePatchDocument (id, title, graph, outputView, {}, {});
 }
 
 PatchDocument makePatchDocument (const std::string& id,
@@ -30,7 +30,17 @@ PatchDocument makePatchDocument (const std::string& id,
                                  const OutputViewState& outputView,
                                  const TimelineState& timeline)
 {
-    return { id, title, graph.version, graph, outputView, sanitizedTimelineState (timeline) };
+    return makePatchDocument (id, title, graph, outputView, timeline, {});
+}
+
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView,
+                                 const TimelineState& timeline,
+                                 const VariationLibrary& variations)
+{
+    return { id, title, graph.version, graph, outputView, sanitizedTimelineState (timeline), variations };
 }
 
 namespace
@@ -55,6 +65,70 @@ void appendTimelineJson (std::ostringstream& out, const TimelineState& timeline)
         << ", \"transportState\": " << jsonQuoted (transportStateToString (sanitized.transportState))
         << ", \"playbackRate\": " << sanitized.playbackRate
         << ", \"playbackDirection\": " << sanitized.playbackDirection << " }";
+}
+
+void appendVariationValuesJson (std::ostringstream& out, const std::vector<VariationValue>& values)
+{
+    out << "[";
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        const auto& value = values[index];
+        if (index != 0)
+            out << ", ";
+
+        out << "{ \"nodeId\": " << jsonQuoted (value.nodeId)
+            << ", \"paramId\": " << jsonQuoted (value.paramId)
+            << ", \"value\": " << jsonQuoted (value.value) << " }";
+    }
+    out << "]";
+}
+
+void appendVariationSkippedJson (std::ostringstream& out, const std::vector<VariationSkippedValue>& values)
+{
+    out << "[";
+    for (size_t index = 0; index < values.size(); ++index)
+    {
+        const auto& value = values[index];
+        if (index != 0)
+            out << ", ";
+
+        out << "{ \"nodeId\": " << jsonQuoted (value.nodeId)
+            << ", \"paramId\": " << jsonQuoted (value.paramId)
+            << ", \"reason\": " << jsonQuoted (variationSkipReasonToString (value.reason)) << " }";
+    }
+    out << "]";
+}
+
+void appendVariationRecordsJson (std::ostringstream& out, const std::vector<VariationRecord>& records)
+{
+    out << "[";
+    for (size_t index = 0; index < records.size(); ++index)
+    {
+        const auto& record = records[index];
+        if (index != 0)
+            out << ", ";
+
+        out << "{ \"id\": " << jsonQuoted (record.id)
+            << ", \"title\": " << jsonQuoted (record.title)
+            << ", \"kind\": " << jsonQuoted (variationKindToString (record.kind))
+            << ", \"enabledNodeIds\": ";
+        appendJsonStringArray (out, record.enabledNodeIds);
+        out << ", \"values\": ";
+        appendVariationValuesJson (out, record.values);
+        out << ", \"skippedValues\": ";
+        appendVariationSkippedJson (out, record.skippedValues);
+        out << " }";
+    }
+    out << "]";
+}
+
+void appendVariationLibraryJson (std::ostringstream& out, const VariationLibrary& variations)
+{
+    out << "{ \"presets\": ";
+    appendVariationRecordsJson (out, variations.presets);
+    out << ", \"snapshots\": ";
+    appendVariationRecordsJson (out, variations.snapshots);
+    out << " }";
 }
 
 OutputViewState parseOutputView (const JsonValue& root)
@@ -93,6 +167,89 @@ TimelineState parseTimeline (const JsonValue& root)
     timeline.playbackDirection = intMember (*jsonTimeline, "playbackDirection", timeline.playbackDirection);
 
     return sanitizedTimelineState (timeline);
+}
+
+std::vector<VariationValue> parseVariationValues (const JsonValue& record)
+{
+    std::vector<VariationValue> values;
+    const auto* jsonValues = member (record, "values");
+    if (jsonValues == nullptr || jsonValues->kind != JsonValue::Kind::array)
+        return values;
+
+    for (const auto& jsonValue : jsonValues->arrayValue)
+    {
+        if (jsonValue.kind != JsonValue::Kind::object)
+            continue;
+
+        values.push_back ({ stringMember (jsonValue, "nodeId"),
+                            stringMember (jsonValue, "paramId"),
+                            stringMember (jsonValue, "value") });
+    }
+
+    return values;
+}
+
+std::vector<VariationSkippedValue> parseVariationSkippedValues (const JsonValue& record)
+{
+    std::vector<VariationSkippedValue> values;
+    const auto* jsonValues = member (record, "skippedValues");
+    if (jsonValues == nullptr || jsonValues->kind != JsonValue::Kind::array)
+        return values;
+
+    for (const auto& jsonValue : jsonValues->arrayValue)
+    {
+        if (jsonValue.kind != JsonValue::Kind::object)
+            continue;
+
+        values.push_back ({ stringMember (jsonValue, "nodeId"),
+                            stringMember (jsonValue, "paramId"),
+                            variationSkipReasonFromString (stringMember (jsonValue, "reason")) });
+    }
+
+    return values;
+}
+
+std::vector<VariationRecord> parseVariationRecords (const JsonValue& variations,
+                                                    const std::string& memberName,
+                                                    VariationKind fallbackKind)
+{
+    std::vector<VariationRecord> records;
+    const auto* jsonRecords = member (variations, memberName);
+    if (jsonRecords == nullptr || jsonRecords->kind != JsonValue::Kind::array)
+        return records;
+
+    for (const auto& jsonRecord : jsonRecords->arrayValue)
+    {
+        if (jsonRecord.kind != JsonValue::Kind::object)
+            continue;
+
+        VariationRecord record;
+        record.id = stringMember (jsonRecord, "id");
+        record.title = stringMember (jsonRecord, "title");
+        record.kind = variationKindFromString (stringMember (jsonRecord, "kind"));
+        if (record.kind != fallbackKind)
+            record.kind = fallbackKind;
+        record.enabledNodeIds = stringArrayMember (jsonRecord, "enabledNodeIds");
+        record.values = parseVariationValues (jsonRecord);
+        record.skippedValues = parseVariationSkippedValues (jsonRecord);
+
+        if (! record.id.empty())
+            records.push_back (record);
+    }
+
+    return records;
+}
+
+VariationLibrary parseVariationLibrary (const JsonValue& root)
+{
+    VariationLibrary variations;
+    const auto* jsonVariations = member (root, "variations");
+    if (jsonVariations == nullptr || jsonVariations->kind != JsonValue::Kind::object)
+        return variations;
+
+    variations.presets = parseVariationRecords (*jsonVariations, "presets", VariationKind::preset);
+    variations.snapshots = parseVariationRecords (*jsonVariations, "snapshots", VariationKind::snapshot);
+    return variations;
 }
 }
 }
@@ -134,6 +291,9 @@ std::string toJson (const PatchDocument& document)
     out << ",\n";
     out << "  \"timeline\": ";
     appendTimelineJson (out, document.timeline);
+    out << ",\n";
+    out << "  \"variations\": ";
+    appendVariationLibraryJson (out, document.variations);
     out << "\n";
     out << "}\n";
     return out.str();
@@ -160,6 +320,7 @@ PatchDocumentLoadResult parsePatchDocument (const std::string& text)
     document.graph.version = document.version;
     document.outputView = parseOutputView (root);
     document.timeline = parseTimeline (root);
+    document.variations = parseVariationLibrary (root);
 
     if (document.id.empty() || document.title.empty())
         return { false, {}, "patch document is missing required identity fields" };

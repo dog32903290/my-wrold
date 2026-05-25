@@ -3,6 +3,7 @@
 #include "GraphContract.h"
 #include "OutputViewState.h"
 #include "TimelineState.h"
+#include "VariationState.h"
 
 #include <string>
 #include <vector>
@@ -36,6 +37,7 @@ struct PatchDocument
     GraphContract graph;
     OutputViewState outputView;
     TimelineState timeline;
+    VariationLibrary variations;
 };
 
 struct ModulePackageManifest
@@ -107,6 +109,12 @@ PatchDocument makePatchDocument (const std::string& id,
                                  const GraphContract& graph,
                                  const OutputViewState& outputView,
                                  const TimelineState& timeline);
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView,
+                                 const TimelineState& timeline,
+                                 const VariationLibrary& variations);
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath);
 ModuleLibraryManifest makeModuleLibrary (const std::string& id,
                                          const std::string& title,

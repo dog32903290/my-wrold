@@ -80,6 +80,7 @@ add_library(my_world_core
     source/core/GraphContract.cpp
     source/core/OutputViewState.cpp
     source/core/TimelineState.cpp
+    source/core/VariationState.cpp
 )
 
 target_include_directories(my_world_core
@@ -386,6 +387,17 @@ target_link_libraries(my_world_transport_control_tests
 )
 
 add_test(NAME transport_controls COMMAND my_world_transport_control_tests)
+
+add_executable(my_world_variation_state_tests
+    tests/VariationStateTests.cpp
+)
+
+target_link_libraries(my_world_variation_state_tests
+    PRIVATE
+        my_world_storage_command
+)
+
+add_test(NAME variation_state COMMAND my_world_variation_state_tests)
 
 add_executable(my_world_parameter_row_state_tests
     tests/ParameterRowStateTests.cpp

@@ -129,9 +129,9 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | PARAM-006 | Lists, curves, gradients, ADSR | Parameter parity | specialized input UIs | parked | L3 visible | `list_curve_gradient_adsr_roundtrip` | curve/gradient value types |
 | PARAM-007 | Parameter metadata: groups, relevancy, descriptions, exclude from presets | Parameter parity | input metadata | planned | L3 visible | `nodespec_parameter_metadata_visibility` | NodeSpec metadata extension |
 | PARAM-008 | Input operations menu | Parameter parity | input context menu | partial | L2 command | `reset_param_set_default_extract_value_node` | command verbs for extract/reset |
-| VAR-001 | Presets and snapshots are separate concepts | Variation parity | `VariationsWindow` | shell only | L3 visible | `presets_vs_snapshots_context_switch` | variation state model |
-| VAR-002 | Preset capture and apply | Variation parity | `SymbolVariationPool` | planned | L2 command | `create_apply_preset_capture_report` | capture skip reasons |
-| VAR-003 | Snapshot capture and apply | Variation parity | snapshot-enabled children | planned | L2 command | `create_apply_snapshot_enabled_children` | child enable flags |
+| VAR-001 | Presets and snapshots are separate concepts | Variation parity | `VariationsWindow` | proven foundation | L3 visible | `presets_vs_snapshots_context_switch` | variation canvas UI remains VAR-004 |
+| VAR-002 | Preset capture and apply | Variation parity | `SymbolVariationPool` | proven foundation | L2 command | `create_apply_preset_capture_report` | preset browser/blend remains parked |
+| VAR-003 | Snapshot capture and apply | Variation parity | snapshot-enabled children | proven foundation | L2 command | `create_apply_snapshot_enabled_children` | child enable UI remains parked |
 | VAR-004 | Variation canvas CRUD | Variation parity | `VariationBaseCanvas` | planned | L2 command | `variation_thumbnail_crud_undo` | commandGraph verbs |
 | VAR-005 | Hover preview and Alt blend | Variation parity | `ValueUtils` blend rules | parked | L3 visible | `deterministic_variation_blend_preview_commit_cancel` | deterministic blend rules |
 | VAR-006 | Presets in symbol browser | Variation parity | browser preset creation | parked | L3 visible | `drag_pin_choose_node_preset_create_apply_connect` | browser plus variation bridge |
@@ -626,6 +626,70 @@ Scope boundary:
 ```text
 P-TIME2 proves command-backed transport controls, deterministic playhead tick math, loop wrapping, visible bottom transport consumption, PatchDocument roundtrip, and saveWork roundtrip.
 It does not implement audio IO indicators, live IO bus routing, keyframes, curves, time clips, time warp, render/export, soundtrack sync, BPM detection/tapping, or realtime render scheduling.
+```
+
+### P-VAR1 Presets/Snapshots Foundation
+
+Claim:
+
+```text
+Presets and snapshots are separate variation concepts with command-backed create/apply behavior, capture skip reasons, PatchDocument persistence, and visible left-rail consumption.
+```
+
+Evidence target:
+
+```text
+source/core/VariationState.h/.cpp
+source/core/InteractionContract.h/.cpp
+source/storage/StorageContract.h
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+tests/VariationStateTests.cpp
+```
+
+- [x] Write RED tests for preset/snapshot separation, preset capture skip reasons, preset apply, snapshot capture/apply, undo, PatchDocument roundtrip, and saveWork roundtrip.
+- [x] Add `VariationLibrary` with distinct preset and snapshot records.
+- [x] Add capture skip reasons: `default`, `excludedFromPresets`, `unsupportedType`, `missingInput`.
+- [x] Add commandGraph verbs for `create_preset`, `apply_preset`, `create_snapshot`, and `apply_snapshot`.
+- [x] Store variations in `PatchDocument`.
+- [x] Preserve variations through `save_work`.
+- [x] Wire left-rail Presets/Snapshots tabs to read the real variation state.
+- [x] Run `cmake --build build --target my_world_variation_state_tests`.
+- [x] Run `./build/my_world_variation_state_tests`.
+- [x] Run focused parameter/storage tests.
+- [x] Run `cmake --build build --target my_world_imgui`.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-VAR1 closed as of 2026-05-25 09:57 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_variation_state_tests
+# RED first failed on missing source/core/VariationState.h.
+cmake --build build --target my_world_variation_state_tests
+./build/my_world_variation_state_tests
+cmake --build build --target my_world_variation_state_tests my_world_parameter_control_tests my_world_parameter_row_state_tests my_world_save_work_command_tests my_world_patch_document_tests my_world_imgui
+ctest --test-dir build --output-on-failure -R "variation_state|parameter_controls|parameter_row_state|save_work_command|patch_document"
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+variation state ok
+5/5 focused tests passed.
+61/61 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-VAR1 proves preset/snapshot separation, preset capture/apply for supported non-default params, snapshot capture/apply for enabled nodes, commandGraph logging, undo for apply, capture skip reasons, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption.
+It does not implement parameter metadata UI, preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
 ```
 
 ## Downstream Plan Order

@@ -537,11 +537,14 @@ SaveWorkResult saveWork (GraphSession& session, const std::string& workManifestP
     if (! activePatch.ok)
         return finishSaveWork (session, false, "validation-failed", "not-started", workManifestPath, patchPath, saveLogPath, activePatch.error);
 
+    const auto sessionHasVariationState = ! session.variations.presets.empty()
+                                       || ! session.variations.snapshots.empty();
     const auto document = makePatchDocument (activePatch.document.id,
                                              activePatch.document.title,
                                              session.graph,
                                              session.outputView,
-                                             session.timeline);
+                                             session.timeline,
+                                             sessionHasVariationState ? session.variations : activePatch.document.variations);
     const auto saveResult = savePatchDocument (patchPath, document);
     if (! saveResult.ok)
     {

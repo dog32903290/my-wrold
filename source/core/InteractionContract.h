@@ -4,6 +4,7 @@
 #include "NodeSpec.h"
 #include "OutputViewState.h"
 #include "TimelineState.h"
+#include "VariationState.h"
 
 #include <string>
 #include <vector>
@@ -86,6 +87,7 @@ struct GraphSession
     CanvasViewState view;
     OutputViewState outputView;
     TimelineState timeline;
+    VariationLibrary variations;
     std::vector<std::string> selectedNodeIds;
     std::vector<std::string> selectedEdgeIds;
     std::vector<std::string> currentPatchPath;
@@ -99,6 +101,7 @@ struct GraphSession
         CanvasViewState view;
         OutputViewState outputView;
         TimelineState timeline;
+        VariationLibrary variations;
         std::vector<std::string> selectedNodeIds;
         std::vector<std::string> selectedEdgeIds;
         std::vector<std::string> currentPatchPath;
@@ -252,6 +255,18 @@ CommandResult setTimelineTempo (GraphSession& session, double bpm);
 CommandResult setTimelineFramesPerSecond (GraphSession& session, double framesPerSecond);
 CommandResult setTimelinePositionBars (GraphSession& session, double positionBars);
 CommandResult setTimelineLoop (GraphSession& session, double startBars, double endBars, bool looping);
+CommandResult createPreset (GraphSession& session,
+                            const std::string& nodeId,
+                            const NodeSpec& spec,
+                            const std::string& presetId,
+                            const std::string& title,
+                            const VariationCaptureOptions& options = {});
+CommandResult applyPreset (GraphSession& session, const std::string& presetId);
+CommandResult createSnapshot (GraphSession& session,
+                              const std::string& snapshotId,
+                              const std::string& title,
+                              const std::vector<std::string>& enabledNodeIds);
+CommandResult applySnapshot (GraphSession& session, const std::string& snapshotId);
 bool undo (GraphSession& session);
 bool redo (GraphSession& session);
 GraphInvariantReport validateGraphInvariants (const GraphContract& graph, const std::vector<NodeSpec>& specs);

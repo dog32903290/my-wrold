@@ -299,9 +299,9 @@ One user action must become one undo unit even when the native implementation lo
 | Lists, curves, gradients, ADSR | specialized input UIs | parked | parked | `list_curve_gradient_adsr_roundtrip` |
 | Parameter metadata | group title, padding, relevancy, description, exclude-from-presets | mirror | gap | `nodespec_parameter_metadata_visibility` |
 | Input operations menu | set default, reset default, extract value node, connect/search, rename, settings | mirror core ops | partial | `reset_param_set_default_extract_value_node` |
-| Presets vs snapshots | `VariationsWindow` mode split | mirror as separate concepts | shell only | `presets_vs_snapshots_context_switch` |
-| Preset capture | selected instance non-default blendable inputs | mirror semantics | gap | `create_apply_preset_capture_report` |
-| Snapshot capture | snapshot-enabled children only | mirror | gap | `create_apply_snapshot_enabled_children` |
+| Presets vs snapshots | `VariationsWindow` mode split | mirror as separate concepts | proven foundation | `presets_vs_snapshots_context_switch` |
+| Preset capture | selected instance non-default blendable inputs | mirror semantics | proven foundation | `create_apply_preset_capture_report` |
+| Snapshot capture | snapshot-enabled children only | mirror | proven foundation | `create_apply_snapshot_enabled_children` |
 | Variation canvas ops | create, rename, move, delete, apply, hover preview, Alt blend | mirror first create/apply/rename/delete; park preview/blend | gap | `variation_thumbnail_crud_undo` |
 | Blending | `ValueUtils` type-specific blend rules | parked | parked | `deterministic_variation_blend_preview_commit_cancel` |
 | Presets in symbol browser | create node with preset | parked | parked | `drag_pin_choose_node_preset_create_apply_connect` |
@@ -449,6 +449,34 @@ transport_play_loop_io_indicator
 
 This proves default stopped transport state, play/pause/stop, reverse direction, playback rate validation, frame stepping from bars-native time, looped playback tick wrapping, invalid transport edit rejection without command logging, undo/redo for transport commands, PatchDocument roundtrip, saveWork roundtrip, and visible bottom transport controls. It does not implement audio IO indicators, live IO bus routing, keyframes, curves, time clips, time warp, render/export, soundtrack sync, BPM detection/tapping, or realtime render scheduling.
 
+## P-VAR1 Fixture Evidence
+
+Closed as of 2026-05-25 09:57 Asia/Taipei.
+
+Preset/snapshot foundation is proven at core, commandGraph, storage, saveWork, and visible left-rail consumption level by:
+
+```text
+source/core/VariationState.h
+source/core/VariationState.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/storage/StorageContract.h
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+tests/VariationStateTests.cpp
+```
+
+Verified acceptance traces:
+
+```text
+presets_vs_snapshots_context_switch
+create_apply_preset_capture_report
+create_apply_snapshot_enabled_children
+```
+
+This proves presets and snapshots as separate variation lists, command-backed preset capture/apply, command-backed snapshot capture/apply, supported non-default param capture, enabled-node snapshot capture, skip reasons `default`, `excludedFromPresets`, `unsupportedType`, and `missingInput`, undo for apply, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption. It does not implement parameter metadata UI, preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+
 ## Output, Timeline, And Live Performance Parity
 
 | Feature | TiXL witness | Policy | Current status | Required trace | Blocker |
@@ -555,8 +583,14 @@ play/pause/stop/step/reverse/loop controls
 -> deterministic playhead tick from bars-native timeline state
 -> save/load preserves transport state
 
+P-VAR1 presets/snapshots foundation: closed at core/storage/visible-state level
+preset/snapshot records
+-> create/apply commandGraph verbs
+-> capture skip reasons
+-> save/load preserves variation library
+
 Next selectable parity line:
-No active parity line until selected. Closest ordered lane is P-VAR1 presets/snapshots foundation.
+No active parity line until selected. Closest ordered lanes are VAR-004 variation canvas CRUD or PARAM-007 parameter metadata.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.

@@ -215,12 +215,16 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                     if (tab == "Presets")
                     {
                         ImGui::Dummy (ImVec2 (0.0f, 44.0f));
-                        ImGui::TextDisabled ("No presets yet.");
+                        ImGui::TextDisabled ("presets: %d", static_cast<int> (interactionSession.variations.presets.size()));
+                        for (const auto& preset : interactionSession.variations.presets)
+                            ImGui::TextDisabled ("%s", preset.title.c_str());
                     }
                     else if (tab == "Snapshots")
                     {
                         ImGui::Dummy (ImVec2 (0.0f, 44.0f));
-                        ImGui::TextDisabled ("No snapshots yet.");
+                        ImGui::TextDisabled ("snapshots: %d", static_cast<int> (interactionSession.variations.snapshots.size()));
+                        for (const auto& snapshot : interactionSession.variations.snapshots)
+                            ImGui::TextDisabled ("%s", snapshot.title.c_str());
                     }
                     else
                     {
