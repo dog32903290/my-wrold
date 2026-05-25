@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 11:05 Asia/Taipei.
+Date: 2026-05-25 11:22 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+e1197e5 Close variation blend and thumbnail proof
 f11bff3 Add variation CRUD commands
 6872983 Add parameter metadata contract
 e7037f5 Add presets and snapshots foundation
@@ -257,7 +258,8 @@ Latest accepted targeted result:
 | P-VAR005 variation thumbnail selection hit-test | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `VariationThumbnailLayout`, thumbnail hit-test, `selectVariation`, and left-rail thumbnail UI prove preset/snapshot thumbnails can be selected without applying/blending | VAR-005 hover preview / Alt blend is now closed separately |
 | VAR-005 hover preview / Alt blend | closed | `VariationPreviewReport`, `previewVariationBlend`, `commitVariationBlend`, and left-rail hover/Alt-click prove deterministic non-mutating preview plus one undoable blend command | Child enable UI, symbol-browser preset creation, richer type-specific blend rules remain parked |
 | R-TN1 real thumbnail headless proof | closed | `HeadlessRenderRuntime` writes `thumbnail.png` and `thumbnail_stats.json` for `image.constant -> output.texture_summary`; `headless_render_runtime`, app build, and full `ctest` passed | Full render/export window, render process states, render queue, and UI render settings remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after VAR-005 hover/Alt blend closure |
+| P-LIVE1 live IO bus foundation | closed | `LiveIOBus` plus `LiveIOProofRunner` map loaded `compound.loudness` public output to MIDI CC, OSC float, and shader uniform target events; app CLI `--dump-live-io-proof-and-exit` writes `live_io_report.json` | Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1 closure |
 
 ## Active Lane Protocol
 
@@ -266,6 +268,53 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE1 live IO bus foundation closure as of 2026-05-25 11:22 Asia/Taipei.
+
+P-LIVE1 live IO bus foundation closed.
+Evidence:
+- source/core/LiveIOBus.h
+- source/core/LiveIOBus.cpp
+- source/app/LiveIOProofRunner.h
+- source/app/LiveIOProofRunner.cpp
+- source/app/StartupProof.h
+- source/app/StartupProof.cpp
+- source/app/Main.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/LiveIOBusTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
+
+Closed line:
+loaded `compound.loudness` runtime public outputs
+-> LiveIOValueFrame
+-> LiveIOBus bindings
+-> MIDI CC target event, OSC float target event, shader uniform target event
+-> `live_io_report.json`
+-> app CLI `--dump-live-io-proof-and-exit`
+
+Latest verification:
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_bus_tests my_world_live_io_proof_runner_tests` failed RED first on missing `source/core/LiveIOBus.cpp` and `source/app/LiveIOProofRunner.cpp`.
+- `cmake --build build --target my_world_live_io_bus_tests my_world_live_io_proof_runner_tests my_world_startup_proof_tests my-world`
+- `./build/my_world_live_io_bus_tests`
+- `./build/my_world_live_io_proof_runner_tests`
+- `./build/my_world_startup_proof_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
+
+Latest accepted result:
+- `live io bus ok`
+- `live io proof runner ok`
+- `debug/p-live1-live-io-proof/live_io_report.json` has `ok: true`, `targetKind` values `midi.cc`, `osc.float`, and `shader.uniform`, and `midiValue: 64`.
+- `debug/p-live1-live-io-proof/live_io_runtime_execution.json` has computed `compound.loudness` public outputs.
+
+Next selectable lane:
+- None selected.
+- Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked.
+- Full render/export window/process states remain parked.
+- Variation child enable UI and symbol-browser preset creation remain parked.
+
+Previous closure:
 None after VAR-005 hover preview / Alt blend and R-TN1 real thumbnail headless proof closure as of 2026-05-25 11:05 Asia/Taipei.
 
 VAR-005 hover preview / Alt blend closed.
@@ -315,8 +364,7 @@ Latest accepted result:
 - `62/62 full tests passed`
 
 Next selectable lane:
-- None selected.
-- P-LIVE1 MIDI/OSC/live IO remains parked.
+- At this closure time, P-LIVE1 MIDI/OSC/live IO remained parked; later P-LIVE1 closes the first headless mapping foundation.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
 
@@ -1563,7 +1611,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after VAR-005 hover preview / Alt blend and R-TN1 real thumbnail headless proof closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE1 live IO bus foundation closure. The next lane must be selected explicitly. Do not add analyzer DSP, real MIDI/OSC device IO, teach mode, UDP send/receive, live callback-buffer runtime, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

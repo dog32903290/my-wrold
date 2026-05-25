@@ -14,6 +14,7 @@
 #include "GraphEndpoint.h"
 #include "GraphContract.h"
 #include "InteractionContract.h"
+#include "LiveIOProofRunner.h"
 #include "PVB1AnalyzerEnvironmentProofRunner.h"
 #include "PVDetectorProofRunner.h"
 #include "ProofReports.h"
@@ -173,6 +174,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
         case StartupProofTaskId::a1Audio:
             dumpAudioProof();
             break;
+        case StartupProofTaskId::liveIO:
+            dumpLiveIOProof();
+            break;
         case StartupProofTaskId::c2Storage:
             dumpC2StorageProof();
             break;
@@ -288,6 +292,19 @@ void MainComponent::dumpAudioProof()
 
     const auto result = runA1AudioProof (request);
     finishProofDump (juce::String (a1AudioProofDisplayName()), result.status, result.error, directory);
+}
+
+void MainComponent::dumpLiveIOProof()
+{
+    const auto directory = proofDumpDirectory (liveIOProofDirectoryName());
+
+    LiveIOProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+    request.loudness = 0.5f;
+
+    const auto result = runLiveIOProof (request);
+    finishProofDump (juce::String (liveIOProofDisplayName()), result.status, result.error, directory);
 }
 
 void MainComponent::dumpC2StorageProof()

@@ -24,21 +24,25 @@ int main()
     myworld::StartupProofOptions selected;
     selected.dumpV1ShaderProof = true;
     selected.dumpA1AudioProof = true;
+    selected.dumpLiveIOProof = true;
     selected.dumpC2StorageProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 3, "selected options should create three tasks");
+    expect (selectedTasks.size() == 4, "selected options should create four tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
     expect (selectedTasks[1].delayMilliseconds == 2500, "a1 task should keep 2500ms startup delay");
-    expect (selectedTasks[2].id == myworld::StartupProofTaskId::c2Storage, "c2 task should keep third position");
-    expect (selectedTasks[2].delayMilliseconds == 500, "c2 task should keep 500ms startup delay");
+    expect (selectedTasks[2].id == myworld::StartupProofTaskId::liveIO, "live io task should keep third position");
+    expect (selectedTasks[2].delayMilliseconds == 500, "live io task should keep 500ms startup delay");
+    expect (selectedTasks[3].id == myworld::StartupProofTaskId::c2Storage, "c2 task should keep fourth position");
+    expect (selectedTasks[3].delayMilliseconds == 500, "c2 task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
     all.dumpA1AudioProof = true;
+    all.dumpLiveIOProof = true;
     all.dumpC2StorageProof = true;
     all.dumpC3SaveWorkProof = true;
     all.dumpC4AIWorkerSaveWorkProof = true;
@@ -56,7 +60,7 @@ int main()
     all.dumpPVB1AnalyzerEnvironmentProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 17, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 18, "all options should create every startup proof task");
 
     return 0;
 }

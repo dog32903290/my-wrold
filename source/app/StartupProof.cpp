@@ -6,6 +6,7 @@ bool hasStartupProofRequest (const StartupProofOptions& options)
 {
     return options.dumpV1ShaderProof
            || options.dumpA1AudioProof
+           || options.dumpLiveIOProof
            || options.dumpC2StorageProof
            || options.dumpC3SaveWorkProof
            || options.dumpC4AIWorkerSaveWorkProof
@@ -35,6 +36,7 @@ std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& opti
 
     addTask (options.dumpV1ShaderProof, StartupProofTaskId::v1Shader, 750);
     addTask (options.dumpA1AudioProof, StartupProofTaskId::a1Audio, 2500);
+    addTask (options.dumpLiveIOProof, StartupProofTaskId::liveIO, 500);
     addTask (options.dumpC2StorageProof, StartupProofTaskId::c2Storage, 500);
     addTask (options.dumpC3SaveWorkProof, StartupProofTaskId::c3SaveWork, 500);
     addTask (options.dumpC4AIWorkerSaveWorkProof, StartupProofTaskId::c4AIWorkerSaveWork, 500);

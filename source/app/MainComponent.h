@@ -30,6 +30,7 @@ private:
     void timerCallback() override;
     void dumpProof();
     void dumpAudioProof();
+    void dumpLiveIOProof();
     void dumpC2StorageProof();
     void dumpC3SaveWorkProof();
     void dumpC4AIWorkerSaveWorkProof();

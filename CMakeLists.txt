@@ -78,6 +78,7 @@ add_test(NAME startup_proof COMMAND my_world_startup_proof_tests)
 
 add_library(my_world_core
     source/core/GraphContract.cpp
+    source/core/LiveIOBus.cpp
     source/core/OutputViewState.cpp
     source/core/TimelineState.cpp
     source/core/VariationState.cpp
@@ -365,6 +366,17 @@ target_link_libraries(my_world_output_view_state_tests
 )
 
 add_test(NAME output_view_state COMMAND my_world_output_view_state_tests)
+
+add_executable(my_world_live_io_bus_tests
+    tests/LiveIOBusTests.cpp
+)
+
+target_link_libraries(my_world_live_io_bus_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_bus COMMAND my_world_live_io_bus_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp
@@ -1063,6 +1075,37 @@ set_tests_properties(a1_audio_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_live_io_proof_runner
+    source/app/LiveIOProofRunner.cpp
+)
+
+target_include_directories(my_world_live_io_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_live_io_proof_runner
+    PUBLIC
+        my_world_proof_run_support
+        my_world_runtime_registry
+)
+
+add_executable(my_world_live_io_proof_runner_tests
+    tests/LiveIOProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_live_io_proof_runner_tests
+    PRIVATE
+        my_world_live_io_proof_runner
+)
+
+add_test(NAME live_io_proof_runner
+         COMMAND my_world_live_io_proof_runner_tests)
+set_tests_properties(live_io_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_proof_run_support
     source/app/ProofRunSupport.cpp
 )
@@ -1454,6 +1497,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
             my_world_a1_audio_proof_runner
+            my_world_live_io_proof_runner
             my_world_v1_shader_proof_artifacts
             my_world_c2_storage_proof_runner
             my_world_c3_save_work_proof_runner

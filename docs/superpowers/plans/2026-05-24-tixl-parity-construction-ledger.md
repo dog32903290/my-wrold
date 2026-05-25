@@ -151,11 +151,11 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | proven for transport controls | L4 live | `transport_play_loop_io_indicator` | P-TIME2 closed for play/pause/stop/step/loop; IO bus indicator remains parked |
 | TIME-003 | Keyframes and curves | Timeline parity | animation commands | parked | L2 command | `keyframe_curve_undo_redo_exact` | animation data model |
 | TIME-004 | Time clips and time warp | Timeline parity | time clip files | parked | L2 command | `time_clip_retime_no_overlap` | timeline phase |
-| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial | L4 live | `audio_input_to_meter_to_uniform` | live sample-window runner |
+| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping | L4 live | `audio_input_to_meter_to_uniform` | P-LIVE1 maps loaded runtime output to target events; realtime callback wiring remains parked |
 | LIVE-002 | Global audio mixers | Live parity | mixer settings | parked | L4 live | `audio_mixer_mute_route` | audio graph/mix bus |
 | LIVE-003 | MIDI input taxonomy and teach | Live parity | MIDI input UI | partial | L4 live | `teach_midi_cc_binding_flash` | MIDI input manager |
-| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | partial | L4 live | `loudness_cc_output_stream_enabled` | live performance graph |
-| LIVE-005 | OSC input | Live parity | OSC files | parked | L4 live | `osc_address_to_signal_value` | IO event bus |
+| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven mapping foundation | L4 live | `loudness_cc_output_stream_enabled` | P-LIVE1 proves MIDI CC event mapping; real device output remains parked |
+| LIVE-005 | OSC input | Live parity | OSC files | proven mapping foundation | L4 live | `osc_address_to_signal_value` | P-LIVE1 proves OSC float address event mapping; UDP receive/send remains parked |
 | LIVE-006 | Audio analyzer/operator family | Live parity | `io/audio`, `AudioReaction`, `DetectBpm` | partial/proven loudness | L4 live | `loaded_loudness_outputs_drive_live_surface` | C1.19/C1.20 line |
 | LIVE-007 | Exported executable and live show controls | Live parity | executable settings | parked | L4 live | `exported_show_keyboard_playback` | packaging/runtime mode |
 
@@ -168,6 +168,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
 | NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
+| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping` | real MIDI/OSC devices, teach mode, and realtime callback wiring remain parked |
 
 ## Immediate Work Queue
 
@@ -919,6 +920,54 @@ It does not implement render/export UI, render queues, frame ranges, timeline ex
 Latest accepted result: headless render runtime ok; 62/62 full tests passed.
 ```
 
+### P-LIVE1 Live IO Bus Foundation
+
+Claim:
+
+```text
+Loaded runtime values can be mapped into MIDI CC, OSC float, and shader uniform target events without touching realtime callbacks or device IO.
+```
+
+Evidence target:
+
+```text
+source/core/LiveIOBus.h
+source/core/LiveIOBus.cpp
+source/app/LiveIOProofRunner.h
+source/app/LiveIOProofRunner.cpp
+tests/LiveIOBusTests.cpp
+tests/LiveIOProofRunnerTests.cpp
+debug/p-live1-live-io-proof/live_io_report.json
+```
+
+- [x] Write RED tests for `LiveIOBus` value lookup, MIDI CC clamping/value scaling, OSC float address mapping, shader uniform mapping, missing-source failure, and JSON report fields.
+- [x] Write RED proof-runner test for `live_io_report.json` and `live_io_runtime_execution.json`.
+- [x] Add `LiveIOBus` as a pure mapping contract with no device scan, no callback work, and no MIDI/OSC send side effects.
+- [x] Add `LiveIOProofRunner` to load the default loudness runtime, synthesize a loudness value, map public `out` to MIDI/OSC/uniform events, and write proof artifacts.
+- [x] Add app startup flag `--dump-live-io-proof-and-exit`.
+- [x] Run `cmake --build build --target my_world_live_io_bus_tests my_world_live_io_proof_runner_tests my_world_startup_proof_tests my-world`.
+- [x] Run `./build/my_world_live_io_bus_tests`.
+- [x] Run `./build/my_world_live_io_proof_runner_tests`.
+- [x] Run `./build/my_world_startup_proof_tests`.
+- [x] Run `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`.
+
+P-LIVE1 closed as live IO bus foundation as of 2026-05-25 11:22 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+live_io_bus_midi_osc_uniform_mapping
+live_io_app_proof_dump
+```
+
+Scope boundary:
+
+```text
+P-LIVE1 proves loaded `compound.loudness` public output can become bounded MIDI CC, OSC float, and shader uniform target events, with missing-source diagnostics and app proof artifacts.
+It does not open MIDI devices, send MIDI, send or receive UDP/OSC packets, implement MIDI learn/teach mode, alter the realtime audio callback, or build live mapping UI.
+Latest accepted result: live io bus ok; live io proof runner ok; app proof dump wrote live_io_report.json with `midi.cc`, `osc.float`, and `shader.uniform` events.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -938,7 +987,7 @@ The next plans should be created only when the previous queue item has proof evi
 | 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
 | 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
 | 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
-| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
+| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed first headless mapping foundation; real devices and teach mode remain later |
 
 ## Self-Review
 

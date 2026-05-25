@@ -16,6 +16,7 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
     StartupProofOptions options;
     options.dumpV1ShaderProof = commandLine.contains ("--dump-proof-and-exit");
     options.dumpA1AudioProof = commandLine.contains ("--dump-audio-proof-and-exit");
+    options.dumpLiveIOProof = commandLine.contains ("--dump-live-io-proof-and-exit");
     options.dumpC2StorageProof = commandLine.contains ("--dump-c2-storage-proof-and-exit");
     options.dumpC3SaveWorkProof = commandLine.contains ("--dump-c3-save-work-proof-and-exit");
     options.dumpC4AIWorkerSaveWorkProof = commandLine.contains ("--dump-c4-ai-worker-save-work-proof-and-exit");

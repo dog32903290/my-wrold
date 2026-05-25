@@ -8,6 +8,7 @@ enum class StartupProofTaskId
 {
     v1Shader,
     a1Audio,
+    liveIO,
     c2Storage,
     c3SaveWork,
     c4AIWorkerSaveWork,
@@ -35,6 +36,7 @@ struct StartupProofOptions
 {
     bool dumpV1ShaderProof = false;
     bool dumpA1AudioProof = false;
+    bool dumpLiveIOProof = false;
     bool dumpC2StorageProof = false;
     bool dumpC3SaveWorkProof = false;
     bool dumpC4AIWorkerSaveWorkProof = false;
