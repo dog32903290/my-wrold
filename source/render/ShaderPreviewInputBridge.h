@@ -1,5 +1,7 @@
 #pragma once
 
+#include "RenderBackend.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -30,4 +32,10 @@ ShaderPreviewInputSnapshot makeShaderPreviewInputFromUniformEvidence (
     std::uint64_t sampleCounter);
 
 std::string makeShaderPreviewInputSnapshotJson (const ShaderPreviewInputSnapshot& snapshot);
+
+RenderFrameInput makeRenderFrameInputFromShaderPreviewInput (
+    const ShaderPreviewInputSnapshot& snapshot,
+    double timeSeconds,
+    unsigned int frameIndex,
+    float fallbackLoudness = 0.0f);
 }

@@ -111,4 +111,30 @@ std::string makeShaderPreviewInputSnapshotJson (const ShaderPreviewInputSnapshot
     out << "}\n";
     return out.str();
 }
+
+RenderFrameInput makeRenderFrameInputFromShaderPreviewInput (
+    const ShaderPreviewInputSnapshot& snapshot,
+    double timeSeconds,
+    unsigned int frameIndex,
+    float fallbackLoudness)
+{
+    RenderFrameInput input;
+    input.timeSeconds = timeSeconds;
+    input.frameIndex = frameIndex;
+    input.loudness = fallbackLoudness;
+
+    if (! snapshot.ok)
+        return input;
+
+    for (const auto& uniform : snapshot.uniforms)
+    {
+        if (uniform.uniformName == "u_loudness")
+        {
+            input.loudness = static_cast<float> (uniform.value);
+            break;
+        }
+    }
+
+    return input;
+}
 }

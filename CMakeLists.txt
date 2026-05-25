@@ -146,6 +146,22 @@ target_link_libraries(my_world_shader_preview_input_bridge_tests
 
 add_test(NAME shader_preview_input_bridge COMMAND my_world_shader_preview_input_bridge_tests)
 
+add_executable(my_world_shader_preview_smoke_read_tests
+    tests/ShaderPreviewSmokeReadTests.cpp
+)
+
+target_link_libraries(my_world_shader_preview_smoke_read_tests
+    PRIVATE
+        my_world_shader_preview_input_bridge
+)
+
+target_include_directories(my_world_shader_preview_smoke_read_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/render
+)
+
+add_test(NAME shader_preview_smoke_read COMMAND my_world_shader_preview_smoke_read_tests)
+
 add_library(my_world_graph_language
     source/core/GraphLanguage.cpp
 )
