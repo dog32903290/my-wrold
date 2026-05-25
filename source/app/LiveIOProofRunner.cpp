@@ -35,6 +35,7 @@ constexpr const char* liveIOMidiSendReportFileName = "live_io_midi_send_report.j
 constexpr const char* liveIOControlDispatchReportFileName = "live_io_control_dispatch_report.json";
 constexpr const char* liveIOControlPumpReportFileName = "live_io_control_pump_report.json";
 constexpr const char* liveIOAppTimerMidiReportFileName = "live_io_app_timer_midi_report.json";
+constexpr const char* liveIOAppTimerOscLoopbackReportFileName = "live_io_app_timer_osc_loopback_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -84,6 +85,20 @@ struct OscLoopbackProof
     std::string status = "blocked";
     std::string error;
     LiveIOSendReport sendReport;
+    bool received = false;
+    std::string oscHost = "127.0.0.1";
+    int oscPort = 0;
+    std::string receivedAddress;
+    double receivedFloatValue = 0.0;
+    std::vector<std::string> errors;
+};
+
+struct AppTimerOscLoopbackProof
+{
+    bool ok = false;
+    std::string status = "blocked";
+    std::string error;
+    LiveIOControlTimerState timerState;
     bool received = false;
     std::string oscHost = "127.0.0.1";
     int oscPort = 0;
@@ -145,6 +160,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOControlDispatchReportFileName,
         request.outputDirectory / liveIOControlPumpReportFileName,
         request.outputDirectory / liveIOAppTimerMidiReportFileName,
+        request.outputDirectory / liveIOAppTimerOscLoopbackReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -344,6 +360,26 @@ LiveIOControlTimerState makeAppTimerMidiProofState (const LiveIOProofRunRequest&
     return state;
 }
 
+LiveIOBusReport makeBusReportFromOscMessage (const LiveIOOscFloatMessage& message)
+{
+    LiveIOBusReport report;
+    report.ok = true;
+    report.status = "mapped";
+    report.message = "live_io_mapped";
+
+    LiveIOEvent event;
+    event.bindingId = message.bindingId;
+    event.sourceId = "out";
+    event.source = "LiveIOControlTimer.oscSender";
+    event.targetKind = LiveIOTargetKind::oscFloat;
+    event.inputValue = message.floatValue;
+    event.normalizedValue = message.floatValue;
+    event.floatValue = message.floatValue;
+    event.oscAddress = message.oscAddress;
+    report.events.push_back (event);
+    return report;
+}
+
 LoopbackReceiver openLoopbackReceiver (std::string& error)
 {
     LoopbackReceiver receiver;
@@ -486,6 +522,92 @@ OscLoopbackProof runOscLoopbackProof (const LiveIOBusReport& busReport)
     return proof;
 }
 
+AppTimerOscLoopbackProof runAppTimerOscLoopbackProof (const LiveIOProofRunRequest& request)
+{
+    AppTimerOscLoopbackProof proof;
+
+    std::string error;
+    auto receiver = openLoopbackReceiver (error);
+    if (! error.empty())
+    {
+        proof.error = error;
+        proof.errors.push_back (error);
+        return proof;
+    }
+
+    proof.oscPort = receiver.port;
+
+    LiveIOControlTimerConfig config;
+    config.bindings = makeProofBindings();
+    config.tickIntervalMs = 50;
+    config.dispatchMinIntervalMs = 0;
+    config.enabled = true;
+    config.sendMode = LiveIOControlTimerSendMode::controlledSend;
+    config.midiEnabled = false;
+    config.oscEnabled = true;
+    config.oscSender = [&proof, receiverPort = receiver.port] (const LiveIOOscFloatMessage& message)
+    {
+        const auto sendReport = executeLiveIOSendBoundary (
+            makeBusReportFromOscMessage (message),
+            makeLiveIOControlledOscLoopbackRoute (proof.oscHost, receiverPort));
+
+        if (! sendReport.ok)
+            return LiveIOOscFloatSendResult { false, sendReport.message };
+
+        const auto sent = ! sendReport.actions.empty() && sendReport.actions.front().sent;
+        return LiveIOOscFloatSendResult {
+            sent,
+            sent ? std::string() : std::string ("osc loopback send did not mark action sent")
+        };
+    };
+
+    const auto result = tickLiveIOControlTimer (
+        proof.timerState,
+        config,
+        0,
+        makeProofAnalyzerSnapshot (request.loudness));
+    if (! result.ok)
+    {
+        proof.error = result.message;
+        proof.errors = proof.timerState.errors;
+        if (proof.errors.empty())
+            proof.errors.push_back (result.message);
+        return proof;
+    }
+
+    const auto datagram = receiveLoopbackDatagram (receiver.socketFd, error);
+    if (! error.empty())
+    {
+        proof.error = error;
+        proof.errors.push_back (error);
+        return proof;
+    }
+
+    proof.receivedAddress = std::string (reinterpret_cast<const char*> (datagram.data()));
+    const auto typeOffset = paddedOscStringSize (proof.receivedAddress);
+    const auto typeTag = std::string (reinterpret_cast<const char*> (datagram.data() + typeOffset));
+    if (typeTag != ",f")
+    {
+        proof.error = "osc loopback packet has unexpected type tag";
+        proof.errors.push_back (proof.error);
+        return proof;
+    }
+
+    const auto valueOffset = typeOffset + paddedOscStringSize (typeTag);
+    proof.receivedFloatValue = readOscFloat (datagram, valueOffset, error);
+    if (! error.empty())
+    {
+        proof.error = error;
+        proof.errors.push_back (error);
+        return proof;
+    }
+
+    proof.ok = true;
+    proof.status = "received";
+    proof.received = true;
+    return proof;
+}
+
 void appendErrorsJson (std::ostringstream& out, const std::vector<std::string>& errors)
 {
     out << "[";
@@ -562,6 +684,34 @@ std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state)
     out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
     out << "  \"errors\": ";
     appendErrorsJson (out, state.errors);
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
+
+std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& proof)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"liveIOAppTimerOscLoopbackProof\",\n";
+    out << "  \"ok\": " << (proof.ok ? "true" : "false") << ",\n";
+    out << "  \"status\": " << jsonQuoted (proof.status) << ",\n";
+    out << "  \"timerStatus\": " << jsonQuoted (proof.timerState.lastStatus) << ",\n";
+    out << "  \"message\": " << jsonQuoted (proof.timerState.lastMessage) << ",\n";
+    out << "  \"sendMode\": " << jsonQuoted (proof.timerState.lastSendMode) << ",\n";
+    out << "  \"tickCount\": " << proof.timerState.tickCount << ",\n";
+    out << "  \"pumpCount\": " << proof.timerState.pumpCount << ",\n";
+    out << "  \"midiControlledSendCount\": " << proof.timerState.midiControlledSendCount << ",\n";
+    out << "  \"oscControlledSendCount\": " << proof.timerState.oscControlledSendCount << ",\n";
+    out << "  \"shaderSkippedCount\": " << proof.timerState.shaderSkippedCount << ",\n";
+    out << "  \"received\": " << (proof.received ? "true" : "false") << ",\n";
+    out << "  \"oscHost\": " << jsonQuoted (proof.oscHost) << ",\n";
+    out << "  \"oscPort\": " << proof.oscPort << ",\n";
+    out << "  \"oscAddress\": " << jsonQuoted (proof.receivedAddress) << ",\n";
+    out << "  \"receivedFloatValue\": " << proof.receivedFloatValue << ",\n";
+    out << "  \"errors\": ";
+    appendErrorsJson (out, proof.errors);
     out << "\n";
     out << "}\n";
     return out.str();
@@ -643,6 +793,12 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
                          ? "live io app timer midi proof failed"
                          : appTimerMidiState.lastMessage);
 
+    const auto appTimerOscLoopbackProof = runAppTimerOscLoopbackProof (request);
+    if (! appTimerOscLoopbackProof.ok)
+        return fail (appTimerOscLoopbackProof.error.empty()
+                         ? "live io app timer osc loopback proof failed"
+                         : appTimerOscLoopbackProof.error);
+
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOReportFileName,
@@ -675,6 +831,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOAppTimerMidiReportFileName,
             makeAppTimerMidiProofJson (appTimerMidiState)
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOAppTimerOscLoopbackReportFileName,
+            makeAppTimerOscLoopbackProofJson (appTimerOscLoopbackProof)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,

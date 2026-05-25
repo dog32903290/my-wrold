@@ -273,8 +273,9 @@ Latest accepted targeted result:
 | P-LIVE3 control-rate analyzer snapshot pump | closed | `docs/superpowers/specs/2026-05-25-p-live3-control-pump.md`; `LiveIOControlPump` turns analyzer snapshots into control frames, tick-rate-limits inactive/fast ticks, feeds `LiveIOControlDispatcher`, and app proof writes `live_io_control_pump_report.json` | App timer dry-run wiring is closed in P-LIVE4; realtime callback delivery, live UI mapping, MIDI teach mode, and external OSC targets remain parked |
 | P-LIVE4 app timer dry-run wiring | closed | `docs/superpowers/specs/2026-05-25-p-live4-app-timer-dry-run.md`; `LiveIOControlTimer` records app-timer-driven dry-run state from analyzer snapshots, `MainComponent::timerCallback()` reaches it through `updateAudioMeters()`, and status text exposes dry MIDI/OSC counts | Send mode gate is closed in P-LIVE5; realtime callback delivery, MIDI teach mode, broader output operators, and full live UI indicator remain parked |
 | P-LIVE5 app timer send mode gate | closed | `docs/superpowers/specs/2026-05-25-p-live5-app-timer-send-gate.md`; `LiveIOControlTimerConfig` adds `dryRun` / `controlledSend`, dry-run never calls provided senders, controlled-send calls injected MIDI/OSC senders, and app timer carries the gate while defaulting to dry-run | Controlled MIDI app timer proof is closed in P-LIVE6; OSC app timer loopback, UI/preferences mode switch, realtime callback delivery, MIDI teach mode, and full live UI indicator remain parked |
-| P-LIVE6 controlled app timer MIDI proof | closed | `docs/superpowers/specs/2026-05-25-p-live6-app-timer-midi-proof.md`; `LiveIOProofRunner` opt-in proof drives `LiveIOControlTimerConfig(sendMode: controlledSend)` with MIDI enabled/OSC disabled and writes `live_io_app_timer_midi_report.json` showing one controlled MIDI send | P-LIVE7 OSC app timer loopback, normal app mode switching, MIDI teach mode, realtime callback delivery, and full live UI indicator remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE6 closure |
+| P-LIVE6 controlled app timer MIDI proof | closed | `docs/superpowers/specs/2026-05-25-p-live6-app-timer-midi-proof.md`; `LiveIOProofRunner` opt-in proof drives `LiveIOControlTimerConfig(sendMode: controlledSend)` with MIDI enabled/OSC disabled and writes `live_io_app_timer_midi_report.json` showing one controlled MIDI send | OSC app timer loopback is closed in P-LIVE7; normal app mode switching, MIDI teach mode, realtime callback delivery, and full live UI indicator remain parked |
+| P-LIVE7 controlled app timer OSC loopback | closed | `docs/superpowers/specs/2026-05-25-p-live7-app-timer-osc-loopback.md`; `LiveIOProofRunner` opt-in proof drives the same `LiveIOControlTimer` body with MIDI disabled/OSC enabled, sends through `LiveIOSendAdapter`, receives localhost OSC, and writes `live_io_app_timer_osc_loopback_report.json` | Normal app mode switching, external OSC targets/receive nodes, MIDI teach mode, realtime callback delivery, and full live UI indicator remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE7 closure |
 
 ## Active Lane Protocol
 
@@ -283,11 +284,11 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE6 controlled app timer MIDI proof closure as of 2026-05-25 13:36 Asia/Taipei.
+None after P-LIVE7 controlled app timer OSC loopback closure as of 2026-05-25 13:36 Asia/Taipei.
 
-P-LIVE6 controlled app timer MIDI proof closed.
+P-LIVE7 controlled app timer OSC loopback closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live6-app-timer-midi-proof.md
+- docs/superpowers/specs/2026-05-25-p-live7-app-timer-osc-loopback.md
 - source/app/LiveIOProofRunner.cpp
 - tests/LiveIOProofRunnerTests.cpp
 - source/core/LiveIOControlTimer.h
@@ -305,11 +306,14 @@ Closed line:
 -> active AudioAnalyzerSnapshot
 -> LiveIOControlPump
 -> LiveIOControlDispatcher
--> injected MIDI sender
--> live_io_app_timer_midi_report.json
+-> injected OSC sender
+-> LiveIOSendAdapter controlled loopback
+-> localhost UDP/OSC packet received
+-> live_io_app_timer_osc_loopback_report.json
 
 Latest verification:
-- `cmake --build build --target my_world_live_io_proof_runner_tests && ./build/my_world_live_io_proof_runner_tests` failed RED first on artifact count before `live_io_app_timer_midi_report.json` existed.
+- `cmake --build build --target my_world_live_io_proof_runner_tests && ./build/my_world_live_io_proof_runner_tests` failed RED first on artifact count before `live_io_app_timer_osc_loopback_report.json` existed.
+- `cmake --build build --target my_world_live_io_proof_runner_tests && ./build/my_world_live_io_proof_runner_tests`
 - `cmake --build build --target my_world_live_io_proof_runner_tests my-world && ./build/my_world_live_io_proof_runner_tests`
 - `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
 - `ctest --test-dir build --output-on-failure`
@@ -318,13 +322,13 @@ Latest verification:
 Latest accepted result:
 - `live io proof runner ok`
 - app target `my-world` builds.
-- app proof writes `live_io_app_timer_midi_report.json`.
+- app proof writes `live_io_app_timer_osc_loopback_report.json`.
 - `70/70 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- P-LIVE7 OSC app timer loopback, flipping app send mode from UI/preferences, real default app timer dispatch, realtime callback delivery, MIDI teach mode, broader MIDI output operators, and full live UI indicator remain parked.
+- Flipping app send mode from UI/preferences, real default app timer dispatch, realtime callback delivery, MIDI teach mode, broader MIDI output operators, and full live UI indicator remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.

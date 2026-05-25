@@ -151,11 +151,11 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | proven for transport controls | L4 live | `transport_play_loop_io_indicator` | P-TIME2 closed for play/pause/stop/step/loop; IO bus indicator remains parked |
 | TIME-003 | Keyframes and curves | Timeline parity | animation commands | parked | L2 command | `keyframe_curve_undo_redo_exact` | animation data model |
 | TIME-004 | Time clips and time warp | Timeline parity | time clip files | parked | L2 command | `time_clip_retime_no_overlap` | timeline phase |
-| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping/pump/timer MIDI proof | L4 live | `audio_input_to_meter_to_uniform`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_midi_controlled_send` | P-LIVE6 proves the opt-in proof path can drive app timer snapshots to the MIDI sender boundary; realtime callback delivery remains parked |
+| LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping/pump/timer MIDI+OSC proof | L4 live | `audio_input_to_meter_to_uniform`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_midi_controlled_send`, `live_io_app_timer_osc_loopback` | P-LIVE7 proves the opt-in proof path can drive app timer snapshots to MIDI and OSC boundaries; realtime callback delivery remains parked |
 | LIVE-002 | Global audio mixers | Live parity | mixer settings | parked | L4 live | `audio_mixer_mute_route` | audio graph/mix bus |
 | LIVE-003 | MIDI input taxonomy and teach | Live parity | MIDI input UI | partial | L4 live | `teach_midi_cc_binding_flash` | MIDI input manager |
 | LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven controlled CC output plus app timer MIDI proof | L4 live | `loudness_cc_output_stream_enabled`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_midi_controlled_send` | P-LIVE6 proves app timer controlled-send reaches injected MIDI sender in the opt-in proof path; teach mode, realtime wiring, real default timer dispatch, and broader output operators remain parked |
-| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback/dispatch sink plus timer gate | L4 live | `osc_address_to_signal_value`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate` | P-LIVE1.3 proves localhost OSC float send/receive loopback; P-LIVE5 proves app timer controlled-send calls injected OSC sender only when the mode is explicit; external UDP receive/send remains parked |
+| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback/dispatch sink plus app timer loopback | L4 live | `osc_address_to_signal_value`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_osc_loopback` | P-LIVE7 proves app timer controlled-send can send OSC through `LiveIOSendAdapter` and receive localhost loopback; external UDP receive/send remains parked |
 | LIVE-006 | Audio analyzer/operator family | Live parity | `io/audio`, `AudioReaction`, `DetectBpm` | partial/proven loudness | L4 live | `loaded_loudness_outputs_drive_live_surface` | C1.19/C1.20 line |
 | LIVE-007 | Exported executable and live show controls | Live parity | executable settings | parked | L4 live | `exported_show_keyboard_playback` | packaging/runtime mode |
 
@@ -168,7 +168,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
 | NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
-| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOControlDispatcher` / `LiveIOControlPump` / `LiveIOControlTimer` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_midi_controlled_send` | P-LIVE7 OSC app timer loopback, real default app timer dispatch, MIDI teach mode, realtime callback delivery, full live UI mapping, and broader MIDI/OSC live IO remain parked |
+| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOControlDispatcher` / `LiveIOControlPump` / `LiveIOControlTimer` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited`, `live_io_control_pump_snapshot_frames`, `live_io_app_timer_dry_run`, `live_io_app_timer_send_mode_gate`, `live_io_app_timer_midi_controlled_send`, `live_io_app_timer_osc_loopback` | real default app timer dispatch, MIDI teach mode, realtime callback delivery, full live UI mapping, and broader MIDI/OSC live IO remain parked |
 
 ## Immediate Work Queue
 
@@ -1349,6 +1349,45 @@ It does not flip normal app timer mode from UI/preferences, implement MIDI teach
 Latest accepted result: live io proof runner ok; app target builds; app proof writes live_io_app_timer_midi_report.json; 70/70 tests passed; git diff --check passed.
 ```
 
+### P-LIVE7 Controlled App Timer OSC Loopback
+
+Claim:
+
+```text
+The opt-in live IO proof path can switch the app timer body to controlledSend and prove OSC delivery by receiving one localhost loopback packet.
+```
+
+Evidence target:
+
+```text
+source/app/LiveIOProofRunner.cpp
+tests/LiveIOProofRunnerTests.cpp
+debug/p-live1-live-io-proof/live_io_app_timer_osc_loopback_report.json
+docs/superpowers/specs/2026-05-25-p-live7-app-timer-osc-loopback.md
+```
+
+- [x] Write RED proof-runner expectations for `live_io_app_timer_osc_loopback_report.json`.
+- [x] Drive `LiveIOControlTimerConfig(sendMode: controlledSend)` with MIDI disabled and OSC enabled.
+- [x] Use an injected timer OSC sender that delegates to `LiveIOSendAdapter` controlled loopback.
+- [x] Receive and parse the localhost OSC packet.
+
+P-LIVE7 closed as controlled app timer OSC loopback as of 2026-05-25 13:36 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+live_io_app_timer_osc_loopback
+live_io_app_timer_osc_loopback_report_dump
+```
+
+Scope boundary:
+
+```text
+P-LIVE7 proves the opt-in proof path can drive app timer state to the OSC localhost loopback boundary.
+It does not flip normal app timer mode from UI/preferences, add external OSC targets, add always-on OSC receive nodes/server, implement MIDI teach/learn mode, or deliver from the realtime audio callback.
+Latest accepted result: live io proof runner ok; app target builds; app proof writes live_io_app_timer_osc_loopback_report.json; 70/70 tests passed; git diff --check passed.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -1368,7 +1407,7 @@ The next plans should be created only when the previous queue item has proof evi
 | 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
 | 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
 | 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
-| 14 | P-LIVE MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, P-LIVE1.5 controlled MIDI open/send, P-LIVE2 control-rate dispatcher, P-LIVE3 analyzer snapshot pump, P-LIVE4 app timer dry-run body, P-LIVE5 send-mode gate, and P-LIVE6 app timer MIDI proof; P-LIVE7 OSC app timer loopback, flipping app send mode, teach mode, full UI indicator, and realtime callback delivery remain later |
+| 14 | P-LIVE MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, P-LIVE1.5 controlled MIDI open/send, P-LIVE2 control-rate dispatcher, P-LIVE3 analyzer snapshot pump, P-LIVE4 app timer dry-run body, P-LIVE5 send-mode gate, P-LIVE6 app timer MIDI proof, and P-LIVE7 app timer OSC loopback; flipping app send mode, teach mode, full UI indicator, and realtime callback delivery remain later |
 
 ## Self-Review
 
