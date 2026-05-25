@@ -29,6 +29,8 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     configureLabel (midiChannelLabel, "channel");
     configureLabel (loudnessCcLabel, "loudness CC");
     configureLabel (mapCcLabel, "map CC");
+    configureLabel (liveIOLabel, "Live IO");
+    configureLabel (liveIOSendModeLabel, "send mode");
 
     addAndMakeVisible (titleLabel);
     addAndMakeVisible (audioLabel);
@@ -38,6 +40,8 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     addAndMakeVisible (midiChannelLabel);
     addAndMakeVisible (loudnessCcLabel);
     addAndMakeVisible (mapCcLabel);
+    addAndMakeVisible (liveIOLabel);
+    addAndMakeVisible (liveIOSendModeLabel);
 
     audioSelector.setItemHeight (20);
     addAndMakeVisible (audioSelector);
@@ -48,6 +52,12 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
 
     midiOutputBox.onChange = [this] { emitMidiPreferences(); };
     addAndMakeVisible (midiOutputBox);
+
+    liveIOSendModeBox.addItem ("Dry Run", 1);
+    liveIOSendModeBox.addItem ("Controlled Send", 2);
+    liveIOSendModeBox.setSelectedId (1, juce::dontSendNotification);
+    liveIOSendModeBox.onChange = [this] { emitLiveIOPreferences(); };
+    addAndMakeVisible (liveIOSendModeBox);
 
     configureSlider (midiChannelSlider, 1.0, 16.0, 1.0, 1.0);
     midiChannelSlider.onValueChange = [this] { emitMidiPreferences(); };
@@ -103,7 +113,21 @@ MidiPreferences PreferencesPanel::getMidiPreferences() const
         }
     }
 
-    return sanitizePerformancePreferences ({ {}, preferences }).midi;
+    PerformancePreferences allPreferences;
+    allPreferences.midi = preferences;
+    return sanitizePerformancePreferences (allPreferences).midi;
+}
+
+LiveIOPreferences PreferencesPanel::getLiveIOPreferences() const
+{
+    LiveIOPreferences preferences;
+    preferences.sendMode = liveIOSendModeBox.getSelectedId() == 2
+                               ? LiveIOSendModePreference::controlledSend
+                               : LiveIOSendModePreference::dryRun;
+
+    PerformancePreferences allPreferences;
+    allPreferences.liveIO = preferences;
+    return sanitizePerformancePreferences (allPreferences).liveIO;
 }
 
 void PreferencesPanel::paint (juce::Graphics& g)
@@ -143,6 +167,12 @@ void PreferencesPanel::resized()
     row = area.removeFromTop (24);
     midiStreamButton.setBounds (row.removeFromLeft (128));
     mapModeButton.setBounds (row.removeFromLeft (116));
+
+    area.removeFromTop (4);
+    row = area.removeFromTop (24);
+    liveIOLabel.setBounds (row.removeFromLeft (74));
+    liveIOSendModeLabel.setBounds (row.removeFromLeft (82));
+    liveIOSendModeBox.setBounds (row.removeFromLeft (180));
 
     area.removeFromTop (4);
     row = area.removeFromTop (24);
@@ -196,6 +226,12 @@ void PreferencesPanel::emitMidiPreferences()
 {
     if (onMidiPreferencesChanged != nullptr)
         onMidiPreferencesChanged (getMidiPreferences());
+}
+
+void PreferencesPanel::emitLiveIOPreferences()
+{
+    if (onLiveIOPreferencesChanged != nullptr)
+        onLiveIOPreferencesChanged (getLiveIOPreferences());
 }
 
 void PreferencesPanel::configureLabel (juce::Label& label, const juce::String& text)

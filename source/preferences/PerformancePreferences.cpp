@@ -16,6 +16,14 @@ int clampInt (int value, int low, int high)
 {
     return std::clamp (value, low, high);
 }
+
+LiveIOSendModePreference sanitizeLiveIOSendMode (LiveIOSendModePreference sendMode)
+{
+    if (sendMode == LiveIOSendModePreference::controlledSend)
+        return LiveIOSendModePreference::controlledSend;
+
+    return LiveIOSendModePreference::dryRun;
+}
 }
 
 PerformancePreferences makeDefaultPerformancePreferences()
@@ -29,7 +37,16 @@ PerformancePreferences sanitizePerformancePreferences (PerformancePreferences pr
     preferences.midi.channel = clampInt (preferences.midi.channel, 1, 16);
     preferences.midi.loudnessCc = clampInt (preferences.midi.loudnessCc, 0, 127);
     preferences.midi.mapCc = clampInt (preferences.midi.mapCc, 0, 127);
+    preferences.liveIO.sendMode = sanitizeLiveIOSendMode (preferences.liveIO.sendMode);
     return preferences;
+}
+
+std::string liveIOSendModePreferenceToString (LiveIOSendModePreference mode)
+{
+    if (mode == LiveIOSendModePreference::controlledSend)
+        return "controlled_send";
+
+    return "dry_run";
 }
 
 int midiValueFromNormalized (float normalizedValue)

@@ -62,6 +62,7 @@ private:
     void startAudioInput();
     void updateAudioMeters();
     void applyMidiPreferences (MidiPreferences preferences);
+    void applyLiveIOPreferences (LiveIOPreferences preferences);
     void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
     void tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot);
 

@@ -21,10 +21,22 @@ struct MidiPreferences
     std::string outputName;
 };
 
+enum class LiveIOSendModePreference
+{
+    dryRun,
+    controlledSend
+};
+
+struct LiveIOPreferences
+{
+    LiveIOSendModePreference sendMode = LiveIOSendModePreference::dryRun;
+};
+
 struct PerformancePreferences
 {
     AudioPreferences audio;
     MidiPreferences midi;
+    LiveIOPreferences liveIO;
 };
 
 struct MidiCcFrame
@@ -37,6 +49,7 @@ struct MidiCcFrame
 
 PerformancePreferences makeDefaultPerformancePreferences();
 PerformancePreferences sanitizePerformancePreferences (PerformancePreferences preferences);
+std::string liveIOSendModePreferenceToString (LiveIOSendModePreference mode);
 int midiValueFromNormalized (float normalizedValue);
 MidiCcFrame makeLoudnessMidiCcFrame (float loudness, const PerformancePreferences& preferences);
 }

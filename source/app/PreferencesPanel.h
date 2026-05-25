@@ -18,9 +18,11 @@ public:
 
     float getAnalysisGain() const;
     MidiPreferences getMidiPreferences() const;
+    LiveIOPreferences getLiveIOPreferences() const;
 
     std::function<void(float)> onAnalysisGainChanged;
     std::function<void(MidiPreferences)> onMidiPreferencesChanged;
+    std::function<void(LiveIOPreferences)> onLiveIOPreferencesChanged;
 
     void paint (juce::Graphics& g) override;
     void resized() override;
@@ -29,6 +31,7 @@ private:
     void refreshMidiOutputs();
     void emitAnalysisGain();
     void emitMidiPreferences();
+    void emitLiveIOPreferences();
     void configureLabel (juce::Label& label, const juce::String& text);
 
     juce::AudioDeviceSelectorComponent audioSelector;
@@ -40,8 +43,11 @@ private:
     juce::Label midiChannelLabel;
     juce::Label loudnessCcLabel;
     juce::Label mapCcLabel;
+    juce::Label liveIOLabel;
+    juce::Label liveIOSendModeLabel;
     juce::Slider analysisGainSlider;
     juce::ComboBox midiOutputBox;
+    juce::ComboBox liveIOSendModeBox;
     juce::Slider midiChannelSlider;
     juce::Slider loudnessCcSlider;
     juce::Slider mapCcSlider;

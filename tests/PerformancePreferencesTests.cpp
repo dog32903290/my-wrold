@@ -20,6 +20,11 @@ void expectEqual (int actual, int expected, const std::string& message)
     expect (actual == expected,
             message + " expected " + std::to_string (expected) + " got " + std::to_string (actual));
 }
+
+void expectEqual (const std::string& actual, const std::string& expected, const std::string& message)
+{
+    expect (actual == expected, message + " expected " + expected + " got " + actual);
+}
 }
 
 int main()
@@ -33,19 +38,35 @@ int main()
     expectEqual (preferences.midi.channel, 1, "default midi channel");
     expectEqual (preferences.midi.loudnessCc, 20, "default loudness cc follows analyzer vocabulary");
     expectEqual (preferences.midi.mapCc, 20, "default map cc");
+    expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
+            "live IO send mode defaults to dry-run");
+    expectEqual (myworld::liveIOSendModePreferenceToString (preferences.liveIO.sendMode),
+                 "dry_run",
+                 "default live IO send mode string");
 
     preferences.audio.analysisGain = -4.0f;
     preferences.midi.channel = 99;
     preferences.midi.loudnessCc = -9;
     preferences.midi.mapCc = 300;
+    preferences.liveIO.sendMode = static_cast<myworld::LiveIOSendModePreference> (-20);
     preferences = myworld::sanitizePerformancePreferences (preferences);
 
     expect (preferences.audio.analysisGain == 0.0f, "analysis gain clamps low");
     expectEqual (preferences.midi.channel, 16, "midi channel clamps high");
     expectEqual (preferences.midi.loudnessCc, 0, "loudness cc clamps low");
     expectEqual (preferences.midi.mapCc, 127, "map cc clamps high");
+    expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
+            "invalid live IO send mode sanitizes to dry-run");
 
     preferences = myworld::makeDefaultPerformancePreferences();
+    preferences.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
+    preferences = myworld::sanitizePerformancePreferences (preferences);
+    expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::controlledSend,
+            "controlled send survives sanitization");
+    expectEqual (myworld::liveIOSendModePreferenceToString (preferences.liveIO.sendMode),
+                 "controlled_send",
+                 "controlled live IO send mode string");
+
     auto frame = myworld::makeLoudnessMidiCcFrame (0.5f, preferences);
     expect (! frame.shouldSend, "default preferences should not send midi");
 
