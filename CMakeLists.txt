@@ -917,6 +917,37 @@ set_tests_properties(workbench_session_open_status PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_workbench_app_controller
+    source/app/WorkbenchAppController.cpp
+)
+
+target_include_directories(my_world_workbench_app_controller
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_workbench_app_controller
+    PUBLIC
+        my_world_workbench_session_open_status
+        my_world_app2_workbench_open_status_proof_runner
+)
+
+add_executable(my_world_workbench_app_controller_tests
+    tests/WorkbenchAppControllerTests.cpp
+)
+
+target_link_libraries(my_world_workbench_app_controller_tests
+    PRIVATE
+        my_world_workbench_app_controller
+)
+
+add_test(NAME workbench_app_controller COMMAND my_world_workbench_app_controller_tests)
+set_tests_properties(workbench_app_controller PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_app1_workbench_session_proof_runner
     source/app/APP1WorkbenchSessionProofRunner.cpp
 )
@@ -1883,6 +1914,7 @@ if(MY_WORLD_HAVE_JUCE)
             my_world_proof_reports
             my_world_app1_workbench_session_proof_runner
             my_world_app2_workbench_open_status_proof_runner
+            my_world_workbench_app_controller
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner

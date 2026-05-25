@@ -22,7 +22,6 @@
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
 #include "ShaderPreviewInputBridge.h"
-#include "WorkbenchSessionOpenStatus.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -591,9 +590,8 @@ void MainComponent::dumpAPP2WorkbenchOpenStatusProof()
 {
     const auto directory = proofDumpDirectory (app2WorkbenchOpenStatusProofDirectoryName());
 
-    APP2WorkbenchOpenStatusProofRunRequest request;
-    request.outputDirectory = directory.getFullPathName().toStdString();
-    request.snapshot = currentWorkbenchSession;
+    const auto request = workbenchController.makeOpenStatusProofRequest (
+        directory.getFullPathName().toStdString());
 
     const auto result = runAPP2WorkbenchOpenStatusProof (request);
     finishProofDump (juce::String (app2WorkbenchOpenStatusProofDisplayName()), result.status, result.error, directory);
@@ -650,10 +648,9 @@ void MainComponent::openWorkbenchSession()
     request.proofStatus = "g1-ready";
     request.previewStatus = "preview-ready";
 
-    const auto opened = openCurrentWorkbenchSession (request);
-    currentWorkbenchSession = opened.snapshot;
+    (void) workbenchController.openCurrentSession (request);
 
-    statusLabel.setText (juce::String (makeWorkbenchSessionStatusText (currentWorkbenchSession)),
+    statusLabel.setText (juce::String (workbenchController.statusText()),
                          juce::dontSendNotification);
 }
 

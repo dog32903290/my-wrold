@@ -7,7 +7,7 @@
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
 #include "StartupProof.h"
-#include "WorkbenchSession.h"
+#include "WorkbenchAppController.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -99,7 +99,7 @@ private:
     juce::Label midiStatusLabel;
     juce::Label liveIOStatusLabel;
     GraphContract graph;
-    WorkbenchSessionSnapshot currentWorkbenchSession;
+    WorkbenchAppController workbenchController;
     PerformancePreferences performancePreferences;
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;
