@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 00:44 Asia/Taipei.
+Date: 2026-05-26 01:43 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/active2-preparation-diagnostics-proof
+codex/active3-active-segment-closure
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-ACTIVE2 preparation diagnostics proof (current local lane)
+ACTIVE3 active segment closure (current local lane)
+6184a0d Add ACTIVE2 preparation diagnostics proof
 b0b1009 Add ACTIVE1 active work preparation
 b0cec51 Close WORK segment
 ae04c7b Add WORK4 app status wording
@@ -148,20 +149,14 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 00:44 Asia/Taipei, APP1-APP7, WORK1-WORK5, and ACTIVE1 are closed locally and not pushed. ACTIVE2 preparation diagnostics proof is closed locally on `codex/active2-preparation-diagnostics-proof`; do not push unless explicitly requested.
+As of 2026-05-26 01:43 Asia/Taipei, APP1-APP7, WORK1-WORK5, and ACTIVE1-ACTIVE2 are closed locally and not pushed. ACTIVE3 active segment closure is closed locally on `codex/active3-active-segment-closure`; do not push unless explicitly requested.
 
 ```text
-ACTIVE2 owned files:
+ACTIVE3 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-active2-preparation-diagnostics-proof.md
-- source/app/ActiveWorkService.*
-- source/app/AppWorkbenchSessionProofRunner.*
-- source/app/MainComponent.cpp
-- source/app/MainComponent.h
-- tests/ActiveWorkServiceTests.cpp
-- tests/AppWorkbenchSessionProofRunnerTests.cpp
+- docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md
 ```
-Do not add save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in ACTIVE2.
+Do not add save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in ACTIVE3.
 
 Current C4 note:
 
@@ -402,6 +397,7 @@ Latest accepted targeted result:
 | WORK5 work segment closure | closed locally | `docs/superpowers/specs/2026-05-25-work5-work-segment-closure.md`; closes WORK1-WORK4 as the app work-source reporting layer: lifecycle status, active-work resolver, non-blocking work diagnostics, and source-aware app/controller status wording | Future work should leave the WORK prefix and select a fresh lane name by feature surface, such as STATUS, PROOF, UI, GRAPH, RUNTIME, or ACTIVE |
 | ACTIVE1 active work preparation contract | closed locally | `docs/superpowers/specs/2026-05-26-active1-active-work-preparation-contract.md`; `ActiveWorkService` exposes app-open preparation, prepares default debug active work files when no explicit active manifest env override is set, and `MainComponent::openWorkbenchSession()` opens the prepared manifest so stable app proof reads `active-work-opened`; `ctest` 87/87 passed | Save mutation changes, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | ACTIVE2 preparation diagnostics proof | closed locally | `docs/superpowers/specs/2026-05-26-active2-preparation-diagnostics-proof.md`; `ActiveWorkPreparationResult` now carries diagnostics and stable app proof writes `active_work_preparation_report.json` beside the session report, while the session report still reads `active-work-opened`; `ctest` 87/87 passed | Save mutation changes, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
+| ACTIVE3 active segment closure | closed locally | `docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md`; closes ACTIVE1-ACTIVE2 as the app startup active-work preparation/readback segment; stable app proof still writes both active-work preparation and workbench session reports; `ctest` 87/87 passed | Future active-work work should choose a specific surface, such as explicit project creation UX or save integration review |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -411,9 +407,30 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after ACTIVE2 preparation diagnostics proof closure as of 2026-05-26 00:44 Asia/Taipei. Not pushed.
+None after ACTIVE3 active segment closure as of 2026-05-26 01:43 Asia/Taipei. Not pushed.
 
 Latest closure:
+ACTIVE3 active segment closure closed locally.
+Evidence:
+- docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+
+Closed line:
+ActiveWorkService prepare
+-> default debug active work files
+-> WorkbenchSessionSnapshot active-work-opened
+-> active_work_preparation_report.json
+-> stable app workbench proof
+
+Latest accepted result:
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed.
+- Stable app proof wrote both debug/app-workbench-session-proof/workbench_open_status_report.json and debug/app-workbench-session-proof/active_work_preparation_report.json.
+- active_work_preparation_report.json read back with ok: true, status: default-active-work-ready, and diagnostics including activeWorkPreparationStatus=default-active-work-ready.
+- workbench_open_status_report.json read back with ok: true, workSource: active-work, workSourceStatus: active-work-opened, and diagnostics: [].
+- ctest --test-dir build --output-on-failure passed 87/87.
+- git diff --check passed.
+
+Previous closure:
 ACTIVE2 preparation diagnostics proof closed locally.
 Evidence:
 - docs/superpowers/specs/2026-05-26-active2-preparation-diagnostics-proof.md
@@ -2906,20 +2923,15 @@ raw callback-buffer runtime
 | `2026-05-25-work5-work-segment-closure.md` | WORK5 closure marker for WORK1-WORK4 app work-source reporting segment | no, unless auditing WORK segment closure |
 | `2026-05-26-active1-active-work-preparation-contract.md` | ACTIVE1 active work preparation closure evidence | no, unless auditing ACTIVE1 evidence |
 | `2026-05-26-active2-preparation-diagnostics-proof.md` | ACTIVE2 preparation diagnostics proof closure evidence | no, unless auditing ACTIVE2 evidence |
+| `2026-05-26-active3-active-segment-closure.md` | ACTIVE3 closure marker for ACTIVE1-ACTIVE2 app startup active-work segment | no, unless auditing ACTIVE segment closure |
 
 ## Session Safety
 
-ACTIVE2 owned files:
+ACTIVE3 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-active2-preparation-diagnostics-proof.md
-source/app/ActiveWorkService.*
-source/app/AppWorkbenchSessionProofRunner.*
-source/app/MainComponent.cpp
-source/app/MainComponent.h
-tests/ActiveWorkServiceTests.cpp
-tests/AppWorkbenchSessionProofRunnerTests.cpp
+docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md
 ```
 
 Avoid unrelated files and parked lanes:
@@ -2937,7 +2949,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after ACTIVE2 preparation diagnostics proof closure. APP1-APP7, WORK1-WORK5, ACTIVE1, and ACTIVE2 are local-only commits; do not push unless explicitly requested. Stable app proof now writes both `workbench_open_status_report.json` and `active_work_preparation_report.json`. The next ACTIVE lane should only be selected for a specific active-work surface, such as explicit project creation or save integration review. Do not add save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after ACTIVE3 active segment closure. APP1-APP7, WORK1-WORK5, and ACTIVE1-ACTIVE3 are local-only commits; do not push unless explicitly requested. Treat the APP workbench session spine, WORK app work-source reporting segment, and ACTIVE app startup active-work preparation/readback segment as closed. Future active-work work should choose a specific surface, such as explicit project creation UX or save integration review. Do not add save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
