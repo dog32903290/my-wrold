@@ -50,6 +50,23 @@ void configureMeterLabel (juce::Label& label, juce::String text)
     label.setFont (monoFont (13.0f));
 }
 
+juce::Colour liveIOToneColour (const juce::String& tone)
+{
+    if (tone == "failed")
+        return juce::Colour::fromRGB (244, 122, 122);
+
+    if (tone == "sending")
+        return juce::Colour::fromRGB (113, 218, 166);
+
+    if (tone == "dry_run")
+        return juce::Colour::fromRGB (157, 198, 218);
+
+    if (tone == "inactive" || tone == "disabled")
+        return juce::Colour::fromRGB (145, 153, 166);
+
+    return juce::Colour::fromRGB (202, 211, 226);
+}
+
 std::vector<LiveIOBinding> makeAppLiveIOBindings()
 {
     return {
@@ -88,11 +105,13 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     configureMeterLabel (loudnessLabel, "loudness 0.0000");
     configureMeterLabel (activeLabel, "active no");
     configureMeterLabel (midiStatusLabel, "midi off");
+    configureMeterLabel (liveIOStatusLabel, "live io dry idle m0 o0");
     addAndMakeVisible (rmsLabel);
     addAndMakeVisible (peakLabel);
     addAndMakeVisible (loudnessLabel);
     addAndMakeVisible (activeLabel);
     addAndMakeVisible (midiStatusLabel);
+    addAndMakeVisible (liveIOStatusLabel);
 
     preferencesPanel.onAnalysisGainChanged = [this] (float gain)
     {
@@ -263,7 +282,8 @@ void MainComponent::resized()
     peakLabel.setBounds (audioRow.removeFromLeft (118));
     loudnessLabel.setBounds (audioRow.removeFromLeft (160));
     activeLabel.setBounds (audioRow.removeFromLeft (104));
-    midiStatusLabel.setBounds (audioRow);
+    midiStatusLabel.setBounds (audioRow.removeFromLeft (230));
+    liveIOStatusLabel.setBounds (audioRow);
 
     area.removeFromTop (10);
 
@@ -586,7 +606,9 @@ void MainComponent::updateAudioMeters()
     preview.setLoudness (snapshot.loudness);
     sendMidiForSnapshot (snapshot);
     tickLiveIOControl (snapshot);
-    midiStatusLabel.setText (midiStatus + " / " + liveIOStatus, juce::dontSendNotification);
+    midiStatusLabel.setText (midiStatus, juce::dontSendNotification);
+    liveIOStatusLabel.setText (liveIOStatus, juce::dontSendNotification);
+    liveIOStatusLabel.setColour (juce::Label::textColourId, liveIOToneColour (liveIOStatusTone));
 
     const auto sampleRate = audioInputAnalyzer.getSampleRate();
 
@@ -660,25 +682,10 @@ void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot)
     config.sendMode = liveIOSendMode;
 
     const auto nowMs = static_cast<std::int64_t> (juce::Time::getMillisecondCounterHiRes());
-    const auto result = tickLiveIOControlTimer (liveIOTimerState, config, nowMs, snapshot);
-    const auto controlled = liveIOSendMode == LiveIOControlTimerSendMode::controlledSend;
-    const auto modeLabel = controlled ? "send" : "dry";
+    (void) tickLiveIOControlTimer (liveIOTimerState, config, nowMs, snapshot);
 
-    if (! result.ok)
-    {
-        liveIOStatus = "live io " + juce::String (modeLabel) + " failed";
-        return;
-    }
-
-    liveIOStatus = juce::String ("live io ")
-                   + modeLabel
-                   + " "
-                   + juce::String (result.status)
-                   + " m"
-                   + juce::String (controlled ? liveIOTimerState.midiControlledSendCount
-                                               : liveIOTimerState.midiDryRunCount)
-                   + " o"
-                   + juce::String (controlled ? liveIOTimerState.oscControlledSendCount
-                                               : liveIOTimerState.oscDryRunCount);
+    const auto indicator = makeLiveIOStatusIndicatorState (liveIOTimerState, liveIOSendMode);
+    liveIOStatus = juce::String (indicator.text);
+    liveIOStatusTone = juce::String (indicator.tone);
 }
 }

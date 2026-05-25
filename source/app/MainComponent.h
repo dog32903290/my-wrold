@@ -3,6 +3,7 @@
 #include "AudioInputAnalyzer.h"
 #include "InteractionContract.h"
 #include "LiveIOControlTimer.h"
+#include "LiveIOStatusIndicator.h"
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
@@ -78,6 +79,7 @@ private:
     juce::Label loudnessLabel;
     juce::Label activeLabel;
     juce::Label midiStatusLabel;
+    juce::Label liveIOStatusLabel;
     GraphContract graph;
     PerformancePreferences performancePreferences;
     std::unique_ptr<juce::MidiOutput> midiOutput;
@@ -85,7 +87,8 @@ private:
     juce::String midiStatus = "midi off";
     LiveIOControlTimerSendMode liveIOSendMode = LiveIOControlTimerSendMode::dryRun;
     LiveIOControlTimerState liveIOTimerState;
-    juce::String liveIOStatus = "live io dry-run idle";
+    juce::String liveIOStatus = "live io dry idle m0 o0";
+    juce::String liveIOStatusTone = "idle";
     bool shouldQuitAfterStartupDump = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

@@ -85,6 +85,7 @@ add_library(my_world_core
     source/core/LiveIOMidiOutputInventory.cpp
     source/core/LiveIOMidiSendProof.cpp
     source/core/LiveIOSendAdapter.cpp
+    source/core/LiveIOStatusIndicator.cpp
     source/core/OutputViewState.cpp
     source/core/TimelineState.cpp
     source/core/VariationState.cpp
@@ -450,6 +451,17 @@ target_link_libraries(my_world_live_io_control_timer_tests
 )
 
 add_test(NAME live_io_control_timer COMMAND my_world_live_io_control_timer_tests)
+
+add_executable(my_world_live_io_status_indicator_tests
+    tests/LiveIOStatusIndicatorTests.cpp
+)
+
+target_link_libraries(my_world_live_io_status_indicator_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_status_indicator COMMAND my_world_live_io_status_indicator_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp

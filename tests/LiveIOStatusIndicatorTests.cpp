@@ -1,0 +1,109 @@
+#include "LiveIOControlTimer.h"
+#include "LiveIOStatusIndicator.h"
+
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+namespace
+{
+void expect (bool condition, const std::string& message)
+{
+    if (! condition)
+    {
+        std::cerr << "FAIL: " << message << '\n';
+        std::exit (1);
+    }
+}
+
+void expectEqual (const std::string& actual, const std::string& expected, const std::string& message)
+{
+    expect (actual == expected, message + " expected " + expected + " got " + actual);
+}
+
+void expectEqual (int actual, int expected, const std::string& message)
+{
+    expect (actual == expected, message + " expected " + std::to_string (expected)
+                                + " got " + std::to_string (actual));
+}
+
+void expectContains (const std::string& text, const std::string& expected, const std::string& message)
+{
+    expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
+}
+}
+
+int main()
+{
+    myworld::LiveIOControlTimerState idleState;
+    const auto idle = myworld::makeLiveIOStatusIndicatorState (
+        idleState,
+        myworld::LiveIOControlTimerSendMode::dryRun);
+    expectEqual (idle.text, "live io dry idle m0 o0", "idle text");
+    expectEqual (idle.mode, "dry_run", "idle mode");
+    expectEqual (idle.status, "idle", "idle status");
+    expectEqual (idle.tone, "idle", "idle tone");
+    expectEqual (idle.midiCount, 0, "idle midi count");
+    expectEqual (idle.oscCount, 0, "idle osc count");
+
+    myworld::LiveIOControlTimerState dryRunState;
+    dryRunState.lastStatus = "pumped";
+    dryRunState.lastMessage = "live_io_timer_dry_run_pumped";
+    dryRunState.midiDryRunCount = 3;
+    dryRunState.oscDryRunCount = 2;
+    dryRunState.lastSampleCounter = 256;
+    const auto dryRun = myworld::makeLiveIOStatusIndicatorState (
+        dryRunState,
+        myworld::LiveIOControlTimerSendMode::dryRun);
+    expectEqual (dryRun.text, "live io dry pumped m3 o2", "dry-run text");
+    expectEqual (dryRun.detail, "live_io_timer_dry_run_pumped", "dry-run detail");
+    expectEqual (dryRun.tone, "dry_run", "dry-run tone");
+    expectEqual (dryRun.midiCount, 3, "dry-run midi count");
+    expectEqual (dryRun.oscCount, 2, "dry-run osc count");
+    expect (dryRun.sampleCounter == 256, "dry-run sample counter");
+
+    myworld::LiveIOControlTimerState controlledState;
+    controlledState.lastStatus = "controlled_sent";
+    controlledState.lastMessage = "live_io_timer_controlled_sent";
+    controlledState.midiControlledSendCount = 1;
+    controlledState.oscControlledSendCount = 1;
+    controlledState.lastSampleCounter = 512;
+    const auto controlled = myworld::makeLiveIOStatusIndicatorState (
+        controlledState,
+        myworld::LiveIOControlTimerSendMode::controlledSend);
+    expectEqual (controlled.text, "live io send controlled_sent m1 o1", "controlled text");
+    expectEqual (controlled.mode, "controlled_send", "controlled mode");
+    expectEqual (controlled.tone, "sending", "controlled tone");
+    expectEqual (controlled.midiCount, 1, "controlled midi count");
+    expectEqual (controlled.oscCount, 1, "controlled osc count");
+
+    myworld::LiveIOControlTimerState failedState;
+    failedState.lastStatus = "failed";
+    failedState.lastMessage = "midi output sender is unavailable";
+    failedState.errors.push_back ("midi output sender is unavailable");
+    const auto failed = myworld::makeLiveIOStatusIndicatorState (
+        failedState,
+        myworld::LiveIOControlTimerSendMode::controlledSend);
+    expectEqual (failed.text, "live io send failed m0 o0", "failed text");
+    expectEqual (failed.detail, "midi output sender is unavailable", "failed detail");
+    expectEqual (failed.tone, "failed", "failed tone");
+
+    myworld::LiveIOControlTimerState inactiveState;
+    inactiveState.lastStatus = "inactive";
+    inactiveState.lastMessage = "live_io_timer_inactive";
+    const auto inactive = myworld::makeLiveIOStatusIndicatorState (
+        inactiveState,
+        myworld::LiveIOControlTimerSendMode::dryRun);
+    expectEqual (inactive.text, "live io dry inactive m0 o0", "inactive text");
+    expectEqual (inactive.tone, "inactive", "inactive tone");
+
+    const auto json = myworld::makeLiveIOStatusIndicatorJson (controlled);
+    expectContains (json, "\"kind\": \"liveIOStatusIndicator\"", "indicator json kind");
+    expectContains (json, "\"text\": \"live io send controlled_sent m1 o1\"", "indicator json text");
+    expectContains (json, "\"tone\": \"sending\"", "indicator json tone");
+    expectContains (json, "\"midiCount\": 1", "indicator json midi count");
+    expectContains (json, "\"oscCount\": 1", "indicator json osc count");
+
+    std::cout << "live io status indicator ok\n";
+    return 0;
+}
