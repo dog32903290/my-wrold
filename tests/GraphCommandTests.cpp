@@ -26,6 +26,7 @@ int main()
     expect (myworld::isKnownCommandType ("delete_node"), "delete_node command vocabulary");
     expect (myworld::isKnownCommandType ("disconnect"), "disconnect command vocabulary");
     expect (myworld::isKnownCommandType ("reconnect"), "reconnect command vocabulary");
+    expect (myworld::isKnownCommandType ("split_edge_create_node"), "split edge command vocabulary");
 
     auto session = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
 

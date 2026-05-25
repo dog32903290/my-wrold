@@ -91,7 +91,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | SEARCH-002 | Search ranking exact, starts-with, contains, PascalCase | Browser And Search Parity | `SymbolFilter` ranking | proven | L1 witness | `search_ranking_exact_starts_contains_pascal` | `node_spec_browser` proves deterministic fixture order |
 | COMPAT-001 | Drag output to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | proven | L1 witness | `compatible_create_from_output_drag` | `node_spec_browser` proves candidate filtering; mutation still uses existing `create_node+connect` command path |
 | COMPAT-002 | Drag input to empty canvas suggests compatible nodes | Browser And Search Parity | `PlaceHolderUi`, `SymbolFilter` | proven | L1 witness | `compatible_create_from_input_drag` | `node_spec_browser` proves candidate filtering; UI gesture trace remains separate |
-| COMPAT-003 | Split existing connection through browser | Browser And Search Parity | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | partial | L2 command | `compatible_split_connection_insert_node` | P-OPS1 macro command trace |
+| COMPAT-003 | Split existing connection through browser | Browser And Search Parity | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | partial | L2 command | `compatible_split_connection_insert_node` | P-OPS1A proves split macro command; visible browser trigger remains |
 | COMPAT-004 | Keyboard create/cancel in browser | Browser And Search Parity | browser keyboard handling | planned | L3 visible | `browser_keyboard_return_escape_no_mutation_on_cancel` | UI event trace schema |
 
 ### Graph Interaction
@@ -104,11 +104,11 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | GEST-004 | Port-to-port connect | Graph Interaction Parity | `InputSnapper`, `OutputSnapper` | proven | L2 command | existing `connect` trace | none |
 | GEST-005 | Selected edge delete | Graph Interaction Parity | `Modifications.DeleteSelection` | proven | L2 command | existing `disconnect` trace | none |
 | GEST-006 | Selected node delete plus incident edges | Graph Interaction Parity | `DeleteSymbolChildrenCommand` | proven | L2 command | existing `delete_node` trace | none |
-| GEST-007 | Reconnect existing input end | Graph Interaction Parity | `HoldingConnectionEnd`, `InputSnapper` | partial | L2 command | `reconnect_input_end_one_undo_step` | reconnect macro trace |
-| GEST-008 | Reconnect existing output beginning | Graph Interaction Parity | `HoldingConnectionBeginning`, `OutputSnapper` | planned | L2 command | `reconnect_output_beginning_one_undo_step` | P-OPS1 |
+| GEST-007 | Reconnect existing input end | Graph Interaction Parity | `HoldingConnectionEnd`, `InputSnapper` | proven | L2 command | `reconnect_input_end_one_undo_step` | `reconnect` macro command trace proven; visible drag state remains separate |
+| GEST-008 | Reconnect existing output beginning | Graph Interaction Parity | `HoldingConnectionBeginning`, `OutputSnapper` | proven | L2 command | `reconnect_output_beginning_one_undo_step` | `reconnect` macro command trace proven; visible drag state remains separate |
 | GEST-009 | Drop connection/node onto operator body and choose hidden input | Graph Interaction Parity | `InputPicking` | planned | L2 command | `drop_connection_onto_operator_hidden_input` | hidden input metadata |
 | GEST-010 | Multi-input insert before, after, replace | Graph Interaction Parity | `InputSnapper.InputSnapTypes` | planned | L2 command | `multi_input_insert_before_after_replace` | ordered multi-input edges |
-| GEST-011 | Split edge by creating operator | Graph Interaction Parity | `ConnectionMaker.SplitConnectionWithSymbolBrowser` | partial | L2 command | `split_edge_create_operator_undo_macro` | P-OPS1 |
+| GEST-011 | Split edge by creating operator | Graph Interaction Parity | `ConnectionMaker.SplitConnectionWithSymbolBrowser` | proven | L2 command | `split_edge_create_operator_undo_macro` | `split_edge_create_node` macro trace proven; browser UI trigger remains separate |
 | GEST-012 | Drag existing node onto edge to insert | Graph Interaction Parity | `MagItemMovement.TrySplitInsert` | planned | L2 command | `drag_node_onto_edge_split_insert` | edge hit-test plus macro mutation |
 | GEST-013 | Snap move creates connection and unsnap removes connection | Graph Interaction Parity | `MagItemMovement` snap/unsnap | planned | L2 command | `snap_move_connect_unsnap_disconnect_undo` | preview vs committed graph split |
 | GEST-014 | Shake dragged node to disconnect | Graph Interaction Parity | `ShakeDetector` | planned | L2 command | `shake_disconnect_dragged_node_edges` | gesture trace input model |
@@ -279,12 +279,42 @@ fixtures/interaction/tooll3-t0-t7.behavior.json
 tests/InteractionTraceTests.cpp
 ```
 
-- [ ] Add trace cases for reconnect input end, reconnect output beginning, split edge, hidden input picker, multi-input ordering, drag-node-onto-edge, snap/unsnap, and shake disconnect.
-- [ ] Add command result expectations for one user gesture equals one undo unit.
-- [ ] Implement the smallest commandGraph path for one operation at a time.
-- [ ] Run `cmake --build build`.
-- [ ] Run `./build/my_world_interaction_trace_tests`.
-- [ ] Run `ctest --test-dir build --output-on-failure`.
+- [x] Add trace cases for reconnect input end, reconnect output beginning, and split edge create operator.
+- [x] Add command result expectations for one user gesture equals one undo unit for reconnect/split macros.
+- [x] Implement the smallest commandGraph path for reconnect input end, reconnect output beginning, and split edge create operator.
+- [ ] Add trace cases for hidden input picker, multi-input ordering, drag-node-onto-edge, snap/unsnap, and shake disconnect.
+- [x] Run `cmake --build build --target my_world_t3_t5_command_tests my_world_graph_command_tests my_world_interaction_trace_tests`.
+- [x] Run `./build/my_world_interaction_trace_tests`.
+- [x] Run `ctest --test-dir build --output-on-failure -R "t3_t5_commands|interaction_traces|graph_commands"`.
+
+P-OPS1A closed as of 2026-05-25 08:36 Asia/Taipei.
+
+Verification:
+
+```text
+cmake --build build --target my_world_t3_t5_command_tests my_world_interaction_trace_tests my_world_graph_command_tests
+# RED first failed on missing reconnectInputEnd / reconnectOutputBeginning / splitEdgeWithNode helpers.
+./build/my_world_t3_t5_command_tests
+./build/my_world_graph_command_tests
+./build/my_world_interaction_trace_tests
+ctest --test-dir build --output-on-failure -R "t3_t5_commands|interaction_traces|graph_commands"
+```
+
+Accepted result:
+
+```text
+t3 t5 commands ok
+graph commands ok
+interaction traces ok
+3/3 focused tests passed.
+```
+
+Scope boundary:
+
+```text
+P-OPS1A proves commandGraph macro semantics for reconnecting either edge end and splitting a compatible edge by creating an inserted node.
+It does not implement hidden input picking, multi-input ordering, drag-existing-node insert, snap/unsnap preview state, shake disconnect, or visible ImGui gesture handling.
+```
 
 ### P-OUT1 Output Pinning
 

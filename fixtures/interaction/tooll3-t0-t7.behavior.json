@@ -24,6 +24,18 @@
       "expectedCommands": ["create_node+connect"]
     },
     {
+      "name": "reconnect input end",
+      "expectedCommands": ["reconnect", "undo:reconnect", "redo:reconnect"]
+    },
+    {
+      "name": "reconnect output beginning",
+      "expectedCommands": ["reconnect", "undo:reconnect", "redo:reconnect"]
+    },
+    {
+      "name": "split edge create operator",
+      "expectedCommands": ["split_edge_create_node", "undo:split_edge_create_node", "redo:split_edge_create_node"]
+    },
+    {
       "name": "compound enter exit collapse",
       "expectedCommands": ["create_node", "enter_patch", "exit_patch", "collapse_compound"]
     },

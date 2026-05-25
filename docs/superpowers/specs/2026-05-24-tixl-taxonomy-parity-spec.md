@@ -208,6 +208,30 @@ This proves deterministic query behavior and native saved type preservation for 
 | Split existing connection through browser | input/output filters plus old-edge removal and two-edge insert | mirror as one macro command | `compatible_split_connection_insert_node` | reconnect/split trace |
 | Keyboard create/cancel | arrows, Return, Escape/click outside | mirror | `browser_keyboard_return_escape_no_mutation_on_cancel` | P-SEARCH1 fixture row recorded; UI event trace schema still needed |
 
+## P-OPS1A Fixture Evidence
+
+Closed as of 2026-05-25 08:36 Asia/Taipei.
+
+Reconnect and split-edge macro operations are proven at commandGraph / behavior trace level by:
+
+```text
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+tests/T3T5CommandTests.cpp
+tests/InteractionTraceTests.cpp
+fixtures/interaction/tooll3-t0-t7.behavior.json
+```
+
+Verified acceptance traces:
+
+```text
+reconnect_input_end_one_undo_step
+reconnect_output_beginning_one_undo_step
+split_edge_create_operator_undo_macro
+```
+
+This proves one undoable command unit for reconnecting either edge end and for splitting a compatible edge by creating an inserted node. It does not implement hidden input picking, ordered multi-input insertion, drag-existing-node insertion, snap/unsnap preview state, shake disconnect, or visible ImGui gesture handling.
+
 ## Graph Interaction Parity
 
 Current My World claim remains `T0-T7 core parity`, not full TiXL operation parity.
@@ -220,11 +244,11 @@ Current My World claim remains `T0-T7 core parity`, not full TiXL operation pari
 | Port-to-port connect | `InputSnapper`, `OutputSnapper` | proven | existing `connect` trace |
 | Selected edge delete | `Modifications.DeleteSelection` | proven | existing `disconnect` trace |
 | Selected node delete plus incident edges | `DeleteSymbolChildrenCommand` | proven | existing `delete_node` trace |
-| Reconnect existing input end | `HoldingConnectionEnd`, `InputSnapper` | partial | `reconnect_input_end_one_undo_step` |
-| Reconnect existing output beginning | `HoldingConnectionBeginning`, `OutputSnapper` | missing | `reconnect_output_beginning_one_undo_step` |
+| Reconnect existing input end | `HoldingConnectionEnd`, `InputSnapper` | proven at commandGraph macro level | `reconnect_input_end_one_undo_step` |
+| Reconnect existing output beginning | `HoldingConnectionBeginning`, `OutputSnapper` | proven at commandGraph macro level | `reconnect_output_beginning_one_undo_step` |
 | Drop connection/node onto operator body and choose hidden input | `InputPicking` | missing | `drop_connection_onto_operator_hidden_input` |
 | Multi-input insert before/after/replace | `InputSnapper.InputSnapTypes` | missing | `multi_input_insert_before_after_replace` |
-| Split edge by creating operator | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | partial | `split_edge_create_operator_undo_macro` |
+| Split edge by creating operator | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | proven at commandGraph macro level; browser trigger later | `split_edge_create_operator_undo_macro` |
 | Drag existing node onto edge to insert | `MagItemMovement.TrySplitInsert` | missing | `drag_node_onto_edge_split_insert` |
 | Snap move creates connection / unsnap removes connection | `MagItemMovement` snap/unsnap paths | missing | `snap_move_connect_unsnap_disconnect_undo` |
 | Shake dragged node to disconnect | `ShakeDetector`, `NodeActions.DisconnectDraggedNodes` | missing | `shake_disconnect_dragged_node_edges` |
@@ -346,8 +370,12 @@ TiXL-style fuzzy search + namespace match + port-compatible candidate filter
 -> NodeSpec registry query
 -> compatible-create behavior fixture
 
-P-OPS1 richer graph-operation trace: next selectable
-reconnect, split edge, hidden input picker, multi-input ordering, shake disconnect
+P-OPS1A richer graph-operation trace: closed for reconnect/split macro commands
+reconnect input end, reconnect output beginning, split edge create operator
+-> one user gesture = one undo unit
+
+P-OPS1B richer graph-operation continuation: next selectable
+hidden input picker, multi-input ordering, drag-existing-node insert, snap/unsnap, shake disconnect
 -> one user gesture = one undo unit
 
 P-OUT1 output pinning: next selectable

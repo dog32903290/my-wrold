@@ -2,6 +2,7 @@
 #include "GraphEndpoint.h"
 #include "InteractionContract.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -25,6 +26,13 @@ std::string paramValue (const myworld::GraphNode& node, const std::string& param
             return param.value;
 
     return {};
+}
+
+bool hasEdge (const std::vector<myworld::GraphEdge>& edges, const std::string& from, const std::string& to)
+{
+    return std::any_of (edges.begin(), edges.end(), [&] (const auto& edge) {
+        return edge.from == from && edge.to == to;
+    });
 }
 }
 
@@ -171,6 +179,79 @@ int main()
 
     expect (myworld::setPortBinding (session, "shader1", "output", "connected", "out1.input").ok, "set port binding");
     expect (myworld::findEditorNode (session.graph, "shader1")->portBindings.size() == 1, "port binding stored");
+
+    auto reconnectInputSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (reconnectInputSession, "shader.fragment", "shader2", { 120.0, 260.0 }).ok,
+            "create alternate shader source");
+    const auto reconnectInputUndoSize = reconnectInputSession.undoStack.size();
+    const auto reconnectInput = myworld::reconnectInputEnd (reconnectInputSession,
+                                                            "edge.shader1.output.out1.input",
+                                                            "shader2.output");
+    expect (reconnectInput.ok, "reconnect input end succeeds: " + reconnectInput.message);
+    expect (reconnectInputSession.undoStack.size() == reconnectInputUndoSize + 1,
+            "reconnect input end is one undo record");
+    expect (hasEdge (reconnectInputSession.graph.editorGraph.edges, "shader2.output", "out1.input"),
+            "reconnect input end moves target to new source");
+    expect (! hasEdge (reconnectInputSession.graph.editorGraph.edges, "shader1.output", "out1.input"),
+            "reconnect input end removes old source edge");
+    expect (reconnectInputSession.commandLog.back() == "reconnect", "reconnect input command logged");
+    expect (myworld::undo (reconnectInputSession), "undo reconnect input");
+    expect (hasEdge (reconnectInputSession.graph.editorGraph.edges, "shader1.output", "out1.input"),
+            "undo reconnect input restores old edge");
+    expect (myworld::redo (reconnectInputSession), "redo reconnect input");
+    expect (hasEdge (reconnectInputSession.graph.editorGraph.edges, "shader2.output", "out1.input"),
+            "redo reconnect input reapplies new edge");
+
+    auto reconnectOutputSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (reconnectOutputSession, "output.preview", "out2", { 540.0, 260.0 }).ok,
+            "create alternate output target");
+    const auto reconnectOutput = myworld::reconnectOutputBeginning (reconnectOutputSession,
+                                                                    "edge.shader1.output.out1.input",
+                                                                    "out2.input");
+    expect (reconnectOutput.ok, "reconnect output beginning succeeds: " + reconnectOutput.message);
+    expect (hasEdge (reconnectOutputSession.graph.editorGraph.edges, "shader1.output", "out2.input"),
+            "reconnect output beginning moves source to new target");
+    expect (! hasEdge (reconnectOutputSession.graph.editorGraph.edges, "shader1.output", "out1.input"),
+            "reconnect output beginning removes old target edge");
+    expect (reconnectOutputSession.commandLog.back() == "reconnect", "reconnect output command logged");
+    expect (myworld::undo (reconnectOutputSession), "undo reconnect output");
+    expect (hasEdge (reconnectOutputSession.graph.editorGraph.edges, "shader1.output", "out1.input"),
+            "undo reconnect output restores old edge");
+
+    auto splitSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (splitSession, "analyzer.loudness", "loud1", { 180.0, 360.0 }).ok,
+            "create loudness for split");
+    expect (myworld::createNode (splitSession, "io.midi.cc_out", "midi1", { 540.0, 360.0 }).ok,
+            "create midi target for split");
+    expect (myworld::connectPorts (splitSession, "loud1.out", "midi1.value").ok,
+            "connect signal edge to split");
+    const auto splitUndoSize = splitSession.undoStack.size();
+    const auto split = myworld::splitEdgeWithNode (splitSession,
+                                                   "edge.loud1.out.midi1.value",
+                                                   "signal.smoother",
+                                                   "smooth1",
+                                                   { 360.0, 360.0 });
+    expect (split.ok, "split edge create node succeeds: " + split.message);
+    expect (splitSession.undoStack.size() == splitUndoSize + 1,
+            "split edge is one undo record");
+    expect (myworld::findEditorNode (splitSession.graph, "smooth1") != nullptr,
+            "split creates inserted node");
+    expect (hasEdge (splitSession.graph.editorGraph.edges, "loud1.out", "smooth1.input"),
+            "split creates upstream edge");
+    expect (hasEdge (splitSession.graph.editorGraph.edges, "smooth1.out", "midi1.value"),
+            "split creates downstream edge");
+    expect (! hasEdge (splitSession.graph.editorGraph.edges, "loud1.out", "midi1.value"),
+            "split removes original edge");
+    expect (splitSession.commandLog.back() == "split_edge_create_node",
+            "split edge command logged");
+    expect (myworld::undo (splitSession), "undo split edge");
+    expect (myworld::findEditorNode (splitSession.graph, "smooth1") == nullptr,
+            "undo split removes inserted node");
+    expect (hasEdge (splitSession.graph.editorGraph.edges, "loud1.out", "midi1.value"),
+            "undo split restores original edge");
+    expect (myworld::redo (splitSession), "redo split edge");
+    expect (hasEdge (splitSession.graph.editorGraph.edges, "loud1.out", "smooth1.input"),
+            "redo split restores upstream edge");
 
     std::cout << "t3 t5 commands ok\n";
     return 0;

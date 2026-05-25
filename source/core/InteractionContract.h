@@ -112,6 +112,20 @@ CommandResult connectPorts (GraphSession& session,
                             const std::string& from,
                             const std::string& to);
 CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId);
+CommandResult reconnectInputEnd (GraphSession& session,
+                                 const std::string& edgeId,
+                                 const std::string& newSourceEndpoint);
+CommandResult reconnectInputEnd (GraphSession& session,
+                                 const std::vector<NodeSpec>& specs,
+                                 const std::string& edgeId,
+                                 const std::string& newSourceEndpoint);
+CommandResult reconnectOutputBeginning (GraphSession& session,
+                                        const std::string& edgeId,
+                                        const std::string& newTargetEndpoint);
+CommandResult reconnectOutputBeginning (GraphSession& session,
+                                        const std::vector<NodeSpec>& specs,
+                                        const std::string& edgeId,
+                                        const std::string& newTargetEndpoint);
 CommandResult createNode (GraphSession& session, const std::string& nodeType, const std::string& nodeId, CanvasPoint position);
 CommandResult createNode (GraphSession& session,
                           const std::vector<NodeSpec>& specs,
@@ -157,6 +171,17 @@ CommandResult createNodeAndConnect (GraphSession& session,
                                     const std::string& nodeType,
                                     const std::string& nodeId,
                                     CanvasPoint position);
+CommandResult splitEdgeWithNode (GraphSession& session,
+                                 const std::string& edgeId,
+                                 const std::string& nodeType,
+                                 const std::string& nodeId,
+                                 CanvasPoint position);
+CommandResult splitEdgeWithNode (GraphSession& session,
+                                 const std::vector<NodeSpec>& specs,
+                                 const std::string& edgeId,
+                                 const std::string& nodeType,
+                                 const std::string& nodeId,
+                                 CanvasPoint position);
 CommandResult enterPatch (GraphSession& session, const std::string& nodeId);
 CommandResult exitPatch (GraphSession& session);
 CommandResult setCollapsed (GraphSession& session, const std::string& nodeId, bool collapsed);

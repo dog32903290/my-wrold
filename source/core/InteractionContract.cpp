@@ -57,6 +57,49 @@ const PortSpec* findPort (const NodeSpec& spec, const std::string& portId, const
     return nullptr;
 }
 
+const PortSpec* portForEndpoint (const GraphContract& graph,
+                                 const std::vector<NodeSpec>& specs,
+                                 const std::string& endpoint,
+                                 const std::string& direction)
+{
+    const auto* spec = specForNode (graph, specs, nodeIdFromEndpoint (endpoint));
+    return spec == nullptr ? nullptr : findPort (*spec, portIdFromEndpoint (endpoint), direction);
+}
+
+std::string outputDataTypeForEndpointInternal (const GraphContract& graph,
+                                               const std::vector<NodeSpec>& specs,
+                                               const std::string& endpoint)
+{
+    const auto* port = portForEndpoint (graph, specs, endpoint, "out");
+    return port == nullptr ? std::string {} : port->dataType;
+}
+
+std::string inputDataTypeForEndpointInternal (const GraphContract& graph,
+                                              const std::vector<NodeSpec>& specs,
+                                              const std::string& endpoint)
+{
+    const auto* port = portForEndpoint (graph, specs, endpoint, "in");
+    return port == nullptr ? std::string {} : port->dataType;
+}
+
+const PortSpec* firstInputMatching (const NodeSpec& spec, const std::string& dataType)
+{
+    const auto found = std::find_if (spec.inputs.begin(), spec.inputs.end(), [&] (const auto& port) {
+        return port.dataType == dataType;
+    });
+
+    return found == spec.inputs.end() ? nullptr : &*found;
+}
+
+const PortSpec* firstOutputMatching (const NodeSpec& spec, const std::string& dataType)
+{
+    const auto found = std::find_if (spec.outputs.begin(), spec.outputs.end(), [&] (const auto& port) {
+        return port.dataType == dataType;
+    });
+
+    return found == spec.outputs.end() ? nullptr : &*found;
+}
+
 const NodeCreationGate* creationGateForNodeType (const std::vector<NodeCreationGate>& creationGates,
                                                  const std::string& nodeType)
 {
@@ -153,6 +196,15 @@ bool eraseEdgeById (std::vector<GraphEdge>& edges, const std::string& edgeId)
         return edge.id == edgeId;
     }), edges.end());
     return edges.size() != originalSize;
+}
+
+const GraphEdge* findEdgeById (const std::vector<GraphEdge>& edges, const std::string& edgeId)
+{
+    const auto found = std::find_if (edges.begin(), edges.end(), [&] (const auto& edge) {
+        return edge.id == edgeId;
+    });
+
+    return found == edges.end() ? nullptr : &*found;
 }
 
 bool edgeTouchesNode (const GraphEdge& edge, const std::string& nodeId)
@@ -452,6 +504,86 @@ CommandResult disconnectEdge (GraphSession& session, const std::string& edgeId)
     return commitCommand (session, "disconnect", before);
 }
 
+CommandResult reconnectInputEnd (GraphSession& session,
+                                 const std::string& edgeId,
+                                 const std::string& newSourceEndpoint)
+{
+    return reconnectInputEnd (session, makeSeedNodeSpecs(), edgeId, newSourceEndpoint);
+}
+
+CommandResult reconnectInputEnd (GraphSession& session,
+                                 const std::vector<NodeSpec>& specs,
+                                 const std::string& edgeId,
+                                 const std::string& newSourceEndpoint)
+{
+    const auto* existingEdge = findEdgeById (session.graph.editorGraph.edges, edgeId);
+    if (existingEdge == nullptr)
+        return { false, "missing edge: " + edgeId };
+
+    const auto oldEdge = *existingEdge;
+    auto candidate = session.graph;
+    eraseEdgeById (candidate.editorGraph.edges, edgeId);
+
+    if (hasEdge (candidate.editorGraph.edges, newSourceEndpoint, oldEdge.to))
+        return { false, "duplicate edge" };
+
+    const auto newEdge = makeEdge (candidate, specs, newSourceEndpoint, oldEdge.to);
+    if (newEdge.dataType.empty())
+        return { false, "missing source port" };
+
+    candidate.editorGraph.edges.push_back (newEdge);
+    syncRuntimeFromEditor (candidate);
+
+    const auto report = validateGraphInvariants (candidate, specs);
+    if (! report.ok)
+        return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    session.selectedEdgeIds = { newEdge.id };
+    return commitCommand (session, "reconnect", before);
+}
+
+CommandResult reconnectOutputBeginning (GraphSession& session,
+                                        const std::string& edgeId,
+                                        const std::string& newTargetEndpoint)
+{
+    return reconnectOutputBeginning (session, makeSeedNodeSpecs(), edgeId, newTargetEndpoint);
+}
+
+CommandResult reconnectOutputBeginning (GraphSession& session,
+                                        const std::vector<NodeSpec>& specs,
+                                        const std::string& edgeId,
+                                        const std::string& newTargetEndpoint)
+{
+    const auto* existingEdge = findEdgeById (session.graph.editorGraph.edges, edgeId);
+    if (existingEdge == nullptr)
+        return { false, "missing edge: " + edgeId };
+
+    const auto oldEdge = *existingEdge;
+    auto candidate = session.graph;
+    eraseEdgeById (candidate.editorGraph.edges, edgeId);
+
+    if (hasEdge (candidate.editorGraph.edges, oldEdge.from, newTargetEndpoint))
+        return { false, "duplicate edge" };
+
+    const auto newEdge = makeEdge (candidate, specs, oldEdge.from, newTargetEndpoint);
+    if (newEdge.dataType.empty())
+        return { false, "missing source port" };
+
+    candidate.editorGraph.edges.push_back (newEdge);
+    syncRuntimeFromEditor (candidate);
+
+    const auto report = validateGraphInvariants (candidate, specs);
+    if (! report.ok)
+        return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    session.selectedEdgeIds = { newEdge.id };
+    return commitCommand (session, "reconnect", before);
+}
+
 CommandResult createNode (GraphSession& session,
                           const std::vector<NodeSpec>& specs,
                           const std::string& nodeType,
@@ -611,6 +743,69 @@ CommandResult createNodeAndConnectWithDebugOverride (GraphSession& session,
     session.graph = candidate;
     session.selectedNodeIds = { nodeId };
     return commitCommand (session, "create_node+connect_debug_override", before);
+}
+
+CommandResult splitEdgeWithNode (GraphSession& session,
+                                 const std::string& edgeId,
+                                 const std::string& nodeType,
+                                 const std::string& nodeId,
+                                 CanvasPoint position)
+{
+    return splitEdgeWithNode (session, makeSeedNodeSpecs(), edgeId, nodeType, nodeId, position);
+}
+
+CommandResult splitEdgeWithNode (GraphSession& session,
+                                 const std::vector<NodeSpec>& specs,
+                                 const std::string& edgeId,
+                                 const std::string& nodeType,
+                                 const std::string& nodeId,
+                                 CanvasPoint position)
+{
+    if (containsNode (session.graph, nodeId))
+        return { false, "duplicate node: " + nodeId };
+
+    const auto* existingEdge = findEdgeById (session.graph.editorGraph.edges, edgeId);
+    if (existingEdge == nullptr)
+        return { false, "missing edge: " + edgeId };
+
+    const auto* newSpec = findNodeSpec (specs, nodeType);
+    if (newSpec == nullptr)
+        return { false, "unknown node type: " + nodeType };
+
+    const auto oldEdge = *existingEdge;
+    const auto sourceDataType = outputDataTypeForEndpointInternal (session.graph, specs, oldEdge.from);
+    const auto targetDataType = inputDataTypeForEndpointInternal (session.graph, specs, oldEdge.to);
+
+    const auto* inputPort = firstInputMatching (*newSpec, sourceDataType);
+    if (inputPort == nullptr)
+        return { false, "new node has no compatible input" };
+
+    const auto* outputPort = firstOutputMatching (*newSpec, targetDataType);
+    if (outputPort == nullptr)
+        return { false, "new node has no compatible output" };
+
+    auto candidate = session.graph;
+    eraseEdgeById (candidate.editorGraph.edges, edgeId);
+    candidate.editorGraph.nodes.push_back ({ nodeId, nodeType, {}, { position.x, position.y } });
+
+    const auto upstream = makeEdge (candidate, specs, oldEdge.from, nodeId + "." + inputPort->id);
+    const auto downstream = makeEdge (candidate, specs, nodeId + "." + outputPort->id, oldEdge.to);
+    if (upstream.dataType.empty() || downstream.dataType.empty())
+        return { false, "missing source port" };
+
+    candidate.editorGraph.edges.push_back (upstream);
+    candidate.editorGraph.edges.push_back (downstream);
+    syncRuntimeFromEditor (candidate);
+
+    const auto report = validateGraphInvariants (candidate, specs);
+    if (! report.ok)
+        return { false, report.errors.empty() ? "invalid graph" : report.errors.front() };
+
+    const auto before = snapshotOf (session);
+    session.graph = candidate;
+    session.selectedNodeIds = { nodeId };
+    session.selectedEdgeIds.clear();
+    return commitCommand (session, "split_edge_create_node", before);
 }
 
 CommandResult enterPatch (GraphSession& session, const std::string& nodeId)
@@ -985,6 +1180,95 @@ BehaviorTraceReport runBehaviorTraceFixture (const std::string& path)
                                                "out2",
                                                { 520.0, 160.0 }));
     });
+
+    runTrace ("reconnect input end",
+              { "reconnect", "undo:reconnect", "redo:reconnect" },
+              [&] (const auto& name, auto& session) {
+                  session.graph.editorGraph.nodes.push_back ({ "shader2", "shader.fragment", {}, { 120.0, 260.0 } });
+                  syncRuntimeFromEditor (session.graph);
+
+                  expectCommandOk (report,
+                                   name,
+                                   reconnectInputEnd (session,
+                                                      "edge.shader1.output.out1.input",
+                                                      "shader2.output"));
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader2.output", "out1.input"),
+                                "reconnect input did not create new source edge");
+                  expectBoolOk (report, name, undo (session), "undo failed");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader1.output", "out1.input"),
+                                "undo did not restore old input edge");
+                  expectBoolOk (report, name, redo (session), "redo failed");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader2.output", "out1.input"),
+                                "redo did not restore reconnected input edge");
+              });
+
+    runTrace ("reconnect output beginning",
+              { "reconnect", "undo:reconnect", "redo:reconnect" },
+              [&] (const auto& name, auto& session) {
+                  session.graph.editorGraph.nodes.push_back ({ "out2", "output.preview", {}, { 560.0, 260.0 } });
+                  syncRuntimeFromEditor (session.graph);
+
+                  expectCommandOk (report,
+                                   name,
+                                   reconnectOutputBeginning (session,
+                                                             "edge.shader1.output.out1.input",
+                                                             "out2.input"));
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader1.output", "out2.input"),
+                                "reconnect output did not create new target edge");
+                  expectBoolOk (report, name, undo (session), "undo failed");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader1.output", "out1.input"),
+                                "undo did not restore old output edge");
+                  expectBoolOk (report, name, redo (session), "redo failed");
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "shader1.output", "out2.input"),
+                                "redo did not restore reconnected output edge");
+              });
+
+    runTrace ("split edge create operator",
+              { "split_edge_create_node", "undo:split_edge_create_node", "redo:split_edge_create_node" },
+              [&] (const auto& name, auto& session) {
+                  const auto specs = makeSeedNodeSpecs();
+                  session.graph.editorGraph.nodes.push_back ({ "loud1", "analyzer.loudness", {}, { 180.0, 360.0 } });
+                  session.graph.editorGraph.nodes.push_back ({ "midi1", "io.midi.cc_out", {}, { 540.0, 360.0 } });
+                  session.graph.editorGraph.edges.push_back (makeEdge (session.graph, specs, "loud1.out", "midi1.value"));
+                  syncRuntimeFromEditor (session.graph);
+
+                  expectCommandOk (report,
+                                   name,
+                                   splitEdgeWithNode (session,
+                                                      "edge.loud1.out.midi1.value",
+                                                      "signal.smoother",
+                                                      "smooth1",
+                                                      { 360.0, 360.0 }));
+                  expectBoolOk (report,
+                                name,
+                                hasEdge (session.graph.editorGraph.edges, "loud1.out", "smooth1.input")
+                                    && hasEdge (session.graph.editorGraph.edges, "smooth1.out", "midi1.value"),
+                                "split edge did not create both replacement edges");
+                  expectBoolOk (report, name, undo (session), "undo failed");
+                  expectBoolOk (report,
+                                name,
+                                findEditorNode (session.graph, "smooth1") == nullptr
+                                    && hasEdge (session.graph.editorGraph.edges, "loud1.out", "midi1.value"),
+                                "undo did not restore original split edge");
+                  expectBoolOk (report, name, redo (session), "redo failed");
+                  expectBoolOk (report,
+                                name,
+                                findEditorNode (session.graph, "smooth1") != nullptr
+                                    && hasEdge (session.graph.editorGraph.edges, "loud1.out", "smooth1.input"),
+                                "redo did not restore split node");
+              });
 
     runTrace ("compound enter exit collapse",
               { "create_node", "enter_patch", "exit_patch", "collapse_compound" },
