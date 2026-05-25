@@ -105,18 +105,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 14:44 Asia/Taipei, P-LIVE11/P-LIVE12 are committed and pushed in `e71d69c`. Current dirty files, if any, belong to the closed P-LIVE13 arbitrary binding MIDI teach lane.
+As of 2026-05-25 14:48 Asia/Taipei, P-LIVE13 is committed and pushed in `afd7b18`. Current dirty files, if any, belong to the closed P-LIVE14 OSC target preferences lane.
 
 ```text
-P-LIVE13 owned files:
+P-LIVE14 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md
-- source/core/LiveIOMidiTeach.h
-- source/core/LiveIOMidiTeach.cpp
-- tests/LiveIOMidiTeachTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md
+- source/app/LiveIOAppController.cpp
+- source/preferences/PerformancePreferences.h
+- source/preferences/PerformancePreferences.cpp
+- tests/PerformancePreferencesTests.cpp
 ```
 
-Do not edit OSC target preferences, external OSC send/receive, realtime callback delivery, or broader MIDI output operators in P-LIVE13.
+Do not edit external OSC send/receive, realtime callback delivery, or broader MIDI output operators in P-LIVE14.
 
 Current C4 note:
 
@@ -318,7 +319,8 @@ Latest accepted targeted result:
 | P-LIVE11 MIDI input selector/preference | closed | `docs/superpowers/specs/2026-05-25-p-live11-midi-input-selector-preference.md`; `PerformancePreferences` stores selected MIDI input, `PreferencesPanel` exposes input selection, and `MainComponent` narrows MIDI teach listening to the selected input while preserving all-input fallback; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, preference disk persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE12 preference disk persistence | closed | `docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md`; `savePerformancePreferences()` / `loadPerformancePreferences()` roundtrip the full app preference snapshot, `MainComponent` loads it on startup and saves UI preference changes; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE13 arbitrary binding MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md`; `armLiveIOMidiTeachForBinding()` learns a CC for an arbitrary binding id and `applyLiveIOMidiTeachToBindings()` updates only the matching `midi.cc` binding; focused tests, app build, and `ctest` 73/73 passed | UI binding chooser, OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE13 closure |
+| P-LIVE14 OSC target preferences | closed | `docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md`; `LiveIOPreferences` stores OSC host/port/loudness address, save/load roundtrips them, and app OSC binding uses the configured address while external send remains parked; focused tests, app build, and `ctest` 73/73 passed | UI fields, external OSC send proof, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE14 closure |
 
 ## Active Lane Protocol
 
@@ -327,7 +329,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE13 arbitrary binding MIDI teach closure as of 2026-05-25 14:44 Asia/Taipei.
+None after P-LIVE14 OSC target preferences closure as of 2026-05-25 14:48 Asia/Taipei.
 
 P-LIVE13 arbitrary binding MIDI teach closed.
 Evidence:
@@ -358,9 +360,37 @@ Latest accepted result:
 - `73/73 tests passed`
 - `git diff --check passed`
 
+P-LIVE14 OSC target preferences closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md
+- source/preferences/PerformancePreferences.h
+- source/preferences/PerformancePreferences.cpp
+- source/app/LiveIOAppController.cpp
+- tests/PerformancePreferencesTests.cpp
+
+Closed line:
+PerformancePreferences.liveIO OSC target
+-> sanitize host/port/address
+-> disk roundtrip
+-> keep controlled app timer OSC send disabled until P-LIVE15
+
+Latest verification:
+- `cmake --build build --target my_world_performance_preferences_tests` failed RED first on missing OSC target fields in `LiveIOPreferences`.
+- `cmake --build build --target my_world_performance_preferences_tests && ./build/my_world_performance_preferences_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "performance_preferences|live_io_app_controller"`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted result:
+- `performance preferences ok`
+- app target `my-world` builds.
+- `73/73 tests passed`
+- `git diff --check passed`
+
 Next selectable lane:
 - None selected.
-- UI binding chooser, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
+- UI binding chooser, external OSC send proof, realtime callback delivery, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.

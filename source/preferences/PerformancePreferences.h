@@ -34,6 +34,9 @@ enum class LiveIOSendModePreference
 struct LiveIOPreferences
 {
     LiveIOSendModePreference sendMode = LiveIOSendModePreference::dryRun;
+    std::string oscHost = "127.0.0.1";
+    int oscPort = 9000;
+    std::string oscLoudnessAddress = "/my-world/loudness";
 };
 
 struct PerformancePreferences

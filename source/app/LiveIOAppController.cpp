@@ -22,14 +22,15 @@ LiveIOMidiOutputInventory selectedMidiOutputInventory (const MidiPreferences& mi
     return inventory;
 }
 
-std::vector<LiveIOBinding> makeAppLiveIOBindings (const MidiPreferences& midiPreferences)
+std::vector<LiveIOBinding> makeAppLiveIOBindings (const MidiPreferences& midiPreferences,
+                                                  const LiveIOPreferences& liveIOPreferences)
 {
     return {
         makeLiveIOMidiCcBinding ("midi.loudness",
                                  "out",
                                  midiPreferences.channel,
                                  midiPreferences.loudnessCc),
-        makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"),
+        makeLiveIOOscFloatBinding ("osc.loudness", "out", liveIOPreferences.oscLoudnessAddress),
         makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness")
     };
 }
@@ -98,7 +99,7 @@ LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& req
     const auto preferences = sanitizePerformancePreferences (request.preferences);
 
     LiveIOControlTimerConfig config;
-    config.bindings = makeAppLiveIOBindings (preferences.midi);
+    config.bindings = makeAppLiveIOBindings (preferences.midi, preferences.liveIO);
     config.tickIntervalMs = 50;
     config.dispatchMinIntervalMs = 0;
     config.enabled = true;

@@ -28,6 +28,19 @@ LiveIOSendModePreference sanitizeLiveIOSendMode (LiveIOSendModePreference sendMo
     return LiveIOSendModePreference::dryRun;
 }
 
+std::string sanitizeOscHost (const std::string& host)
+{
+    return host.empty() ? "127.0.0.1" : host;
+}
+
+std::string sanitizeOscAddress (const std::string& address)
+{
+    if (! address.empty() && address.front() == '/')
+        return address;
+
+    return "/my-world/loudness";
+}
+
 std::string boolToText (bool value)
 {
     return value ? "true" : "false";
@@ -101,6 +114,9 @@ PerformancePreferences sanitizePerformancePreferences (PerformancePreferences pr
     preferences.midi.loudnessCc = clampInt (preferences.midi.loudnessCc, 0, 127);
     preferences.midi.mapCc = clampInt (preferences.midi.mapCc, 0, 127);
     preferences.liveIO.sendMode = sanitizeLiveIOSendMode (preferences.liveIO.sendMode);
+    preferences.liveIO.oscHost = sanitizeOscHost (preferences.liveIO.oscHost);
+    preferences.liveIO.oscPort = clampInt (preferences.liveIO.oscPort, 1, 65535);
+    preferences.liveIO.oscLoudnessAddress = sanitizeOscAddress (preferences.liveIO.oscLoudnessAddress);
     return preferences;
 }
 
@@ -163,6 +179,9 @@ PerformancePreferencesSaveResult savePerformancePreferences (const std::filesyst
     output << "midi.outputIdentifier=" << preferences.midi.outputIdentifier << "\n";
     output << "midi.outputName=" << preferences.midi.outputName << "\n";
     output << "liveIO.sendMode=" << liveIOSendModePreferenceToString (preferences.liveIO.sendMode) << "\n";
+    output << "liveIO.oscHost=" << preferences.liveIO.oscHost << "\n";
+    output << "liveIO.oscPort=" << preferences.liveIO.oscPort << "\n";
+    output << "liveIO.oscLoudnessAddress=" << preferences.liveIO.oscLoudnessAddress << "\n";
 
     if (! output)
         return { false, "write_failed" };
@@ -217,6 +236,14 @@ PerformancePreferencesStoreResult loadPerformancePreferences (const std::filesys
     preferences.midi.outputName = valueOr (values, "midi.outputName", preferences.midi.outputName);
     preferences.liveIO.sendMode = liveIOSendModePreferenceFromString (
         valueOr (values, "liveIO.sendMode", liveIOSendModePreferenceToString (preferences.liveIO.sendMode)));
+    preferences.liveIO.oscHost = valueOr (values, "liveIO.oscHost", preferences.liveIO.oscHost);
+    preferences.liveIO.oscPort = intFromText (
+        valueOr (values, "liveIO.oscPort", std::to_string (preferences.liveIO.oscPort)),
+        preferences.liveIO.oscPort);
+    preferences.liveIO.oscLoudnessAddress = valueOr (
+        values,
+        "liveIO.oscLoudnessAddress",
+        preferences.liveIO.oscLoudnessAddress);
 
     result.ok = true;
     result.status = "loaded";

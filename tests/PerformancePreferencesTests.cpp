@@ -43,6 +43,9 @@ int main()
     expectEqual (preferences.midi.inputName, "", "default midi input name");
     expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
             "live IO send mode defaults to dry-run");
+    expectEqual (preferences.liveIO.oscHost, "127.0.0.1", "default osc host");
+    expectEqual (preferences.liveIO.oscPort, 9000, "default osc port");
+    expectEqual (preferences.liveIO.oscLoudnessAddress, "/my-world/loudness", "default osc loudness address");
     expectEqual (myworld::liveIOSendModePreferenceToString (preferences.liveIO.sendMode),
                  "dry_run",
                  "default live IO send mode string");
@@ -52,6 +55,9 @@ int main()
     preferences.midi.loudnessCc = -9;
     preferences.midi.mapCc = 300;
     preferences.liveIO.sendMode = static_cast<myworld::LiveIOSendModePreference> (-20);
+    preferences.liveIO.oscHost = "";
+    preferences.liveIO.oscPort = 70000;
+    preferences.liveIO.oscLoudnessAddress = "bad-address";
     preferences = myworld::sanitizePerformancePreferences (preferences);
 
     expect (preferences.audio.analysisGain == 0.0f, "analysis gain clamps low");
@@ -60,6 +66,9 @@ int main()
     expectEqual (preferences.midi.mapCc, 127, "map cc clamps high");
     expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
             "invalid live IO send mode sanitizes to dry-run");
+    expectEqual (preferences.liveIO.oscHost, "127.0.0.1", "empty osc host sanitizes to loopback");
+    expectEqual (preferences.liveIO.oscPort, 65535, "osc port clamps high");
+    expectEqual (preferences.liveIO.oscLoudnessAddress, "/my-world/loudness", "invalid osc address sanitizes to default");
 
     preferences = myworld::makeDefaultPerformancePreferences();
     preferences.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
@@ -120,6 +129,9 @@ int main()
     persisted.midi.outputIdentifier = "output-device";
     persisted.midi.outputName = "Output Device";
     persisted.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
+    persisted.liveIO.oscHost = "192.168.1.24";
+    persisted.liveIO.oscPort = 9123;
+    persisted.liveIO.oscLoudnessAddress = "/stage/loudness";
 
     const auto tempPath = std::filesystem::temp_directory_path() / "my-world-performance-preferences-test.properties";
     std::filesystem::remove (tempPath);
@@ -139,6 +151,9 @@ int main()
     expectEqual (loaded.preferences.midi.outputName, "Output Device", "persisted output name");
     expect (loaded.preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::controlledSend,
             "persisted live IO send mode");
+    expectEqual (loaded.preferences.liveIO.oscHost, "192.168.1.24", "persisted osc host");
+    expectEqual (loaded.preferences.liveIO.oscPort, 9123, "persisted osc port");
+    expectEqual (loaded.preferences.liveIO.oscLoudnessAddress, "/stage/loudness", "persisted osc address");
 
     const auto missing = myworld::loadPerformancePreferences (tempPath.parent_path() / "missing-preferences.properties");
     expect (missing.ok, "missing performance preferences fall back to defaults");
