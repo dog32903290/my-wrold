@@ -54,13 +54,23 @@ std::string selectedMidiIdentifier (const LiveIOControlDispatchRequest& request)
     return "__no_live_io_midi_outputs__";
 }
 
-LiveIOMidiCcMessage midiMessageFromEvent (const LiveIOEvent& event)
+LiveIOMidiMessage midiMessageFromEvent (const LiveIOEvent& event)
 {
-    LiveIOMidiCcMessage message;
+    LiveIOMidiMessage message;
     message.bindingId = event.bindingId;
     message.channel = event.midiChannel;
-    message.cc = event.midiCc;
-    message.value = event.midiValue;
+    if (event.targetKind == LiveIOTargetKind::midiNoteOn)
+    {
+        message.kind = LiveIOMidiMessageKind::noteOn;
+        message.note = event.midiNote;
+        message.velocity = event.midiVelocity;
+    }
+    else
+    {
+        message.kind = LiveIOMidiMessageKind::controlChange;
+        message.cc = event.midiCc;
+        message.value = event.midiValue;
+    }
     return message;
 }
 
@@ -168,7 +178,8 @@ LiveIOControlDispatchReport executeLiveIOControlDispatch (const LiveIOControlDis
                 continue;
             }
 
-            if (event.targetKind == LiveIOTargetKind::midiCc)
+            if (event.targetKind == LiveIOTargetKind::midiCc
+                || event.targetKind == LiveIOTargetKind::midiNoteOn)
             {
                 if (! request.midiEnabled)
                     continue;

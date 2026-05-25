@@ -105,19 +105,23 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 15:00 Asia/Taipei, P-LIVE15 is committed and pushed in `5b35fcc`. Current dirty files, if any, belong to the closed P-LIVE16 OSC receive spine lane.
+As of 2026-05-25 15:30 Asia/Taipei, P-LIVE16 is committed and pushed in `f52a3a1`. Current dirty files, if any, should belong to the closing P-LIVE17 broader MIDI output operators lane.
 
 ```text
-P-LIVE16 owned files:
+P-LIVE17 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md
-- source/core/LiveIOOscReceiver.h
-- source/core/LiveIOOscReceiver.cpp
-- tests/LiveIOOscReceiverTests.cpp
-- CMakeLists.txt
+- docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md
+- source/core/LiveIOBus.h
+- source/core/LiveIOBus.cpp
+- source/core/LiveIOMidiSendProof.h
+- source/core/LiveIOMidiSendProof.cpp
+- source/core/LiveIOControlDispatcher.cpp
+- tests/LiveIOBusTests.cpp
+- tests/LiveIOMidiSendProofTests.cpp
+- tests/LiveIOControlDispatcherTests.cpp
 ```
 
-Do not connect OSC receive to realtime callbacks or build UI/server lifecycle in P-LIVE16.
+Do not add UI fields, device scanning, realtime callback delivery, or new app lifecycle wiring in P-LIVE17.
 
 Current C4 note:
 
@@ -322,7 +326,8 @@ Latest accepted targeted result:
 | P-LIVE14 OSC target preferences | closed | `docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md`; `LiveIOPreferences` stores OSC host/port/loudness address, save/load roundtrips them, and app OSC binding uses the configured address while external send remains parked; focused tests, app build, and `ctest` 73/73 passed | UI fields, external OSC send proof, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE15 external OSC target send proof | closed | `docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md`; controlled app timer carries OSC host/port/address into an injected sender, proving external target routing without adding a server or realtime callback delivery; focused tests, app build, and `ctest` 73/73 passed | Always-on OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE16 OSC receive spine | closed | `docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md`; `LiveIOOscReceiver` opens/polls/closes a controlled UDP receiver, decodes OSC float datagrams, and emits matching `LiveIOValueFrame` values; focused tests, app build, and `ctest` 74/74 passed | UI/server lifecycle, broader MIDI output operators, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE16 closure |
+| P-LIVE17 broader MIDI output operators | closed | `docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md`; `LiveIOBus` can emit `midi.cc` and `midi.note_on`, `LiveIOMidiMessage` reports byte-level CC/note-on output, and the control-rate dispatcher sends both through the existing injected MIDI sender; focused tests and app build passed | UI operator picker, note-off/program-change/pitch-bend, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE17 closure |
 
 ## Active Lane Protocol
 
@@ -331,7 +336,30 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE16 OSC receive spine closure as of 2026-05-25 15:00 Asia/Taipei.
+None after P-LIVE17 broader MIDI output operators closure as of 2026-05-25 15:30 Asia/Taipei.
+
+P-LIVE17 broader MIDI output operators closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md
+- source/core/LiveIOBus.h
+- source/core/LiveIOBus.cpp
+- source/core/LiveIOMidiSendProof.h
+- source/core/LiveIOMidiSendProof.cpp
+- source/core/LiveIOControlDispatcher.cpp
+- tests/LiveIOBusTests.cpp
+- tests/LiveIOMidiSendProofTests.cpp
+- tests/LiveIOControlDispatcherTests.cpp
+
+Closed line:
+LiveIO normalized value
+-> MIDI CC or MIDI note-on event
+-> injected control-rate sender
+-> byte-level proof report
+
+Latest accepted result:
+- RED first on missing note-on API.
+- focused `live_io_bus|live_io_midi_send_proof|live_io_control_dispatcher` passed.
+- app target `my-world` builds.
 
 P-LIVE13 arbitrary binding MIDI teach closed.
 Evidence:
@@ -1894,7 +1922,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE-H1 live IO app controller cleanup closure. The next lane must be selected explicitly. Do not add analyzer DSP, arbitrary MIDI teach bindings, MIDI input selector/preferences, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE17 broader MIDI output operators closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

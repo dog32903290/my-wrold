@@ -47,6 +47,7 @@ int main()
 {
     std::vector<myworld::LiveIOBinding> bindings;
     bindings.push_back (myworld::makeLiveIOMidiCcBinding ("midi.loudness", "out", 1, 20));
+    bindings.push_back (myworld::makeLiveIOMidiNoteOnBinding ("midi.note", "out", 1, 60));
     bindings.push_back (myworld::makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"));
     bindings.push_back (myworld::makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness"));
 
@@ -64,11 +65,11 @@ int main()
     };
     request.midiOutputIdentifier = "iac-1";
 
-    std::vector<myworld::LiveIOMidiCcMessage> midiMessages;
+    std::vector<myworld::LiveIOMidiMessage> midiMessages;
     std::vector<myworld::LiveIOOscFloatMessage> oscMessages;
 
     request.midiSender = [&] (const myworld::LiveIOMidiOutputDevice&,
-                              const myworld::LiveIOMidiCcMessage& message)
+                              const myworld::LiveIOMidiMessage& message)
     {
         midiMessages.push_back (message);
         return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
@@ -86,15 +87,19 @@ int main()
     expectEqual (report.frameCount, 4, "frame count");
     expectEqual (report.dispatchedFrameCount, 3, "dispatched frame count");
     expectEqual (report.rateLimitedFrameCount, 1, "rate limited frame count");
-    expectEqual (report.midiSentCount, 3, "midi sent count");
+    expectEqual (report.midiSentCount, 6, "midi sent count");
     expectEqual (report.oscSentCount, 3, "osc sent count");
     expectEqual (report.shaderSkippedCount, 3, "shader skipped count");
-    expectEqual (static_cast<int> (midiMessages.size()), 3, "midi sender call count");
+    expectEqual (static_cast<int> (midiMessages.size()), 6, "midi sender call count");
     expectEqual (static_cast<int> (oscMessages.size()), 3, "osc sender call count");
 
     expectEqual (midiMessages.at (0).value, 13, "first midi value");
-    expectEqual (midiMessages.at (1).value, 64, "second midi value");
-    expectEqual (midiMessages.at (2).value, 95, "third midi value");
+    expect (midiMessages.at (1).kind == myworld::LiveIOMidiMessageKind::noteOn,
+            "first note operator kind");
+    expectEqual (midiMessages.at (1).note, 60, "first note number");
+    expectEqual (midiMessages.at (1).velocity, 13, "first note velocity");
+    expectEqual (midiMessages.at (2).value, 64, "second midi value");
+    expectEqual (midiMessages.at (4).value, 95, "third midi value");
     expectEqual (oscMessages.at (0).oscAddress, "/my-world/loudness", "osc address");
     expect (oscMessages.at (1).floatValue > 0.499 && oscMessages.at (1).floatValue < 0.501,
             "second osc value");
@@ -118,7 +123,7 @@ int main()
     expectContains (json, "\"frameCount\": 4", "dispatch json frame count");
     expectContains (json, "\"dispatchedFrameCount\": 3", "dispatch json dispatched count");
     expectContains (json, "\"rateLimitedFrameCount\": 1", "dispatch json rate limit count");
-    expectContains (json, "\"midiSentCount\": 3", "dispatch json midi count");
+    expectContains (json, "\"midiSentCount\": 6", "dispatch json midi count");
     expectContains (json, "\"oscSentCount\": 3", "dispatch json osc count");
     expectContains (json, "\"shaderSkippedCount\": 3", "dispatch json shader skipped count");
     expectContains (json, "\"status\": \"rate_limited\"", "dispatch json frame status");

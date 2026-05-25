@@ -73,6 +73,29 @@ int main()
     expectEqual (openedIdentifier, "iac-1", "fake sender opened identifier");
     expectEqual (sentMessage.bindingId, "midi.loudness", "fake sender binding id");
 
+    const auto noteMessage = myworld::makeLiveIOMidiNoteOnMessage ("midi.note", 2, 60, 96);
+    myworld::LiveIOMidiMessage sentNoteMessage;
+
+    const auto noteSent = myworld::executeLiveIOMidiOutputSendProof (
+        inventory,
+        myworld::makeLiveIOMidiOutputSendRequestByIdentifier ("iac-1", noteMessage),
+        [&] (const myworld::LiveIOMidiOutputDevice&, const myworld::LiveIOMidiMessage& outgoing)
+        {
+            sentNoteMessage = outgoing;
+            return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
+        });
+
+    expect (noteSent.ok, noteSent.message);
+    expectEqual (noteSent.message, "midi_output_note_on_sent", "note send message");
+    expectEqual (noteSent.channel, 2, "note send channel");
+    expectEqual (noteSent.note, 60, "note send note");
+    expectEqual (noteSent.velocity, 96, "note send velocity");
+    expectEqual (noteSent.statusByte, 145, "note send status byte");
+    expectEqual (noteSent.data1, 60, "note send data1");
+    expectEqual (noteSent.data2, 96, "note send data2");
+    expectEqual (sentNoteMessage.bindingId, "midi.note", "fake sender note binding id");
+    expect (sentNoteMessage.kind == myworld::LiveIOMidiMessageKind::noteOn, "fake sender note kind");
+
     const auto missing = myworld::executeLiveIOMidiOutputSendProof (
         inventory,
         myworld::makeLiveIOMidiOutputSendRequestByIdentifier ("missing", message),
@@ -137,6 +160,11 @@ int main()
     expectContains (json, "\"data1\": 20", "send json");
     expectContains (json, "\"data2\": 64", "send json");
     expectContains (json, "\"errors\": []", "send json");
+
+    const auto noteJson = myworld::makeLiveIOMidiOutputSendReportJson (noteSent);
+    expectContains (noteJson, "\"messageKind\": \"note_on\"", "note send json kind");
+    expectContains (noteJson, "\"note\": 60", "note send json note");
+    expectContains (noteJson, "\"velocity\": 96", "note send json velocity");
 
     std::cout << "live io midi send proof ok\n";
     return 0;

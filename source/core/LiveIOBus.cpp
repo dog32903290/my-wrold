@@ -124,6 +124,8 @@ void appendEventsJson (std::ostringstream& out, const std::vector<LiveIOEvent>& 
         out << "      \"channel\": " << event.midiChannel << ",\n";
         out << "      \"cc\": " << event.midiCc << ",\n";
         out << "      \"midiValue\": " << event.midiValue << ",\n";
+        out << "      \"midiNote\": " << event.midiNote << ",\n";
+        out << "      \"midiVelocity\": " << event.midiVelocity << ",\n";
         out << "      \"oscAddress\": " << jsonQuoted (event.oscAddress) << ",\n";
         out << "      \"uniformName\": " << jsonQuoted (event.uniformName) << "\n";
         out << "    }";
@@ -149,6 +151,20 @@ LiveIOBinding makeLiveIOMidiCcBinding (const std::string& id,
     binding.targetKind = LiveIOTargetKind::midiCc;
     binding.midiChannel = channel;
     binding.midiCc = cc;
+    return binding;
+}
+
+LiveIOBinding makeLiveIOMidiNoteOnBinding (const std::string& id,
+                                           const std::string& sourceId,
+                                           int channel,
+                                           int note)
+{
+    LiveIOBinding binding;
+    binding.id = id;
+    binding.sourceId = sourceId;
+    binding.targetKind = LiveIOTargetKind::midiNoteOn;
+    binding.midiChannel = channel;
+    binding.midiNote = note;
     return binding;
 }
 
@@ -181,6 +197,7 @@ std::string liveIOTargetKindToString (LiveIOTargetKind kind)
     switch (kind)
     {
         case LiveIOTargetKind::midiCc:        return "midi.cc";
+        case LiveIOTargetKind::midiNoteOn:    return "midi.note_on";
         case LiveIOTargetKind::oscFloat:      return "osc.float";
         case LiveIOTargetKind::shaderUniform: return "shader.uniform";
     }
@@ -227,6 +244,8 @@ LiveIOBusReport evaluateLiveIOBus (const LiveIOValueFrame& frame,
         event.midiChannel = clampInt (binding.midiChannel, 1, 16);
         event.midiCc = clampInt (binding.midiCc, 0, 127);
         event.midiValue = liveIOMidiValueFromNormalized (event.normalizedValue);
+        event.midiNote = clampInt (binding.midiNote, 0, 127);
+        event.midiVelocity = event.midiValue;
         event.oscAddress = binding.oscAddress;
         event.uniformName = binding.uniformName;
         report.events.push_back (event);

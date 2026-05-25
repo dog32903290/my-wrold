@@ -51,6 +51,7 @@ int main()
 
     std::vector<myworld::LiveIOBinding> bindings;
     bindings.push_back (myworld::makeLiveIOMidiCcBinding ("midi.loudness", "out", 3, 42));
+    bindings.push_back (myworld::makeLiveIOMidiNoteOnBinding ("midi.note", "out", 2, 60));
     bindings.push_back (myworld::makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"));
     bindings.push_back (myworld::makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness"));
 
@@ -58,7 +59,7 @@ int main()
 
     expect (report.ok, report.message);
     expectEqual (report.status, "mapped", "live io report status");
-    expectEqual (static_cast<int> (report.events.size()), 3, "mapped event count");
+    expectEqual (static_cast<int> (report.events.size()), 4, "mapped event count");
     expect (report.errors.empty(), "no mapping errors");
 
     const auto& midi = report.events.at (0);
@@ -71,12 +72,19 @@ int main()
     expectEqual (midi.midiCc, 42, "midi cc");
     expectEqual (midi.midiValue, 64, "midi value rounds normalized value");
 
-    const auto& osc = report.events.at (1);
+    const auto& note = report.events.at (1);
+    expect (note.targetKind == myworld::LiveIOTargetKind::midiNoteOn, "midi note target kind");
+    expectEqual (note.bindingId, "midi.note", "midi note binding id");
+    expectEqual (note.midiChannel, 2, "midi note channel");
+    expectEqual (note.midiNote, 60, "midi note number");
+    expectEqual (note.midiVelocity, 64, "midi note velocity follows normalized value");
+
+    const auto& osc = report.events.at (2);
     expect (osc.targetKind == myworld::LiveIOTargetKind::oscFloat, "osc target kind");
     expectEqual (osc.oscAddress, "/my-world/loudness", "osc address");
     expectNear (osc.floatValue, 0.5, 0.000001, "osc float value");
 
-    const auto& uniform = report.events.at (2);
+    const auto& uniform = report.events.at (3);
     expect (uniform.targetKind == myworld::LiveIOTargetKind::shaderUniform, "shader uniform target kind");
     expectEqual (uniform.uniformName, "u_loudness", "uniform name");
     expectNear (uniform.floatValue, 0.5, 0.000001, "uniform float value");
@@ -101,10 +109,13 @@ int main()
     expectContains (json, "\"kind\": \"liveIOBusReport\"", "live io json");
     expectContains (json, "\"status\": \"mapped\"", "live io json");
     expectContains (json, "\"targetKind\": \"midi.cc\"", "live io json");
+    expectContains (json, "\"targetKind\": \"midi.note_on\"", "live io json");
     expectContains (json, "\"targetKind\": \"osc.float\"", "live io json");
     expectContains (json, "\"targetKind\": \"shader.uniform\"", "live io json");
     expectContains (json, "\"source\": \"loudness_out.out\"", "live io json");
     expectContains (json, "\"midiValue\": 64", "live io json");
+    expectContains (json, "\"midiNote\": 60", "live io json");
+    expectContains (json, "\"midiVelocity\": 64", "live io json");
     expectContains (json, "\"oscAddress\": \"/my-world/loudness\"", "live io json");
     expectContains (json, "\"uniformName\": \"u_loudness\"", "live io json");
 

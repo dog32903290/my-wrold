@@ -8,6 +8,7 @@ namespace myworld
 enum class LiveIOTargetKind
 {
     midiCc,
+    midiNoteOn,
     oscFloat,
     shaderUniform
 };
@@ -31,6 +32,7 @@ struct LiveIOBinding
     LiveIOTargetKind targetKind = LiveIOTargetKind::shaderUniform;
     int midiChannel = 1;
     int midiCc = 0;
+    int midiNote = 60;
     std::string oscAddress;
     std::string uniformName;
     double inputMin = 0.0;
@@ -49,6 +51,8 @@ struct LiveIOEvent
     int midiChannel = 1;
     int midiCc = 0;
     int midiValue = 0;
+    int midiNote = 60;
+    int midiVelocity = 0;
     std::string oscAddress;
     std::string uniformName;
 };
@@ -66,6 +70,10 @@ LiveIOBinding makeLiveIOMidiCcBinding (const std::string& id,
                                        const std::string& sourceId,
                                        int channel,
                                        int cc);
+LiveIOBinding makeLiveIOMidiNoteOnBinding (const std::string& id,
+                                           const std::string& sourceId,
+                                           int channel,
+                                           int note);
 LiveIOBinding makeLiveIOOscFloatBinding (const std::string& id,
                                          const std::string& sourceId,
                                          const std::string& address);

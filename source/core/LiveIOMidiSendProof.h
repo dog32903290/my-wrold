@@ -8,18 +8,29 @@
 
 namespace myworld
 {
-struct LiveIOMidiCcMessage
+enum class LiveIOMidiMessageKind
+{
+    controlChange,
+    noteOn
+};
+
+struct LiveIOMidiMessage
 {
     std::string bindingId;
+    LiveIOMidiMessageKind kind = LiveIOMidiMessageKind::controlChange;
     int channel = 1;
     int cc = 0;
     int value = 0;
+    int note = 60;
+    int velocity = 0;
 };
+
+using LiveIOMidiCcMessage = LiveIOMidiMessage;
 
 struct LiveIOMidiOutputSendRequest
 {
     LiveIOMidiOutputRouteRequest route;
-    LiveIOMidiCcMessage message;
+    LiveIOMidiMessage message;
 };
 
 struct LiveIOMidiOutputDeviceSendResult
@@ -39,9 +50,12 @@ struct LiveIOMidiOutputSendReport
     bool opened = false;
     bool sent = false;
     std::string bindingId;
+    std::string messageKind = "control_change";
     int channel = 1;
     int cc = 0;
     int value = 0;
+    int note = 60;
+    int velocity = 0;
     int statusByte = 0;
     int data1 = 0;
     int data2 = 0;
@@ -50,11 +64,16 @@ struct LiveIOMidiOutputSendReport
 
 using LiveIOMidiOutputSender = std::function<LiveIOMidiOutputDeviceSendResult (
     const LiveIOMidiOutputDevice& device,
-    const LiveIOMidiCcMessage& message)>;
+    const LiveIOMidiMessage& message)>;
 
 LiveIOMidiOutputSendRequest makeLiveIOMidiOutputSendRequestByIdentifier (
     const std::string& identifier,
-    const LiveIOMidiCcMessage& message);
+    const LiveIOMidiMessage& message);
+
+LiveIOMidiMessage makeLiveIOMidiNoteOnMessage (const std::string& bindingId,
+                                               int channel,
+                                               int note,
+                                               int velocity);
 
 LiveIOMidiOutputSendReport executeLiveIOMidiOutputSendProof (
     const LiveIOMidiOutputInventory& inventory,

@@ -49,21 +49,46 @@ void appendErrorsJson (std::ostringstream& out, const std::vector<std::string>& 
     out << "]";
 }
 
-LiveIOMidiCcMessage sanitizeMessage (LiveIOMidiCcMessage message)
+std::string midiMessageKindToString (LiveIOMidiMessageKind kind)
+{
+    switch (kind)
+    {
+        case LiveIOMidiMessageKind::controlChange: return "control_change";
+        case LiveIOMidiMessageKind::noteOn:        return "note_on";
+    }
+
+    return "control_change";
+}
+
+LiveIOMidiMessage sanitizeMessage (LiveIOMidiMessage message)
 {
     message.channel = clampInt (message.channel, 1, 16);
     message.cc = clampInt (message.cc, 0, 127);
     message.value = clampInt (message.value, 0, 127);
+    message.note = clampInt (message.note, 0, 127);
+    message.velocity = clampInt (message.velocity, 0, 127);
     return message;
 }
 
-void fillMessageFields (LiveIOMidiOutputSendReport& report, const LiveIOMidiCcMessage& rawMessage)
+void fillMessageFields (LiveIOMidiOutputSendReport& report, const LiveIOMidiMessage& rawMessage)
 {
     const auto message = sanitizeMessage (rawMessage);
     report.bindingId = message.bindingId;
+    report.messageKind = midiMessageKindToString (message.kind);
     report.channel = message.channel;
     report.cc = message.cc;
     report.value = message.value;
+    report.note = message.note;
+    report.velocity = message.velocity;
+
+    if (message.kind == LiveIOMidiMessageKind::noteOn)
+    {
+        report.statusByte = 0x90 + (message.channel - 1);
+        report.data1 = message.note;
+        report.data2 = message.velocity;
+        return;
+    }
+
     report.statusByte = 0xb0 + (message.channel - 1);
     report.data1 = message.cc;
     report.data2 = message.value;
@@ -84,12 +109,26 @@ const LiveIOMidiOutputDevice* findDeviceByIdentifier (const LiveIOMidiOutputInve
 
 LiveIOMidiOutputSendRequest makeLiveIOMidiOutputSendRequestByIdentifier (
     const std::string& identifier,
-    const LiveIOMidiCcMessage& message)
+    const LiveIOMidiMessage& message)
 {
     LiveIOMidiOutputSendRequest request;
     request.route = makeLiveIOMidiOutputRouteByIdentifier (identifier);
     request.message = message;
     return request;
+}
+
+LiveIOMidiMessage makeLiveIOMidiNoteOnMessage (const std::string& bindingId,
+                                               int channel,
+                                               int note,
+                                               int velocity)
+{
+    LiveIOMidiMessage message;
+    message.bindingId = bindingId;
+    message.kind = LiveIOMidiMessageKind::noteOn;
+    message.channel = channel;
+    message.note = note;
+    message.velocity = velocity;
+    return message;
 }
 
 LiveIOMidiOutputSendReport executeLiveIOMidiOutputSendProof (
@@ -156,7 +195,7 @@ LiveIOMidiOutputSendReport executeLiveIOMidiOutputSendProof (
 
     report.ok = true;
     report.status = "sent";
-    report.message = "midi_output_cc_sent";
+    report.message = report.messageKind == "note_on" ? "midi_output_note_on_sent" : "midi_output_cc_sent";
     return report;
 }
 
@@ -173,9 +212,12 @@ std::string makeLiveIOMidiOutputSendReportJson (const LiveIOMidiOutputSendReport
     out << "  \"opened\": " << (report.opened ? "true" : "false") << ",\n";
     out << "  \"sent\": " << (report.sent ? "true" : "false") << ",\n";
     out << "  \"bindingId\": " << jsonQuoted (report.bindingId) << ",\n";
+    out << "  \"messageKind\": " << jsonQuoted (report.messageKind) << ",\n";
     out << "  \"channel\": " << report.channel << ",\n";
     out << "  \"cc\": " << report.cc << ",\n";
     out << "  \"value\": " << report.value << ",\n";
+    out << "  \"note\": " << report.note << ",\n";
+    out << "  \"velocity\": " << report.velocity << ",\n";
     out << "  \"statusByte\": " << report.statusByte << ",\n";
     out << "  \"data1\": " << report.data1 << ",\n";
     out << "  \"data2\": " << report.data2 << ",\n";
