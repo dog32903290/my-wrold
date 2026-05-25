@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 02:05 Asia/Taipei.
+Date: 2026-05-26 02:12 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/project2-project-creation-proof-artifact
+codex/project3-project-creation-status-integration
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-PROJECT2 project creation proof artifact (closed locally)
+PROJECT3 project creation status integration (closed locally)
+6c83112 Add PROJECT2 project creation proof
 088f823 Add PROJECT1 explicit project creation
 78727be Close ACTIVE segment
 6184a0d Add ACTIVE2 preparation diagnostics proof
@@ -151,19 +152,17 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 02:05 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, and PROJECT2 are closed locally and not pushed. Current branch is `codex/project2-project-creation-proof-artifact`; do not push unless explicitly requested.
+As of 2026-05-26 02:12 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, PROJECT2, and PROJECT3 are closed locally and not pushed. Current branch is `codex/project3-project-creation-status-integration`; do not push unless explicitly requested.
 
 ```text
-PROJECT2 owned files:
+PROJECT3 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md
+- docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md
 - source/app/ProjectCreationProofRunner.*
 - source/app/Main.*
-- source/app/StartupProof.*
 - tests/ProjectCreationProofRunnerTests.cpp
-- CMakeLists.txt
 ```
-PROJECT2 did not add app UI, save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP.
+PROJECT3 did not add app UI, save mutation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP.
 
 Current C4 note:
 
@@ -407,6 +406,7 @@ Latest accepted targeted result:
 | ACTIVE3 active segment closure | closed locally | `docs/superpowers/specs/2026-05-26-active3-active-segment-closure.md`; closes ACTIVE1-ACTIVE2 as the app startup active-work preparation/readback segment; stable app proof still writes both active-work preparation and workbench session reports; `ctest` 87/87 passed | Future active-work work should choose a specific surface, such as explicit project creation UX or save integration review |
 | PROJECT1 explicit project creation contract | closed locally | `docs/superpowers/specs/2026-05-26-project1-explicit-project-creation-contract.md`; `ActiveWorkService` creates explicit work project scaffolds with `myworld.work.json` and `patches/main.patch.json`, returns status/path/diagnostic evidence, blocks overwrite unless requested, and proves readback through existing loaders; stable app proof passed; `ctest` 87/87 passed | App UI/dialogs, environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | PROJECT2 project creation proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md`; `ProjectCreationProofRunner` creates a repeatable proof project through `createActiveWorkProject()`, writes `project_creation_report.json`, proves loader readback and no-overwrite status, and app flag `--dump-project-creation-proof-and-exit` dumps `debug/project-creation-proof/project_creation_report.json`; `ctest` 88/88 passed | App UI/dialogs, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
+| PROJECT3 project creation status integration | closed locally | `docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md`; `ProjectCreationProofRunResult` now carries status text, `project_creation_report.json` writes the same text, and `MainComponent::dumpProjectCreationProof()` uses it through the existing proof status adapter; `ctest` 88/88 passed | App UI/dialogs, active-work mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -416,9 +416,36 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after PROJECT2 project creation proof artifact closure as of 2026-05-26 02:05 Asia/Taipei. Not pushed.
+None after PROJECT3 project creation status integration closure as of 2026-05-26 02:12 Asia/Taipei. Not pushed.
 
 Latest closure:
+PROJECT3 project creation status integration closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md
+- source/app/ProjectCreationProofRunner.*
+- source/app/Main.*
+- tests/ProjectCreationProofRunnerTests.cpp
+
+Closed line:
+ProjectCreationProofRunner
+-> statusText
+-> project_creation_report.json
+-> MainComponent proof status label adapter
+
+Latest accepted result:
+- Red test failed because ProjectCreationProofRunResult had no statusText.
+- cmake --build build --target my_world_project_creation_proof_runner_tests && ./build/my_world_project_creation_proof_runner_tests passed.
+- cmake --build build --target my-world passed, with the existing duplicate static-library linker warning.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-project-creation-proof-and-exit passed.
+- project_creation_report.json read back with statusText: project creation ready: work.project2-proof -> patch.project2-main; duplicate already-exists.
+- ctest --test-dir build --output-on-failure -R "project_creation_proof_runner|app_workbench_session_proof_runner" passed 2/2.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed.
+- Stable app workbench proof still wrote active_work_preparation_report.json and workbench_open_status_report.json with expected active-work status.
+- ctest --test-dir build --output-on-failure passed 88/88.
+- git diff --check passed.
+
+Previous closure:
 PROJECT2 project creation proof artifact closed locally.
 Evidence:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -2994,19 +3021,18 @@ raw callback-buffer runtime
 | `2026-05-26-active3-active-segment-closure.md` | ACTIVE3 closure marker for ACTIVE1-ACTIVE2 app startup active-work segment | no, unless auditing ACTIVE segment closure |
 | `2026-05-26-project1-explicit-project-creation-contract.md` | PROJECT1 explicit project creation contract closure evidence | no, unless auditing PROJECT1 evidence |
 | `2026-05-26-project2-project-creation-proof-artifact.md` | PROJECT2 project creation proof artifact closure evidence | no, unless auditing PROJECT2 evidence |
+| `2026-05-26-project3-project-creation-status-integration.md` | PROJECT3 project creation status integration closure evidence | no, unless auditing PROJECT3 evidence |
 
 ## Session Safety
 
-PROJECT2 owned files:
+PROJECT3 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-project2-project-creation-proof-artifact.md
+docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md
 source/app/ProjectCreationProofRunner.*
 source/app/Main.*
-source/app/StartupProof.*
 tests/ProjectCreationProofRunnerTests.cpp
-CMakeLists.txt
 ```
 
 Avoid unrelated files and parked lanes:
@@ -3024,7 +3050,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after PROJECT2 project creation proof artifact closure on `codex/project2-project-creation-proof-artifact`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, and PROJECT2 are local-only commits; do not push unless explicitly requested. Recommended next selected lane is `PROJECT3 project creation status integration` only if the service/proof should become visible to app status without adding UI mutation; otherwise choose a fresh lane by surface. Do not add app UI, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after PROJECT3 project creation status integration closure on `codex/project3-project-creation-status-integration`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1, PROJECT2, and PROJECT3 are local-only commits; do not push unless explicitly requested. Recommended next selected lane is `PROJECT4 project segment closure` if the project-creation segment should stop here, or a fresh surface if continuing beyond proof/status. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

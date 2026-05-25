@@ -30,7 +30,8 @@ CreateActiveWorkProjectRequest makeProjectCreationRequest (const std::filesystem
 std::string makeProjectCreationReportJson (const CreateActiveWorkProjectResult& created,
                                            const CreateActiveWorkProjectResult& duplicate,
                                            const WorkProjectLoadResult& loadedWork,
-                                           const PatchDocumentLoadResult& loadedPatch)
+                                           const PatchDocumentLoadResult& loadedPatch,
+                                           const std::string& statusText)
 {
     std::ostringstream out;
     out << "{\n";
@@ -48,12 +49,35 @@ std::string makeProjectCreationReportJson (const CreateActiveWorkProjectResult& 
     out << "  \"patchTitle\": " << jsonQuoted (loadedPatch.ok ? loadedPatch.document.title : std::string {}) << ",\n";
     out << "  \"duplicateStatus\": " << jsonQuoted (duplicate.status) << ",\n";
     out << "  \"duplicateError\": " << jsonQuoted (duplicate.error) << ",\n";
+    out << "  \"statusText\": " << jsonQuoted (statusText) << ",\n";
     out << "  \"error\": " << jsonQuoted (created.error) << ",\n";
     out << "  \"diagnostics\": ";
     appendJsonStringArray (out, created.diagnostics);
     out << "\n";
     out << "}\n";
     return out.str();
+}
+
+std::string makeProjectCreationProofStatusText (const CreateActiveWorkProjectResult& created,
+                                                const CreateActiveWorkProjectResult& duplicate,
+                                                const WorkProjectLoadResult& loadedWork,
+                                                const PatchDocumentLoadResult& loadedPatch)
+{
+    if (! created.ok)
+        return "project creation failed: " + created.error;
+
+    if (! loadedWork.ok)
+        return "project creation failed: " + loadedWork.error;
+
+    if (! loadedPatch.ok)
+        return "project creation failed: " + loadedPatch.error;
+
+    return "project creation ready: "
+           + loadedWork.manifest.id
+           + " -> "
+           + loadedPatch.document.id
+           + "; duplicate "
+           + duplicate.status;
 }
 }
 
@@ -78,6 +102,7 @@ ProjectCreationProofRunResult runProjectCreationProof (const ProjectCreationProo
     {
         result.ok = false;
         result.status = "failed";
+        result.statusText = "project creation failed: " + message;
         result.error = message;
         return result;
     };
@@ -95,12 +120,14 @@ ProjectCreationProofRunResult runProjectCreationProof (const ProjectCreationProo
     const auto duplicate = createActiveWorkProject (createRequest);
     const auto loadedWork = loadWorkProjectManifest (created.workManifestPath);
     const auto loadedPatch = loadMainPatchDocumentForWork (created.workManifestPath);
+    result.statusText = makeProjectCreationProofStatusText (created, duplicate, loadedWork, loadedPatch);
 
     if (const auto error = writeProofTextFile (result.reportPath,
                                                makeProjectCreationReportJson (created,
                                                                               duplicate,
                                                                               loadedWork,
-                                                                              loadedPatch));
+                                                                              loadedPatch,
+                                                                              result.statusText));
         ! error.empty())
     {
         return fail (error);
@@ -109,6 +136,8 @@ ProjectCreationProofRunResult runProjectCreationProof (const ProjectCreationProo
     result.ok = created.ok && loadedWork.ok && loadedPatch.ok;
     result.status = result.ok ? "dumped" : "failed";
     result.error = result.ok ? std::string {} : created.error;
+    if (result.statusText.empty())
+        result.statusText = result.ok ? "project creation ready" : "project creation failed: " + result.error;
     return result;
 }
 }

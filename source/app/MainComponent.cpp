@@ -619,7 +619,14 @@ void MainComponent::dumpProjectCreationProof()
     request.outputDirectory = directory.getFullPathName().toStdString();
 
     const auto result = runProjectCreationProof (request);
-    finishProofDump (juce::String (projectCreationProofDisplayName()), result.status, result.error, directory);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (projectCreationProofDisplayName()), "failed", result.statusText, directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (projectCreationProofDisplayName()), status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)

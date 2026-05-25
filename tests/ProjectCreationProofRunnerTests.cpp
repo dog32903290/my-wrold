@@ -42,6 +42,8 @@ int main()
 
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
+    expect (result.statusText == "project creation ready: work.project2-proof -> patch.project2-main; duplicate already-exists",
+            "status text");
     expect (result.reportPath == outputDirectory / "project_creation_report.json", "report path");
     expect (std::filesystem::exists (result.reportPath), "report exists");
     expect (std::filesystem::exists (outputDirectory / "created-project" / "myworld.work.json"),
@@ -62,6 +64,9 @@ int main()
     expectContains (report, "\"patchId\": \"patch.project2-main\"", "patch id");
     expectContains (report, "\"patchTitle\": \"PROJECT2 Main Patch\"", "patch title");
     expectContains (report, "\"duplicateStatus\": \"already-exists\"", "duplicate status");
+    expectContains (report,
+                    "\"statusText\": \"project creation ready: work.project2-proof -> patch.project2-main; duplicate already-exists\"",
+                    "report status text");
     expectContains (report, "createActiveWorkProjectStatus=created", "creation diagnostics status");
 
     const auto repeated = myworld::runProjectCreationProof (request);

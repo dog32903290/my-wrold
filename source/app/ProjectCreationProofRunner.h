@@ -15,6 +15,7 @@ struct ProjectCreationProofRunResult
 {
     bool ok = false;
     std::string status;
+    std::string statusText;
     std::string error;
     std::filesystem::path outputDirectory;
     std::filesystem::path reportPath;
