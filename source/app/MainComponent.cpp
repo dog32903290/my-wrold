@@ -600,8 +600,10 @@ void MainComponent::dumpAPPWorkbenchSessionProof()
 
     const auto request = workbenchController.makeOpenStatusProofRequest (
         directory.getFullPathName().toStdString());
+    auto proofRequest = request;
+    proofRequest.activeWorkPreparation = activeWorkPreparation;
 
-    const auto result = runAppWorkbenchSessionProof (request);
+    const auto result = runAppWorkbenchSessionProof (proofRequest);
     finishProofDump (juce::String (appWorkbenchSessionProofDisplayName()), result.status, result.error, directory);
 }
 
@@ -649,7 +651,7 @@ void MainComponent::setShaderStatus (juce::String message)
 
 void MainComponent::openWorkbenchSession()
 {
-    const auto preparation = prepareActiveWorkProjectForOpen();
+    activeWorkPreparation = prepareActiveWorkProjectForOpen();
 
     WorkbenchSessionOpenStatusRequest request;
     request.activeWorkManifestPath = activeWorkManifestFile().getFullPathName().toStdString();
@@ -661,8 +663,8 @@ void MainComponent::openWorkbenchSession()
     (void) workbenchController.openCurrentSession (request);
 
     auto statusText = juce::String (workbenchController.statusText());
-    if (! preparation.ok)
-        statusText = "active work prepare failed: " + juce::String (preparation.error)
+    if (! activeWorkPreparation.ok)
+        statusText = "active work prepare failed: " + juce::String (activeWorkPreparation.error)
                      + "; "
                      + statusText;
 

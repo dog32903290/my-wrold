@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ActiveWorkService.h"
 #include "WorkbenchSession.h"
 
 #include <filesystem>
@@ -12,6 +13,7 @@ struct AppWorkbenchSessionProofRunRequest
 {
     std::filesystem::path outputDirectory;
     WorkbenchSessionSnapshot snapshot;
+    ActiveWorkPreparationResult activeWorkPreparation;
 };
 
 struct AppWorkbenchSessionProofRunResult

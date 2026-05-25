@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ActiveWorkService.h"
 #include "AudioInputAnalyzer.h"
 #include "InteractionContract.h"
 #include "LiveIOAppController.h"
@@ -101,6 +102,7 @@ private:
     juce::Label liveIOStatusLabel;
     GraphContract graph;
     WorkbenchAppController workbenchController;
+    ActiveWorkPreparationResult activeWorkPreparation;
     PerformancePreferences performancePreferences;
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;

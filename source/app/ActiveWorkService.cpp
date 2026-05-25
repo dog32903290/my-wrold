@@ -90,6 +90,23 @@ bool defaultActiveWorkProjectExists (const juce::File& workManifestFile)
            && moduleManifestFile.existsAsFile();
 }
 
+std::string noneIfEmpty (const std::string& text)
+{
+    return text.empty() ? "none" : text;
+}
+
+void refreshPreparationDiagnostics (ActiveWorkPreparationResult& result)
+{
+    result.diagnostics = {
+        "activeWorkPreparationOk=" + std::string (result.ok ? "true" : "false"),
+        "activeWorkPreparationStatus=" + noneIfEmpty (result.status),
+        "activeWorkPreparationManifestPath=" + noneIfEmpty (result.workManifestPath)
+    };
+
+    if (! result.error.empty())
+        result.diagnostics.push_back ("activeWorkPreparationError=" + result.error);
+}
+
 std::string safeIdentifier (const std::string& text)
 {
     std::string result;
@@ -118,6 +135,7 @@ ActiveWorkPreparationResult prepareActiveWorkProjectForOpen()
     {
         result.ok = true;
         result.status = "external-active-work-requested";
+        refreshPreparationDiagnostics (result);
         return result;
     }
 
@@ -128,12 +146,14 @@ ActiveWorkPreparationResult prepareActiveWorkProjectForOpen()
     {
         result.status = "default-active-work-blocked";
         result.error = error;
+        refreshPreparationDiagnostics (result);
         return result;
     }
 
     result.ok = true;
     result.status = wasAlreadyPrepared ? "default-active-work-ready"
                                        : "default-active-work-prepared";
+    refreshPreparationDiagnostics (result);
     return result;
 }
 

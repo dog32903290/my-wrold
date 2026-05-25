@@ -105,6 +105,12 @@ int main()
     expect (prepared.ok, prepared.error);
     expect (prepared.status == "default-active-work-prepared", "default active work prepared status");
     expect (prepared.workManifestPath == defaultManifestPath.string(), "default active work manifest path");
+    expect (containsCommand (prepared.diagnostics,
+                             "activeWorkPreparationStatus=default-active-work-prepared"),
+            "default active work prepared diagnostics status");
+    expect (containsCommand (prepared.diagnostics,
+                             "activeWorkPreparationManifestPath=" + defaultManifestPath.string()),
+            "default active work prepared diagnostics path");
     expect (std::filesystem::exists (defaultManifestPath), "default active work manifest exists");
     expect (std::filesystem::exists (defaultWorkRoot / "patches" / "main.patch.json"),
             "default active work main patch exists");
@@ -127,6 +133,9 @@ int main()
     expect (preparedAgain.ok, preparedAgain.error);
     expect (preparedAgain.status == "default-active-work-ready", "default active work ready status");
     expect (preparedAgain.workManifestPath == defaultManifestPath.string(), "default active work ready path");
+    expect (containsCommand (preparedAgain.diagnostics,
+                             "activeWorkPreparationStatus=default-active-work-ready"),
+            "default active work ready diagnostics status");
 
     const auto externalManifestPath = tempRoot / "external-work" / "myworld.work.json";
     setEnvironment ("MY_WORLD_ACTIVE_WORK_MANIFEST", externalManifestPath.string());
@@ -137,6 +146,9 @@ int main()
             "external active work is not auto-created");
     expect (externalPreparation.workManifestPath == externalManifestPath.string(),
             "external active work manifest path");
+    expect (containsCommand (externalPreparation.diagnostics,
+                             "activeWorkPreparationStatus=external-active-work-requested"),
+            "external active work diagnostics status");
     expect (! std::filesystem::exists (externalManifestPath), "external active work stays caller-owned");
 
     return 0;

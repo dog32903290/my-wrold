@@ -47,6 +47,13 @@ int main()
     myworld::AppWorkbenchSessionProofRunRequest request;
     request.outputDirectory = outputDirectory;
     request.snapshot = opened.snapshot;
+    request.activeWorkPreparation.ok = true;
+    request.activeWorkPreparation.status = "default-active-work-prepared";
+    request.activeWorkPreparation.workManifestPath = "/tmp/my-world-active-work/myworld.work.json";
+    request.activeWorkPreparation.diagnostics = {
+        "activeWorkPreparationStatus=default-active-work-prepared",
+        "activeWorkPreparationManifestPath=/tmp/my-world-active-work/myworld.work.json"
+    };
 
     const auto result = myworld::runAppWorkbenchSessionProof (request);
 
@@ -54,6 +61,8 @@ int main()
     expect (result.status == "dumped", "status");
     expect (result.reportPath == outputDirectory / "workbench_open_status_report.json", "report path");
     expect (std::filesystem::exists (result.reportPath), "report exists");
+    const auto preparationReportPath = outputDirectory / "active_work_preparation_report.json";
+    expect (std::filesystem::exists (preparationReportPath), "preparation report exists");
     expect (std::string (myworld::appWorkbenchSessionProofDirectoryName()) == "app-workbench-session-proof",
             "stable proof directory");
 
@@ -65,6 +74,19 @@ int main()
                     "workSourceStatus=fixture-fallback-no-active-request",
                     "work diagnostics source status");
     expectContains (report, "\"graphIOMappingStatus\": \"valid\"", "mapping status");
+
+    const auto preparationReport = readTextFile (preparationReportPath);
+    expectContains (preparationReport, "\"kind\": \"activeWorkPreparationReport\"", "preparation report kind");
+    expectContains (preparationReport, "\"ok\": true", "preparation report ok");
+    expectContains (preparationReport,
+                    "\"status\": \"default-active-work-prepared\"",
+                    "preparation report status");
+    expectContains (preparationReport,
+                    "\"workManifestPath\": \"/tmp/my-world-active-work/myworld.work.json\"",
+                    "preparation report manifest path");
+    expectContains (preparationReport,
+                    "activeWorkPreparationStatus=default-active-work-prepared",
+                    "preparation diagnostics status");
 
     std::filesystem::remove_all (outputDirectory);
     std::cout << "app workbench session proof runner ok\n";

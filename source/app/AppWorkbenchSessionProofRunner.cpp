@@ -1,7 +1,10 @@
 #include "AppWorkbenchSessionProofRunner.h"
 
+#include "JsonWriter.h"
 #include "ProofRunSupport.h"
 #include "WorkbenchSession.h"
+
+#include <sstream>
 
 namespace myworld
 {
@@ -10,6 +13,23 @@ namespace
 constexpr const char* displayName = "app workbench session";
 constexpr const char* directoryName = "app-workbench-session-proof";
 constexpr const char* reportFileName = "workbench_open_status_report.json";
+constexpr const char* preparationReportFileName = "active_work_preparation_report.json";
+
+std::string makeActiveWorkPreparationReportJson (const ActiveWorkPreparationResult& preparation)
+{
+    std::ostringstream out;
+    out << "{\n";
+    out << "  \"kind\": \"activeWorkPreparationReport\",\n";
+    out << "  \"ok\": " << (preparation.ok ? "true" : "false") << ",\n";
+    out << "  \"status\": " << jsonQuoted (preparation.status) << ",\n";
+    out << "  \"workManifestPath\": " << jsonQuoted (preparation.workManifestPath) << ",\n";
+    out << "  \"error\": " << jsonQuoted (preparation.error) << ",\n";
+    out << "  \"diagnostics\": ";
+    appendJsonStringArray (out, preparation.diagnostics);
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
 }
 
 const char* appWorkbenchSessionProofDisplayName()
@@ -28,7 +48,8 @@ AppWorkbenchSessionProofRunResult runAppWorkbenchSessionProof (
     AppWorkbenchSessionProofRunResult result;
     result.outputDirectory = request.outputDirectory;
     result.reportPath = request.outputDirectory / reportFileName;
-    result.artifactPaths = { result.reportPath };
+    const auto preparationReportPath = request.outputDirectory / preparationReportFileName;
+    result.artifactPaths = { result.reportPath, preparationReportPath };
 
     const auto fail = [&] (const std::string& message)
     {
@@ -43,6 +64,13 @@ AppWorkbenchSessionProofRunResult runAppWorkbenchSessionProof (
 
     if (const auto error = writeProofTextFile (result.reportPath,
                                                makeWorkbenchSessionReportJson (request.snapshot));
+        ! error.empty())
+    {
+        return fail (error);
+    }
+
+    if (const auto error = writeProofTextFile (preparationReportPath,
+                                               makeActiveWorkPreparationReportJson (request.activeWorkPreparation));
         ! error.empty())
     {
         return fail (error);

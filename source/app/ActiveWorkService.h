@@ -4,6 +4,7 @@
 #include "StorageCommand.h"
 
 #include <string>
+#include <vector>
 
 namespace myworld
 {
@@ -13,6 +14,7 @@ struct ActiveWorkPreparationResult
     std::string status;
     std::string workManifestPath;
     std::string error;
+    std::vector<std::string> diagnostics;
 };
 
 ActiveWorkPreparationResult prepareActiveWorkProjectForOpen();
