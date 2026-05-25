@@ -250,7 +250,8 @@ Latest accepted targeted result:
 | P-TIME2 transport playback controls | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `TimelineState` transport fields plus `transport_controls`, bottom transport UI, PatchDocument roundtrip, and saveWork roundtrip prove play/pause/stop/step/reverse/loop controls | Next requested lane is P-VAR1 presets/snapshots foundation |
 | P-VAR1 presets/snapshots foundation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `VariationState` plus `variation_state`, command create/apply, skip reasons, PatchDocument roundtrip, saveWork roundtrip, and left-rail state consumption prove presets/snapshots foundation | No active parity lane selected after P-VAR1 |
 | P-PARAM007 parameter metadata | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParamSpec` metadata plus `parameter_metadata` prove groups, descriptions, value-based relevance filtering, inspector grouping/tooltips, and NodeSpec-owned preset exclusion | Next selectable parity lane is VAR-004 variation canvas CRUD |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-PARAM007 closure |
+| P-VAR004 variation canvas CRUD foundation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `InteractionContract` variation CRUD verbs plus `variation_state` prove rename/delete/move for presets and snapshots with undo/redo and storage preservation | No active parity lane after P-VAR004 |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-VAR004 closure |
 
 ## Active Lane Protocol
 
@@ -259,43 +260,37 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-PARAM007 parameter metadata closure as of 2026-05-25 10:10 Asia/Taipei.
+None after P-VAR004 variation canvas CRUD foundation closure as of 2026-05-25 10:19 Asia/Taipei.
 
-P-PARAM007 closed.
+P-VAR004 closed.
 Evidence:
-- source/core/NodeSpec.h
-- source/core/NodeSpec.cpp
-- source/core/ParameterRowState.h
-- source/core/ParameterRowState.cpp
+- source/core/InteractionContract.h
 - source/core/InteractionContract.cpp
-- source/ui/ImGuiSmokeOverlayInspector.cpp
-- tests/ParameterMetadataTests.cpp
+- tests/VariationStateTests.cpp
 - docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
 - docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
 
 Closed line:
-ParamSpec metadata
--> row state carries group/description/exclude
--> visibleWhen filters irrelevant parameter rows
--> inspector groups visible metadata rows
--> createPreset honors NodeSpec-owned preset exclusion
+VariationLibrary records
+-> rename/delete/move commandGraph verbs
+-> preset and snapshot CRUD separation
+-> undo/redo restores title, existence, and order
+-> PatchDocument and saveWork preserve updated variation library
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_parameter_metadata_tests` failed RED first on missing `ParamSpec` metadata fields.
-- `cmake --build build --target my_world_parameter_metadata_tests`
-- `ctest --test-dir build --output-on-failure -R "parameter_metadata"`
-- `ctest --test-dir build --output-on-failure -R "node_specs|node_spec_browser|node_spec_queries|parameter_metadata|parameter_row_state|parameter_controls|variation_state"`
-- `cmake --build build --target my_world_imgui`
+- `cmake --build build --target my_world_variation_state_tests` failed RED first on missing `renameVariation`, `deleteVariation`, and `moveVariation`.
+- `cmake --build build --target my_world_variation_state_tests`
+- `ctest --test-dir build --output-on-failure -R variation_state`
 - `cmake --build build`
 - `ctest --test-dir build --output-on-failure`
 
 Latest accepted result:
-- `parameter metadata ok`
-- `7/7 focused tests passed`
+- `variation state ok`
+- `1/1 focused tests passed`
 - `62/62 full tests passed`
 
 Next selectable lane:
-- VAR-004 variation canvas CRUD
+- None selected; closest remaining variation lane is hover preview / Alt blend after thumbnail UI is selected.
 
 Previous closure:
 None after P-OPS1A reconnect/split macro closure as of 2026-05-25 08:36 Asia/Taipei.
@@ -1470,7 +1465,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-PARAM007 parameter metadata closure. The next lane must be selected explicitly; closest ordered choice is VAR-004 variation canvas CRUD. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-VAR004 variation canvas CRUD foundation closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

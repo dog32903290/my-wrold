@@ -375,6 +375,11 @@ bool variationIdExists (const std::vector<VariationRecord>& records, const std::
     });
 }
 
+std::vector<VariationRecord>& variationRecordsForKind (VariationLibrary& variations, VariationKind kind)
+{
+    return kind == VariationKind::preset ? variations.presets : variations.snapshots;
+}
+
 const VariationRecord* variationById (const std::vector<VariationRecord>& records, const std::string& id)
 {
     const auto found = std::find_if (records.begin(), records.end(), [&] (const auto& record) {
@@ -382,6 +387,24 @@ const VariationRecord* variationById (const std::vector<VariationRecord>& record
     });
 
     return found == records.end() ? nullptr : &*found;
+}
+
+VariationRecord* variationById (std::vector<VariationRecord>& records, const std::string& id)
+{
+    const auto found = std::find_if (records.begin(), records.end(), [&] (const auto& record) {
+        return record.id == id;
+    });
+
+    return found == records.end() ? nullptr : &*found;
+}
+
+std::size_t variationIndexById (const std::vector<VariationRecord>& records, const std::string& id)
+{
+    const auto found = std::find_if (records.begin(), records.end(), [&] (const auto& record) {
+        return record.id == id;
+    });
+
+    return found == records.end() ? records.size() : static_cast<std::size_t> (found - records.begin());
 }
 
 void appendSkippedValue (VariationRecord& record,
@@ -1486,6 +1509,65 @@ CommandResult applySnapshot (GraphSession& session, const std::string& snapshotI
             upsertParam (*node, value.paramId, value.value);
 
     return commitCommand (session, "apply_snapshot", before);
+}
+
+CommandResult renameVariation (GraphSession& session,
+                               VariationKind kind,
+                               const std::string& variationId,
+                               const std::string& title)
+{
+    if (variationId.empty() || title.empty())
+        return { false, "variation id and title are required" };
+
+    auto& records = variationRecordsForKind (session.variations, kind);
+    auto* record = variationById (records, variationId);
+    if (record == nullptr)
+        return { false, "missing variation: " + variationId };
+
+    const auto before = snapshotOf (session);
+    record->title = title;
+    return commitCommand (session, "rename_variation", before);
+}
+
+CommandResult deleteVariation (GraphSession& session, VariationKind kind, const std::string& variationId)
+{
+    if (variationId.empty())
+        return { false, "variation id is required" };
+
+    auto& records = variationRecordsForKind (session.variations, kind);
+    const auto index = variationIndexById (records, variationId);
+    if (index >= records.size())
+        return { false, "missing variation: " + variationId };
+
+    const auto before = snapshotOf (session);
+    records.erase (records.begin() + static_cast<std::ptrdiff_t> (index));
+    return commitCommand (session, "delete_variation", before);
+}
+
+CommandResult moveVariation (GraphSession& session,
+                             VariationKind kind,
+                             const std::string& variationId,
+                             std::size_t destinationIndex)
+{
+    if (variationId.empty())
+        return { false, "variation id is required" };
+
+    auto& records = variationRecordsForKind (session.variations, kind);
+    const auto sourceIndex = variationIndexById (records, variationId);
+    if (sourceIndex >= records.size())
+        return { false, "missing variation: " + variationId };
+
+    if (destinationIndex >= records.size())
+        return { false, "variation destination out of range" };
+
+    if (sourceIndex == destinationIndex)
+        return { false, "variation already at destination" };
+
+    const auto before = snapshotOf (session);
+    auto record = records[sourceIndex];
+    records.erase (records.begin() + static_cast<std::ptrdiff_t> (sourceIndex));
+    records.insert (records.begin() + static_cast<std::ptrdiff_t> (destinationIndex), record);
+    return commitCommand (session, "move_variation", before);
 }
 
 bool undo (GraphSession& session)

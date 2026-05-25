@@ -48,6 +48,26 @@ bool hasSkipReason (const myworld::VariationRecord& record,
     return false;
 }
 
+const myworld::VariationRecord& requireVariation (const std::vector<myworld::VariationRecord>& records,
+                                                  const std::string& variationId)
+{
+    for (const auto& record : records)
+        if (record.id == variationId)
+            return record;
+
+    expect (false, "missing variation " + variationId);
+    return records.front();
+}
+
+bool hasVariation (const std::vector<myworld::VariationRecord>& records, const std::string& variationId)
+{
+    for (const auto& record : records)
+        if (record.id == variationId)
+            return true;
+
+    return false;
+}
+
 void writeText (const std::filesystem::path& path, const std::string& text)
 {
     std::filesystem::create_directories (path.parent_path());
@@ -123,6 +143,53 @@ int main()
     expect (session.commandLog.back() == "apply_snapshot", "apply snapshot command logged");
     expect (paramValue (requireNode (session.graph, "var1"), "gain") == "3.0", "snapshot restores gain");
 
+    expect (myworld::setParam (session, "var1", "gain", "4.0").ok, "set second preset gain");
+    expect (myworld::createPreset (session, "var1", spec, "preset.alt", "Alt", {}).ok,
+            "create second preset");
+    expect (myworld::renameVariation (session, myworld::VariationKind::preset, "preset.alt", "Alt Renamed").ok,
+            "rename preset");
+    expect (session.commandLog.back() == "rename_variation", "rename variation command logged");
+    expect (requireVariation (session.variations.presets, "preset.alt").title == "Alt Renamed",
+            "preset title renamed");
+    expect (myworld::undo (session), "undo rename variation");
+    expect (requireVariation (session.variations.presets, "preset.alt").title == "Alt",
+            "undo restores preset title");
+    expect (myworld::redo (session), "redo rename variation");
+    expect (requireVariation (session.variations.presets, "preset.alt").title == "Alt Renamed",
+            "redo reapplies preset title");
+
+    expect (myworld::moveVariation (session, myworld::VariationKind::preset, "preset.alt", 0).ok,
+            "move preset to front");
+    expect (session.commandLog.back() == "move_variation", "move variation command logged");
+    expect (session.variations.presets.front().id == "preset.alt", "preset moved to front");
+    expect (myworld::undo (session), "undo move variation");
+    expect (session.variations.presets.front().id == "preset.hot", "undo restores preset order");
+    expect (myworld::redo (session), "redo move variation");
+    expect (session.variations.presets.front().id == "preset.alt", "redo reapplies preset order");
+
+    expect (! myworld::renameVariation (session, myworld::VariationKind::preset, "preset.alt", "").ok,
+            "rename variation rejects empty title");
+    expect (! myworld::moveVariation (session, myworld::VariationKind::preset, "preset.alt", 9).ok,
+            "move variation rejects out of range");
+
+    expect (myworld::deleteVariation (session, myworld::VariationKind::preset, "preset.hot").ok,
+            "delete preset");
+    expect (session.commandLog.back() == "delete_variation", "delete variation command logged");
+    expect (! hasVariation (session.variations.presets, "preset.hot"), "preset deleted");
+    expect (myworld::undo (session), "undo delete preset");
+    expect (hasVariation (session.variations.presets, "preset.hot"), "undo restores deleted preset");
+
+    expect (myworld::renameVariation (session, myworld::VariationKind::snapshot, "snapshot.one", "Snapshot Renamed").ok,
+            "rename snapshot");
+    expect (requireVariation (session.variations.snapshots, "snapshot.one").title == "Snapshot Renamed",
+            "snapshot title renamed");
+    expect (myworld::deleteVariation (session, myworld::VariationKind::snapshot, "snapshot.one").ok,
+            "delete snapshot");
+    expect (session.variations.snapshots.empty(), "snapshot deleted");
+    expect (myworld::undo (session), "undo delete snapshot");
+    expect (requireVariation (session.variations.snapshots, "snapshot.one").title == "Snapshot Renamed",
+            "undo restores snapshot");
+
     const auto document = myworld::makePatchDocument ("patch.variations",
                                                       "Variations",
                                                       session.graph,
@@ -134,10 +201,12 @@ int main()
     expect (json.find ("\"snapshots\"") != std::string::npos, "json writes snapshots");
     const auto parsed = myworld::parsePatchDocument (json);
     expect (parsed.ok, parsed.error);
-    expect (parsed.document.variations.presets.size() == 1, "patch reloads presets");
+    expect (parsed.document.variations.presets.size() == 2, "patch reloads presets");
     expect (parsed.document.variations.snapshots.size() == 1, "patch reloads snapshots");
-    expect (parsed.document.variations.presets.front().values.size() == 2, "patch reloads preset values");
-    expect (parsed.document.variations.presets.front().skippedValues.size() == 4, "patch reloads skip reasons");
+    expect (requireVariation (parsed.document.variations.presets, "preset.hot").values.size() == 2,
+            "patch reloads preset values");
+    expect (requireVariation (parsed.document.variations.presets, "preset.hot").skippedValues.size() == 4,
+            "patch reloads skip reasons");
 
     const auto preserveRoot = std::filesystem::temp_directory_path() / "my-world-variation-preserve-tests";
     std::filesystem::remove_all (preserveRoot);
@@ -159,7 +228,7 @@ int main()
 
     const auto preserveReloaded = myworld::loadMainPatchDocumentForWork (preserveManifestPath.string());
     expect (preserveReloaded.ok, preserveReloaded.error);
-    expect (preserveReloaded.document.variations.presets.size() == 1,
+    expect (preserveReloaded.document.variations.presets.size() == 2,
             "save_work preserves existing presets when session was not variation-hydrated");
     expect (preserveReloaded.document.variations.snapshots.size() == 1,
             "save_work preserves existing snapshots when session was not variation-hydrated");
@@ -184,7 +253,7 @@ int main()
 
     const auto reloadedMain = myworld::loadMainPatchDocumentForWork (manifestPath.string());
     expect (reloadedMain.ok, reloadedMain.error);
-    expect (reloadedMain.document.variations.presets.size() == 1, "save_work preserves presets");
+    expect (reloadedMain.document.variations.presets.size() == 2, "save_work preserves presets");
     expect (reloadedMain.document.variations.snapshots.size() == 1, "save_work preserves snapshots");
 
     std::filesystem::remove_all (root);

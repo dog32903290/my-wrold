@@ -6,6 +6,7 @@
 #include "TimelineState.h"
 #include "VariationState.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -267,6 +268,15 @@ CommandResult createSnapshot (GraphSession& session,
                               const std::string& title,
                               const std::vector<std::string>& enabledNodeIds);
 CommandResult applySnapshot (GraphSession& session, const std::string& snapshotId);
+CommandResult renameVariation (GraphSession& session,
+                               VariationKind kind,
+                               const std::string& variationId,
+                               const std::string& title);
+CommandResult deleteVariation (GraphSession& session, VariationKind kind, const std::string& variationId);
+CommandResult moveVariation (GraphSession& session,
+                             VariationKind kind,
+                             const std::string& variationId,
+                             std::size_t destinationIndex);
 bool undo (GraphSession& session);
 bool redo (GraphSession& session);
 GraphInvariantReport validateGraphInvariants (const GraphContract& graph, const std::vector<NodeSpec>& specs);

@@ -132,7 +132,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | VAR-001 | Presets and snapshots are separate concepts | Variation parity | `VariationsWindow` | proven foundation | L3 visible | `presets_vs_snapshots_context_switch` | variation canvas UI remains VAR-004 |
 | VAR-002 | Preset capture and apply | Variation parity | `SymbolVariationPool` | proven foundation | L2 command | `create_apply_preset_capture_report` | preset browser/blend remains parked |
 | VAR-003 | Snapshot capture and apply | Variation parity | snapshot-enabled children | proven foundation | L2 command | `create_apply_snapshot_enabled_children` | child enable UI remains parked |
-| VAR-004 | Variation canvas CRUD | Variation parity | `VariationBaseCanvas` | planned | L2 command | `variation_thumbnail_crud_undo` | commandGraph verbs |
+| VAR-004 | Variation canvas CRUD | Variation parity | `VariationBaseCanvas` | proven foundation | L2 command | `variation_thumbnail_crud_undo` | thumbnail UI polish remains parked |
 | VAR-005 | Hover preview and Alt blend | Variation parity | `ValueUtils` blend rules | parked | L3 visible | `deterministic_variation_blend_preview_commit_cancel` | deterministic blend rules |
 | VAR-006 | Presets in symbol browser | Variation parity | browser preset creation | parked | L3 visible | `drag_pin_choose_node_preset_create_apply_connect` | browser plus variation bridge |
 
@@ -740,6 +740,46 @@ It does not implement richer inspector layout controls, collapsible groups, expr
 Latest accepted result: 7/7 focused tests passed; 62/62 full tests passed.
 ```
 
+### P-VAR004 Variation Canvas CRUD Foundation
+
+Claim:
+
+```text
+Variation records can be updated, deleted, and reordered through commandGraph verbs with undo/redo, while create/read remain the P-VAR1 library path.
+```
+
+Evidence target:
+
+```text
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+tests/VariationStateTests.cpp
+```
+
+- [x] Write RED tests for preset rename, preset delete, preset move, snapshot rename, snapshot delete, failure guards, undo, redo, and storage preservation.
+- [x] Add commandGraph verbs for `rename_variation`, `delete_variation`, and `move_variation`.
+- [x] Keep CRUD scoped to `VariationLibrary` records and preserve existing preset/snapshot separation.
+- [x] Run `cmake --build build --target my_world_variation_state_tests`.
+- [x] Run `ctest --test-dir build --output-on-failure -R variation_state`.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-VAR004 closed as command foundation as of 2026-05-25 10:19 Asia/Taipei.
+
+Verified acceptance trace:
+
+```text
+variation_thumbnail_crud_undo
+```
+
+Scope boundary:
+
+```text
+P-VAR004 proves create/read/update/delete/reorder at commandGraph level for presets and snapshots, including undo/redo and PatchDocument/saveWork preservation.
+It does not implement thumbnail rendering, thumbnail hit-test geometry, hover preview, Alt blend, child enable UI, or symbol-browser preset creation.
+Latest accepted result: 1/1 focused test passed; 62/62 full tests passed.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -755,7 +795,8 @@ The next plans should be created only when the previous queue item has proof evi
 | 7 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
 | 8 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
 | 9 | P-PARAM007 parameter metadata | P-VAR1 | Preset capture should read NodeSpec-owned exclusion and inspector metadata before variation CRUD |
-| 10 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
+| 10 | P-VAR004 variation canvas CRUD foundation | P-PARAM007 | Variation records need command-backed update/delete/reorder before thumbnail UI |
+| 11 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
 
 ## Self-Review
 

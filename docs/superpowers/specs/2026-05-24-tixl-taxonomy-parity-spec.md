@@ -501,6 +501,26 @@ nodespec_parameter_metadata_visibility
 
 This proves parameter groups, descriptions, value-based relevance filtering, and `excludeFromPresets` owned by `ParamSpec` instead of an external capture-only list. It does not implement collapsible metadata groups, expression-based relevance rules, variation canvas CRUD, thumbnails, hover preview, Alt blend, or preset creation from the symbol browser.
 
+## P-VAR004 Fixture Evidence
+
+Closed as command foundation as of 2026-05-25 10:19 Asia/Taipei.
+
+Variation CRUD is proven at commandGraph and persistence level by:
+
+```text
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+tests/VariationStateTests.cpp
+```
+
+Verified acceptance trace:
+
+```text
+variation_thumbnail_crud_undo
+```
+
+This proves preset and snapshot rename/delete plus preset reorder as undoable commands, and preserves the updated variation library through PatchDocument/saveWork. It does not implement thumbnail rendering, thumbnail hit-test geometry, hover preview, Alt blend, child enable UI, or symbol-browser preset creation.
+
 ## Output, Timeline, And Live Performance Parity
 
 | Feature | TiXL witness | Policy | Current status | Required trace | Blocker |
@@ -619,8 +639,14 @@ ParamSpec metadata
 -> inspector grouping/description tooltip
 -> preset capture reads NodeSpec-owned exclusion
 
+P-VAR004 variation canvas CRUD foundation: closed at command/storage level
+VariationLibrary records
+-> rename/delete/move commandGraph verbs
+-> undo/redo restores title, existence, and order
+-> save/load preserves updated variation library
+
 Next selectable parity line:
-No active parity line until selected. Closest ordered lane is VAR-004 variation canvas CRUD.
+No active parity line until selected.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.
