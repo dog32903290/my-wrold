@@ -3,6 +3,7 @@
 #include "GraphIOMappingStorage.h"
 #include "ProofRunSupport.h"
 #include "StorageContract.h"
+#include "WorkProjectLifecycle.h"
 
 #include <filesystem>
 
@@ -40,22 +41,25 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         const auto loaded = loadMainPatchDocumentForWork (request.activeWorkManifestPath.string());
         if (! loaded.ok)
         {
+            const auto lifecycle = makeWorkProjectLifecycle (WorkProjectLifecycleStatus::activeWorkBlocked);
+
             result.status = "failed";
             result.error = loaded.error;
             result.snapshot.ok = false;
             result.snapshot.status = "blocked";
             result.snapshot.message = loaded.error;
             result.snapshot.workManifestPath = request.activeWorkManifestPath.string();
-            result.snapshot.workSource = "active-work";
-            result.snapshot.workSourceStatus = "active-work-blocked";
+            result.snapshot.workSource = lifecycle.workSource;
+            result.snapshot.workSourceStatus = lifecycle.workSourceStatus;
             result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
             return result;
         }
 
+        const auto lifecycle = makeWorkProjectLifecycle (WorkProjectLifecycleStatus::activeWorkOpened);
         loadedInputs.document = loaded.document;
         loadedInputs.workManifestPath = request.activeWorkManifestPath.string();
-        loadedInputs.workSource = "active-work";
-        loadedInputs.workSourceStatus = "active-work-opened";
+        loadedInputs.workSource = lifecycle.workSource;
+        loadedInputs.workSourceStatus = lifecycle.workSourceStatus;
     }
     else
     {
@@ -64,12 +68,15 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
             const auto loaded = loadMainPatchDocumentForWork (candidate.string());
             if (loaded.ok)
             {
+                const auto lifecycle = makeWorkProjectLifecycle (
+                    request.activeWorkManifestPath.empty()
+                        ? WorkProjectLifecycleStatus::fixtureFallbackNoActiveRequest
+                        : WorkProjectLifecycleStatus::fixtureFallbackActiveMissing);
+
                 loadedInputs.document = loaded.document;
                 loadedInputs.workManifestPath = candidate.string();
-                loadedInputs.workSource = "fixture";
-                loadedInputs.workSourceStatus = request.activeWorkManifestPath.empty()
-                                                    ? "fixture-fallback-no-active-request"
-                                                    : "fixture-fallback-active-missing";
+                loadedInputs.workSource = lifecycle.workSource;
+                loadedInputs.workSourceStatus = lifecycle.workSourceStatus;
                 break;
             }
 
@@ -79,15 +86,18 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
 
     if (loadedInputs.workManifestPath.empty())
     {
+        const auto lifecycle = makeWorkProjectLifecycle (
+            request.activeWorkManifestPath.empty() ? WorkProjectLifecycleStatus::fixtureBlockedNoActiveRequest
+                                                   : WorkProjectLifecycleStatus::fixtureBlockedActiveMissing);
+
         result.status = "failed";
         result.error = lastError.empty() ? "could not open current workbench session work" : lastError;
         result.snapshot.ok = false;
         result.snapshot.status = "blocked";
         result.snapshot.message = result.error;
+        result.snapshot.workSource = lifecycle.workSource;
         result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
-        result.snapshot.workSourceStatus = request.activeWorkManifestPath.empty()
-                                               ? "fixture-blocked-no-active-request"
-                                               : "fixture-blocked-active-missing";
+        result.snapshot.workSourceStatus = lifecycle.workSourceStatus;
         return result;
     }
 

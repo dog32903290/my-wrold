@@ -886,6 +886,26 @@ set_tests_properties(workbench_session PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_work_project_lifecycle
+    source/app/WorkProjectLifecycle.cpp
+)
+
+target_include_directories(my_world_work_project_lifecycle
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+)
+
+add_executable(my_world_work_project_lifecycle_tests
+    tests/WorkProjectLifecycleTests.cpp
+)
+
+target_link_libraries(my_world_work_project_lifecycle_tests
+    PRIVATE
+        my_world_work_project_lifecycle
+)
+
+add_test(NAME work_project_lifecycle COMMAND my_world_work_project_lifecycle_tests)
+
 add_library(my_world_workbench_session_open_status
     source/app/WorkbenchSessionOpenStatus.cpp
 )
@@ -900,6 +920,7 @@ target_include_directories(my_world_workbench_session_open_status
 target_link_libraries(my_world_workbench_session_open_status
     PUBLIC
         my_world_proof_run_support
+        my_world_work_project_lifecycle
         my_world_workbench_session
 )
 
