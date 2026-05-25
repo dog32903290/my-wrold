@@ -9,6 +9,11 @@ namespace
 {
 constexpr const char* dryRunMidiIdentifier = "live-io-timer-dry-run";
 
+bool isControlledSendMode (LiveIOControlTimerSendMode mode)
+{
+    return mode == LiveIOControlTimerSendMode::controlledSend;
+}
+
 std::string jsonQuoted (const std::string& text)
 {
     std::ostringstream out;
@@ -53,6 +58,22 @@ LiveIOMidiOutputInventory makeDryRunMidiInventory()
     return inventory;
 }
 
+LiveIOMidiOutputSender makeDryRunMidiSender()
+{
+    return [] (const LiveIOMidiOutputDevice&, const LiveIOMidiCcMessage&)
+    {
+        return LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
+}
+
+LiveIOOscFloatSender makeDryRunOscSender()
+{
+    return [] (const LiveIOOscFloatMessage&)
+    {
+        return LiveIOOscFloatSendResult { true, "" };
+    };
+}
+
 void setStateStatus (LiveIOControlTimerState& state,
                      const std::string& status,
                      const std::string& message)
@@ -74,14 +95,23 @@ int nonNegativeInterval (int intervalMs)
 }
 }
 
-LiveIOControlTimerTickResult tickLiveIOControlTimerDryRun (
+std::string liveIOControlTimerSendModeToString (LiveIOControlTimerSendMode mode)
+{
+    if (mode == LiveIOControlTimerSendMode::controlledSend)
+        return "controlled_send";
+
+    return "dry_run";
+}
+
+LiveIOControlTimerTickResult tickLiveIOControlTimer (
     LiveIOControlTimerState& state,
-    const LiveIOControlTimerDryRunConfig& config,
+    const LiveIOControlTimerConfig& config,
     std::int64_t timestampMs,
     const AudioAnalyzerSnapshot& snapshot)
 {
     ++state.tickCount;
     state.lastSampleCounter = snapshot.sampleCounter;
+    state.lastSendMode = liveIOControlTimerSendModeToString (config.sendMode);
 
     if (! config.enabled)
     {
@@ -109,16 +139,23 @@ LiveIOControlTimerTickResult tickLiveIOControlTimerDryRun (
     request.bindings = config.bindings;
     request.tickIntervalMs = 0;
     request.dispatchMinIntervalMs = nonNegativeInterval (config.dispatchMinIntervalMs);
-    request.midiOutputInventory = makeDryRunMidiInventory();
-    request.midiOutputIdentifier = dryRunMidiIdentifier;
-    request.midiSender = [] (const LiveIOMidiOutputDevice&, const LiveIOMidiCcMessage&)
+    request.midiEnabled = config.midiEnabled;
+    request.oscEnabled = config.oscEnabled;
+
+    if (isControlledSendMode (config.sendMode))
     {
-        return LiveIOMidiOutputDeviceSendResult { true, true, "" };
-    };
-    request.oscSender = [] (const LiveIOOscFloatMessage&)
+        request.midiOutputInventory = config.midiOutputInventory;
+        request.midiOutputIdentifier = config.midiOutputIdentifier;
+        request.midiSender = config.midiSender;
+        request.oscSender = config.oscSender;
+    }
+    else
     {
-        return LiveIOOscFloatSendResult { true, "" };
-    };
+        request.midiOutputInventory = makeDryRunMidiInventory();
+        request.midiOutputIdentifier = dryRunMidiIdentifier;
+        request.midiSender = makeDryRunMidiSender();
+        request.oscSender = makeDryRunOscSender();
+    }
 
     const auto report = executeLiveIOControlPump (request);
     state.lastPumpReport = report;
@@ -135,15 +172,42 @@ LiveIOControlTimerTickResult tickLiveIOControlTimerDryRun (
     }
 
     ++state.pumpCount;
-    state.midiDryRunCount += report.dispatch.midiSentCount;
-    state.oscDryRunCount += report.dispatch.oscSentCount;
+    if (isControlledSendMode (config.sendMode))
+    {
+        state.midiControlledSendCount += report.dispatch.midiSentCount;
+        state.oscControlledSendCount += report.dispatch.oscSentCount;
+    }
+    else
+    {
+        state.midiDryRunCount += report.dispatch.midiSentCount;
+        state.oscDryRunCount += report.dispatch.oscSentCount;
+    }
+
     state.shaderSkippedCount += report.dispatch.shaderSkippedCount;
     state.lastLoudness = snapshot.loudness;
     state.hasLastPumpTimestamp = true;
     state.lastPumpTimestampMs = timestampMs;
+
+    if (isControlledSendMode (config.sendMode))
+    {
+        setStateStatus (state, "controlled_sent", "live_io_timer_controlled_sent");
+        return makeTickResult ("controlled_sent", state.lastMessage, true);
+    }
+
     setStateStatus (state, "pumped", "live_io_timer_dry_run_pumped");
 
     return makeTickResult ("pumped", state.lastMessage, true);
+}
+
+LiveIOControlTimerTickResult tickLiveIOControlTimerDryRun (
+    LiveIOControlTimerState& state,
+    const LiveIOControlTimerConfig& config,
+    std::int64_t timestampMs,
+    const AudioAnalyzerSnapshot& snapshot)
+{
+    auto dryRunConfig = config;
+    dryRunConfig.sendMode = LiveIOControlTimerSendMode::dryRun;
+    return tickLiveIOControlTimer (state, dryRunConfig, timestampMs, snapshot);
 }
 
 std::string makeLiveIOControlTimerStateJson (const LiveIOControlTimerState& state)
@@ -158,11 +222,14 @@ std::string makeLiveIOControlTimerStateJson (const LiveIOControlTimerState& stat
     out << "  \"inactiveTickCount\": " << state.inactiveTickCount << ",\n";
     out << "  \"midiDryRunCount\": " << state.midiDryRunCount << ",\n";
     out << "  \"oscDryRunCount\": " << state.oscDryRunCount << ",\n";
+    out << "  \"midiControlledSendCount\": " << state.midiControlledSendCount << ",\n";
+    out << "  \"oscControlledSendCount\": " << state.oscControlledSendCount << ",\n";
     out << "  \"shaderSkippedCount\": " << state.shaderSkippedCount << ",\n";
     out << "  \"lastLoudness\": " << state.lastLoudness << ",\n";
     out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
     out << "  \"lastStatus\": " << jsonQuoted (state.lastStatus) << ",\n";
     out << "  \"lastMessage\": " << jsonQuoted (state.lastMessage) << ",\n";
+    out << "  \"lastSendMode\": " << jsonQuoted (state.lastSendMode) << ",\n";
     out << "  \"lastPumpTimestampMs\": " << state.lastPumpTimestampMs << ",\n";
     out << "  \"errors\": ";
     appendErrorsJson (out, state.errors);

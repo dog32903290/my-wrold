@@ -62,7 +62,7 @@ private:
     void updateAudioMeters();
     void applyMidiPreferences (MidiPreferences preferences);
     void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
-    void tickLiveIOControlDryRun (const AudioAnalyzerSnapshot& snapshot);
+    void tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot);
 
     OpenGLShaderPreview preview;
     juce::AudioDeviceManager audioDeviceManager;
@@ -83,6 +83,7 @@ private:
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;
     juce::String midiStatus = "midi off";
+    LiveIOControlTimerSendMode liveIOSendMode = LiveIOControlTimerSendMode::dryRun;
     LiveIOControlTimerState liveIOTimerState;
     juce::String liveIOStatus = "live io dry-run idle";
     bool shouldQuitAfterStartupDump = false;

@@ -585,7 +585,7 @@ void MainComponent::updateAudioMeters()
     activeLabel.setText (juce::String ("active ") + (snapshot.active ? "yes" : "no"), juce::dontSendNotification);
     preview.setLoudness (snapshot.loudness);
     sendMidiForSnapshot (snapshot);
-    tickLiveIOControlDryRun (snapshot);
+    tickLiveIOControl (snapshot);
     midiStatusLabel.setText (midiStatus + " / " + liveIOStatus, juce::dontSendNotification);
 
     const auto sampleRate = audioInputAnalyzer.getSampleRate();
@@ -650,28 +650,35 @@ void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
                  + " " + juce::String (frame.value);
 }
 
-void MainComponent::tickLiveIOControlDryRun (const AudioAnalyzerSnapshot& snapshot)
+void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot)
 {
-    LiveIOControlTimerDryRunConfig config;
+    LiveIOControlTimerConfig config;
     config.bindings = makeAppLiveIOBindings();
     config.tickIntervalMs = 50;
     config.dispatchMinIntervalMs = 0;
     config.enabled = true;
+    config.sendMode = liveIOSendMode;
 
     const auto nowMs = static_cast<std::int64_t> (juce::Time::getMillisecondCounterHiRes());
-    const auto result = tickLiveIOControlTimerDryRun (liveIOTimerState, config, nowMs, snapshot);
+    const auto result = tickLiveIOControlTimer (liveIOTimerState, config, nowMs, snapshot);
+    const auto controlled = liveIOSendMode == LiveIOControlTimerSendMode::controlledSend;
+    const auto modeLabel = controlled ? "send" : "dry";
 
     if (! result.ok)
     {
-        liveIOStatus = "live io dry failed";
+        liveIOStatus = "live io " + juce::String (modeLabel) + " failed";
         return;
     }
 
-    liveIOStatus = "live io dry "
+    liveIOStatus = juce::String ("live io ")
+                   + modeLabel
+                   + " "
                    + juce::String (result.status)
                    + " m"
-                   + juce::String (liveIOTimerState.midiDryRunCount)
+                   + juce::String (controlled ? liveIOTimerState.midiControlledSendCount
+                                               : liveIOTimerState.midiDryRunCount)
                    + " o"
-                   + juce::String (liveIOTimerState.oscDryRunCount);
+                   + juce::String (controlled ? liveIOTimerState.oscControlledSendCount
+                                               : liveIOTimerState.oscDryRunCount);
 }
 }

@@ -129,9 +129,99 @@ int main()
     expectContains (json, "\"inactiveTickCount\": 1", "timer json inactive count");
     expectContains (json, "\"midiDryRunCount\": 2", "timer json midi count");
     expectContains (json, "\"oscDryRunCount\": 2", "timer json osc count");
+    expectContains (json, "\"midiControlledSendCount\": 0", "timer json controlled midi count");
+    expectContains (json, "\"oscControlledSendCount\": 0", "timer json controlled osc count");
     expectContains (json, "\"shaderSkippedCount\": 2", "timer json shader count");
     expectContains (json, "\"lastStatus\": \"disabled\"", "timer json last status");
+    expectContains (json, "\"lastSendMode\": \"dry_run\"", "timer json send mode");
     expectContains (json, "\"lastSampleCounter\": 320", "timer json sample counter");
+
+    myworld::LiveIOControlTimerConfig gatedConfig = config;
+    gatedConfig.sendMode = myworld::LiveIOControlTimerSendMode::dryRun;
+    gatedConfig.midiOutputInventory.devices = {
+        { "App Timer MIDI", "app-midi" }
+    };
+    gatedConfig.midiOutputIdentifier = "app-midi";
+
+    int gatedMidiSendCount = 0;
+    int gatedOscSendCount = 0;
+    gatedConfig.midiSender = [&] (const myworld::LiveIOMidiOutputDevice&,
+                                  const myworld::LiveIOMidiCcMessage&)
+    {
+        ++gatedMidiSendCount;
+        return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
+    gatedConfig.oscSender = [&] (const myworld::LiveIOOscFloatMessage&)
+    {
+        ++gatedOscSendCount;
+        return myworld::LiveIOOscFloatSendResult { true, "" };
+    };
+
+    myworld::LiveIOControlTimerState gatedState;
+    const auto gated = myworld::tickLiveIOControlTimer (
+        gatedState,
+        gatedConfig,
+        0,
+        makeSnapshot (0.25f, true, 384));
+    expect (gated.ok, gated.message);
+    expectEqual (gated.status, "pumped", "dry-run gated status");
+    expectEqual (gatedMidiSendCount, 0, "dry-run does not call provided midi sender");
+    expectEqual (gatedOscSendCount, 0, "dry-run does not call provided osc sender");
+    expectEqual (gatedState.midiDryRunCount, 1, "dry-run gated midi count");
+    expectEqual (gatedState.oscDryRunCount, 1, "dry-run gated osc count");
+    expectEqual (gatedState.midiControlledSendCount, 0, "dry-run controlled midi count");
+    expectEqual (gatedState.oscControlledSendCount, 0, "dry-run controlled osc count");
+
+    auto controlledConfig = gatedConfig;
+    controlledConfig.sendMode = myworld::LiveIOControlTimerSendMode::controlledSend;
+    int controlledMidiSendCount = 0;
+    int controlledOscSendCount = 0;
+    controlledConfig.midiSender = [&] (const myworld::LiveIOMidiOutputDevice&,
+                                       const myworld::LiveIOMidiCcMessage& message)
+    {
+        ++controlledMidiSendCount;
+        expectEqual (message.value, 95, "controlled midi value");
+        return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
+    controlledConfig.oscSender = [&] (const myworld::LiveIOOscFloatMessage& message)
+    {
+        ++controlledOscSendCount;
+        expect (message.floatValue > 0.749 && message.floatValue < 0.751, "controlled osc float");
+        return myworld::LiveIOOscFloatSendResult { true, "" };
+    };
+
+    myworld::LiveIOControlTimerState controlledState;
+    const auto controlled = myworld::tickLiveIOControlTimer (
+        controlledState,
+        controlledConfig,
+        0,
+        makeSnapshot (0.75f, true, 448));
+    expect (controlled.ok, controlled.message);
+    expectEqual (controlled.status, "controlled_sent", "controlled send status");
+    expectEqual (controlledMidiSendCount, 1, "controlled calls midi sender");
+    expectEqual (controlledOscSendCount, 1, "controlled calls osc sender");
+    expectEqual (controlledState.midiDryRunCount, 0, "controlled dry-run midi count");
+    expectEqual (controlledState.oscDryRunCount, 0, "controlled dry-run osc count");
+    expectEqual (controlledState.midiControlledSendCount, 1, "controlled midi count");
+    expectEqual (controlledState.oscControlledSendCount, 1, "controlled osc count");
+    expectEqual (controlledState.lastSendMode, "controlled_send", "controlled state mode");
+
+    auto missingSenderConfig = controlledConfig;
+    missingSenderConfig.midiSender = {};
+    missingSenderConfig.oscSender = [] (const myworld::LiveIOOscFloatMessage&)
+    {
+        return myworld::LiveIOOscFloatSendResult { true, "" };
+    };
+    myworld::LiveIOControlTimerState missingSenderState;
+    const auto missingSender = myworld::tickLiveIOControlTimer (
+        missingSenderState,
+        missingSenderConfig,
+        0,
+        makeSnapshot (0.4f, true, 512));
+    expect (! missingSender.ok, "controlled send requires midi sender");
+    expectEqual (missingSender.status, "failed", "controlled missing sender status");
+    expectContains (missingSenderState.errors.front(), "midi output sender is unavailable",
+                    "controlled missing sender error");
 
     std::cout << "live io control timer ok\n";
     return 0;
