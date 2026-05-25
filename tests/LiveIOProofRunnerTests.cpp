@@ -45,11 +45,13 @@ int main()
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 3, "artifact count");
+    expect (result.artifactPaths.size() == 4, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
             "live io send report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_osc_loopback_report.json"),
+            "live io osc loopback report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -79,6 +81,18 @@ int main()
     expectContains (sendReport, "\"skipped\": [\"shader.uniform: uniform.loudness\"]",
                     "send report skipped uniform");
     expectContains (sendReport, "\"errors\": []", "send report no errors");
+
+    const auto loopbackReport = readTextFile (outputDirectory / "live_io_osc_loopback_report.json");
+    expectContains (loopbackReport, "\"kind\": \"liveIOOscLoopbackProof\"", "loopback report kind");
+    expectContains (loopbackReport, "\"ok\": true", "loopback report ok");
+    expectContains (loopbackReport, "\"status\": \"received\"", "loopback report status");
+    expectContains (loopbackReport, "\"sendStatus\": \"controlled_send\"", "loopback send status");
+    expectContains (loopbackReport, "\"sent\": true", "loopback sent flag");
+    expectContains (loopbackReport, "\"received\": true", "loopback received flag");
+    expectContains (loopbackReport, "\"oscHost\": \"127.0.0.1\"", "loopback host");
+    expectContains (loopbackReport, "\"oscAddress\": \"/my-world/loudness\"", "loopback address");
+    expectContains (loopbackReport, "\"receivedFloatValue\": 0.500000", "loopback value");
+    expectContains (loopbackReport, "\"errors\": []", "loopback no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

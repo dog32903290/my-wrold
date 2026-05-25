@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 11:34 Asia/Taipei.
+Date: 2026-05-25 12:02 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+2728868 Add live IO send boundary proof
 32bf75b Add live IO bus proof
 e1197e5 Close variation blend and thumbnail proof
 f11bff3 Add variation CRUD commands
@@ -261,13 +262,56 @@ Latest accepted targeted result:
 | R-TN1 real thumbnail headless proof | closed | `HeadlessRenderRuntime` writes `thumbnail.png` and `thumbnail_stats.json` for `image.constant -> output.texture_summary`; `headless_render_runtime`, app build, and full `ctest` passed | Full render/export window, render process states, render queue, and UI render settings remain parked |
 | P-LIVE1 live IO bus foundation | closed | `LiveIOBus` plus `LiveIOProofRunner` map loaded `compound.loudness` public output to MIDI CC, OSC float, and shader uniform target events; app CLI `--dump-live-io-proof-and-exit` writes `live_io_report.json` | Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked |
 | P-LIVE1.2 live IO send boundary | closed | `docs/superpowers/specs/2026-05-25-p-live1-2-live-io-send-boundary.md`; `LiveIOSendAdapter` turns `LiveIOBus` MIDI/OSC events into dry-run send actions and app proof writes `live_io_send_report.json`; `ctest` 65/65 | Real MIDI/UDP send, device scan, realtime callback wiring, teach mode, and live UI mapping remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.2 closure |
+| P-LIVE1.3 controlled OSC loopback proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-3-osc-loopback-proof.md`; `LiveIOSendAdapter` sends one OSC float packet to a controlled localhost receiver and app proof writes `live_io_osc_loopback_report.json` | MIDI device send, external UDP target, always-on OSC server, realtime callback wiring, teach mode, and live UI mapping remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.3 closure |
 
 ## Active Lane Protocol
 
 Only one lane should be marked `in progress` in this file unless the files are disjoint.
 
 Current active lane:
+
+```text
+None after P-LIVE1.3 controlled OSC loopback proof closure as of 2026-05-25 12:02 Asia/Taipei.
+
+P-LIVE1.3 controlled OSC loopback proof closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live1-3-osc-loopback-proof.md
+- source/core/LiveIOSendAdapter.h
+- source/core/LiveIOSendAdapter.cpp
+- source/app/LiveIOProofRunner.cpp
+- tests/LiveIOSendAdapterTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+
+Closed line:
+LiveIOBus OSC float event
+-> LiveIOSendAdapter controlled loopback route
+-> localhost UDP/OSC packet
+-> loopback receiver evidence
+-> live_io_osc_loopback_report.json
+
+Latest verification:
+- `cmake --build build --target my_world_live_io_send_adapter_tests && ./build/my_world_live_io_send_adapter_tests` failed RED first on missing `makeLiveIOControlledOscLoopbackRoute` and `executeLiveIOSendBoundary`.
+- After first implementation, the same focused test failed on OSC float byte order.
+- `./build/my_world_live_io_proof_runner_tests` failed RED first on missing fourth artifact.
+- `cmake --build build --target my_world_live_io_send_adapter_tests my_world_live_io_proof_runner_tests my-world`
+- `./build/my_world_live_io_send_adapter_tests`
+- `./build/my_world_live_io_proof_runner_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
+
+Latest accepted result:
+- `live io send adapter ok`
+- `live io proof runner ok`
+- `debug/p-live1-live-io-proof/live_io_osc_loopback_report.json` has `ok: true`, `status: "received"`, `sendStatus: "controlled_send"`, `sent: true`, `received: true`, address `/my-world/loudness`, and `receivedFloatValue: 0.500000`.
+
+Next selectable lane:
+- None selected.
+- Real MIDI device send, external OSC/UDP targets, always-on OSC receive nodes/server, teach mode, realtime callback wiring, and live UI mapping remain parked.
+- Full render/export window/process states remain parked.
+- Variation child enable UI and symbol-browser preset creation remain parked.
+```
+
+Previous closure:
 
 ```text
 None after P-LIVE1.2 live IO send boundary closure as of 2026-05-25 11:34 Asia/Taipei.

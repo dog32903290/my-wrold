@@ -13,6 +13,8 @@ struct LiveIOSendRoute
     std::string midiOutputName;
     std::string oscHost;
     int oscPort = 0;
+    bool midiEnabled = true;
+    bool oscEnabled = true;
 };
 
 struct LiveIOSendAction
@@ -45,9 +47,13 @@ struct LiveIOSendReport
 LiveIOSendRoute makeLiveIODryRunSendRoute (const std::string& midiOutputName,
                                            const std::string& oscHost,
                                            int oscPort);
+LiveIOSendRoute makeLiveIOControlledOscLoopbackRoute (const std::string& oscHost,
+                                                      int oscPort);
 
 LiveIOSendReport evaluateLiveIOSendBoundary (const LiveIOBusReport& busReport,
                                              const LiveIOSendRoute& route);
+LiveIOSendReport executeLiveIOSendBoundary (const LiveIOBusReport& busReport,
+                                            const LiveIOSendRoute& route);
 
 std::string makeLiveIOSendReportJson (const LiveIOSendReport& report);
 }

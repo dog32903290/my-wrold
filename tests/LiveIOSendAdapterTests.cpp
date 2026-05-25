@@ -2,8 +2,13 @@
 #include "LiveIOSendAdapter.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
+#include <netinet/in.h>
+#include <sys/select.h>
+#include <sys/socket.h>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 namespace
@@ -31,6 +36,69 @@ void expectEqual (int actual, int expected, const std::string& message)
 void expectContains (const std::string& text, const std::string& expected, const std::string& message)
 {
     expect (text.find (expected) != std::string::npos, message + " should contain " + expected);
+}
+
+int openLoopbackReceiver()
+{
+    const auto fd = ::socket (AF_INET, SOCK_DGRAM, 0);
+    expect (fd >= 0, "udp receiver socket");
+
+    sockaddr_in address {};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+    address.sin_port = 0;
+
+    expect (::bind (fd, reinterpret_cast<sockaddr*> (&address), sizeof (address)) == 0,
+            "bind udp receiver");
+    return fd;
+}
+
+int boundPort (int fd)
+{
+    sockaddr_in address {};
+    socklen_t size = sizeof (address);
+    expect (::getsockname (fd, reinterpret_cast<sockaddr*> (&address), &size) == 0,
+            "read udp receiver port");
+    return ntohs (address.sin_port);
+}
+
+std::vector<unsigned char> receiveDatagram (int fd)
+{
+    fd_set readSet;
+    FD_ZERO (&readSet);
+    FD_SET (fd, &readSet);
+
+    timeval timeout {};
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+
+    const auto ready = ::select (fd + 1, &readSet, nullptr, nullptr, &timeout);
+    expect (ready > 0, "udp receiver should get one datagram");
+
+    std::vector<unsigned char> buffer (256);
+    const auto bytes = ::recv (fd, buffer.data(), buffer.size(), 0);
+    expect (bytes > 0, "udp receiver bytes");
+    buffer.resize (static_cast<size_t> (bytes));
+    return buffer;
+}
+
+size_t paddedOscStringSize (const char* text)
+{
+    const auto lengthWithNull = std::strlen (text) + 1;
+    return ((lengthWithNull + 3) / 4) * 4;
+}
+
+float readOscFloat (const std::vector<unsigned char>& datagram, size_t offset)
+{
+    expect (offset + 4 <= datagram.size(), "osc float bytes");
+    const uint32_t bits = (static_cast<uint32_t> (datagram[offset]) << 24)
+        | (static_cast<uint32_t> (datagram[offset + 1]) << 16)
+        | (static_cast<uint32_t> (datagram[offset + 2]) << 8)
+        | static_cast<uint32_t> (datagram[offset + 3]);
+
+    float value = 0.0f;
+    std::memcpy (&value, &bits, sizeof (value));
+    return value;
 }
 }
 
@@ -103,6 +171,42 @@ int main()
     expect (! blockedReport.ok, "blocked bus report blocks send boundary");
     expectEqual (blockedReport.status, "blocked", "blocked bus status");
     expectContains (blockedReport.errors.front(), "live io bus is not mapped", "blocked bus error");
+
+    const auto receiver = openLoopbackReceiver();
+    const auto receiverPort = boundPort (receiver);
+    const auto loopbackRoute = myworld::makeLiveIOControlledOscLoopbackRoute ("127.0.0.1", receiverPort);
+    const auto loopbackReport = myworld::executeLiveIOSendBoundary (busReport, loopbackRoute);
+
+    expect (loopbackReport.ok, loopbackReport.message);
+    expectEqual (loopbackReport.status, "controlled_send", "controlled loopback status");
+    expectEqual (static_cast<int> (loopbackReport.actions.size()), 1, "controlled loopback action count");
+    expectEqual (static_cast<int> (loopbackReport.skipped.size()), 2, "controlled loopback skipped count");
+
+    const auto datagram = receiveDatagram (receiver);
+    ::close (receiver);
+
+    const auto& loopbackAction = loopbackReport.actions.front();
+    expect (loopbackAction.targetKind == myworld::LiveIOTargetKind::oscFloat, "loopback action target");
+    expect (loopbackAction.sent, "controlled loopback action should be sent");
+    expectEqual (loopbackAction.mode, "controlled_send", "controlled loopback action mode");
+    expectEqual (loopbackAction.oscHost, "127.0.0.1", "controlled loopback host");
+    expectEqual (loopbackAction.oscPort, receiverPort, "controlled loopback port");
+    expectEqual (loopbackAction.oscAddress, "/my-world/loudness", "controlled loopback address");
+
+    expect (std::string (reinterpret_cast<const char*> (datagram.data())) == "/my-world/loudness",
+            "osc datagram address");
+    const auto typeOffset = paddedOscStringSize ("/my-world/loudness");
+    expect (std::string (reinterpret_cast<const char*> (datagram.data() + typeOffset)) == ",f",
+            "osc datagram type tag");
+    const auto valueOffset = typeOffset + paddedOscStringSize (",f");
+    const auto receivedValue = readOscFloat (datagram, valueOffset);
+    expect (receivedValue > 0.499f && receivedValue < 0.501f, "osc datagram float value");
+
+    const auto loopbackJson = myworld::makeLiveIOSendReportJson (loopbackReport);
+    expectContains (loopbackJson, "\"status\": \"controlled_send\"", "loopback json");
+    expectContains (loopbackJson, "\"sent\": true", "loopback json");
+    expectContains (loopbackJson, "\"skipped\": [\"midi.disabled: midi.loudness\", \"shader.uniform: uniform.loudness\"]",
+                    "loopback json skipped targets");
 
     std::cout << "live io send adapter ok\n";
     return 0;
