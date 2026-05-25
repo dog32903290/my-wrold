@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+08da80b Harden OSC parsing and proof output
 0b0cfac Close audio visual proof segment
 09f53a5 Record app visual reaction proof readback
 9bfbf58 Capture visual reaction frames in shader proof
@@ -362,7 +363,8 @@ Latest accepted targeted result:
 | AV4 app dump visual reaction readback | closed | `docs/superpowers/specs/2026-05-25-av4-app-dump-visual-reaction-readback.md`; `--dump-proof-and-exit` now produces and reads back `debug/v1-shader-proof/visual_reaction.json` with `ok: true`, `status: changed`, `changedPixels: 4147429`, and `meanAbsDelta: 0.071055` | Headless/offscreen GL harness, graph node mapping, full mapping editor, direct realtime callback send, and Metal remain parked |
 | AV5 audio visual segment closure | closed | `docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md`; closes the AV segment from live IO shader uniform evidence through preview loudness input, quiet/loud OpenGL capture, V1 artifact writing, and app dump readback | Headless/offscreen GL harness, user-facing graph IO mapping, full mapping editor, direct realtime callback send, Metal, and visual polish remain parked |
 | Gemini risk triage hardening | closed | `docs/superpowers/specs/2026-05-25-gemini-risk-triage-hardening.md`; OSC proof readback now uses bounded decoder, malformed OSC tests cover missing null/truncated payloads, UDP receive buffers no longer truncate at 1024/256 bytes, OpenGL proof artifact writes run off the render thread, and source/CMake no longer contain user-specific hardcoded paths | Full OSC bundle parsing, JSON report writer replacement, non-loopback send UI/lifecycle, dedicated proof job system, and CI JUCE bootstrap remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after Gemini hardening closure |
+| BUILD1 portable JUCE bootstrap | closed | `docs/superpowers/specs/2026-05-25-build1-portable-juce-bootstrap.md`; CMake can use explicit/local JUCE or fetch pinned JUCE 8.0.12, GitHub Actions has a macOS CMake workflow, and build docs explain both paths | CI cache tuning, Linux/Windows matrix, package manager integration, and automatic JUCE version bumps remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
 
@@ -371,6 +373,33 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after BUILD1 portable JUCE bootstrap closure as of 2026-05-25.
+
+BUILD1 portable JUCE bootstrap closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-build1-portable-juce-bootstrap.md
+- CMakeLists.txt
+- .github/workflows/cmake.yml
+- README.md
+- docs/portable-build/juce.md
+
+Closed line:
+clean checkout
+-> cmake -DMY_WORLD_FETCH_JUCE=ON
+-> pinned JUCE FetchContent
+-> my-world target
+-> ctest
+
+Latest accepted result:
+- existing local JUCE configure/build still passes.
+- fetch-path configure/build smoke passes.
+- fetch-path full suite passes 77/77.
+- app target `my-world` builds.
+- full suite passes.
+- `git diff --check` passes.
+
+Previous closure:
+
 None after Gemini risk triage hardening closure as of 2026-05-25.
 
 Gemini risk triage hardening closed.
@@ -2451,7 +2480,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after Gemini risk triage hardening. The P-LIVE and AV lanes are closed through app-level visual reaction proof, and the external review safety pass is closed. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after BUILD1 portable JUCE bootstrap. The P-LIVE and AV lanes are closed through app-level visual reaction proof, the external review safety pass is closed, and app builds no longer require a hardcoded local JUCE path. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

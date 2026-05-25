@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(MY_WORLD_DISPLAY_NAME "我的世界")
+option(MY_WORLD_FETCH_JUCE "Download JUCE with FetchContent when MY_WORLD_JUCE_DIR is not set" OFF)
+set(MY_WORLD_JUCE_TAG "8.0.12" CACHE STRING "JUCE git tag used when MY_WORLD_FETCH_JUCE is enabled")
 set(MY_WORLD_DEFAULT_JUCE_DIR "")
 if(DEFINED ENV{MY_WORLD_JUCE_DIR})
     set(MY_WORLD_DEFAULT_JUCE_DIR "$ENV{MY_WORLD_JUCE_DIR}")
@@ -18,6 +20,7 @@ elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE/CMakeLists.txt")
     set(MY_WORLD_DEFAULT_JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE")
 endif()
 set(MY_WORLD_JUCE_DIR "${MY_WORLD_DEFAULT_JUCE_DIR}" CACHE PATH "Path to a JUCE checkout")
+set(MY_WORLD_HAVE_JUCE OFF)
 
 enable_testing()
 
@@ -1521,7 +1524,23 @@ set_tests_properties(ai_worker_command PROPERTIES
 )
 
 if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
+    message(STATUS "Using JUCE from MY_WORLD_JUCE_DIR=${MY_WORLD_JUCE_DIR}")
     add_subdirectory("${MY_WORLD_JUCE_DIR}" "${CMAKE_BINARY_DIR}/JUCE" EXCLUDE_FROM_ALL)
+    set(MY_WORLD_HAVE_JUCE ON)
+elseif(MY_WORLD_FETCH_JUCE)
+    message(STATUS "Fetching JUCE ${MY_WORLD_JUCE_TAG} with FetchContent")
+    set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(juce
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG ${MY_WORLD_JUCE_TAG}
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(juce)
+    set(MY_WORLD_HAVE_JUCE ON)
+endif()
+
+if(MY_WORLD_HAVE_JUCE)
 
     target_sources(my_world_audio
         PRIVATE
@@ -1713,5 +1732,5 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             juce::juce_recommended_warning_flags
     )
 else()
-    message(WARNING "JUCE checkout not found at MY_WORLD_JUCE_DIR=${MY_WORLD_JUCE_DIR}; only core tests will be configured.")
+    message(WARNING "JUCE checkout not found. Set MY_WORLD_JUCE_DIR, JUCE_DIR, place JUCE at ../JUCE, or configure with -DMY_WORLD_FETCH_JUCE=ON. Only core tests will be configured.")
 endif()
