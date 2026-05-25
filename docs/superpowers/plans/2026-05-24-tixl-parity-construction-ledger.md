@@ -106,12 +106,12 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | GEST-006 | Selected node delete plus incident edges | Graph Interaction Parity | `DeleteSymbolChildrenCommand` | proven | L2 command | existing `delete_node` trace | none |
 | GEST-007 | Reconnect existing input end | Graph Interaction Parity | `HoldingConnectionEnd`, `InputSnapper` | proven | L2 command | `reconnect_input_end_one_undo_step` | `reconnect` macro command trace proven; visible drag state remains separate |
 | GEST-008 | Reconnect existing output beginning | Graph Interaction Parity | `HoldingConnectionBeginning`, `OutputSnapper` | proven | L2 command | `reconnect_output_beginning_one_undo_step` | `reconnect` macro command trace proven; visible drag state remains separate |
-| GEST-009 | Drop connection/node onto operator body and choose hidden input | Graph Interaction Parity | `InputPicking` | planned | L2 command | `drop_connection_onto_operator_hidden_input` | hidden input metadata |
-| GEST-010 | Multi-input insert before, after, replace | Graph Interaction Parity | `InputSnapper.InputSnapTypes` | planned | L2 command | `multi_input_insert_before_after_replace` | ordered multi-input edges |
+| GEST-009 | Drop connection/node onto operator body and choose hidden input | Graph Interaction Parity | `InputPicking` | proven | L2 command | `drop_connection_onto_operator_hidden_input` | `connect_hidden_input` trace proves explicit input command; visible picker UI remains separate |
+| GEST-010 | Multi-input insert before, after, replace | Graph Interaction Parity | `InputSnapper.InputSnapTypes` | proven | L2 command | `multi_input_insert_before_after_replace` | `multi_input_insert` proves fixed ordered slots; variadic/unbounded lists remain parked |
 | GEST-011 | Split edge by creating operator | Graph Interaction Parity | `ConnectionMaker.SplitConnectionWithSymbolBrowser` | proven | L2 command | `split_edge_create_operator_undo_macro` | `split_edge_create_node` macro trace proven; browser UI trigger remains separate |
-| GEST-012 | Drag existing node onto edge to insert | Graph Interaction Parity | `MagItemMovement.TrySplitInsert` | planned | L2 command | `drag_node_onto_edge_split_insert` | edge hit-test plus macro mutation |
-| GEST-013 | Snap move creates connection and unsnap removes connection | Graph Interaction Parity | `MagItemMovement` snap/unsnap | planned | L2 command | `snap_move_connect_unsnap_disconnect_undo` | preview vs committed graph split |
-| GEST-014 | Shake dragged node to disconnect | Graph Interaction Parity | `ShakeDetector` | planned | L2 command | `shake_disconnect_dragged_node_edges` | gesture trace input model |
+| GEST-012 | Drag existing node onto edge to insert | Graph Interaction Parity | `MagItemMovement.TrySplitInsert` | proven | L2 command | `drag_node_onto_edge_split_insert` | `insert_node_on_edge` trace proves macro mutation; visible edge hit-test remains separate |
+| GEST-013 | Snap move creates connection and unsnap removes connection | Graph Interaction Parity | `MagItemMovement` snap/unsnap | proven | L2 command | `snap_move_connect_unsnap_disconnect_undo` | `snap_connect` / `unsnap_disconnect` traces prove committed graph mutation; preview state remains UI layer |
+| GEST-014 | Shake dragged node to disconnect | Graph Interaction Parity | `ShakeDetector` | proven | L2 command | `shake_disconnect_dragged_node_edges` | `shake_disconnect` trace proves command mutation; gesture detection threshold remains UI layer |
 | GEST-015 | Enter, exit, collapse, expand compound | Graph Interaction Parity | graph navigation state | proven for compounds | L2 command | existing compound traces | public port persistence line continues |
 | GEST-016 | Inspector param and port binding | Graph Interaction Parity | graph input commands | partial | L2 command | `reset_default_manual_binding_fallback` | parameter parity rows |
 | GEST-017 | Annotation add, drag, resize, rename, delete, collapse | Graph Interaction Parity | annotation interaction files | parked | L3 visible | `annotation_frame_move_resize_rename_collapse_undo` | annotation scope decision |
@@ -282,7 +282,7 @@ tests/InteractionTraceTests.cpp
 - [x] Add trace cases for reconnect input end, reconnect output beginning, and split edge create operator.
 - [x] Add command result expectations for one user gesture equals one undo unit for reconnect/split macros.
 - [x] Implement the smallest commandGraph path for reconnect input end, reconnect output beginning, and split edge create operator.
-- [ ] Add trace cases for hidden input picker, multi-input ordering, drag-node-onto-edge, snap/unsnap, and shake disconnect.
+- [x] Add trace cases for hidden input picker, multi-input ordering, drag-node-onto-edge, snap/unsnap, and shake disconnect.
 - [x] Run `cmake --build build --target my_world_t3_t5_command_tests my_world_graph_command_tests my_world_interaction_trace_tests`.
 - [x] Run `./build/my_world_interaction_trace_tests`.
 - [x] Run `ctest --test-dir build --output-on-failure -R "t3_t5_commands|interaction_traces|graph_commands"`.
@@ -314,6 +314,35 @@ Scope boundary:
 ```text
 P-OPS1A proves commandGraph macro semantics for reconnecting either edge end and splitting a compatible edge by creating an inserted node.
 It does not implement hidden input picking, multi-input ordering, drag-existing-node insert, snap/unsnap preview state, shake disconnect, or visible ImGui gesture handling.
+```
+
+P-OPS1B closed as of 2026-05-25 08:47 Asia/Taipei.
+
+Verification:
+
+```text
+cmake --build build --target my_world_t3_t5_command_tests my_world_graph_command_tests my_world_interaction_trace_tests
+# RED first failed on missing connectHiddenInput / insertInputEdge / insertExistingNodeOnEdge / snapConnect / unsnapDisconnect / shakeDisconnectNode helpers.
+./build/my_world_t3_t5_command_tests
+./build/my_world_graph_command_tests
+./build/my_world_interaction_trace_tests
+ctest --test-dir build --output-on-failure -R "t3_t5_commands|interaction_traces|graph_commands"
+```
+
+Accepted result:
+
+```text
+t3 t5 commands ok
+graph commands ok
+interaction traces ok
+3/3 focused tests passed.
+```
+
+Scope boundary:
+
+```text
+P-OPS1B proves commandGraph trace semantics for explicit hidden-input connection, ordered fixed-slot multi-input insert, existing-node edge insertion, snap/unsnap committed connection changes, and shake-disconnect of incident edges.
+It does not implement ImGui gesture detection, visual preview state, unbounded variadic input lists, or visible picker menus.
 ```
 
 ### P-OUT1 Output Pinning

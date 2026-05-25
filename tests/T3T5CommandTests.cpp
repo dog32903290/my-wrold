@@ -34,6 +34,29 @@ bool hasEdge (const std::vector<myworld::GraphEdge>& edges, const std::string& f
         return edge.from == from && edge.to == to;
     });
 }
+
+std::vector<myworld::NodeSpec> makeSpecsWithMix3()
+{
+    auto specs = myworld::makeSeedNodeSpecs();
+    specs.push_back ({
+        "signal.mix3",
+        "Mix 3",
+        "signal",
+        "combine",
+        "audioAnalysis",
+        "meter_scope",
+        "docs/nodes/signal.mix3.md",
+        1,
+        {
+            { "a", "A", "signal.float", "in" },
+            { "b", "B", "signal.float", "in" },
+            { "c", "C", "signal.float", "in" }
+        },
+        { { "out", "Out", "signal.float", "out" } },
+        {}
+    });
+    return specs;
+}
 }
 
 int main()
@@ -252,6 +275,131 @@ int main()
     expect (myworld::redo (splitSession), "redo split edge");
     expect (hasEdge (splitSession.graph.editorGraph.edges, "loud1.out", "smooth1.input"),
             "redo split restores upstream edge");
+
+    auto hiddenInputSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (hiddenInputSession, "analyzer.loudness", "loud1", { 180.0, 320.0 }).ok,
+            "create loudness source for hidden input");
+    expect (myworld::createNode (hiddenInputSession, "analyzer.loudness_out", "loud_out", { 420.0, 320.0 }).ok,
+            "create loudness out target");
+    const auto hiddenInput = myworld::connectHiddenInput (hiddenInputSession,
+                                                         "loud1.out",
+                                                         "loud_out",
+                                                         "rms");
+    expect (hiddenInput.ok, "connect hidden input succeeds: " + hiddenInput.message);
+    expect (hasEdge (hiddenInputSession.graph.editorGraph.edges, "loud1.out", "loud_out.rms"),
+            "hidden input picker connects selected input port");
+    expect (hiddenInputSession.commandLog.back() == "connect_hidden_input",
+            "hidden input command logged");
+    expect (myworld::undo (hiddenInputSession), "undo hidden input connect");
+    expect (! hasEdge (hiddenInputSession.graph.editorGraph.edges, "loud1.out", "loud_out.rms"),
+            "undo hidden input removes edge");
+    expect (myworld::redo (hiddenInputSession), "redo hidden input connect");
+    expect (hasEdge (hiddenInputSession.graph.editorGraph.edges, "loud1.out", "loud_out.rms"),
+            "redo hidden input restores edge");
+
+    const auto mixSpecs = makeSpecsWithMix3();
+    auto multiInputSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (multiInputSession, mixSpecs, "analyzer.loudness", "loud1", { 100.0, 420.0 }).ok,
+            "create first mix source");
+    expect (myworld::createNode (multiInputSession, mixSpecs, "signal.smoother", "smooth1", { 100.0, 520.0 }).ok,
+            "create second mix source");
+    expect (myworld::createNode (multiInputSession, mixSpecs, "analyzer.analysis_gain", "gain1", { 100.0, 620.0 }).ok,
+            "create inserted mix source");
+    expect (myworld::createNode (multiInputSession, mixSpecs, "signal.mix3", "mix1", { 420.0, 520.0 }).ok,
+            "create ordered multi-input target");
+    expect (myworld::connectPorts (multiInputSession, mixSpecs, "loud1.out", "mix1.a").ok,
+            "connect first input slot");
+    expect (myworld::connectPorts (multiInputSession, mixSpecs, "smooth1.out", "mix1.b").ok,
+            "connect second input slot");
+    const auto multiInput = myworld::insertInputEdge (multiInputSession,
+                                                     mixSpecs,
+                                                     "gain1.out",
+                                                     "mix1.b",
+                                                     myworld::InputInsertMode::before);
+    expect (multiInput.ok, "multi input insert before succeeds: " + multiInput.message);
+    expect (hasEdge (multiInputSession.graph.editorGraph.edges, "loud1.out", "mix1.a"),
+            "multi input keeps earlier slot");
+    expect (hasEdge (multiInputSession.graph.editorGraph.edges, "gain1.out", "mix1.b"),
+            "multi input inserts before target slot");
+    expect (hasEdge (multiInputSession.graph.editorGraph.edges, "smooth1.out", "mix1.c"),
+            "multi input shifts existing edge to next slot");
+    expect (multiInputSession.commandLog.back() == "multi_input_insert",
+            "multi input command logged");
+    expect (myworld::undo (multiInputSession), "undo multi input insert");
+    expect (hasEdge (multiInputSession.graph.editorGraph.edges, "smooth1.out", "mix1.b"),
+            "undo multi input restores shifted edge");
+
+    auto insertExistingSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (insertExistingSession, "analyzer.loudness", "loud1", { 180.0, 360.0 }).ok,
+            "create existing insert source");
+    expect (myworld::createNode (insertExistingSession, "io.midi.cc_out", "midi1", { 540.0, 360.0 }).ok,
+            "create existing insert target");
+    expect (myworld::createNode (insertExistingSession, "signal.smoother", "smooth1", { 360.0, 360.0 }).ok,
+            "create existing inserted node");
+    expect (myworld::connectPorts (insertExistingSession, "loud1.out", "midi1.value").ok,
+            "connect edge for existing node insert");
+    const auto insertExisting = myworld::insertExistingNodeOnEdge (insertExistingSession,
+                                                                   "edge.loud1.out.midi1.value",
+                                                                   "smooth1");
+    expect (insertExisting.ok, "insert existing node on edge succeeds: " + insertExisting.message);
+    expect (hasEdge (insertExistingSession.graph.editorGraph.edges, "loud1.out", "smooth1.input"),
+            "existing node insert creates upstream edge");
+    expect (hasEdge (insertExistingSession.graph.editorGraph.edges, "smooth1.out", "midi1.value"),
+            "existing node insert creates downstream edge");
+    expect (! hasEdge (insertExistingSession.graph.editorGraph.edges, "loud1.out", "midi1.value"),
+            "existing node insert removes original edge");
+    expect (insertExistingSession.commandLog.back() == "insert_node_on_edge",
+            "existing node insert command logged");
+    expect (myworld::undo (insertExistingSession), "undo existing node insert");
+    expect (myworld::findEditorNode (insertExistingSession.graph, "smooth1") != nullptr,
+            "undo existing node insert keeps pre-existing node");
+    expect (hasEdge (insertExistingSession.graph.editorGraph.edges, "loud1.out", "midi1.value"),
+            "undo existing node insert restores original edge");
+
+    auto snapSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (snapSession, "audio.input", "audio1", { 80.0, 520.0 }).ok,
+            "create snap source");
+    expect (myworld::createNode (snapSession, "audio.mono_mix", "mono1", { 300.0, 520.0 }).ok,
+            "create snap target");
+    const auto snap = myworld::snapConnect (snapSession, "audio1.channels", "mono1.input");
+    expect (snap.ok, "snap connect succeeds: " + snap.message);
+    expect (hasEdge (snapSession.graph.editorGraph.edges, "audio1.channels", "mono1.input"),
+            "snap creates compatible edge");
+    expect (snapSession.commandLog.back() == "snap_connect", "snap command logged");
+    const auto unsnap = myworld::unsnapDisconnect (snapSession, "edge.audio1.channels.mono1.input");
+    expect (unsnap.ok, "unsnap disconnect succeeds: " + unsnap.message);
+    expect (! hasEdge (snapSession.graph.editorGraph.edges, "audio1.channels", "mono1.input"),
+            "unsnap removes snapped edge");
+    expect (snapSession.commandLog.back() == "unsnap_disconnect", "unsnap command logged");
+    expect (myworld::undo (snapSession), "undo unsnap");
+    expect (hasEdge (snapSession.graph.editorGraph.edges, "audio1.channels", "mono1.input"),
+            "undo unsnap restores snapped edge");
+
+    auto shakeSession = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
+    expect (myworld::createNode (shakeSession, "audio.input", "audio1", { 80.0, 640.0 }).ok,
+            "create shake input");
+    expect (myworld::createNode (shakeSession, "audio.mono_mix", "mono1", { 300.0, 640.0 }).ok,
+            "create shake dragged node");
+    expect (myworld::createNode (shakeSession, "analyzer.loudness", "loud1", { 520.0, 640.0 }).ok,
+            "create shake target");
+    expect (myworld::connectPorts (shakeSession, "audio1.channels", "mono1.input").ok,
+            "connect shake input edge");
+    expect (myworld::connectPorts (shakeSession, "mono1.mono", "loud1.input").ok,
+            "connect shake output edge");
+    const auto shake = myworld::shakeDisconnectNode (shakeSession, "mono1");
+    expect (shake.ok, "shake disconnect succeeds: " + shake.message);
+    expect (! hasEdge (shakeSession.graph.editorGraph.edges, "audio1.channels", "mono1.input")
+                && ! hasEdge (shakeSession.graph.editorGraph.edges, "mono1.mono", "loud1.input"),
+            "shake disconnect removes all dragged node incident edges");
+    expect (shakeSession.commandLog.back() == "shake_disconnect", "shake command logged");
+    expect (myworld::undo (shakeSession), "undo shake disconnect");
+    expect (hasEdge (shakeSession.graph.editorGraph.edges, "audio1.channels", "mono1.input")
+                && hasEdge (shakeSession.graph.editorGraph.edges, "mono1.mono", "loud1.input"),
+            "undo shake restores incident edges");
+    expect (myworld::redo (shakeSession), "redo shake disconnect");
+    expect (! hasEdge (shakeSession.graph.editorGraph.edges, "audio1.channels", "mono1.input")
+                && ! hasEdge (shakeSession.graph.editorGraph.edges, "mono1.mono", "loud1.input"),
+            "redo shake removes incident edges again");
 
     std::cout << "t3 t5 commands ok\n";
     return 0;

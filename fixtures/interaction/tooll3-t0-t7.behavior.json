@@ -36,6 +36,26 @@
       "expectedCommands": ["split_edge_create_node", "undo:split_edge_create_node", "redo:split_edge_create_node"]
     },
     {
+      "name": "drop connection onto operator hidden input",
+      "expectedCommands": ["connect_hidden_input", "undo:connect_hidden_input", "redo:connect_hidden_input"]
+    },
+    {
+      "name": "multi input insert before",
+      "expectedCommands": ["multi_input_insert", "undo:multi_input_insert", "redo:multi_input_insert"]
+    },
+    {
+      "name": "drag existing node onto edge insert",
+      "expectedCommands": ["insert_node_on_edge", "undo:insert_node_on_edge", "redo:insert_node_on_edge"]
+    },
+    {
+      "name": "snap connect unsnap disconnect",
+      "expectedCommands": ["snap_connect", "unsnap_disconnect", "undo:unsnap_disconnect"]
+    },
+    {
+      "name": "shake disconnect dragged node edges",
+      "expectedCommands": ["shake_disconnect", "undo:shake_disconnect", "redo:shake_disconnect"]
+    },
+    {
       "name": "compound enter exit collapse",
       "expectedCommands": ["create_node", "enter_patch", "exit_patch", "collapse_compound"]
     },

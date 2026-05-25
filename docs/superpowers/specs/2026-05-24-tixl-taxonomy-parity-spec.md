@@ -232,6 +232,34 @@ split_edge_create_operator_undo_macro
 
 This proves one undoable command unit for reconnecting either edge end and for splitting a compatible edge by creating an inserted node. It does not implement hidden input picking, ordered multi-input insertion, drag-existing-node insertion, snap/unsnap preview state, shake disconnect, or visible ImGui gesture handling.
 
+## P-OPS1B Fixture Evidence
+
+Closed as of 2026-05-25 08:47 Asia/Taipei.
+
+Remaining graph-operation command traces are proven at commandGraph / behavior trace level by:
+
+```text
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/core/GraphLanguage.cpp
+tests/T3T5CommandTests.cpp
+tests/GraphCommandTests.cpp
+tests/InteractionTraceTests.cpp
+fixtures/interaction/tooll3-t0-t7.behavior.json
+```
+
+Verified acceptance traces:
+
+```text
+drop_connection_onto_operator_hidden_input
+multi_input_insert_before_after_replace
+drag_node_onto_edge_split_insert
+snap_move_connect_unsnap_disconnect_undo
+shake_disconnect_dragged_node_edges
+```
+
+This proves explicit hidden-input connection, ordered fixed-slot multi-input insertion, inserting an existing node into an edge, committed snap/unsnap connection changes, and shake-disconnect of a dragged node's incident edges. It does not implement visible ImGui gesture detection, visual preview state, unbounded variadic input lists, or picker menus.
+
 ## Graph Interaction Parity
 
 Current My World claim remains `T0-T7 core parity`, not full TiXL operation parity.
@@ -246,12 +274,12 @@ Current My World claim remains `T0-T7 core parity`, not full TiXL operation pari
 | Selected node delete plus incident edges | `DeleteSymbolChildrenCommand` | proven | existing `delete_node` trace |
 | Reconnect existing input end | `HoldingConnectionEnd`, `InputSnapper` | proven at commandGraph macro level | `reconnect_input_end_one_undo_step` |
 | Reconnect existing output beginning | `HoldingConnectionBeginning`, `OutputSnapper` | proven at commandGraph macro level | `reconnect_output_beginning_one_undo_step` |
-| Drop connection/node onto operator body and choose hidden input | `InputPicking` | missing | `drop_connection_onto_operator_hidden_input` |
-| Multi-input insert before/after/replace | `InputSnapper.InputSnapTypes` | missing | `multi_input_insert_before_after_replace` |
+| Drop connection/node onto operator body and choose hidden input | `InputPicking` | proven at commandGraph macro level; picker UI later | `drop_connection_onto_operator_hidden_input` |
+| Multi-input insert before/after/replace | `InputSnapper.InputSnapTypes` | proven for fixed ordered input slots; variadic lists parked | `multi_input_insert_before_after_replace` |
 | Split edge by creating operator | legacy `ConnectionMaker.SplitConnectionWithSymbolBrowser` | proven at commandGraph macro level; browser trigger later | `split_edge_create_operator_undo_macro` |
-| Drag existing node onto edge to insert | `MagItemMovement.TrySplitInsert` | missing | `drag_node_onto_edge_split_insert` |
-| Snap move creates connection / unsnap removes connection | `MagItemMovement` snap/unsnap paths | missing | `snap_move_connect_unsnap_disconnect_undo` |
-| Shake dragged node to disconnect | `ShakeDetector`, `NodeActions.DisconnectDraggedNodes` | missing | `shake_disconnect_dragged_node_edges` |
+| Drag existing node onto edge to insert | `MagItemMovement.TrySplitInsert` | proven at commandGraph macro level; edge hit-test UI later | `drag_node_onto_edge_split_insert` |
+| Snap move creates connection / unsnap removes connection | `MagItemMovement` snap/unsnap paths | proven for committed graph mutation; preview UI later | `snap_move_connect_unsnap_disconnect_undo` |
+| Shake dragged node to disconnect | `ShakeDetector`, `NodeActions.DisconnectDraggedNodes` | proven at commandGraph macro level; gesture threshold UI later | `shake_disconnect_dragged_node_edges` |
 | Enter / exit symbol or compound | graph navigation state | proven for compounds | existing compound traces |
 | Inspector param and port binding | graph input commands | partial vs TiXL defaults | `reset_default_manual_binding_fallback` |
 | Annotation add/drag/resize/rename/delete/collapse | annotation interaction files | parked | `annotation_frame_move_resize_rename_collapse_undo` if in scope |
@@ -374,7 +402,7 @@ P-OPS1A richer graph-operation trace: closed for reconnect/split macro commands
 reconnect input end, reconnect output beginning, split edge create operator
 -> one user gesture = one undo unit
 
-P-OPS1B richer graph-operation continuation: next selectable
+P-OPS1B richer graph-operation continuation: closed at commandGraph trace level
 hidden input picker, multi-input ordering, drag-existing-node insert, snap/unsnap, shake disconnect
 -> one user gesture = one undo unit
 

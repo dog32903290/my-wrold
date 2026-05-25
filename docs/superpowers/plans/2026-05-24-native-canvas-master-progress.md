@@ -242,7 +242,8 @@ Latest accepted targeted result:
 | P-TAX1 TiXL taxonomy fixture | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `fixtures/tixl-witness/operator-browser-taxonomy.json` plus `tixl_taxonomy_fixture` prove root paths, selected drilldown paths, source commit/counts, hidden exclusions, and alias-not-root rules | P-SEARCH1 is now closed; do not start UI browser polish without selecting a fresh lane |
 | P-SEARCH1 TiXL browser/search/compatible create | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `NodeSpecBrowser` plus `node_spec_browser` prove search, aliases, saved type preservation, and compatible-create candidate filtering | Next TiXL interaction lane is P-OPS1; do not start UI browser polish without a fresh selected lane |
 | P-OPS1A richer graph operation trace | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `InteractionContract` macro helpers plus `t3_t5_commands` and `interaction_traces` prove reconnect input/output end and split-edge-create-node as one undoable command | Remaining P-OPS1 work is hidden input/multi-input/drag-existing-node/snap/unsnap/shake, or select P-OUT1 |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-OPS1A closure |
+| P-OPS1B richer graph operation continuation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; command helpers plus `t3_t5_commands` and `interaction_traces` prove hidden input, ordered input insert, existing-node edge insert, snap/unsnap, and shake disconnect | Next requested lane is P-OUT1 output pinning |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-OPS1B closure; user requested P-OUT1 next |
 
 ## Active Lane Protocol
 
@@ -251,6 +252,44 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-OPS1B richer graph operation continuation closure as of 2026-05-25 08:47 Asia/Taipei.
+
+P-OPS1B closed.
+Evidence:
+- source/core/InteractionContract.h
+- source/core/InteractionContract.cpp
+- source/core/GraphLanguage.cpp
+- tests/T3T5CommandTests.cpp
+- tests/GraphCommandTests.cpp
+- tests/InteractionTraceTests.cpp
+- fixtures/interaction/tooll3-t0-t7.behavior.json
+- docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
+- docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
+
+Closed line:
+hidden input picker + ordered multi-input slot insert + existing-node edge insert + snap/unsnap connect + shake disconnect
+-> each operation lowers to one commandGraph mutation
+-> undo/redo restores the graph as one unit where the action is a macro
+-> behavior trace names the borrowed Tooll3 interaction without ImGui event handling
+
+Latest verification:
+- `cmake --build build --target my_world_t3_t5_command_tests my_world_interaction_trace_tests my_world_graph_command_tests` failed RED first on missing `connectHiddenInput`, `insertInputEdge`, `insertExistingNodeOnEdge`, `snapConnect`, `unsnapDisconnect`, and `shakeDisconnectNode`
+- `cmake --build build --target my_world_t3_t5_command_tests my_world_interaction_trace_tests my_world_graph_command_tests`
+- `./build/my_world_t3_t5_command_tests`
+- `./build/my_world_graph_command_tests`
+- `./build/my_world_interaction_trace_tests`
+- `ctest --test-dir build --output-on-failure -R "t3_t5_commands|interaction_traces|graph_commands"`
+
+Latest accepted result:
+- `t3 t5 commands ok`
+- `graph commands ok`
+- `interaction traces ok`
+- `3/3 focused tests passed`
+
+Next selected/requested lane:
+- P-OUT1 output pinning
+
+Previous closure:
 None after P-OPS1A reconnect/split macro closure as of 2026-05-25 08:36 Asia/Taipei.
 
 P-OPS1A closed.
@@ -1423,7 +1462,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-OPS1A reconnect/split macro closure. Next selectable TiXL lanes are P-OPS1B hidden input / multi-input / drag-existing-node / snap-unsnap / shake disconnect continuation or P-OUT1 output pinning; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-OPS1B graph operation continuation closure. User requested P-OUT1 output pinning next; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

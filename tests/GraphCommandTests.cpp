@@ -27,6 +27,12 @@ int main()
     expect (myworld::isKnownCommandType ("disconnect"), "disconnect command vocabulary");
     expect (myworld::isKnownCommandType ("reconnect"), "reconnect command vocabulary");
     expect (myworld::isKnownCommandType ("split_edge_create_node"), "split edge command vocabulary");
+    expect (myworld::isKnownCommandType ("connect_hidden_input"), "hidden input command vocabulary");
+    expect (myworld::isKnownCommandType ("multi_input_insert"), "multi-input command vocabulary");
+    expect (myworld::isKnownCommandType ("insert_node_on_edge"), "insert existing node command vocabulary");
+    expect (myworld::isKnownCommandType ("snap_connect"), "snap connect command vocabulary");
+    expect (myworld::isKnownCommandType ("unsnap_disconnect"), "unsnap disconnect command vocabulary");
+    expect (myworld::isKnownCommandType ("shake_disconnect"), "shake disconnect command vocabulary");
 
     auto session = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
 
