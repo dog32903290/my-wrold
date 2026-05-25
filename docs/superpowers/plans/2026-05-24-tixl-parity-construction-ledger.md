@@ -148,7 +148,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | OUT-006 | Render/export window | Output parity | render export files | parked | L4 live | `render_settings_roundtrip_frame_count` | RenderBackend plus timeline |
 | OUT-007 | Render process states | Output parity | render state model | parked | L4 live | `invalid_output_blocks_render_state` | active output type system |
 | TIME-001 | Bars are canonical timeline truth; seconds/frames are views | Timeline parity | timeline files | proven | L2 command | `bars_seconds_frames_conversion_bpm_fps` | P-TIME1 closed; transport/render/export remain separate |
-| TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | partial/parked | L4 live | `transport_play_loop_io_indicator` | timeline model proven; transport UI and IO bus parked |
+| TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | proven for transport controls | L4 live | `transport_play_loop_io_indicator` | P-TIME2 closed for play/pause/stop/step/loop; IO bus indicator remains parked |
 | TIME-003 | Keyframes and curves | Timeline parity | animation commands | parked | L2 command | `keyframe_curve_undo_redo_exact` | animation data model |
 | TIME-004 | Time clips and time warp | Timeline parity | time clip files | parked | L2 command | `time_clip_retime_no_overlap` | timeline phase |
 | LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial | L4 live | `audio_input_to_meter_to_uniform` | live sample-window runner |
@@ -565,6 +565,67 @@ Scope boundary:
 ```text
 P-TIME1 proves the bars-native timeline data model, deterministic bars/seconds/frames conversion, command-backed bpm/fps/position/loop edits, undo/redo, PatchDocument roundtrip, and saveWork roundtrip.
 It does not implement transport playback, IO indicators, playhead UI, keyframes, curves, clips, time warp, render/export settings, audio soundtrack sync, BPM detection/tapping, or live IO bus behavior.
+```
+
+### P-TIME2 Transport Playback Controls
+
+Claim:
+
+```text
+Timeline transport controls can play, pause, stop/reset, step by frames, reverse, and toggle loop through commandGraph, while playback tick advances the playhead deterministically from bars-native timeline state.
+```
+
+Evidence target:
+
+```text
+source/core/TimelineState.h/.cpp
+source/core/InteractionContract.h/.cpp
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+tests/TransportControlTests.cpp
+```
+
+- [x] Write RED tests for default transport state, play/pause/stop, invalid speed rejection, frame stepping, looped playback tick, PatchDocument roundtrip, and saveWork roundtrip.
+- [x] Add transport state, playback rate, and playback direction to `TimelineState`.
+- [x] Add commandGraph verbs for play, pause, stop, and frame step.
+- [x] Preserve transport state through `PatchDocument` and `save_work`.
+- [x] Wire bottom transport controls to the command-backed transport state.
+- [x] Run `cmake --build build --target my_world_transport_control_tests`.
+- [x] Run `./build/my_world_transport_control_tests`.
+- [x] Run focused timeline/storage tests.
+- [x] Run `cmake --build build --target my_world_imgui`.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-TIME2 closed as of 2026-05-25 09:47 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_transport_control_tests
+# RED first failed on missing transportState / TimelineTransportState / playTimeline APIs.
+cmake --build build --target my_world_transport_control_tests
+./build/my_world_transport_control_tests
+cmake --build build --target my_world_transport_control_tests my_world_timeline_state_tests my_world_output_view_state_tests my_world_save_work_command_tests my_world_imgui
+ctest --test-dir build --output-on-failure -R "transport_controls|timeline_state|output_view_state|save_work_command"
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+transport controls ok
+4/4 focused tests passed.
+60/60 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-TIME2 proves command-backed transport controls, deterministic playhead tick math, loop wrapping, visible bottom transport consumption, PatchDocument roundtrip, and saveWork roundtrip.
+It does not implement audio IO indicators, live IO bus routing, keyframes, curves, time clips, time warp, render/export, soundtrack sync, BPM detection/tapping, or realtime render scheduling.
 ```
 
 ## Downstream Plan Order

@@ -51,7 +51,10 @@ void appendTimelineJson (std::ostringstream& out, const TimelineState& timeline)
         << ", \"positionBars\": " << sanitized.positionBars
         << ", \"loopStartBars\": " << sanitized.loopStartBars
         << ", \"loopEndBars\": " << sanitized.loopEndBars
-        << ", \"looping\": " << (sanitized.looping ? "true" : "false") << " }";
+        << ", \"looping\": " << (sanitized.looping ? "true" : "false")
+        << ", \"transportState\": " << jsonQuoted (transportStateToString (sanitized.transportState))
+        << ", \"playbackRate\": " << sanitized.playbackRate
+        << ", \"playbackDirection\": " << sanitized.playbackDirection << " }";
 }
 
 OutputViewState parseOutputView (const JsonValue& root)
@@ -85,6 +88,9 @@ TimelineState parseTimeline (const JsonValue& root)
     timeline.loopStartBars = numberMember (*jsonTimeline, "loopStartBars", timeline.loopStartBars);
     timeline.loopEndBars = numberMember (*jsonTimeline, "loopEndBars", timeline.loopEndBars);
     timeline.looping = boolMember (*jsonTimeline, "looping", timeline.looping);
+    timeline.transportState = transportStateFromString (stringMember (*jsonTimeline, "transportState"));
+    timeline.playbackRate = numberMember (*jsonTimeline, "playbackRate", timeline.playbackRate);
+    timeline.playbackDirection = intMember (*jsonTimeline, "playbackDirection", timeline.playbackDirection);
 
     return sanitizedTimelineState (timeline);
 }

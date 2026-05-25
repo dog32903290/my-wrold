@@ -376,6 +376,17 @@ target_link_libraries(my_world_timeline_state_tests
 
 add_test(NAME timeline_state COMMAND my_world_timeline_state_tests)
 
+add_executable(my_world_transport_control_tests
+    tests/TransportControlTests.cpp
+)
+
+target_link_libraries(my_world_transport_control_tests
+    PRIVATE
+        my_world_storage_command
+)
+
+add_test(NAME transport_controls COMMAND my_world_transport_control_tests)
+
 add_executable(my_world_parameter_row_state_tests
     tests/ParameterRowStateTests.cpp
 )

@@ -297,7 +297,50 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
         {
             const auto transportPolicy = makeTooll3TransportPolicy();
             const auto appTime = static_cast<float> (ImGui::GetTime());
-            ImGui::TextDisabled ("00:00:%05.2f", appTime);
+
+            if (interactionSession.timeline.transportState == TimelineTransportState::playing)
+                advanceTimelinePlayback (interactionSession.timeline, ImGui::GetIO().DeltaTime);
+
+            const auto timelineSeconds = barsToSeconds (interactionSession.timeline,
+                                                        interactionSession.timeline.positionBars);
+            const auto timelineFrames = barsToFrames (interactionSession.timeline,
+                                                      interactionSession.timeline.positionBars);
+
+            ImGui::TextDisabled ("%s  bar %.2f  sec %.2f  frame %.0f",
+                                 transportStateToString (interactionSession.timeline.transportState).c_str(),
+                                 interactionSession.timeline.positionBars,
+                                 timelineSeconds,
+                                 timelineFrames);
+            ImGui::SameLine();
+            if (interactionSession.timeline.transportState == TimelineTransportState::playing)
+            {
+                if (ImGui::Button ("Pause"))
+                    runInteractionCommand ("pause", pauseTimeline (interactionSession));
+            }
+            else if (ImGui::Button ("Play"))
+            {
+                runInteractionCommand ("play", playTimeline (interactionSession, 1, interactionSession.timeline.playbackRate));
+            }
+            ImGui::SameLine();
+            if (ImGui::Button ("Reverse"))
+                runInteractionCommand ("reverse", playTimeline (interactionSession, -1, interactionSession.timeline.playbackRate));
+            ImGui::SameLine();
+            if (ImGui::Button ("Stop"))
+                runInteractionCommand ("stop", stopTimeline (interactionSession));
+            ImGui::SameLine();
+            if (ImGui::SmallButton ("-1f"))
+                runInteractionCommand ("step -1f", stepTimelineFrames (interactionSession, -1.0));
+            ImGui::SameLine();
+            if (ImGui::SmallButton ("+1f"))
+                runInteractionCommand ("step +1f", stepTimelineFrames (interactionSession, 1.0));
+            ImGui::SameLine();
+            auto loopEnabled = interactionSession.timeline.looping;
+            if (ImGui::Checkbox ("Loop", &loopEnabled))
+                runInteractionCommand ("loop",
+                                       setTimelineLoop (interactionSession,
+                                                        interactionSession.timeline.loopStartBars,
+                                                        interactionSession.timeline.loopEndBars,
+                                                        loopEnabled));
             ImGui::SameLine();
             if (ImGui::Button ("Reset"))
             {

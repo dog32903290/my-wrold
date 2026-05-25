@@ -244,6 +244,10 @@ CommandResult setPortBinding (GraphSession& session,
                               const std::string& bindingMode,
                               const std::string& value);
 CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId, const std::string& portId);
+CommandResult playTimeline (GraphSession& session, int direction, double playbackRate);
+CommandResult pauseTimeline (GraphSession& session);
+CommandResult stopTimeline (GraphSession& session);
+CommandResult stepTimelineFrames (GraphSession& session, double frameDelta);
 CommandResult setTimelineTempo (GraphSession& session, double bpm);
 CommandResult setTimelineFramesPerSecond (GraphSession& session, double framesPerSecond);
 CommandResult setTimelinePositionBars (GraphSession& session, double positionBars);

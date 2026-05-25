@@ -1228,6 +1228,46 @@ CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId
     return commitCommand (session, "reset_port_binding", before);
 }
 
+CommandResult playTimeline (GraphSession& session, int direction, double playbackRate)
+{
+    const auto before = snapshotOf (session);
+    const auto result = playTimeline (session.timeline, direction, playbackRate);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "transport_play", before);
+}
+
+CommandResult pauseTimeline (GraphSession& session)
+{
+    const auto before = snapshotOf (session);
+    const auto result = pauseTimeline (session.timeline);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "transport_pause", before);
+}
+
+CommandResult stopTimeline (GraphSession& session)
+{
+    const auto before = snapshotOf (session);
+    const auto result = stopTimeline (session.timeline);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "transport_stop", before);
+}
+
+CommandResult stepTimelineFrames (GraphSession& session, double frameDelta)
+{
+    const auto before = snapshotOf (session);
+    const auto result = stepTimelineFrames (session.timeline, frameDelta);
+    if (! result.ok)
+        return { false, result.message };
+
+    return commitCommand (session, "transport_step", before);
+}
+
 CommandResult setTimelineTempo (GraphSession& session, double bpm)
 {
     const auto before = snapshotOf (session);
@@ -1427,7 +1467,10 @@ std::string serializeInteractionState (const GraphSession& session)
         << session.timeline.positionBars << "\t"
         << session.timeline.loopStartBars << "\t"
         << session.timeline.loopEndBars << "\t"
-        << (session.timeline.looping ? "1" : "0") << "\n";
+        << (session.timeline.looping ? "1" : "0") << "\t"
+        << transportStateToString (session.timeline.transportState) << "\t"
+        << session.timeline.playbackRate << "\t"
+        << session.timeline.playbackDirection << "\n";
 
     for (const auto& pathItem : session.currentPatchPath)
         out << "path\t" << pathItem << "\n";
@@ -1487,6 +1530,13 @@ GraphSession deserializeInteractionState (const std::string& encoded)
             session.timeline.loopStartBars = std::stod (fields[5]);
             session.timeline.loopEndBars = std::stod (fields[6]);
             session.timeline.looping = fields[7] == "1";
+
+            if (fields.size() >= 11)
+            {
+                session.timeline.transportState = transportStateFromString (fields[8]);
+                session.timeline.playbackRate = std::stod (fields[9]);
+                session.timeline.playbackDirection = std::stoi (fields[10]);
+            }
         }
         else if (fields[0] == "path" && fields.size() >= 2)
         {

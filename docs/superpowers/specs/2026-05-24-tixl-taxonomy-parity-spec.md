@@ -424,6 +424,31 @@ bars_seconds_frames_conversion_bpm_fps
 
 This proves bars as canonical timeline storage, seconds/frames as deterministic views, bpm/fps/position/loop edits through commandGraph, invalid timeline edit rejection without command logging, undo/redo for timeline edits, PatchDocument roundtrip, and saveWork roundtrip. It does not implement transport playback, IO indicators, playhead UI, keyframes, curves, clips, time warp, render/export settings, audio soundtrack sync, BPM detection/tapping, or live IO bus behavior.
 
+## P-TIME2 Fixture Evidence
+
+Closed as of 2026-05-25 09:47 Asia/Taipei.
+
+Transport playback controls are proven at core, commandGraph, storage, saveWork, and visible bottom-strip consumption level by:
+
+```text
+source/core/TimelineState.h
+source/core/TimelineState.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+tests/TransportControlTests.cpp
+```
+
+Verified acceptance trace:
+
+```text
+transport_play_loop_io_indicator
+```
+
+This proves default stopped transport state, play/pause/stop, reverse direction, playback rate validation, frame stepping from bars-native time, looped playback tick wrapping, invalid transport edit rejection without command logging, undo/redo for transport commands, PatchDocument roundtrip, saveWork roundtrip, and visible bottom transport controls. It does not implement audio IO indicators, live IO bus routing, keyframes, curves, time clips, time warp, render/export, soundtrack sync, BPM detection/tapping, or realtime render scheduling.
+
 ## Output, Timeline, And Live Performance Parity
 
 | Feature | TiXL witness | Policy | Current status | Required trace | Blocker |
@@ -436,7 +461,7 @@ This proves bars as canonical timeline storage, seconds/frames as deterministic 
 | Render/export window | video/image sequence, Bars/Secs/Frames, FPS, resolution %, motion blur, audio | mirror taxonomy, park implementation | parked | `render_settings_roundtrip_frame_count` | RenderBackend + timeline |
 | Render process states | NoOutputWindow, NoValidOutputType, ReadyForExport, Exporting | mirror later | parked | `invalid_output_blocks_render_state` | active output type system |
 | Time model/display | bars canonical; seconds/frames are views | mirror when timeline begins | proven at core/storage/command level | `bars_seconds_frames_conversion_bpm_fps` | transport/render/export parked |
-| Playback controls | play, reverse, speed, stop/reset, stepping, loop, idle motion, IO indicator | mirror gradually | partial/parked | `transport_play_loop_io_indicator` | transport UI + IO bus |
+| Playback controls | play, reverse, speed, stop/reset, stepping, loop, idle motion, IO indicator | mirror gradually | proven for command-backed transport controls; IO bus parked | `transport_play_loop_io_indicator` | live IO bus |
 | Keyframes / curves | add/change/delete/move, interpolation, tangents, copy/paste | parked | parked | `keyframe_curve_undo_redo_exact` | animation data model |
 | Time clips / time warp | trim/stretch/remap/split/delete/warp handles | parked | parked | `time_clip_retime_no_overlap` | timeline phase |
 | Composition audio source | soundtrack vs external device, sync mode, BPM, tapping, gain/decay | mirror A1 input/gain now, park advanced | partial | `audio_input_to_meter_to_uniform` | live sample-window runner |
@@ -524,8 +549,14 @@ positionBars/loopBars
 -> timeline commandGraph edits with undo/redo
 -> save/load preserves timeline state
 
+P-TIME2 transport playback controls: closed for command-backed transport controls
+play/pause/stop/step/reverse/loop controls
+-> transport commandGraph edits with undo/redo
+-> deterministic playhead tick from bars-native timeline state
+-> save/load preserves transport state
+
 Next selectable parity line:
-No active parity line until selected. Closest ordered lanes are P-VAR1 presets/snapshots foundation or TIME-002 transport playback controls.
+No active parity line until selected. Closest ordered lane is P-VAR1 presets/snapshots foundation.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.
