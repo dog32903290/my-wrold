@@ -57,7 +57,7 @@ int main()
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 7, "artifact count");
+    expect (result.artifactPaths.size() == 8, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
@@ -70,6 +70,8 @@ int main()
             "live io midi send report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_control_dispatch_report.json"),
             "live io control dispatch report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_control_pump_report.json"),
+            "live io control pump report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -160,6 +162,26 @@ int main()
     expectContains (controlDispatchReport, "\"status\": \"rate_limited\"",
                     "control dispatch rate limited frame");
     expectContains (controlDispatchReport, "\"errors\": []", "control dispatch no errors");
+
+    const auto controlPumpReport = readTextFile (outputDirectory / "live_io_control_pump_report.json");
+    expectContains (controlPumpReport, "\"kind\": \"liveIOControlPumpProof\"",
+                    "control pump kind");
+    expectContains (controlPumpReport, "\"ok\": true", "control pump ok");
+    expectContains (controlPumpReport, "\"status\": \"pumped\"", "control pump status");
+    expectContains (controlPumpReport, "\"tickCount\": 5", "control pump tick count");
+    expectContains (controlPumpReport, "\"frameCount\": 3", "control pump frame count");
+    expectContains (controlPumpReport, "\"inactiveTickCount\": 1", "control pump inactive count");
+    expectContains (controlPumpReport, "\"tickRateLimitedCount\": 1",
+                    "control pump tick rate limit count");
+    expectContains (controlPumpReport, "\"lastSampleCounter\": 320",
+                    "control pump sample counter");
+    expectContains (controlPumpReport, "\"dispatch\": {", "control pump dispatch");
+    expectContains (controlPumpReport, "\"midiSentCount\": 3", "control pump midi count");
+    expectContains (controlPumpReport, "\"oscSentCount\": 3", "control pump osc count");
+    expectContains (controlPumpReport, "\"status\": \"tick_rate_limited\"",
+                    "control pump tick rate limited");
+    expectContains (controlPumpReport, "\"status\": \"inactive\"", "control pump inactive");
+    expectContains (controlPumpReport, "\"errors\": []", "control pump no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

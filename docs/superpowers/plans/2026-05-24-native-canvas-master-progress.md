@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 12:38 Asia/Taipei.
+Date: 2026-05-25 12:51 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+2b892f5 Add control-rate live IO dispatcher proof
 d28e83c Add controlled MIDI send proof
 6eefbd4 Add MIDI output inventory proof
 93b1f8f Add OSC loopback live IO proof
@@ -269,7 +270,8 @@ Latest accepted targeted result:
 | P-LIVE1.4 MIDI output inventory / route report | closed | `docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md`; app proof writes `live_io_midi_inventory_report.json` with MIDI output device list plus selected/unavailable route reports | Controlled MIDI open/send is closed in P-LIVE1.5; realtime callback wiring, teach mode, and live UI mapping remain parked |
 | P-LIVE1.5 controlled MIDI open/send proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-5-controlled-midi-send.md`; `LiveIOMidiSendProof` plus `LiveIOProofRunner` open the selected MIDI output and send one CC proof message; app proof writes `live_io_midi_send_report.json` | MIDI teach mode, realtime callback wiring, live UI mapping, broader MIDI output operators, and external OSC/UDP targets remain parked |
 | P-LIVE2 control-rate live IO dispatcher proof | closed | `docs/superpowers/specs/2026-05-25-p-live2-control-rate-dispatcher.md`; `LiveIOControlDispatcher` rate-limits frame dispatch, calls injected MIDI/OSC control sinks, skips shader uniforms, and app proof writes `live_io_control_dispatch_report.json` | Realtime callback delivery, live UI mapping, MIDI teach mode, external OSC/UDP targets, and broader MIDI output operators remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE2 closure |
+| P-LIVE3 control-rate analyzer snapshot pump | closed | `docs/superpowers/specs/2026-05-25-p-live3-control-pump.md`; `LiveIOControlPump` turns analyzer snapshots into control frames, tick-rate-limits inactive/fast ticks, feeds `LiveIOControlDispatcher`, and app proof writes `live_io_control_pump_report.json` | Actual app `juce::Timer` wiring, realtime callback delivery, live UI mapping, MIDI teach mode, and external OSC targets remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE3 closure |
 
 ## Active Lane Protocol
 
@@ -278,11 +280,14 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE2 control-rate live IO dispatcher proof closure as of 2026-05-25 12:38 Asia/Taipei.
+None after P-LIVE3 control-rate analyzer snapshot pump closure as of 2026-05-25 12:51 Asia/Taipei.
 
-P-LIVE2 control-rate live IO dispatcher proof closed.
+P-LIVE3 control-rate analyzer snapshot pump closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live2-control-rate-dispatcher.md
+- docs/superpowers/specs/2026-05-25-p-live3-control-pump.md
+- source/core/LiveIOControlPump.h
+- source/core/LiveIOControlPump.cpp
+- tests/LiveIOControlPumpTests.cpp
 - source/core/LiveIOControlDispatcher.h
 - source/core/LiveIOControlDispatcher.cpp
 - tests/LiveIOControlDispatcherTests.cpp
@@ -299,33 +304,33 @@ Evidence:
 - CMakeLists.txt
 
 Closed line:
-synthetic control-rate loudness frames
--> LiveIOBus MIDI/OSC/uniform mapping
--> LiveIOControlDispatcher min-interval gate
+AudioAnalyzerSnapshot ticks
+-> LiveIOControlPump tick interval gate
+-> LiveIOValueFrame from loudness
+-> LiveIOControlDispatcher
 -> injected MIDI output sender and OSC proof sink
--> rate-limited report with sent/skipped counts
--> live_io_control_dispatch_report.json
+-> live_io_control_pump_report.json
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_live_io_control_dispatcher_tests` failed RED first on missing `LiveIOControlDispatcher.h`.
-- `cmake --build build --target my_world_live_io_proof_runner_tests` failed RED first because `LiveIOProofRunRequest` had no `controlOscSender`.
-- `cmake --build build --target my_world_live_io_control_dispatcher_tests my_world_live_io_proof_runner_tests my-world`
-- `./build/my_world_live_io_control_dispatcher_tests`
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_control_pump_tests` failed RED first on missing `LiveIOControlPump.h`.
+- `./build/my_world_live_io_proof_runner_tests` failed RED first on artifact count before `live_io_control_pump_report.json` existed.
+- `cmake --build build --target my_world_live_io_control_pump_tests my_world_live_io_proof_runner_tests my-world`
+- `./build/my_world_live_io_control_pump_tests`
 - `./build/my_world_live_io_proof_runner_tests`
 - `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
 - `ctest --test-dir build --output-on-failure`
 - `git diff --check`
 
 Latest accepted result:
-- `live io control dispatcher ok`
+- `live io control pump ok`
 - `live io proof runner ok`
-- `debug/p-live1-live-io-proof/live_io_control_dispatch_report.json` has `ok: true`, `status: "dispatched"`, `frameCount: 4`, `dispatchedFrameCount: 3`, `rateLimitedFrameCount: 1`, `midiSentCount: 3`, `oscSentCount: 3`, `shaderSkippedCount: 3`, and no errors.
-- `68/68 tests passed`
+- `debug/p-live1-live-io-proof/live_io_control_pump_report.json` has `ok: true`, `status: "pumped"`, `tickCount: 5`, `frameCount: 3`, `inactiveTickCount: 1`, `tickRateLimitedCount: 1`, nested dispatch with `midiSentCount: 3`, `oscSentCount: 3`, and no errors.
+- `69/69 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- Realtime callback delivery, live UI mapping, MIDI teach mode, and broader MIDI output operators remain parked.
+- Actual app `juce::Timer` wiring, realtime callback delivery, live UI mapping, MIDI teach mode, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
@@ -1765,7 +1770,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE2 control-rate live IO dispatcher proof closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI teach mode, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, live UI mapping, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE3 control-rate analyzer snapshot pump closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI teach mode, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, live UI mapping, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

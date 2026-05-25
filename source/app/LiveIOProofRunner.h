@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LiveIOControlDispatcher.h"
+#include "LiveIOControlPump.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
 

@@ -80,6 +80,7 @@ add_library(my_world_core
     source/core/GraphContract.cpp
     source/core/LiveIOBus.cpp
     source/core/LiveIOControlDispatcher.cpp
+    source/core/LiveIOControlPump.cpp
     source/core/LiveIOMidiOutputInventory.cpp
     source/core/LiveIOMidiSendProof.cpp
     source/core/LiveIOSendAdapter.cpp
@@ -91,6 +92,7 @@ add_library(my_world_core
 target_include_directories(my_world_core
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
 )
 
 target_link_libraries(my_world_core
@@ -425,6 +427,17 @@ target_link_libraries(my_world_live_io_control_dispatcher_tests
 )
 
 add_test(NAME live_io_control_dispatcher COMMAND my_world_live_io_control_dispatcher_tests)
+
+add_executable(my_world_live_io_control_pump_tests
+    tests/LiveIOControlPumpTests.cpp
+)
+
+target_link_libraries(my_world_live_io_control_pump_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_control_pump COMMAND my_world_live_io_control_pump_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp

@@ -3,6 +3,7 @@
 #include "AudioAnalyzerState.h"
 #include "LiveIOBus.h"
 #include "LiveIOControlDispatcher.h"
+#include "LiveIOControlPump.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
 #include "LiveIOSendAdapter.h"
@@ -31,6 +32,7 @@ constexpr const char* liveIOOscLoopbackReportFileName = "live_io_osc_loopback_re
 constexpr const char* liveIOMidiInventoryReportFileName = "live_io_midi_inventory_report.json";
 constexpr const char* liveIOMidiSendReportFileName = "live_io_midi_send_report.json";
 constexpr const char* liveIOControlDispatchReportFileName = "live_io_control_dispatch_report.json";
+constexpr const char* liveIOControlPumpReportFileName = "live_io_control_pump_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -139,6 +141,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOMidiInventoryReportFileName,
         request.outputDirectory / liveIOMidiSendReportFileName,
         request.outputDirectory / liveIOControlDispatchReportFileName,
+        request.outputDirectory / liveIOControlPumpReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -191,6 +194,30 @@ std::vector<LiveIOControlFrame> makeProofControlFrames()
         { 10, makeLiveIOFrameFromLoudness (0.2) },
         { 50, makeLiveIOFrameFromLoudness (0.5) },
         { 120, makeLiveIOFrameFromLoudness (0.75) }
+    };
+}
+
+std::vector<LiveIOControlPumpTick> makeProofControlPumpTicks()
+{
+    auto makeTick = [] (std::int64_t timestampMs,
+                        float loudness,
+                        bool active,
+                        std::uint64_t sampleCounter)
+    {
+        auto snapshot = makeProofAnalyzerSnapshot (loudness);
+        snapshot.active = active;
+        snapshot.gate = active ? 1.0f : 0.0f;
+        snapshot.confidence = snapshot.gate;
+        snapshot.sampleCounter = sampleCounter;
+        return LiveIOControlPumpTick { timestampMs, snapshot };
+    };
+
+    return {
+        makeTick (0, 0.1f, true, 64),
+        makeTick (20, 0.2f, true, 128),
+        makeTick (50, 0.5f, true, 192),
+        makeTick (120, 0.75f, true, 256),
+        makeTick (170, 0.0f, false, 320)
     };
 }
 
@@ -272,6 +299,22 @@ LiveIOControlDispatchReport makeControlDispatchReport (const LiveIOProofRunReque
     dispatchRequest.midiSender = request.midiOutputSender;
     dispatchRequest.oscSender = request.controlOscSender;
     return executeLiveIOControlDispatch (dispatchRequest);
+}
+
+LiveIOControlPumpReport makeControlPumpReport (const LiveIOProofRunRequest& request)
+{
+    LiveIOControlPumpRequest pumpRequest;
+    pumpRequest.ticks = makeProofControlPumpTicks();
+    pumpRequest.bindings = makeProofBindings();
+    pumpRequest.tickIntervalMs = 50;
+    pumpRequest.dispatchMinIntervalMs = 50;
+    pumpRequest.midiOutputInventory = request.midiOutputInventory;
+    pumpRequest.midiOutputIdentifier = request.midiOutputInventory.devices.empty()
+        ? std::string ("__no_live_io_midi_outputs__")
+        : request.midiOutputInventory.devices.front().identifier;
+    pumpRequest.midiSender = request.midiOutputSender;
+    pumpRequest.oscSender = request.controlOscSender;
+    return executeLiveIOControlPump (pumpRequest);
 }
 
 LoopbackReceiver openLoopbackReceiver (std::string& error)
@@ -537,6 +580,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
     if (! controlDispatchReport.ok)
         return fail (controlDispatchReport.message);
 
+    const auto controlPumpReport = makeControlPumpReport (request);
+    if (! controlPumpReport.ok)
+        return fail (controlPumpReport.message);
+
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOReportFileName,
@@ -561,6 +608,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOControlDispatchReportFileName,
             makeLiveIOControlDispatchReportJson (controlDispatchReport)
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOControlPumpReportFileName,
+            makeLiveIOControlPumpReportJson (controlPumpReport)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,
