@@ -64,10 +64,13 @@ LiveIOMidiCcMessage midiMessageFromEvent (const LiveIOEvent& event)
     return message;
 }
 
-LiveIOOscFloatMessage oscMessageFromEvent (const LiveIOEvent& event)
+LiveIOOscFloatMessage oscMessageFromEvent (const LiveIOEvent& event,
+                                           const LiveIOControlDispatchRequest& request)
 {
     LiveIOOscFloatMessage message;
     message.bindingId = event.bindingId;
+    message.oscHost = request.oscHost;
+    message.oscPort = request.oscPort;
     message.oscAddress = event.oscAddress;
     message.floatValue = event.floatValue;
     return message;
@@ -205,7 +208,7 @@ LiveIOControlDispatchReport executeLiveIOControlDispatch (const LiveIOControlDis
                     continue;
                 }
 
-                const auto oscResult = request.oscSender (oscMessageFromEvent (event));
+                const auto oscResult = request.oscSender (oscMessageFromEvent (event, request));
                 if (! oscResult.sent)
                 {
                     frameReport.status = "failed";

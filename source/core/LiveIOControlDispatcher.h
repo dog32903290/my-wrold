@@ -19,6 +19,8 @@ struct LiveIOControlFrame
 struct LiveIOOscFloatMessage
 {
     std::string bindingId;
+    std::string oscHost;
+    int oscPort = 0;
     std::string oscAddress;
     double floatValue = 0.0;
 };
@@ -40,6 +42,8 @@ struct LiveIOControlDispatchRequest
     std::string midiOutputIdentifier;
     LiveIOMidiOutputSender midiSender;
     LiveIOOscFloatSender oscSender;
+    std::string oscHost;
+    int oscPort = 0;
     bool midiEnabled = true;
     bool oscEnabled = true;
 };

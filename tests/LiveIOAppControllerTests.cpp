@@ -86,6 +86,35 @@ int main()
     expectEqual (controlled.indicator.text, "live io send controlled_sent m1 o0", "controlled indicator text");
     expectEqual (controlled.indicator.tone, "sending", "controlled indicator tone");
 
+    preferences.liveIO.oscHost = "192.168.1.24";
+    preferences.liveIO.oscPort = 9123;
+    preferences.liveIO.oscLoudnessAddress = "/stage/loudness";
+    controller.applyLiveIOPreferences (preferences.liveIO);
+
+    int externalOscSendCount = 0;
+    myworld::LiveIOAppTimerRequest oscRequest;
+    oscRequest.preferences = preferences;
+    oscRequest.snapshot = makeSnapshot (0.25f, true, 192);
+    oscRequest.timestampMs = 120;
+    oscRequest.midiSender = [&] (const myworld::LiveIOMidiOutputDevice&,
+                                 const myworld::LiveIOMidiCcMessage&)
+    {
+        return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
+    oscRequest.oscSender = [&] (const myworld::LiveIOOscFloatMessage& message)
+    {
+        ++externalOscSendCount;
+        expectEqual (message.oscHost, "192.168.1.24", "external osc host");
+        expectEqual (message.oscPort, 9123, "external osc port");
+        expectEqual (message.oscAddress, "/stage/loudness", "external osc address");
+        expect (message.floatValue > 0.249 && message.floatValue < 0.251, "external osc value");
+        return myworld::LiveIOOscFloatSendResult { true, "" };
+    };
+
+    const auto externalOsc = controller.tick (oscRequest);
+    expect (externalOsc.tick.ok, externalOsc.tick.message);
+    expectEqual (externalOscSendCount, 1, "controlled external osc send count");
+
     const auto armed = controller.armMidiTeach (myworld::LiveIOMidiTeachTarget::loudnessCc, 2);
     expect (armed.ok, armed.statusText);
     expect (armed.shouldListen, "armed teach should listen");

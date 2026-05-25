@@ -109,8 +109,11 @@ LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& req
     {
         config.midiOutputInventory = selectedMidiOutputInventory (preferences.midi);
         config.midiOutputIdentifier = preferences.midi.outputIdentifier;
-        config.oscEnabled = false;
+        config.oscEnabled = request.oscSender != nullptr;
+        config.oscHost = preferences.liveIO.oscHost;
+        config.oscPort = preferences.liveIO.oscPort;
         config.midiSender = request.midiSender;
+        config.oscSender = request.oscSender;
     }
 
     LiveIOAppTimerResult result;

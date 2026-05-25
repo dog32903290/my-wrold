@@ -148,6 +148,8 @@ LiveIOControlTimerTickResult tickLiveIOControlTimer (
         request.midiOutputIdentifier = config.midiOutputIdentifier;
         request.midiSender = config.midiSender;
         request.oscSender = config.oscSender;
+        request.oscHost = config.oscHost;
+        request.oscPort = config.oscPort;
     }
     else
     {

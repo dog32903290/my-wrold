@@ -25,6 +25,8 @@ struct LiveIOControlPumpRequest
     std::string midiOutputIdentifier;
     LiveIOMidiOutputSender midiSender;
     LiveIOOscFloatSender oscSender;
+    std::string oscHost;
+    int oscPort = 0;
     bool midiEnabled = true;
     bool oscEnabled = true;
 };

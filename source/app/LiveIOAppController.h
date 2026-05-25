@@ -17,6 +17,7 @@ struct LiveIOAppTimerRequest
     PerformancePreferences preferences;
     std::int64_t timestampMs = 0;
     LiveIOMidiOutputSender midiSender;
+    LiveIOOscFloatSender oscSender;
 };
 
 struct LiveIOAppTimerResult

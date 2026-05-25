@@ -149,6 +149,8 @@ LiveIOControlPumpReport executeLiveIOControlPump (const LiveIOControlPumpRequest
     dispatchRequest.midiOutputIdentifier = request.midiOutputIdentifier;
     dispatchRequest.midiSender = request.midiSender;
     dispatchRequest.oscSender = request.oscSender;
+    dispatchRequest.oscHost = request.oscHost;
+    dispatchRequest.oscPort = request.oscPort;
     dispatchRequest.midiEnabled = request.midiEnabled;
     dispatchRequest.oscEnabled = request.oscEnabled;
     report.dispatch = executeLiveIOControlDispatch (dispatchRequest);

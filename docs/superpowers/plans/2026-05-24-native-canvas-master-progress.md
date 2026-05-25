@@ -105,19 +105,24 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 14:48 Asia/Taipei, P-LIVE13 is committed and pushed in `afd7b18`. Current dirty files, if any, belong to the closed P-LIVE14 OSC target preferences lane.
+As of 2026-05-25 14:53 Asia/Taipei, P-LIVE14 is committed and pushed in `5d57a75`. Current dirty files, if any, belong to the closed P-LIVE15 external OSC target send proof lane.
 
 ```text
-P-LIVE14 owned files:
+P-LIVE15 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md
+- docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md
+- source/core/LiveIOControlDispatcher.h
+- source/core/LiveIOControlDispatcher.cpp
+- source/core/LiveIOControlPump.h
+- source/core/LiveIOControlPump.cpp
+- source/core/LiveIOControlTimer.h
+- source/core/LiveIOControlTimer.cpp
+- source/app/LiveIOAppController.h
 - source/app/LiveIOAppController.cpp
-- source/preferences/PerformancePreferences.h
-- source/preferences/PerformancePreferences.cpp
-- tests/PerformancePreferencesTests.cpp
+- tests/LiveIOAppControllerTests.cpp
 ```
 
-Do not edit external OSC send/receive, realtime callback delivery, or broader MIDI output operators in P-LIVE14.
+Do not add always-on OSC receive/server, realtime callback delivery, or broader MIDI output operators in P-LIVE15.
 
 Current C4 note:
 
@@ -320,7 +325,8 @@ Latest accepted targeted result:
 | P-LIVE12 preference disk persistence | closed | `docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md`; `savePerformancePreferences()` / `loadPerformancePreferences()` roundtrip the full app preference snapshot, `MainComponent` loads it on startup and saves UI preference changes; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE13 arbitrary binding MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md`; `armLiveIOMidiTeachForBinding()` learns a CC for an arbitrary binding id and `applyLiveIOMidiTeachToBindings()` updates only the matching `midi.cc` binding; focused tests, app build, and `ctest` 73/73 passed | UI binding chooser, OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE14 OSC target preferences | closed | `docs/superpowers/specs/2026-05-25-p-live14-osc-target-preferences.md`; `LiveIOPreferences` stores OSC host/port/loudness address, save/load roundtrips them, and app OSC binding uses the configured address while external send remains parked; focused tests, app build, and `ctest` 73/73 passed | UI fields, external OSC send proof, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE14 closure |
+| P-LIVE15 external OSC target send proof | closed | `docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md`; controlled app timer carries OSC host/port/address into an injected sender, proving external target routing without adding a server or realtime callback delivery; focused tests, app build, and `ctest` 73/73 passed | Always-on OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE15 closure |
 
 ## Active Lane Protocol
 
@@ -329,7 +335,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE14 OSC target preferences closure as of 2026-05-25 14:48 Asia/Taipei.
+None after P-LIVE15 external OSC target send proof closure as of 2026-05-25 14:53 Asia/Taipei.
 
 P-LIVE13 arbitrary binding MIDI teach closed.
 Evidence:
@@ -388,9 +394,42 @@ Latest accepted result:
 - `73/73 tests passed`
 - `git diff --check passed`
 
+P-LIVE15 external OSC target send proof closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md
+- source/core/LiveIOControlDispatcher.h
+- source/core/LiveIOControlDispatcher.cpp
+- source/core/LiveIOControlPump.h
+- source/core/LiveIOControlPump.cpp
+- source/core/LiveIOControlTimer.h
+- source/core/LiveIOControlTimer.cpp
+- source/app/LiveIOAppController.h
+- source/app/LiveIOAppController.cpp
+- tests/LiveIOAppControllerTests.cpp
+
+Closed line:
+PerformancePreferences OSC target
+-> LiveIOAppController controlled timer config
+-> injected OSC sender receives host/port/address/value
+-> no always-on OSC server and no realtime callback delivery
+
+Latest verification:
+- `cmake --build build --target my_world_live_io_app_controller_tests` failed RED first on missing `LiveIOAppTimerRequest::oscSender` and OSC message host/port fields.
+- `cmake --build build --target my_world_live_io_app_controller_tests && ./build/my_world_live_io_app_controller_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "live_io_app_controller|live_io_control_dispatcher|live_io_control_pump|live_io_control_timer"`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted result:
+- `live io app controller ok`
+- app target `my-world` builds.
+- `73/73 tests passed`
+- `git diff --check passed`
+
 Next selectable lane:
 - None selected.
-- UI binding chooser, external OSC send proof, realtime callback delivery, and broader MIDI output operators remain parked.
+- Always-on OSC receive/server, realtime callback delivery, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
