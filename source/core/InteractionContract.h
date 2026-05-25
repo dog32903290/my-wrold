@@ -2,6 +2,7 @@
 
 #include "GraphContract.h"
 #include "NodeSpec.h"
+#include "OutputViewState.h"
 
 #include <string>
 #include <vector>
@@ -82,6 +83,7 @@ struct GraphSession
 {
     GraphContract graph;
     CanvasViewState view;
+    OutputViewState outputView;
     std::vector<std::string> selectedNodeIds;
     std::vector<std::string> selectedEdgeIds;
     std::vector<std::string> currentPatchPath;
@@ -93,6 +95,7 @@ struct GraphSession
     {
         GraphContract graph;
         CanvasViewState view;
+        OutputViewState outputView;
         std::vector<std::string> selectedNodeIds;
         std::vector<std::string> selectedEdgeIds;
         std::vector<std::string> currentPatchPath;

@@ -78,6 +78,7 @@ add_test(NAME startup_proof COMMAND my_world_startup_proof_tests)
 
 add_library(my_world_core
     source/core/GraphContract.cpp
+    source/core/OutputViewState.cpp
 )
 
 target_include_directories(my_world_core
@@ -350,6 +351,17 @@ target_link_libraries(my_world_canvas_view_state_tests
 
 add_test(NAME canvas_view_state COMMAND my_world_canvas_view_state_tests)
 
+add_executable(my_world_output_view_state_tests
+    tests/OutputViewStateTests.cpp
+)
+
+target_link_libraries(my_world_output_view_state_tests
+    PRIVATE
+        my_world_storage_command
+)
+
+add_test(NAME output_view_state COMMAND my_world_output_view_state_tests)
+
 add_executable(my_world_graph_command_tests
     tests/GraphCommandTests.cpp
 )
@@ -543,6 +555,7 @@ target_include_directories(my_world_storage
 target_link_libraries(my_world_storage
     PUBLIC
         my_world_json
+        my_world_core
 )
 
 add_library(my_world_headless_render_runtime

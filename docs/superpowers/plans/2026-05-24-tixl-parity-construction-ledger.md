@@ -140,7 +140,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 
 | ID | Feature | Spec row | Witness | Status | Phase | Acceptance trace | Blocker / next proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| OUT-001 | Output follows selection unless pinned | Output parity | `ViewSelectionPinning` | planned | L3 visible | `select_changes_output_pin_freezes_output_reload` | P-OUT1 |
+| OUT-001 | Output follows selection unless pinned | Output parity | `ViewSelectionPinning` | proven | L3 visible | `select_changes_output_pin_freezes_output_reload` | P-OUT1 closed; output slot/final-eval pin remains OUT-002 |
 | OUT-002 | Output slot and final eval start pin | Output parity | output id/eval-start pin | parked | L4 live | `multi_output_view_pin_final_eval_pin` | multi-output runtimeGraph |
 | OUT-003 | Image canvas Fit, 1:1, Custom pan/zoom, overlay | Output parity | `ImageOutputCanvas` | partial | L3 visible | `output_fit_1to1_custom_view_state` | RenderBackend extraction |
 | OUT-004 | Output toolbar screenshot and render settings vocabulary | Output parity | output window toolbar | parked mixed | L3 visible | `screenshot_or_frame_dump_active_output` | active output view state |
@@ -361,12 +361,41 @@ tests/OutputViewStateTests.cpp
 source/ui/ImGuiSmokeOverlay.cpp
 ```
 
-- [ ] Write tests for selection-following output, pin output, selection changes while pinned, unpin returns to follow mode, and save/load roundtrip.
-- [ ] Implement output view state as data, not ImGui-only state.
-- [ ] Wire the visible workspace to read the output view state.
-- [ ] Run `cmake --build build`.
-- [ ] Run `./build/my_world_output_view_state_tests`.
-- [ ] Run `ctest --test-dir build --output-on-failure`.
+- [x] Write tests for selection-following output, pin output, selection changes while pinned, unpin returns to follow mode, and save/load roundtrip.
+- [x] Implement output view state as data, not ImGui-only state.
+- [x] Wire the visible workspace to read the output view state.
+- [x] Run `cmake --build build`.
+- [x] Run `./build/my_world_output_view_state_tests`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-OUT1 closed as of 2026-05-25 08:58 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_output_view_state_tests
+# RED first failed on missing source/core/OutputViewState.h.
+cmake --build build --target my_world_output_view_state_tests
+./build/my_world_output_view_state_tests
+ctest --test-dir build --output-on-failure -R "output_view_state|patch_document|save_work_command|interaction_traces"
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+output view state ok
+4/4 focused tests passed.
+56/56 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-OUT1 proves core output-view follow/pin/unpin state, PatchDocument save/load persistence, saveWork persistence, and visible workspace reading that state.
+It does not implement multiple output slots, final-eval-start pins, image canvas fit/1:1/custom modes, screenshot/render toolbar actions, resolution presets, or render/export process states.
+```
 
 ## Downstream Plan Order
 

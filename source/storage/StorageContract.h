@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GraphContract.h"
+#include "OutputViewState.h"
 
 #include <string>
 #include <vector>
@@ -32,6 +33,7 @@ struct PatchDocument
     std::string title;
     int version = 1;
     GraphContract graph;
+    OutputViewState outputView;
 };
 
 struct ModulePackageManifest
@@ -94,6 +96,10 @@ struct PatchDocumentSaveResult
 WorkProjectManifest makeMinimalWorkProject (const std::string& id, const std::string& title);
 PatchDocumentManifest makeMinimalPatchDocument (const std::string& id, const std::string& title);
 PatchDocument makePatchDocument (const std::string& id, const std::string& title, const GraphContract& graph);
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView);
 ModulePackageManifest makeModulePackage (const std::string& id, const std::string& title, const std::string& patchPath);
 ModuleLibraryManifest makeModuleLibrary (const std::string& id,
                                          const std::string& title,

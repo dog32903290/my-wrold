@@ -331,11 +331,34 @@ unsupportedType
 missingInput
 ```
 
+## P-OUT1 Fixture Evidence
+
+Closed as of 2026-05-25 08:58 Asia/Taipei.
+
+Output follow/pin state is proven at core, storage, save-work, and visible workspace state level by:
+
+```text
+source/core/OutputViewState.h
+source/core/OutputViewState.cpp
+tests/OutputViewStateTests.cpp
+source/storage/StorageContractPatchDocument.cpp
+source/storage/StorageCommand.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+```
+
+Verified acceptance trace:
+
+```text
+select_changes_output_pin_freezes_output_reload
+```
+
+This proves selection-following output state, pin-to-selected-node, pinned output staying fixed across later selection changes, unpin returning to the current selected node, PatchDocument roundtrip, saveWork roundtrip, and visible workspace state display/control. It does not implement multiple output slots, final eval start pinning, image canvas view modes, screenshot/render toolbar commands, resolution presets, or render/export process states.
+
 ## Output, Timeline, And Live Performance Parity
 
 | Feature | TiXL witness | Policy | Current status | Required trace | Blocker |
 | --- | --- | --- | --- | --- | --- |
-| Output follows selection unless pinned | `ViewSelectionPinning`, output window state | mirror as UX contract | gap | `select_changes_output_pin_freezes_output_reload` | stable output state |
+| Output follows selection unless pinned | `ViewSelectionPinning`, output window state | mirror as UX contract | proven at core/storage/visible-state level | `select_changes_output_pin_freezes_output_reload` | multi-output slot and render toolbar parked |
 | Output slot / final eval start pin | output id and eval-start pin | parked | parked | `multi_output_view_pin_final_eval_pin` | multi-output runtimeGraph |
 | Image canvas modes | Fit, 1:1, Custom pan/zoom, size/format overlay | mirror soon | partial | `output_fit_1to1_custom_view_state` | RenderBackend extraction |
 | Output toolbar | gizmo/grid/camera/background/resolution/screenshot/render settings | mirror screenshot/resolution vocabulary; park camera/gizmo | parked mixed | `screenshot_or_frame_dump_active_output` | 3D/camera phase |
@@ -406,11 +429,14 @@ P-OPS1B richer graph-operation continuation: closed at commandGraph trace level
 hidden input picker, multi-input ordering, drag-existing-node insert, snap/unsnap, shake disconnect
 -> one user gesture = one undo unit
 
-P-OUT1 output pinning: next selectable
+P-OUT1 output pinning: closed at core/storage/visible-state level
 selection-following output
 -> pin output
 -> selection changes do not change output
 -> save/load preserves pin
+
+Next selectable parity line:
+P-PARAM1 parameter row states or P-TIME1 bars-native timeline model, depending on which surface needs to bear weight next.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.

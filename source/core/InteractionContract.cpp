@@ -25,6 +25,7 @@ GraphSession::Snapshot snapshotOf (const GraphSession& session)
 {
     return { session.graph,
              session.view,
+             session.outputView,
              session.selectedNodeIds,
              session.selectedEdgeIds,
              session.currentPatchPath,
@@ -35,6 +36,7 @@ void restoreSnapshot (GraphSession& session, const GraphSession::Snapshot& snaps
 {
     session.graph = snapshot.graph;
     session.view = snapshot.view;
+    session.outputView = snapshot.outputView;
     session.selectedNodeIds = snapshot.selectedNodeIds;
     session.selectedEdgeIds = snapshot.selectedEdgeIds;
     session.currentPatchPath = snapshot.currentPatchPath;

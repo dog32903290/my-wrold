@@ -579,10 +579,49 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
     }
 
     auto& drawList = *ImGui::GetWindowDrawList();
-    drawList.AddRectFilled (origin,
-                            { origin.x + canvasSize.x, origin.y + canvasSize.y },
-                            IM_COL32 (0, 0, 0, 36),
-                            0.0f);
+        drawList.AddRectFilled (origin,
+                                { origin.x + canvasSize.x, origin.y + canvasSize.y },
+                                IM_COL32 (0, 0, 0, 36),
+                                0.0f);
+
+    if (! insidePatch)
+    {
+        followSelectedOutputNode (interactionSession.outputView,
+                                  interactionSession.graph,
+                                  interactionSession.selectedNodeIds);
+
+        const auto outputNodeId = activeOutputNodeId (interactionSession.outputView);
+        drawList.AddText ({ origin.x + 16.0f, origin.y + 14.0f },
+                          IM_COL32 (190, 214, 224, 230),
+                          ("output " + (outputNodeId.empty() ? std::string { "none" } : outputNodeId)
+                           + (interactionSession.outputView.pinned ? " pinned" : " follow"))
+                              .c_str());
+
+        ImGui::SetCursorScreenPos ({ origin.x + canvasSize.x - 104.0f, origin.y + 10.0f });
+        ImGui::PushID ("output-view-pin");
+        if (interactionSession.outputView.pinned)
+        {
+            if (ImGui::SmallButton ("Unpin"))
+            {
+                unpinOutputView (interactionSession.outputView,
+                                 interactionSession.graph,
+                                 interactionSession.selectedNodeIds);
+                interactionSession.dirty = true;
+                lastInteractionMessage = "output unpin: ok";
+            }
+        }
+        else if (ImGui::SmallButton ("Pin"))
+        {
+            const auto result = pinOutputViewToSelection (interactionSession.outputView,
+                                                          interactionSession.graph,
+                                                          interactionSession.selectedNodeIds);
+            if (result.ok)
+                interactionSession.dirty = true;
+
+            lastInteractionMessage = result.ok ? "output pin: ok" : "output pin: " + result.message;
+        }
+        ImGui::PopID();
+    }
 
     const auto gridStep = static_cast<float> (48.0 * canvasSession.view.scale);
     if (gridStep > 8.0f)
@@ -640,6 +679,10 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         {
             draggingNodeId = hit.nodeId;
             canvasSession.selectedNodeIds = { hit.nodeId };
+            if (! insidePatch)
+                followSelectedOutputNode (interactionSession.outputView,
+                                          interactionSession.graph,
+                                          interactionSession.selectedNodeIds);
 
             if (! insidePatch
                 && ImGui::IsMouseDoubleClicked (ImGuiMouseButton_Left)
@@ -650,11 +693,19 @@ void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& node
         {
             canvasSession.selectedNodeIds.clear();
             canvasSession.selectedEdgeIds = { hit.edgeId };
+            if (! insidePatch)
+                followSelectedOutputNode (interactionSession.outputView,
+                                          interactionSession.graph,
+                                          interactionSession.selectedNodeIds);
             lastInteractionMessage = "selected edge: " + hit.edgeId;
         }
         else
         {
             canvasSession.selectedNodeIds.clear();
+            if (! insidePatch)
+                followSelectedOutputNode (interactionSession.outputView,
+                                          interactionSession.graph,
+                                          interactionSession.selectedNodeIds);
             panningCanvas = true;
             previousPanDrag = {};
             lastInteractionMessage = "pan canvas";

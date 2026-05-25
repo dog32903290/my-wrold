@@ -290,6 +290,7 @@ GraphSession makeDefaultOverlaySession()
 {
     auto session = makeGraphSession (makeDefaultShaderOutputGraph());
     session.selectedNodeIds = { "shader1" };
+    followSelectedOutputNode (session.outputView, session.graph, session.selectedNodeIds);
     return session;
 }
 }

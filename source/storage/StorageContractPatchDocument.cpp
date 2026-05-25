@@ -13,8 +13,48 @@ using namespace storage_contract_internal;
 
 PatchDocument makePatchDocument (const std::string& id, const std::string& title, const GraphContract& graph)
 {
-    return { id, title, graph.version, graph };
+    return makePatchDocument (id, title, graph, {});
 }
+
+PatchDocument makePatchDocument (const std::string& id,
+                                 const std::string& title,
+                                 const GraphContract& graph,
+                                 const OutputViewState& outputView)
+{
+    return { id, title, graph.version, graph, outputView };
+}
+
+namespace
+{
+void appendOutputViewJson (std::ostringstream& out, const OutputViewState& outputView)
+{
+    out << "{ \"pinned\": " << (outputView.pinned ? "true" : "false")
+        << ", \"followedNodeId\": " << jsonQuoted (outputView.followedNodeId)
+        << ", \"pinnedNodeId\": " << jsonQuoted (outputView.pinnedNodeId) << " }";
+}
+
+OutputViewState parseOutputView (const JsonValue& root)
+{
+    OutputViewState outputView;
+    const auto* jsonOutputView = member (root, "outputView");
+    if (jsonOutputView == nullptr || jsonOutputView->kind != JsonValue::Kind::object)
+        return outputView;
+
+    outputView.pinned = boolMember (*jsonOutputView, "pinned", false);
+    outputView.followedNodeId = stringMember (*jsonOutputView, "followedNodeId");
+    outputView.pinnedNodeId = stringMember (*jsonOutputView, "pinnedNodeId");
+
+    if (outputView.pinned && outputView.pinnedNodeId.empty())
+        outputView.pinned = false;
+
+    return outputView;
+}
+}
+}
+
+namespace myworld
+{
+using namespace storage_contract_internal;
 
 std::string toJson (const PatchDocumentManifest& manifest)
 {
@@ -43,6 +83,9 @@ std::string toJson (const PatchDocument& document)
     out << ",\n";
     out << "  \"runtimeGraph\": ";
     appendGraphSectionJson (out, document.graph.runtimeGraph.nodes, document.graph.runtimeGraph.edges);
+    out << ",\n";
+    out << "  \"outputView\": ";
+    appendOutputViewJson (out, document.outputView);
     out << "\n";
     out << "}\n";
     return out.str();
@@ -67,6 +110,7 @@ PatchDocumentLoadResult parsePatchDocument (const std::string& text)
     document.title = stringMember (root, "title");
     document.version = intMember (root, "version", 1);
     document.graph.version = document.version;
+    document.outputView = parseOutputView (root);
 
     if (document.id.empty() || document.title.empty())
         return { false, {}, "patch document is missing required identity fields" };
@@ -78,6 +122,18 @@ PatchDocumentLoadResult parsePatchDocument (const std::string& text)
     const auto* runtimeGraph = member (root, "runtimeGraph");
     if (runtimeGraph == nullptr || ! parseRuntimeGraph (document.graph.runtimeGraph, *runtimeGraph))
         return { false, {}, "patch document has invalid runtimeGraph" };
+
+    if (document.outputView.pinned && ! outputViewTargetExists (document.graph, document.outputView.pinnedNodeId))
+    {
+        document.outputView.pinned = false;
+        document.outputView.pinnedNodeId.clear();
+    }
+
+    if (! document.outputView.followedNodeId.empty()
+        && ! outputViewTargetExists (document.graph, document.outputView.followedNodeId))
+    {
+        document.outputView.followedNodeId.clear();
+    }
 
     return { true, document, {} };
 }
