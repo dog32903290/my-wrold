@@ -57,7 +57,7 @@ int main()
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 10, "artifact count");
+    expect (result.artifactPaths.size() == 11, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
@@ -76,6 +76,8 @@ int main()
             "live io app timer midi report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_app_timer_osc_loopback_report.json"),
             "live io app timer osc loopback report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_shader_uniform_report.json"),
+            "live io shader uniform report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -253,6 +255,17 @@ int main()
     expectContains (appTimerOscReport, "\"receivedFloatValue\": 0.500000",
                     "app timer osc value");
     expectContains (appTimerOscReport, "\"errors\": []", "app timer osc no errors");
+
+    const auto shaderUniformReport = readTextFile (outputDirectory / "live_io_shader_uniform_report.json");
+    expectContains (shaderUniformReport, "\"kind\": \"liveIOShaderUniformProof\"",
+                    "shader uniform report kind");
+    expectContains (shaderUniformReport, "\"ok\": true", "shader uniform report ok");
+    expectContains (shaderUniformReport, "\"status\": \"captured\"", "shader uniform report status");
+    expectContains (shaderUniformReport, "\"uniformName\": \"u_loudness\"",
+                    "shader uniform report name");
+    expectContains (shaderUniformReport, "\"value\": 0.500000", "shader uniform report value");
+    expectContains (shaderUniformReport, "\"sampleCounter\": 64", "shader uniform report sample");
+    expectContains (shaderUniformReport, "\"errors\": []", "shader uniform report no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

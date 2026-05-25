@@ -36,6 +36,7 @@ constexpr const char* liveIOControlDispatchReportFileName = "live_io_control_dis
 constexpr const char* liveIOControlPumpReportFileName = "live_io_control_pump_report.json";
 constexpr const char* liveIOAppTimerMidiReportFileName = "live_io_app_timer_midi_report.json";
 constexpr const char* liveIOAppTimerOscLoopbackReportFileName = "live_io_app_timer_osc_loopback_report.json";
+constexpr const char* liveIOShaderUniformReportFileName = "live_io_shader_uniform_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -161,6 +162,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOControlPumpReportFileName,
         request.outputDirectory / liveIOAppTimerMidiReportFileName,
         request.outputDirectory / liveIOAppTimerOscLoopbackReportFileName,
+        request.outputDirectory / liveIOShaderUniformReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -746,6 +748,31 @@ std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& pr
     out << "}\n";
     return out.str();
 }
+
+std::string makeShaderUniformProofJson (const LiveIOControlTimerState& state)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"liveIOShaderUniformProof\",\n";
+    out << "  \"ok\": " << (state.hasLastShaderUniform ? "true" : "false") << ",\n";
+    out << "  \"status\": " << jsonQuoted (state.hasLastShaderUniform ? "captured" : "missing") << ",\n";
+    out << "  \"shaderUniformEvidence\": ";
+    appendTimerShaderUniformEvidenceJson (out, state);
+    out << ",\n";
+    out << "  \"bindingId\": " << jsonQuoted (state.lastShaderUniformBindingId) << ",\n";
+    out << "  \"uniformName\": " << jsonQuoted (state.lastShaderUniformName) << ",\n";
+    out << "  \"value\": " << state.lastShaderUniformValue << ",\n";
+    out << "  \"sampleCounter\": " << state.lastShaderUniformSampleCounter << ",\n";
+    out << "  \"errors\": ";
+    if (state.hasLastShaderUniform)
+        appendErrorsJson (out, {});
+    else
+        appendErrorsJson (out, { "shader uniform evidence is missing" });
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
 }
 
 const char* liveIOProofDisplayName()
@@ -865,6 +892,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOAppTimerOscLoopbackReportFileName,
             makeAppTimerOscLoopbackProofJson (appTimerOscLoopbackProof, "osc.float")
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOShaderUniformReportFileName,
+            makeShaderUniformProofJson (appTimerMidiState)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,
