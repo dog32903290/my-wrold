@@ -1,6 +1,7 @@
 #pragma once
 
 #include "LiveIOMidiOutputInventory.h"
+#include "LiveIOMidiSendProof.h"
 
 #include <filesystem>
 #include <string>
@@ -13,6 +14,7 @@ struct LiveIOProofRunRequest
     std::filesystem::path outputDirectory;
     std::vector<std::filesystem::path> candidateRoots;
     LiveIOMidiOutputInventory midiOutputInventory;
+    LiveIOMidiOutputSender midiOutputSender;
     float loudness = 0.5f;
 };
 

@@ -312,6 +312,23 @@ void MainComponent::dumpLiveIOProof()
     request.outputDirectory = directory.getFullPathName().toStdString();
     request.candidateRoots = proofCandidateRoots();
     request.midiOutputInventory = availableMidiOutputInventory();
+    request.midiOutputSender = [] (const LiveIOMidiOutputDevice& device,
+                                   const LiveIOMidiCcMessage& message)
+    {
+        auto output = juce::MidiOutput::openDevice (juce::String (device.identifier));
+        if (output == nullptr)
+            return LiveIOMidiOutputDeviceSendResult {
+                false,
+                false,
+                "midi output open failed: " + device.identifier
+            };
+
+        output->sendMessageNow (juce::MidiMessage::controllerEvent (
+            message.channel,
+            message.cc,
+            message.value));
+        return LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
     request.loudness = 0.5f;
 
     const auto result = runLiveIOProof (request);

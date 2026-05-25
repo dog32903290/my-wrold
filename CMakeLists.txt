@@ -80,6 +80,7 @@ add_library(my_world_core
     source/core/GraphContract.cpp
     source/core/LiveIOBus.cpp
     source/core/LiveIOMidiOutputInventory.cpp
+    source/core/LiveIOMidiSendProof.cpp
     source/core/LiveIOSendAdapter.cpp
     source/core/OutputViewState.cpp
     source/core/TimelineState.cpp
@@ -401,6 +402,17 @@ target_link_libraries(my_world_live_io_midi_output_inventory_tests
 )
 
 add_test(NAME live_io_midi_output_inventory COMMAND my_world_live_io_midi_output_inventory_tests)
+
+add_executable(my_world_live_io_midi_send_proof_tests
+    tests/LiveIOMidiSendProofTests.cpp
+)
+
+target_link_libraries(my_world_live_io_midi_send_proof_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_midi_send_proof COMMAND my_world_live_io_midi_send_proof_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp

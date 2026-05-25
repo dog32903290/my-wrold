@@ -42,13 +42,18 @@ int main()
     request.midiOutputInventory.devices = {
         { "IAC Driver Bus 1", "iac-1" }
     };
+    request.midiOutputSender = [] (const myworld::LiveIOMidiOutputDevice&,
+                                   const myworld::LiveIOMidiCcMessage&)
+    {
+        return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
 
     const auto result = myworld::runLiveIOProof (request);
 
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 5, "artifact count");
+    expect (result.artifactPaths.size() == 6, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
@@ -57,6 +62,8 @@ int main()
             "live io osc loopback report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_midi_inventory_report.json"),
             "live io midi inventory report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_midi_send_report.json"),
+            "live io midi send report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -112,6 +119,23 @@ int main()
     expectContains (midiInventoryReport, "\"status\": \"unavailable\"", "midi unavailable route");
     expectContains (midiInventoryReport, "\"errors\": [\"midi output is unavailable: __missing_live_io_midi_output__\"]",
                     "midi unavailable error");
+
+    const auto midiSendReport = readTextFile (outputDirectory / "live_io_midi_send_report.json");
+    expectContains (midiSendReport, "\"kind\": \"liveIOMidiOutputSendProof\"",
+                    "midi send kind");
+    expectContains (midiSendReport, "\"ok\": true", "midi send ok");
+    expectContains (midiSendReport, "\"status\": \"sent\"", "midi send status");
+    expectContains (midiSendReport, "\"selectedIdentifier\": \"iac-1\"", "midi send identifier");
+    expectContains (midiSendReport, "\"opened\": true", "midi send opened");
+    expectContains (midiSendReport, "\"sent\": true", "midi send sent");
+    expectContains (midiSendReport, "\"bindingId\": \"midi.loudness\"", "midi send binding");
+    expectContains (midiSendReport, "\"channel\": 1", "midi send channel");
+    expectContains (midiSendReport, "\"cc\": 20", "midi send cc");
+    expectContains (midiSendReport, "\"value\": 64", "midi send value");
+    expectContains (midiSendReport, "\"statusByte\": 176", "midi send status byte");
+    expectContains (midiSendReport, "\"data1\": 20", "midi send data1");
+    expectContains (midiSendReport, "\"data2\": 64", "midi send data2");
+    expectContains (midiSendReport, "\"errors\": []", "midi send no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

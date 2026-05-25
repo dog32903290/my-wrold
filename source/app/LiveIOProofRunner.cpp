@@ -3,6 +3,7 @@
 #include "AudioAnalyzerState.h"
 #include "LiveIOBus.h"
 #include "LiveIOMidiOutputInventory.h"
+#include "LiveIOMidiSendProof.h"
 #include "LiveIOSendAdapter.h"
 #include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
@@ -27,6 +28,7 @@ constexpr const char* liveIOReportFileName = "live_io_report.json";
 constexpr const char* liveIOSendReportFileName = "live_io_send_report.json";
 constexpr const char* liveIOOscLoopbackReportFileName = "live_io_osc_loopback_report.json";
 constexpr const char* liveIOMidiInventoryReportFileName = "live_io_midi_inventory_report.json";
+constexpr const char* liveIOMidiSendReportFileName = "live_io_midi_send_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -133,6 +135,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOSendReportFileName,
         request.outputDirectory / liveIOOscLoopbackReportFileName,
         request.outputDirectory / liveIOMidiInventoryReportFileName,
+        request.outputDirectory / liveIOMidiSendReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -200,6 +203,38 @@ LiveIOMidiOutputRouteReport makeUnavailableMidiRouteReport (const LiveIOMidiOutp
     return evaluateLiveIOMidiOutputRoute (
         inventory,
         makeLiveIOMidiOutputRouteByIdentifier ("__missing_live_io_midi_output__"));
+}
+
+LiveIOMidiOutputSendReport makeMidiSendReport (const LiveIOMidiOutputInventory& inventory,
+                                               const LiveIOBusReport& busReport,
+                                               const LiveIOMidiOutputSender& sender)
+{
+    for (const auto& event : busReport.events)
+    {
+        if (event.targetKind != LiveIOTargetKind::midiCc)
+            continue;
+
+        LiveIOMidiCcMessage message;
+        message.bindingId = event.bindingId;
+        message.channel = event.midiChannel;
+        message.cc = event.midiCc;
+        message.value = event.midiValue;
+
+        const auto identifier = inventory.devices.empty()
+            ? std::string ("__no_live_io_midi_outputs__")
+            : inventory.devices.front().identifier;
+
+        return executeLiveIOMidiOutputSendProof (
+            inventory,
+            makeLiveIOMidiOutputSendRequestByIdentifier (identifier, message),
+            sender);
+    }
+
+    LiveIOMidiOutputSendReport report;
+    report.status = "blocked";
+    report.message = "live io bus has no midi cc event";
+    report.errors.push_back (report.message);
+    return report;
 }
 
 LoopbackReceiver openLoopbackReceiver (std::string& error)
@@ -454,6 +489,12 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         request.midiOutputInventory,
         selectedMidiRoute,
         unavailableMidiRoute);
+    const auto midiSendReport = makeMidiSendReport (
+        request.midiOutputInventory,
+        busReport,
+        request.midiOutputSender);
+    if (! midiSendReport.ok)
+        return fail (midiSendReport.message);
 
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
@@ -471,6 +512,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOMidiInventoryReportFileName,
             midiInventoryReport
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOMidiSendReportFileName,
+            makeLiveIOMidiOutputSendReportJson (midiSendReport)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,

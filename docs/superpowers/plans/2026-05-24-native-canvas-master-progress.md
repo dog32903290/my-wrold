@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 12:13 Asia/Taipei.
+Date: 2026-05-25 12:24 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+6eefbd4 Add MIDI output inventory proof
 93b1f8f Add OSC loopback live IO proof
 2728868 Add live IO send boundary proof
 32bf75b Add live IO bus proof
@@ -264,8 +265,9 @@ Latest accepted targeted result:
 | P-LIVE1 live IO bus foundation | closed | `LiveIOBus` plus `LiveIOProofRunner` map loaded `compound.loudness` public output to MIDI CC, OSC float, and shader uniform target events; app CLI `--dump-live-io-proof-and-exit` writes `live_io_report.json` | Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked |
 | P-LIVE1.2 live IO send boundary | closed | `docs/superpowers/specs/2026-05-25-p-live1-2-live-io-send-boundary.md`; `LiveIOSendAdapter` turns `LiveIOBus` MIDI/OSC events into dry-run send actions and app proof writes `live_io_send_report.json`; `ctest` 65/65 | Real MIDI/UDP send, device scan, realtime callback wiring, teach mode, and live UI mapping remain parked |
 | P-LIVE1.3 controlled OSC loopback proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-3-osc-loopback-proof.md`; `LiveIOSendAdapter` sends one OSC float packet to a controlled localhost receiver and app proof writes `live_io_osc_loopback_report.json` | MIDI device send, external UDP target, always-on OSC server, realtime callback wiring, teach mode, and live UI mapping remain parked |
-| P-LIVE1.4 MIDI output inventory / route report | closed | `docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md`; app proof writes `live_io_midi_inventory_report.json` with MIDI output device list plus selected/unavailable route reports | MIDI device open/send, realtime callback wiring, teach mode, and live UI mapping remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.4 closure |
+| P-LIVE1.4 MIDI output inventory / route report | closed | `docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md`; app proof writes `live_io_midi_inventory_report.json` with MIDI output device list plus selected/unavailable route reports | Controlled MIDI open/send is closed in P-LIVE1.5; realtime callback wiring, teach mode, and live UI mapping remain parked |
+| P-LIVE1.5 controlled MIDI open/send proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-5-controlled-midi-send.md`; `LiveIOMidiSendProof` plus `LiveIOProofRunner` open the selected MIDI output and send one CC proof message; app proof writes `live_io_midi_send_report.json` | MIDI teach mode, realtime callback wiring, live UI mapping, broader MIDI output operators, and external OSC/UDP targets remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.5 closure |
 
 ## Active Lane Protocol
 
@@ -274,43 +276,51 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE1.4 MIDI output inventory / route report closure as of 2026-05-25 12:13 Asia/Taipei.
+None after P-LIVE1.5 controlled MIDI open/send proof closure as of 2026-05-25 12:24 Asia/Taipei.
 
-P-LIVE1.4 MIDI output inventory / route report closed.
+P-LIVE1.5 controlled MIDI open/send proof closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md
+- docs/superpowers/specs/2026-05-25-p-live1-5-controlled-midi-send.md
+- source/core/LiveIOMidiSendProof.h
+- source/core/LiveIOMidiSendProof.cpp
 - source/core/LiveIOMidiOutputInventory.h
 - source/core/LiveIOMidiOutputInventory.cpp
 - source/app/LiveIOProofRunner.h
 - source/app/LiveIOProofRunner.cpp
 - source/app/MainComponent.cpp
+- tests/LiveIOMidiSendProofTests.cpp
 - tests/LiveIOMidiOutputInventoryTests.cpp
 - tests/LiveIOProofRunnerTests.cpp
 - CMakeLists.txt
 
 Closed line:
-JUCE MIDI output device list
--> LiveIOMidiOutputInventory
--> selected route report when a device exists
--> unavailable route report
--> live_io_midi_inventory_report.json
+LiveIOBus MIDI CC event
+-> selected MIDI output route
+-> injected device send boundary
+-> JUCE MidiOutput::openDevice in app proof
+-> controllerEvent ch1 cc20 value64
+-> live_io_midi_send_report.json
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_live_io_midi_output_inventory_tests` failed RED first on missing `LiveIOMidiOutputInventory.h`.
-- `./build/my_world_live_io_proof_runner_tests` failed RED first because `LiveIOProofRunRequest` had no `midiOutputInventory`.
-- `cmake --build build --target my_world_live_io_midi_output_inventory_tests my_world_live_io_proof_runner_tests my-world`
-- `./build/my_world_live_io_midi_output_inventory_tests`
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_midi_send_proof_tests` failed RED first on missing `LiveIOMidiSendProof.h`.
+- `cmake --build build --target my_world_live_io_proof_runner_tests` failed RED first because `LiveIOProofRunRequest` had no `midiOutputSender`.
+- `cmake --build build --target my_world_live_io_midi_send_proof_tests my_world_live_io_proof_runner_tests my-world`
+- `./build/my_world_live_io_midi_send_proof_tests`
 - `./build/my_world_live_io_proof_runner_tests`
 - `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
 
 Latest accepted result:
-- `live io midi output inventory ok`
+- `live io midi send proof ok`
 - `live io proof runner ok`
-- `debug/p-live1-live-io-proof/live_io_midi_inventory_report.json` has `ok: true`, `status: "inventoried"`, `deviceCount: 1`, selected route for `IAC驅動程式 匯流排1`, and unavailable route for `__missing_live_io_midi_output__`.
+- `debug/p-live1-live-io-proof/live_io_midi_send_report.json` has `ok: true`, `status: "sent"`, `opened: true`, `sent: true`, selected output `IAC驅動程式 匯流排1`, channel `1`, CC `20`, value `64`, status byte `176`, data1 `20`, and data2 `64`.
+- `67/67 tests passed`
+- `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- Real MIDI device open/send, MIDI teach mode, realtime callback wiring, and live UI mapping remain parked.
+- MIDI teach mode, realtime callback wiring, live UI mapping, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
@@ -1750,7 +1760,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE1.2 live IO send boundary closure. The next lane must be selected explicitly. Do not add analyzer DSP, real MIDI/OSC device IO, teach mode, UDP send/receive, live callback-buffer runtime, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE1.5 controlled MIDI open/send proof closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI teach mode, external OSC/UDP targets, always-on OSC receive nodes/server, live callback-buffer runtime, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
@@ -1762,4 +1772,4 @@ After the next lane finishes:
    - move the active lane from `in progress` to `closed` or `blocked`;
    - record proof commands;
    - set the next active lane explicitly.
-4. Do not start real MIDI/OSC send, shader/live UI mapping, live callback-buffer runtime, TiXL, browser polish, or another analyzer family until a new active lane row is updated.
+4. Do not start MIDI teach mode, shader/live UI mapping, live callback-buffer runtime, external OSC/UDP targets, TiXL, browser polish, or another analyzer family until a new active lane row is updated.
