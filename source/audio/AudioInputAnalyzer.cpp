@@ -24,6 +24,7 @@ void AudioInputAnalyzer::audioDeviceIOCallbackWithContext (const float* const* i
                                 numInputChannels,
                                 numSamples,
                                 analysisGain.load (std::memory_order_relaxed));
+    realtimeDelivery.publishFromRealtime (analyzerState.getSnapshot());
 
     for (int channel = 0; channel < numOutputChannels; ++channel)
         if (outputChannelData[channel] != nullptr)
@@ -39,6 +40,11 @@ void AudioInputAnalyzer::audioDeviceStopped()
 AudioAnalyzerSnapshot AudioInputAnalyzer::getSnapshot() const noexcept
 {
     return analyzerState.getSnapshot();
+}
+
+AudioRealtimeDeliveryResult AudioInputAnalyzer::consumeRealtimeDelivery (std::uint64_t& lastSeenSequence) const noexcept
+{
+    return realtimeDelivery.consumeLatest (lastSeenSequence);
 }
 
 double AudioInputAnalyzer::getSampleRate() const noexcept

@@ -688,6 +688,7 @@ add_test(NAME tooll3_skin_contract COMMAND my_world_tooll3_skin_tests)
 add_library(my_world_audio
     source/audio/AnalyzerAggregatePressure.cpp
     source/audio/AudioAnalyzerState.cpp
+    source/audio/AudioRealtimeDelivery.cpp
     source/audio/AnalyzerAttackDetector.cpp
     source/audio/AnalyzerDensityDetector.cpp
     source/audio/AnalyzerResidueDetector.cpp
@@ -710,6 +711,18 @@ target_link_libraries(my_world_audio_analyzer_tests
 )
 
 add_test(NAME audio_analyzer_state COMMAND my_world_audio_analyzer_tests)
+
+add_executable(my_world_audio_realtime_delivery_tests
+    tests/AudioRealtimeDeliveryTests.cpp
+)
+
+target_link_libraries(my_world_audio_realtime_delivery_tests
+    PRIVATE
+        my_world_audio
+        my_world_core
+)
+
+add_test(NAME audio_realtime_delivery COMMAND my_world_audio_realtime_delivery_tests)
 
 add_library(my_world_preferences
     source/preferences/PerformancePreferences.cpp

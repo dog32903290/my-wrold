@@ -628,7 +628,9 @@ void MainComponent::startAudioInput()
 
 void MainComponent::updateAudioMeters()
 {
-    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, audioInputAnalyzer.getSnapshot());
+    const auto realtime = audioInputAnalyzer.consumeRealtimeDelivery (audioRealtimeLastSeenSequence);
+    const auto analyzerSnapshot = realtime.available ? realtime.snapshot : audioInputAnalyzer.getSnapshot();
+    const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, analyzerSnapshot);
     const auto& snapshot = bridge.analyzer;
 
     rmsLabel.setText ("rms " + juce::String (snapshot.rms, 4), juce::dontSendNotification);

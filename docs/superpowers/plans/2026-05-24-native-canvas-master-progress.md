@@ -105,23 +105,23 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 15:30 Asia/Taipei, P-LIVE16 is committed and pushed in `f52a3a1`. Current dirty files, if any, should belong to the closing P-LIVE17 broader MIDI output operators lane.
+As of 2026-05-25 16:00 Asia/Taipei, P-LIVE17 is committed and pushed in `5895944`. Current dirty files, if any, should belong to the closing P-LIVE18 realtime callback delivery lane.
 
 ```text
-P-LIVE17 owned files:
+P-LIVE18 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md
-- source/core/LiveIOBus.h
-- source/core/LiveIOBus.cpp
-- source/core/LiveIOMidiSendProof.h
-- source/core/LiveIOMidiSendProof.cpp
-- source/core/LiveIOControlDispatcher.cpp
-- tests/LiveIOBusTests.cpp
-- tests/LiveIOMidiSendProofTests.cpp
-- tests/LiveIOControlDispatcherTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md
+- source/audio/AudioRealtimeDelivery.h
+- source/audio/AudioRealtimeDelivery.cpp
+- source/audio/AudioInputAnalyzer.h
+- source/audio/AudioInputAnalyzer.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/AudioRealtimeDeliveryTests.cpp
+- CMakeLists.txt
 ```
 
-Do not add UI fields, device scanning, realtime callback delivery, or new app lifecycle wiring in P-LIVE17.
+Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE18.
 
 Current C4 note:
 
@@ -327,7 +327,8 @@ Latest accepted targeted result:
 | P-LIVE15 external OSC target send proof | closed | `docs/superpowers/specs/2026-05-25-p-live15-external-osc-target-send-proof.md`; controlled app timer carries OSC host/port/address into an injected sender, proving external target routing without adding a server or realtime callback delivery; focused tests, app build, and `ctest` 73/73 passed | Always-on OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE16 OSC receive spine | closed | `docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md`; `LiveIOOscReceiver` opens/polls/closes a controlled UDP receiver, decodes OSC float datagrams, and emits matching `LiveIOValueFrame` values; focused tests, app build, and `ctest` 74/74 passed | UI/server lifecycle, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE17 broader MIDI output operators | closed | `docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md`; `LiveIOBus` can emit `midi.cc` and `midi.note_on`, `LiveIOMidiMessage` reports byte-level CC/note-on output, and the control-rate dispatcher sends both through the existing injected MIDI sender; focused tests and app build passed | UI operator picker, note-off/program-change/pitch-bend, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE17 closure |
+| P-LIVE18 realtime callback delivery | closed | `docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md`; `AudioInputAnalyzer` publishes callback snapshots into `AudioRealtimeDelivery`, `MainComponent` consumes completed sequences on the app timer, and `LiveIOControlTimer` remains outside the callback; focused test and app build passed | Direct realtime MIDI/OSC send, multi-slot backpressure telemetry, and delivery UI remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE18 closure |
 
 ## Active Lane Protocol
 
@@ -336,7 +337,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE17 broader MIDI output operators closure as of 2026-05-25 15:30 Asia/Taipei.
+None after P-LIVE18 realtime callback delivery closure as of 2026-05-25 16:00 Asia/Taipei.
+
+P-LIVE18 realtime callback delivery closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md
+- source/audio/AudioRealtimeDelivery.h
+- source/audio/AudioRealtimeDelivery.cpp
+- source/audio/AudioInputAnalyzer.h
+- source/audio/AudioInputAnalyzer.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/AudioRealtimeDeliveryTests.cpp
+- CMakeLists.txt
+
+Closed line:
+audio callback analyzer snapshot
+-> atomic realtime delivery slot
+-> app timer consume
+-> existing LiveIOControlTimer outside callback
+
+Latest accepted result:
+- RED first on missing `AudioRealtimeDelivery.cpp`.
+- focused `audio_realtime_delivery` passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
 
 P-LIVE17 broader MIDI output operators closed.
 Evidence:
@@ -1922,7 +1947,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE17 broader MIDI output operators closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE18 realtime callback delivery closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

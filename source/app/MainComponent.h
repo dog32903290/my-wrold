@@ -12,6 +12,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 
 #include <atomic>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -100,6 +101,7 @@ private:
     LiveIOAppController liveIOController;
     juce::String liveIOStatus = "live io dry idle m0 o0";
     juce::String liveIOStatusTone = "idle";
+    std::uint64_t audioRealtimeLastSeenSequence = 0;
     std::atomic<bool> midiTeachArmedForCallback { false };
     bool midiTeachCallbackRegistered = false;
     std::vector<juce::String> midiInputsEnabledForTeach;
