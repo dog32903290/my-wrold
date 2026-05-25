@@ -54,6 +54,7 @@ int main()
     request.saveStatus = "dirty";
     request.proofStatus = "g1-report-dumped";
     request.previewStatus = "preview-ready";
+    request.workDiagnostics = { "workSourceStatus=fixture-fallback-no-active-request" };
 
     const auto snapshot = myworld::makeWorkbenchSessionSnapshot (request);
     expect (snapshot.ok, snapshot.message);
@@ -76,6 +77,7 @@ int main()
     expectEqual (snapshot.validGraphIOMappingCount, 1, "valid mapping count");
     expectEqual (snapshot.graphIOMappingStatus, "valid", "mapping status");
     expect (snapshot.diagnostics.empty(), "no diagnostics");
+    expectEqual (static_cast<int> (snapshot.workDiagnostics.size()), 1, "work diagnostic count");
 
     const auto json = myworld::makeWorkbenchSessionReportJson (snapshot);
     expectContains (json, "\"kind\": \"workbenchSessionReport\"", "json kind");
@@ -89,6 +91,9 @@ int main()
     expectContains (json, "\"previewStatus\": \"preview-ready\"", "json preview");
     expectContains (json, "\"proofStatus\": \"g1-report-dumped\"", "json proof");
     expectContains (json, "\"saveStatus\": \"dirty\"", "json save");
+    expectContains (json,
+                    "\"workDiagnostics\": [\"workSourceStatus=fixture-fallback-no-active-request\"]",
+                    "json work diagnostics");
     expectContains (json, "\"diagnostics\": []", "json diagnostics");
 
     auto invalidRequest = request;

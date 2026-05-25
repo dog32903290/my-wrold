@@ -23,6 +23,7 @@ WorkbenchSessionSnapshot makeWorkbenchSessionSnapshot (const WorkbenchSessionReq
     snapshot.saveStatus = request.saveStatus;
     snapshot.proofStatus = request.proofStatus;
     snapshot.previewStatus = request.previewStatus;
+    snapshot.workDiagnostics = request.workDiagnostics;
     snapshot.editorNodeCount = static_cast<int> (request.document.graph.editorGraph.nodes.size());
     snapshot.editorEdgeCount = static_cast<int> (request.document.graph.editorGraph.edges.size());
     snapshot.runtimeNodeCount = static_cast<int> (request.document.graph.runtimeGraph.nodes.size());
@@ -88,6 +89,9 @@ std::string makeWorkbenchSessionReportJson (const WorkbenchSessionSnapshot& snap
     out << "  \"graphIOMappingCount\": " << snapshot.graphIOMappingCount << ",\n";
     out << "  \"validGraphIOMappingCount\": " << snapshot.validGraphIOMappingCount << ",\n";
     out << "  \"graphIOMappingStatus\": " << jsonQuoted (snapshot.graphIOMappingStatus) << ",\n";
+    out << "  \"workDiagnostics\": ";
+    appendJsonStringArray (out, snapshot.workDiagnostics);
+    out << ",\n";
     out << "  \"diagnostics\": ";
     appendJsonStringArray (out, snapshot.diagnostics);
     out << "\n";

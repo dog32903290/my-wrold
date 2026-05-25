@@ -27,6 +27,19 @@ void expectLifecycle (const myworld::WorkProjectResolveResult& result,
     expect (result.lifecycle.blocksSession == expectedBlocked, expectedStatus + " blocked state");
 }
 
+void expectDiagnostic (const myworld::WorkProjectResolveResult& result,
+                       const std::string& expected,
+                       const std::string& message)
+{
+    for (const auto& diagnostic : result.workDiagnostics)
+    {
+        if (diagnostic.find (expected) != std::string::npos)
+            return;
+    }
+
+    expect (false, message + " should contain " + expected);
+}
+
 void copyC2WorkFixture (const std::filesystem::path& workRoot)
 {
     std::filesystem::create_directories (workRoot / "patches");
@@ -56,6 +69,8 @@ int main()
     expect (activeResult.activeWorkManifestPath == activeRequest.activeWorkManifestPath.string(),
             "active request path");
     expect (activeResult.document.id == "patch.c2-main", "active document id");
+    expectDiagnostic (activeResult, "workSourceStatus=active-work-opened", "active diagnostics status");
+    expectDiagnostic (activeResult, activeRequest.activeWorkManifestPath.string(), "active diagnostics path");
 
     myworld::WorkProjectResolveRequest missingActiveRequest;
     missingActiveRequest.activeWorkManifestPath = std::filesystem::temp_directory_path()
@@ -69,6 +84,12 @@ int main()
     expect (missingActiveResult.activeWorkManifestPath == missingActiveRequest.activeWorkManifestPath.string(),
             "missing active request path");
     expect (missingActiveResult.document.id == "patch.c2-main", "fixture fallback document id");
+    expectDiagnostic (missingActiveResult,
+                      "workSourceStatus=fixture-fallback-active-missing",
+                      "fallback diagnostics status");
+    expectDiagnostic (missingActiveResult,
+                      missingActiveRequest.activeWorkManifestPath.string(),
+                      "fallback diagnostics active path");
 
     const auto brokenWorkRoot = std::filesystem::temp_directory_path() / "my-world-work2-broken-active-work";
     std::filesystem::remove_all (brokenWorkRoot);
@@ -88,6 +109,8 @@ int main()
     expect (! brokenActiveResult.error.empty(), "broken active work error");
     expect (brokenActiveResult.workManifestPath == brokenActiveRequest.activeWorkManifestPath.string(),
             "broken active manifest path");
+    expectDiagnostic (brokenActiveResult, "workSourceStatus=active-work-blocked", "broken diagnostics status");
+    expectDiagnostic (brokenActiveResult, "error=", "broken diagnostics error");
 
     myworld::WorkProjectResolveRequest missingFixtureRequest;
     missingFixtureRequest.fallbackWorkManifestPath = "fixtures/storage/c2-compound-work/missing.work.json";
@@ -97,6 +120,9 @@ int main()
     expect (! missingFixtureResult.ok, "missing fixture should block");
     expectLifecycle (missingFixtureResult, "fixture", "fixture-blocked-no-active-request", true);
     expect (! missingFixtureResult.error.empty(), "missing fixture error");
+    expectDiagnostic (missingFixtureResult,
+                      "workSourceStatus=fixture-blocked-no-active-request",
+                      "missing fixture diagnostics status");
 
     std::filesystem::remove_all (activeWorkRoot);
     std::filesystem::remove_all (brokenWorkRoot);

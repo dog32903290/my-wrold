@@ -24,6 +24,7 @@ struct WorkProjectResolveResult
     std::string workManifestPath;
     std::string activeWorkManifestPath;
     WorkProjectLifecycle lifecycle;
+    std::vector<std::string> workDiagnostics;
 };
 
 WorkProjectResolveResult resolveWorkProjectForWorkbench (const WorkProjectResolveRequest& request);

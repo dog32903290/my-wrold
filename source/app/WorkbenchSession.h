@@ -21,6 +21,7 @@ struct WorkbenchSessionRequest
     std::string saveStatus = "unknown";
     std::string proofStatus = "not-run";
     std::string previewStatus = "not-ready";
+    std::vector<std::string> workDiagnostics;
 };
 
 struct WorkbenchSessionSnapshot
@@ -49,6 +50,7 @@ struct WorkbenchSessionSnapshot
     int graphIOMappingCount = 0;
     int validGraphIOMappingCount = 0;
     std::string graphIOMappingStatus;
+    std::vector<std::string> workDiagnostics;
     std::vector<std::string> diagnostics;
 };
 

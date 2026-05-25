@@ -37,6 +37,8 @@ int main()
     openRequest.proofStatus = "g1-ready";
     const auto opened = myworld::openCurrentWorkbenchSession (openRequest);
     expect (opened.ok, opened.error);
+    expect (opened.snapshot.diagnostics.empty(), "work diagnostics should not block session");
+    expect (! opened.snapshot.workDiagnostics.empty(), "work diagnostics present");
 
     const auto outputDirectory = std::filesystem::temp_directory_path()
                                  / "my-world-app-workbench-session-proof-runner-test";
@@ -58,6 +60,10 @@ int main()
     const auto report = readTextFile (result.reportPath);
     expectContains (report, "\"kind\": \"workbenchSessionReport\"", "report kind");
     expectContains (report, "\"workSourceStatus\": \"fixture-fallback-no-active-request\"", "source status");
+    expectContains (report, "\"workDiagnostics\": [", "work diagnostics field");
+    expectContains (report,
+                    "workSourceStatus=fixture-fallback-no-active-request",
+                    "work diagnostics source status");
     expectContains (report, "\"graphIOMappingStatus\": \"valid\"", "mapping status");
 
     std::filesystem::remove_all (outputDirectory);

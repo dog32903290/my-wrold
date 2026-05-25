@@ -19,6 +19,24 @@ void setLifecycle (WorkProjectResolveResult& result, WorkProjectLifecycleStatus 
 {
     result.lifecycle = makeWorkProjectLifecycle (status);
 }
+
+std::string noneIfEmpty (const std::string& text)
+{
+    return text.empty() ? "none" : text;
+}
+
+void refreshWorkDiagnostics (WorkProjectResolveResult& result)
+{
+    result.workDiagnostics = {
+        "workSource=" + result.lifecycle.workSource,
+        "workSourceStatus=" + result.lifecycle.workSourceStatus,
+        "activeWorkManifestPath=" + noneIfEmpty (result.activeWorkManifestPath),
+        "workManifestPath=" + noneIfEmpty (result.workManifestPath)
+    };
+
+    if (! result.error.empty())
+        result.workDiagnostics.push_back ("error=" + result.error);
+}
 }
 
 WorkProjectResolveResult resolveWorkProjectForWorkbench (const WorkProjectResolveRequest& request)
@@ -35,12 +53,14 @@ WorkProjectResolveResult resolveWorkProjectForWorkbench (const WorkProjectResolv
         {
             setLifecycle (result, WorkProjectLifecycleStatus::activeWorkBlocked);
             result.error = loaded.error;
+            refreshWorkDiagnostics (result);
             return result;
         }
 
         setLifecycle (result, WorkProjectLifecycleStatus::activeWorkOpened);
         result.ok = true;
         result.document = loaded.document;
+        refreshWorkDiagnostics (result);
         return result;
     }
 
@@ -57,6 +77,7 @@ WorkProjectResolveResult resolveWorkProjectForWorkbench (const WorkProjectResolv
             result.ok = true;
             result.document = loaded.document;
             result.workManifestPath = candidate.string();
+            refreshWorkDiagnostics (result);
             return result;
         }
 
@@ -68,6 +89,7 @@ WorkProjectResolveResult resolveWorkProjectForWorkbench (const WorkProjectResolv
                       ? WorkProjectLifecycleStatus::fixtureBlockedNoActiveRequest
                       : WorkProjectLifecycleStatus::fixtureBlockedActiveMissing);
     result.error = lastError.empty() ? "could not open current workbench session work" : lastError;
+    refreshWorkDiagnostics (result);
     return result;
 }
 }

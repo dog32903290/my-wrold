@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 20:45 Asia/Taipei.
+Date: 2026-05-25 20:57 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/work2-active-work-resolver
+codex/work3-work-diagnostics-report
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-WORK2 active work resolver (current local lane)
+WORK3 work diagnostics report (current local lane)
+8b334ac Add WORK2 active work resolver
 52fb50a Add WORK1 active work lifecycle status
 5cb4880 Close APP workbench session spine
 6ffe589 Add APP6 stable workbench proof runner
@@ -143,19 +144,20 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 20:45 Asia/Taipei, APP1-APP7 and WORK1 are closed locally and not pushed. WORK2 active work resolver is closed locally on `codex/work2-active-work-resolver`; do not push unless explicitly requested.
+As of 2026-05-25 20:57 Asia/Taipei, APP1-APP7 and WORK1-WORK2 are closed locally and not pushed. WORK3 work diagnostics report is closed locally on `codex/work3-work-diagnostics-report`; do not push unless explicitly requested.
 
 ```text
-WORK2 owned files:
+WORK3 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-work2-active-work-resolver.md
+- docs/superpowers/specs/2026-05-25-work3-work-diagnostics-report.md
 - source/app/WorkProjectResolver.*
+- source/app/WorkbenchSession.*
 - source/app/WorkbenchSessionOpenStatus.cpp
 - tests/WorkProjectResolverTests.cpp
-- CMakeLists.txt
+- tests/WorkbenchSessionTests.cpp
+- tests/AppWorkbenchSessionProofRunnerTests.cpp
 ```
-
-Do not add active-work preparation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in WORK2.
+Do not add active-work preparation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in WORK3.
 
 Current C4 note:
 
@@ -391,6 +393,7 @@ Latest accepted targeted result:
 | APP7 workbench session spine closure | closed locally | `docs/superpowers/specs/2026-05-25-app7-workbench-session-spine-closure.md`; closes APP1-APP6 as the app workbench session spine and blocks further APP-number drift without a fresh app-shell contract | Future work should select a specific lane name such as WORK, STATUS, PROOF, UI, GRAPH, or RUNTIME |
 | WORK1 active work lifecycle status | closed locally | `docs/superpowers/specs/2026-05-25-work1-active-work-lifecycle-status.md`; `WorkProjectLifecycle` owns the six active/fixture/blocked source statuses and `WorkbenchSessionOpenStatus` reads them instead of inline strings; stable app proof passed; `ctest` 86/86 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
 | WORK2 active work resolver | closed locally | `docs/superpowers/specs/2026-05-25-work2-active-work-resolver.md`; `WorkProjectResolver` owns active-work file resolution, fixture fallback, PatchDocument load, lifecycle, and error output before `WorkbenchSessionOpenStatus` combines the document with G1 mappings; stable app proof passed; `ctest` 87/87 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
+| WORK3 work diagnostics report | closed locally | `docs/superpowers/specs/2026-05-25-work3-work-diagnostics-report.md`; `workDiagnostics` records non-blocking work source diagnostics from resolver through `WorkbenchSessionSnapshot` into stable app proof JSON while `diagnostics` remains the blocking vector; stable app proof passed; `ctest` 87/87 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -400,9 +403,39 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after WORK2 active work resolver closure as of 2026-05-25 20:45 Asia/Taipei. Not pushed.
+None after WORK3 work diagnostics report closure as of 2026-05-25 20:57 Asia/Taipei. Not pushed.
 
 Latest closure:
+WORK3 work diagnostics report closed locally.
+Evidence:
+- docs/superpowers/specs/2026-05-25-work3-work-diagnostics-report.md
+- source/app/WorkProjectResolver.*
+- source/app/WorkbenchSession.*
+- source/app/WorkbenchSessionOpenStatus.cpp
+- tests/WorkProjectResolverTests.cpp
+- tests/WorkbenchSessionTests.cpp
+- tests/AppWorkbenchSessionProofRunnerTests.cpp
+
+Closed line:
+WorkProjectResolver
+-> workDiagnostics
+-> WorkbenchSessionSnapshot
+-> workbench_open_status_report.json
+
+Latest accepted result:
+- Red test: cmake --build build --target my_world_work_project_resolver_tests my_world_workbench_session_tests my_world_app_workbench_session_proof_runner_tests failed because WorkProjectResolveResult had no workDiagnostics.
+- cmake --build build --target my_world_work_project_resolver_tests my_world_workbench_session_tests my_world_app_workbench_session_proof_runner_tests my_world_workbench_session_open_status_tests passed.
+- ./build/my_world_work_project_resolver_tests passed.
+- ./build/my_world_workbench_session_tests passed.
+- ./build/my_world_app_workbench_session_proof_runner_tests passed.
+- ./build/my_world_workbench_session_open_status_tests passed.
+- cmake --build build --target my-world passed.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed and wrote debug/app-workbench-session-proof/workbench_open_status_report.json with workDiagnostics and diagnostics: [].
+- ctest --test-dir build --output-on-failure passed 87/87.
+- git diff --check passed.
+
+Previous closure:
+
 WORK2 active work resolver closed locally.
 Evidence:
 - docs/superpowers/specs/2026-05-25-work2-active-work-resolver.md
@@ -2758,18 +2791,21 @@ raw callback-buffer runtime
 | `2026-05-25-app7-workbench-session-spine-closure.md` | APP7 closure marker for APP workbench session spine | no, unless auditing APP segment closure |
 | `2026-05-25-work1-active-work-lifecycle-status.md` | WORK1 active work lifecycle status closure evidence | no, unless auditing WORK1 evidence |
 | `2026-05-25-work2-active-work-resolver.md` | WORK2 active work resolver closure evidence | no, unless auditing WORK2 evidence |
+| `2026-05-25-work3-work-diagnostics-report.md` | WORK3 work diagnostics report closure evidence | no, unless auditing WORK3 evidence |
 
 ## Session Safety
 
-WORK2 owned files:
+WORK3 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-25-work2-active-work-resolver.md
+docs/superpowers/specs/2026-05-25-work3-work-diagnostics-report.md
 source/app/WorkProjectResolver.*
+source/app/WorkbenchSession.*
 source/app/WorkbenchSessionOpenStatus.cpp
 tests/WorkProjectResolverTests.cpp
-CMakeLists.txt
+tests/WorkbenchSessionTests.cpp
+tests/AppWorkbenchSessionProofRunnerTests.cpp
 ```
 
 Avoid unrelated files and parked lanes:
@@ -2787,7 +2823,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after WORK2 active work resolver closure. APP1-APP7 and WORK1-WORK2 are local-only commits; do not push unless explicitly requested. Treat the APP workbench session spine as closed; the next likely lane is WORK3 work diagnostics report only if selected. Do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after WORK3 work diagnostics report closure. APP1-APP7 and WORK1-WORK3 are local-only commits; do not push unless explicitly requested. Treat the APP workbench session spine as closed; the next likely lane is WORK4 app status wording only if selected. Do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

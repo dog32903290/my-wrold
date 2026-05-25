@@ -35,6 +35,7 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         result.snapshot.workSource = resolvedWork.lifecycle.workSource;
         result.snapshot.activeWorkManifestPath = resolvedWork.activeWorkManifestPath;
         result.snapshot.workSourceStatus = resolvedWork.lifecycle.workSourceStatus;
+        result.snapshot.workDiagnostics = resolvedWork.workDiagnostics;
         return result;
     }
 
@@ -63,6 +64,7 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         result.snapshot.workSource = resolvedWork.lifecycle.workSource;
         result.snapshot.workSourceStatus = resolvedWork.lifecycle.workSourceStatus;
         result.snapshot.activeWorkManifestPath = resolvedWork.activeWorkManifestPath;
+        result.snapshot.workDiagnostics = resolvedWork.workDiagnostics;
         return result;
     }
 
@@ -81,6 +83,7 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
     sessionRequest.saveStatus = request.saveStatus;
     sessionRequest.proofStatus = request.proofStatus;
     sessionRequest.previewStatus = request.previewStatus;
+    sessionRequest.workDiagnostics = resolvedWork.workDiagnostics;
 
     result.snapshot = makeWorkbenchSessionSnapshot (sessionRequest);
     result.ok = result.snapshot.ok;
