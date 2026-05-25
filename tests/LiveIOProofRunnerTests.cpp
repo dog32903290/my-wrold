@@ -45,9 +45,11 @@ int main()
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 2, "artifact count");
+    expect (result.artifactPaths.size() == 3, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
+            "live io send report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -63,6 +65,20 @@ int main()
     expectContains (report, "\"oscAddress\": \"/my-world/loudness\"", "proof report osc address");
     expectContains (report, "\"uniformName\": \"u_loudness\"", "proof report uniform name");
     expectContains (report, "\"errors\": []", "proof report no errors");
+
+    const auto sendReport = readTextFile (outputDirectory / "live_io_send_report.json");
+    expectContains (sendReport, "\"kind\": \"liveIOSendReport\"", "send report kind");
+    expectContains (sendReport, "\"ok\": true", "send report ok");
+    expectContains (sendReport, "\"status\": \"dry_run\"", "send report status");
+    expectContains (sendReport, "\"targetKind\": \"midi.cc\"", "send report midi action");
+    expectContains (sendReport, "\"targetKind\": \"osc.float\"", "send report osc action");
+    expectContains (sendReport, "\"midiOutputName\": \"dry-run MIDI\"", "send report midi route");
+    expectContains (sendReport, "\"oscHost\": \"127.0.0.1\"", "send report osc host");
+    expectContains (sendReport, "\"oscPort\": 9000", "send report osc port");
+    expectContains (sendReport, "\"sent\": false", "send report dry-run send flag");
+    expectContains (sendReport, "\"skipped\": [\"shader.uniform: uniform.loudness\"]",
+                    "send report skipped uniform");
+    expectContains (sendReport, "\"errors\": []", "send report no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

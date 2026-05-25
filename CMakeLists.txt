@@ -79,6 +79,7 @@ add_test(NAME startup_proof COMMAND my_world_startup_proof_tests)
 add_library(my_world_core
     source/core/GraphContract.cpp
     source/core/LiveIOBus.cpp
+    source/core/LiveIOSendAdapter.cpp
     source/core/OutputViewState.cpp
     source/core/TimelineState.cpp
     source/core/VariationState.cpp
@@ -377,6 +378,17 @@ target_link_libraries(my_world_live_io_bus_tests
 )
 
 add_test(NAME live_io_bus COMMAND my_world_live_io_bus_tests)
+
+add_executable(my_world_live_io_send_adapter_tests
+    tests/LiveIOSendAdapterTests.cpp
+)
+
+target_link_libraries(my_world_live_io_send_adapter_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_send_adapter COMMAND my_world_live_io_send_adapter_tests)
 
 add_executable(my_world_timeline_state_tests
     tests/TimelineStateTests.cpp
@@ -1088,6 +1100,7 @@ target_include_directories(my_world_live_io_proof_runner
 target_link_libraries(my_world_live_io_proof_runner
     PUBLIC
         my_world_proof_run_support
+        my_world_core
         my_world_runtime_registry
 )
 

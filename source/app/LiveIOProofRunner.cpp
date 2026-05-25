@@ -2,6 +2,7 @@
 
 #include "AudioAnalyzerState.h"
 #include "LiveIOBus.h"
+#include "LiveIOSendAdapter.h"
 #include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
 
@@ -16,6 +17,7 @@ namespace
 constexpr const char* displayName = "P-LIVE1 live IO";
 constexpr const char* directoryName = "p-live1-live-io-proof";
 constexpr const char* liveIOReportFileName = "live_io_report.json";
+constexpr const char* liveIOSendReportFileName = "live_io_send_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -65,6 +67,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
     result.reportPath = request.outputDirectory / liveIOReportFileName;
     result.artifactPaths = {
         request.outputDirectory / liveIOReportFileName,
+        request.outputDirectory / liveIOSendReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -108,6 +111,11 @@ std::vector<LiveIOBinding> makeProofBindings()
         makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"),
         makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness")
     };
+}
+
+LiveIOSendRoute makeProofSendRoute()
+{
+    return makeLiveIODryRunSendRoute ("dry-run MIDI", "127.0.0.1", 9000);
 }
 
 void appendErrorsJson (std::ostringstream& out, const std::vector<std::string>& errors)
@@ -184,10 +192,18 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
     if (! busReport.ok)
         return fail (busReport.message);
 
+    const auto sendReport = evaluateLiveIOSendBoundary (busReport, makeProofSendRoute());
+    if (! sendReport.ok)
+        return fail (sendReport.message);
+
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOReportFileName,
             makeLiveIOProofJson (busReport)
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOSendReportFileName,
+            makeLiveIOSendReportJson (sendReport)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,

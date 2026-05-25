@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 11:22 Asia/Taipei.
+Date: 2026-05-25 11:34 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+32bf75b Add live IO bus proof
 e1197e5 Close variation blend and thumbnail proof
 f11bff3 Add variation CRUD commands
 6872983 Add parameter metadata contract
@@ -259,13 +260,60 @@ Latest accepted targeted result:
 | VAR-005 hover preview / Alt blend | closed | `VariationPreviewReport`, `previewVariationBlend`, `commitVariationBlend`, and left-rail hover/Alt-click prove deterministic non-mutating preview plus one undoable blend command | Child enable UI, symbol-browser preset creation, richer type-specific blend rules remain parked |
 | R-TN1 real thumbnail headless proof | closed | `HeadlessRenderRuntime` writes `thumbnail.png` and `thumbnail_stats.json` for `image.constant -> output.texture_summary`; `headless_render_runtime`, app build, and full `ctest` passed | Full render/export window, render process states, render queue, and UI render settings remain parked |
 | P-LIVE1 live IO bus foundation | closed | `LiveIOBus` plus `LiveIOProofRunner` map loaded `compound.loudness` public output to MIDI CC, OSC float, and shader uniform target events; app CLI `--dump-live-io-proof-and-exit` writes `live_io_report.json` | Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1 closure |
+| P-LIVE1.2 live IO send boundary | closed | `docs/superpowers/specs/2026-05-25-p-live1-2-live-io-send-boundary.md`; `LiveIOSendAdapter` turns `LiveIOBus` MIDI/OSC events into dry-run send actions and app proof writes `live_io_send_report.json`; `ctest` 65/65 | Real MIDI/UDP send, device scan, realtime callback wiring, teach mode, and live UI mapping remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.2 closure |
 
 ## Active Lane Protocol
 
 Only one lane should be marked `in progress` in this file unless the files are disjoint.
 
 Current active lane:
+
+```text
+None after P-LIVE1.2 live IO send boundary closure as of 2026-05-25 11:34 Asia/Taipei.
+
+P-LIVE1.2 live IO send boundary closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live1-2-live-io-send-boundary.md
+- source/core/LiveIOSendAdapter.h
+- source/core/LiveIOSendAdapter.cpp
+- source/app/LiveIOProofRunner.cpp
+- tests/LiveIOSendAdapterTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+- CMakeLists.txt
+
+Closed line:
+LiveIOBus target events
+-> MIDI/OSC send-boundary adapter
+-> dry-run MIDI CC action and OSC float action report
+-> live_io_send_report.json
+
+Latest verification:
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_send_adapter_tests` failed RED first on missing `LiveIOSendAdapter.h`.
+- `./build/my_world_live_io_proof_runner_tests` failed RED first on missing third artifact.
+- `cmake --build build --target my_world_live_io_send_adapter_tests my_world_live_io_bus_tests my_world_live_io_proof_runner_tests my_world_startup_proof_tests my-world`
+- `./build/my_world_live_io_send_adapter_tests`
+- `./build/my_world_live_io_bus_tests`
+- `./build/my_world_live_io_proof_runner_tests`
+- `./build/my_world_startup_proof_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `live io send adapter ok`
+- `live io bus ok`
+- `live io proof runner ok`
+- `debug/p-live1-live-io-proof/live_io_send_report.json` has `ok: true`, `status: "dry_run"`, MIDI CC value `64`, OSC endpoint `127.0.0.1:9000`, `sent: false`, and skipped `shader.uniform: uniform.loudness`.
+- `65/65 tests passed`
+
+Next selectable lane:
+- None selected.
+- Real MIDI device send, OSC UDP send/receive, teach mode, realtime callback wiring, and live UI mapping remain parked.
+- Full render/export window/process states remain parked.
+- Variation child enable UI and symbol-browser preset creation remain parked.
+```
+
+Previous closure:
 
 ```text
 None after P-LIVE1 live IO bus foundation closure as of 2026-05-25 11:22 Asia/Taipei.
@@ -1611,7 +1659,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE1 live IO bus foundation closure. The next lane must be selected explicitly. Do not add analyzer DSP, real MIDI/OSC device IO, teach mode, UDP send/receive, live callback-buffer runtime, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE1.2 live IO send boundary closure. The next lane must be selected explicitly. Do not add analyzer DSP, real MIDI/OSC device IO, teach mode, UDP send/receive, live callback-buffer runtime, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
@@ -1623,4 +1671,4 @@ After the next lane finishes:
    - move the active lane from `in progress` to `closed` or `blocked`;
    - record proof commands;
    - set the next active lane explicitly.
-4. Do not start MIDI/shader mapping, live callback-buffer runtime, TiXL, browser polish, or another analyzer family until a new active lane row is updated.
+4. Do not start real MIDI/OSC send, shader/live UI mapping, live callback-buffer runtime, TiXL, browser polish, or another analyzer family until a new active lane row is updated.
