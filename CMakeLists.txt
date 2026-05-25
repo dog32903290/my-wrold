@@ -1891,6 +1891,7 @@ if(MY_WORLD_HAVE_JUCE)
 
     target_link_libraries(my_world_active_work_service_tests
         PRIVATE
+            my_world_work_project_resolver
             my_world_storage_command
             juce::juce_core
     )

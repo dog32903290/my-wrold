@@ -7,6 +7,15 @@
 
 namespace myworld
 {
+struct ActiveWorkPreparationResult
+{
+    bool ok = false;
+    std::string status;
+    std::string workManifestPath;
+    std::string error;
+};
+
+ActiveWorkPreparationResult prepareActiveWorkProjectForOpen();
 CommandResult saveActiveWorkProject (GraphSession& session);
 PublishModuleResult publishSelectedModuleFromActiveWork (GraphSession& session, const std::string& sourceNodeId);
 }

@@ -649,6 +649,8 @@ void MainComponent::setShaderStatus (juce::String message)
 
 void MainComponent::openWorkbenchSession()
 {
+    const auto preparation = prepareActiveWorkProjectForOpen();
+
     WorkbenchSessionOpenStatusRequest request;
     request.activeWorkManifestPath = activeWorkManifestFile().getFullPathName().toStdString();
     request.candidateRoots = proofCandidateRoots();
@@ -658,7 +660,13 @@ void MainComponent::openWorkbenchSession()
 
     (void) workbenchController.openCurrentSession (request);
 
-    statusLabel.setText (juce::String (workbenchController.statusText()),
+    auto statusText = juce::String (workbenchController.statusText());
+    if (! preparation.ok)
+        statusText = "active work prepare failed: " + juce::String (preparation.error)
+                     + "; "
+                     + statusText;
+
+    statusLabel.setText (statusText,
                          juce::dontSendNotification);
 }
 

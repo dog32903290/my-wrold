@@ -1,5 +1,6 @@
 #include "ActiveWorkService.h"
 
+#include "WorkProjectResolver.h"
 #include "StorageContract.h"
 
 #include <algorithm>
@@ -40,6 +41,11 @@ bool containsCommand (const std::vector<std::string>& commands, const std::strin
 void setEnvironment (const char* name, const std::string& value)
 {
     expect (setenv (name, value.c_str(), 1) == 0, std::string ("setenv failed for ") + name);
+}
+
+void clearEnvironment (const char* name)
+{
+    expect (unsetenv (name) == 0, std::string ("unsetenv failed for ") + name);
 }
 }
 
@@ -85,6 +91,53 @@ int main()
     expect (std::filesystem::exists (publish.compoundPatchPath), "active work publish compound patch exists");
     expect (std::filesystem::exists (projectRoot / "debug" / "c5-visible-module-publish"),
             "active work publish uses project debug directory");
+
+    const auto preparedProjectRoot = tempRoot / "prepared-project";
+    std::filesystem::create_directories (preparedProjectRoot);
+    setEnvironment ("MY_WORLD_PROJECT_DIR", preparedProjectRoot.string());
+    clearEnvironment ("MY_WORLD_ACTIVE_WORK_MANIFEST");
+
+    const auto defaultWorkRoot = preparedProjectRoot / "debug" / "c3-active-work";
+    const auto defaultManifestPath = defaultWorkRoot / "myworld.work.json";
+    expect (! std::filesystem::exists (defaultManifestPath), "default active work starts missing");
+
+    const auto prepared = myworld::prepareActiveWorkProjectForOpen();
+    expect (prepared.ok, prepared.error);
+    expect (prepared.status == "default-active-work-prepared", "default active work prepared status");
+    expect (prepared.workManifestPath == defaultManifestPath.string(), "default active work manifest path");
+    expect (std::filesystem::exists (defaultManifestPath), "default active work manifest exists");
+    expect (std::filesystem::exists (defaultWorkRoot / "patches" / "main.patch.json"),
+            "default active work main patch exists");
+    expect (std::filesystem::exists (preparedProjectRoot / "debug" / "module-libraries" / "default.module-library.json"),
+            "default active work module library exists");
+    expect (std::filesystem::exists (preparedProjectRoot / "debug" / "module-libraries" / "modules" / "loudness" / "module.json"),
+            "default active work module manifest exists");
+
+    myworld::WorkProjectResolveRequest preparedRequest;
+    preparedRequest.activeWorkManifestPath = prepared.workManifestPath;
+    preparedRequest.candidateRoots = { std::filesystem::current_path() };
+
+    const auto resolvedPreparedWork = myworld::resolveWorkProjectForWorkbench (preparedRequest);
+    expect (resolvedPreparedWork.ok, resolvedPreparedWork.error);
+    expect (resolvedPreparedWork.lifecycle.workSource == "active-work", "prepared work opens as active source");
+    expect (resolvedPreparedWork.lifecycle.workSourceStatus == "active-work-opened",
+            "prepared work source status");
+
+    const auto preparedAgain = myworld::prepareActiveWorkProjectForOpen();
+    expect (preparedAgain.ok, preparedAgain.error);
+    expect (preparedAgain.status == "default-active-work-ready", "default active work ready status");
+    expect (preparedAgain.workManifestPath == defaultManifestPath.string(), "default active work ready path");
+
+    const auto externalManifestPath = tempRoot / "external-work" / "myworld.work.json";
+    setEnvironment ("MY_WORLD_ACTIVE_WORK_MANIFEST", externalManifestPath.string());
+
+    const auto externalPreparation = myworld::prepareActiveWorkProjectForOpen();
+    expect (externalPreparation.ok, externalPreparation.error);
+    expect (externalPreparation.status == "external-active-work-requested",
+            "external active work is not auto-created");
+    expect (externalPreparation.workManifestPath == externalManifestPath.string(),
+            "external active work manifest path");
+    expect (! std::filesystem::exists (externalManifestPath), "external active work stays caller-owned");
 
     return 0;
 }

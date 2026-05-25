@@ -74,6 +74,22 @@ bool prepareDefaultActiveWorkProject (const juce::File& workManifestFile, std::s
     return true;
 }
 
+bool defaultActiveWorkProjectExists (const juce::File& workManifestFile)
+{
+    const auto patchFile = workManifestFile.getParentDirectory().getChildFile ("patches").getChildFile ("main.patch.json");
+    const auto debugDirectory = workManifestFile.getParentDirectory().getParentDirectory();
+    const auto moduleLibraryFile = debugDirectory.getChildFile ("module-libraries").getChildFile ("default.module-library.json");
+    const auto moduleManifestFile = debugDirectory.getChildFile ("module-libraries")
+                                          .getChildFile ("modules")
+                                          .getChildFile ("loudness")
+                                          .getChildFile ("module.json");
+
+    return workManifestFile.existsAsFile()
+           && patchFile.existsAsFile()
+           && moduleLibraryFile.existsAsFile()
+           && moduleManifestFile.existsAsFile();
+}
+
 std::string safeIdentifier (const std::string& text)
 {
     std::string result;
@@ -90,6 +106,35 @@ std::string safeIdentifier (const std::string& text)
 
     return result.empty() ? "module" : result;
 }
+}
+
+ActiveWorkPreparationResult prepareActiveWorkProjectForOpen()
+{
+    ActiveWorkPreparationResult result;
+    const auto manifestFile = activeWorkManifestFile();
+    result.workManifestPath = manifestFile.getFullPathName().toStdString();
+
+    if (manifestFile != defaultActiveWorkManifestFile())
+    {
+        result.ok = true;
+        result.status = "external-active-work-requested";
+        return result;
+    }
+
+    const auto wasAlreadyPrepared = defaultActiveWorkProjectExists (manifestFile);
+    std::string error;
+
+    if (! prepareDefaultActiveWorkProject (manifestFile, error))
+    {
+        result.status = "default-active-work-blocked";
+        result.error = error;
+        return result;
+    }
+
+    result.ok = true;
+    result.status = wasAlreadyPrepared ? "default-active-work-ready"
+                                       : "default-active-work-prepared";
+    return result;
 }
 
 CommandResult saveActiveWorkProject (GraphSession& session)
