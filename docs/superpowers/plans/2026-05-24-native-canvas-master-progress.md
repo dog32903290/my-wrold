@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 23:46 Asia/Taipei.
+Date: 2026-05-25 23:53 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/work4-app-status-wording
+codex/work5-work-segment-closure
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-WORK4 app status wording (current local lane)
+WORK5 work segment closure (current local lane)
+ae04c7b Add WORK4 app status wording
 f8a36f0 Add WORK3 work diagnostics report
 8b334ac Add WORK2 active work resolver
 52fb50a Add WORK1 active work lifecycle status
@@ -145,17 +146,14 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 23:46 Asia/Taipei, APP1-APP7 and WORK1-WORK3 are closed locally and not pushed. WORK4 app status wording is closed locally on `codex/work4-app-status-wording`; do not push unless explicitly requested.
+As of 2026-05-25 23:53 Asia/Taipei, APP1-APP7 and WORK1-WORK4 are closed locally and not pushed. WORK5 work segment closure is closed locally on `codex/work5-work-segment-closure`; do not push unless explicitly requested.
 
 ```text
-WORK4 owned files:
+WORK5 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-work4-app-status-wording.md
-- source/app/WorkbenchSessionOpenStatus.cpp
-- tests/WorkbenchSessionOpenStatusTests.cpp
-- tests/WorkbenchAppControllerTests.cpp
+- docs/superpowers/specs/2026-05-25-work5-work-segment-closure.md
 ```
-Do not add active-work preparation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in WORK4.
+Do not add active-work preparation, workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in WORK5.
 
 Current C4 note:
 
@@ -393,6 +391,7 @@ Latest accepted targeted result:
 | WORK2 active work resolver | closed locally | `docs/superpowers/specs/2026-05-25-work2-active-work-resolver.md`; `WorkProjectResolver` owns active-work file resolution, fixture fallback, PatchDocument load, lifecycle, and error output before `WorkbenchSessionOpenStatus` combines the document with G1 mappings; stable app proof passed; `ctest` 87/87 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
 | WORK3 work diagnostics report | closed locally | `docs/superpowers/specs/2026-05-25-work3-work-diagnostics-report.md`; `workDiagnostics` records non-blocking work source diagnostics from resolver through `WorkbenchSessionSnapshot` into stable app proof JSON while `diagnostics` remains the blocking vector; stable app proof passed; `ctest` 87/87 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
 | WORK4 app status wording | closed locally | `docs/superpowers/specs/2026-05-25-work4-app-status-wording.md`; `makeWorkbenchSessionStatusText` now includes `source <workSourceStatus>` for ready and blocked status text, and `WorkbenchAppController::statusText()` reads the same source-aware wording; stable app proof passed; `ctest` 87/87 passed | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
+| WORK5 work segment closure | closed locally | `docs/superpowers/specs/2026-05-25-work5-work-segment-closure.md`; closes WORK1-WORK4 as the app work-source reporting layer: lifecycle status, active-work resolver, non-blocking work diagnostics, and source-aware app/controller status wording | Future work should leave the WORK prefix and select a fresh lane name by feature surface, such as STATUS, PROOF, UI, GRAPH, RUNTIME, or ACTIVE |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -402,9 +401,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after WORK4 app status wording closure as of 2026-05-25 23:46 Asia/Taipei. Not pushed.
+None after WORK5 work segment closure as of 2026-05-25 23:53 Asia/Taipei. Not pushed.
 
 Latest closure:
+WORK5 work segment closure closed locally.
+Evidence:
+- docs/superpowers/specs/2026-05-25-work5-work-segment-closure.md
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+
+Closed line:
+WorkProjectLifecycle
+-> WorkProjectResolver
+-> WorkbenchSessionSnapshot workDiagnostics
+-> makeWorkbenchSessionStatusText source wording
+-> stable app workbench proof + MainComponent status label
+
+Latest accepted result:
+- git show --quiet --oneline 7a56cc4 confirmed the APP1 local commit exists.
+- git branch --contains 7a56cc4 confirmed the current WORK5 lineage contains APP1.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed.
+- debug/app-workbench-session-proof/workbench_open_status_report.json read back with ok: true, workSourceStatus: fixture-fallback-active-missing, populated workDiagnostics, and diagnostics: [].
+- ctest --test-dir build --output-on-failure passed 87/87.
+- git diff --check passed.
+
+Previous closure:
+
 WORK4 app status wording closed locally.
 Evidence:
 - docs/superpowers/specs/2026-05-25-work4-app-status-wording.md
@@ -2817,17 +2838,15 @@ raw callback-buffer runtime
 | `2026-05-25-work2-active-work-resolver.md` | WORK2 active work resolver closure evidence | no, unless auditing WORK2 evidence |
 | `2026-05-25-work3-work-diagnostics-report.md` | WORK3 work diagnostics report closure evidence | no, unless auditing WORK3 evidence |
 | `2026-05-25-work4-app-status-wording.md` | WORK4 app status wording closure evidence | no, unless auditing WORK4 evidence |
+| `2026-05-25-work5-work-segment-closure.md` | WORK5 closure marker for WORK1-WORK4 app work-source reporting segment | no, unless auditing WORK segment closure |
 
 ## Session Safety
 
-WORK4 owned files:
+WORK5 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-25-work4-app-status-wording.md
-source/app/WorkbenchSessionOpenStatus.cpp
-tests/WorkbenchSessionOpenStatusTests.cpp
-tests/WorkbenchAppControllerTests.cpp
+docs/superpowers/specs/2026-05-25-work5-work-segment-closure.md
 ```
 
 Avoid unrelated files and parked lanes:
@@ -2845,7 +2864,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after WORK4 app status wording closure. APP1-APP7 and WORK1-WORK4 are local-only commits; do not push unless explicitly requested. Treat the APP workbench session spine as closed; the next likely lane is WORK5 work segment closure only if selected. Do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after WORK5 work segment closure. APP1-APP7 and WORK1-WORK5 are local-only commits; do not push unless explicitly requested. Treat the APP workbench session spine and WORK app work-source reporting segment as closed; choose a fresh lane name by the next selected feature surface, such as STATUS, PROOF, UI, GRAPH, RUNTIME, or ACTIVE. Do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
