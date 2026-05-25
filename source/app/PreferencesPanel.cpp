@@ -25,6 +25,7 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     configureLabel (audioLabel, "Audio");
     configureLabel (midiLabel, "MIDI");
     configureLabel (gainLabel, "analysis gain");
+    configureLabel (midiInputLabel, "input");
     configureLabel (midiOutputLabel, "output");
     configureLabel (midiChannelLabel, "channel");
     configureLabel (loudnessCcLabel, "loudness CC");
@@ -38,6 +39,7 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     addAndMakeVisible (audioLabel);
     addAndMakeVisible (midiLabel);
     addAndMakeVisible (gainLabel);
+    addAndMakeVisible (midiInputLabel);
     addAndMakeVisible (midiOutputLabel);
     addAndMakeVisible (midiChannelLabel);
     addAndMakeVisible (loudnessCcLabel);
@@ -53,6 +55,9 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     configureSlider (analysisGainSlider, 0.0, 8.0, 0.01, 1.0);
     analysisGainSlider.onValueChange = [this] { emitAnalysisGain(); };
     addAndMakeVisible (analysisGainSlider);
+
+    midiInputBox.onChange = [this] { emitMidiPreferences(); };
+    addAndMakeVisible (midiInputBox);
 
     midiOutputBox.onChange = [this] { emitMidiPreferences(); };
     addAndMakeVisible (midiOutputBox);
@@ -84,7 +89,11 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     addAndMakeVisible (mapModeButton);
 
     refreshMidiButton.setButtonText ("Refresh MIDI");
-    refreshMidiButton.onClick = [this] { refreshMidiOutputs(); };
+    refreshMidiButton.onClick = [this]
+    {
+        refreshMidiInputs();
+        refreshMidiOutputs();
+    };
     addAndMakeVisible (refreshMidiButton);
 
     learnLoudnessCcButton.setButtonText ("Learn Loudness");
@@ -111,6 +120,7 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     };
     addAndMakeVisible (cancelMidiTeachButton);
 
+    refreshMidiInputs();
     refreshMidiOutputs();
 }
 
@@ -128,7 +138,20 @@ MidiPreferences PreferencesPanel::getMidiPreferences() const
     preferences.loudnessCc = juce::roundToInt (loudnessCcSlider.getValue());
     preferences.mapCc = juce::roundToInt (mapCcSlider.getValue());
 
-    const auto selectedId = midiOutputBox.getSelectedId();
+    auto selectedId = midiInputBox.getSelectedId();
+
+    if (selectedId > 1)
+    {
+        const auto index = selectedId - 2;
+
+        if (index >= 0 && index < static_cast<int> (midiInputs.size()))
+        {
+            preferences.inputIdentifier = midiInputs[static_cast<size_t> (index)].identifier.toStdString();
+            preferences.inputName = midiInputs[static_cast<size_t> (index)].name.toStdString();
+        }
+    }
+
+    selectedId = midiOutputBox.getSelectedId();
 
     if (selectedId > 1)
     {
@@ -156,6 +179,41 @@ LiveIOPreferences PreferencesPanel::getLiveIOPreferences() const
     PerformancePreferences allPreferences;
     allPreferences.liveIO = preferences;
     return sanitizePerformancePreferences (allPreferences).liveIO;
+}
+
+void PreferencesPanel::applyPerformancePreferences (const PerformancePreferences& rawPreferences)
+{
+    const auto preferences = sanitizePerformancePreferences (rawPreferences);
+
+    analysisGainSlider.setValue (preferences.audio.analysisGain, juce::dontSendNotification);
+    midiStreamButton.setToggleState (preferences.midi.streamEnabled, juce::dontSendNotification);
+    mapModeButton.setToggleState (preferences.midi.mapModeEnabled, juce::dontSendNotification);
+    midiChannelSlider.setValue (preferences.midi.channel, juce::dontSendNotification);
+    loudnessCcSlider.setValue (preferences.midi.loudnessCc, juce::dontSendNotification);
+    mapCcSlider.setValue (preferences.midi.mapCc, juce::dontSendNotification);
+    liveIOSendModeBox.setSelectedId (
+        preferences.liveIO.sendMode == LiveIOSendModePreference::controlledSend ? 2 : 1,
+        juce::dontSendNotification);
+    midiInputBox.setSelectedId (1, juce::dontSendNotification);
+    midiOutputBox.setSelectedId (1, juce::dontSendNotification);
+
+    for (int index = 0; index < static_cast<int> (midiInputs.size()); ++index)
+    {
+        if (midiInputs[static_cast<size_t> (index)].identifier.toStdString() == preferences.midi.inputIdentifier)
+        {
+            midiInputBox.setSelectedId (index + 2, juce::dontSendNotification);
+            break;
+        }
+    }
+
+    for (int index = 0; index < static_cast<int> (midiOutputs.size()); ++index)
+    {
+        if (midiOutputs[static_cast<size_t> (index)].identifier.toStdString() == preferences.midi.outputIdentifier)
+        {
+            midiOutputBox.setSelectedId (index + 2, juce::dontSendNotification);
+            break;
+        }
+    }
 }
 
 void PreferencesPanel::applyLearnedMidiCc (LiveIOMidiTeachTarget target, int channel, int cc)
@@ -211,6 +269,11 @@ void PreferencesPanel::resized()
 
     area.removeFromTop (4);
     row = area.removeFromTop (24);
+    midiInputLabel.setBounds (row.removeFromLeft (74));
+    midiInputBox.setBounds (row);
+
+    area.removeFromTop (4);
+    row = area.removeFromTop (24);
     midiStreamButton.setBounds (row.removeFromLeft (128));
     mapModeButton.setBounds (row.removeFromLeft (116));
 
@@ -243,6 +306,34 @@ void PreferencesPanel::resized()
     cancelMidiTeachButton.setBounds (row.removeFromLeft (72));
     row.removeFromLeft (8);
     midiTeachStatusLabel.setBounds (row);
+}
+
+void PreferencesPanel::refreshMidiInputs()
+{
+    const auto previousIdentifier = getMidiPreferences().inputIdentifier;
+
+    midiInputs.clear();
+    const auto inputs = juce::MidiInput::getAvailableDevices();
+
+    for (const auto& input : inputs)
+        midiInputs.push_back (input);
+
+    midiInputBox.clear (juce::dontSendNotification);
+    midiInputBox.addItem ("All Inputs", 1);
+
+    int selectedId = 1;
+
+    for (int index = 0; index < static_cast<int> (midiInputs.size()); ++index)
+    {
+        const auto id = index + 2;
+        midiInputBox.addItem (midiInputs[static_cast<size_t> (index)].name, id);
+
+        if (midiInputs[static_cast<size_t> (index)].identifier.toStdString() == previousIdentifier)
+            selectedId = id;
+    }
+
+    midiInputBox.setSelectedId (selectedId, juce::dontSendNotification);
+    emitMidiPreferences();
 }
 
 void PreferencesPanel::refreshMidiOutputs()

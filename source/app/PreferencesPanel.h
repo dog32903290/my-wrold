@@ -20,6 +20,7 @@ public:
     float getAnalysisGain() const;
     MidiPreferences getMidiPreferences() const;
     LiveIOPreferences getLiveIOPreferences() const;
+    void applyPerformancePreferences (const PerformancePreferences& preferences);
     void applyLearnedMidiCc (LiveIOMidiTeachTarget target, int channel, int cc);
     void setMidiTeachStatus (juce::String text);
 
@@ -34,6 +35,7 @@ public:
     void resized() override;
 
 private:
+    void refreshMidiInputs();
     void refreshMidiOutputs();
     void emitAnalysisGain();
     void emitMidiPreferences();
@@ -45,6 +47,7 @@ private:
     juce::Label audioLabel;
     juce::Label midiLabel;
     juce::Label gainLabel;
+    juce::Label midiInputLabel;
     juce::Label midiOutputLabel;
     juce::Label midiChannelLabel;
     juce::Label loudnessCcLabel;
@@ -54,6 +57,7 @@ private:
     juce::Label midiTeachLabel;
     juce::Label midiTeachStatusLabel;
     juce::Slider analysisGainSlider;
+    juce::ComboBox midiInputBox;
     juce::ComboBox midiOutputBox;
     juce::ComboBox liveIOSendModeBox;
     juce::Slider midiChannelSlider;
@@ -65,6 +69,7 @@ private:
     juce::TextButton learnLoudnessCcButton;
     juce::TextButton learnMapCcButton;
     juce::TextButton cancelMidiTeachButton;
+    std::vector<juce::MidiDeviceInfo> midiInputs;
     std::vector<juce::MidiDeviceInfo> midiOutputs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PreferencesPanel)

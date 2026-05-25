@@ -13,6 +13,7 @@ juce::File proofDumpDirectory (const juce::String& directoryName);
 juce::File c5VisibleModulePublishDirectory();
 juce::File defaultActiveWorkManifestFile();
 juce::File activeWorkManifestFile();
+juce::File performancePreferencesFile();
 std::vector<std::string> repoCandidatePaths (const juce::String& relativePath);
 std::vector<std::filesystem::path> proofCandidateRoots();
 }

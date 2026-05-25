@@ -20,6 +20,8 @@
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
 
+#include <algorithm>
+#include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>
@@ -109,6 +111,7 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
         performancePreferences.audio.analysisGain = gain;
         performancePreferences = sanitizePerformancePreferences (performancePreferences);
         audioInputAnalyzer.setAnalysisGain (performancePreferences.audio.analysisGain);
+        saveStoredPerformancePreferences();
     };
     preferencesPanel.onMidiPreferencesChanged = [this] (MidiPreferences preferences)
     {
@@ -131,6 +134,8 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
         cancelMidiTeach();
     };
     addChildComponent (preferencesPanel);
+
+    loadStoredPerformancePreferences();
 
     dumpProofButton.setButtonText ("Dump Proof");
     dumpProofButton.onClick = [this] { dumpProof(); };
@@ -174,9 +179,9 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     addAndMakeVisible (preview);
 
     startAudioInput();
-    audioInputAnalyzer.setAnalysisGain (preferencesPanel.getAnalysisGain());
-    applyMidiPreferences (preferencesPanel.getMidiPreferences());
-    applyLiveIOPreferences (preferencesPanel.getLiveIOPreferences());
+    audioInputAnalyzer.setAnalysisGain (performancePreferences.audio.analysisGain);
+    applyMidiPreferences (performancePreferences.midi);
+    applyLiveIOPreferences (performancePreferences.liveIO);
     startTimerHz (30);
 
     scheduleStartupProofs (startupProofOptions);
@@ -589,6 +594,24 @@ void MainComponent::setShaderStatus (juce::String message)
         quitAfterDelay();
 }
 
+void MainComponent::loadStoredPerformancePreferences()
+{
+    const auto result = loadPerformancePreferences (
+        std::filesystem::path (performancePreferencesFile().getFullPathName().toStdString()));
+
+    performancePreferences = result.ok
+                                 ? sanitizePerformancePreferences (result.preferences)
+                                 : makeDefaultPerformancePreferences();
+    preferencesPanel.applyPerformancePreferences (performancePreferences);
+}
+
+void MainComponent::saveStoredPerformancePreferences()
+{
+    (void) savePerformancePreferences (
+        std::filesystem::path (performancePreferencesFile().getFullPathName().toStdString()),
+        performancePreferences);
+}
+
 void MainComponent::startAudioInput()
 {
     const auto error = audioDeviceManager.initialiseWithDefaultDevices (1, 0);
@@ -640,7 +663,10 @@ void MainComponent::applyMidiPreferences (MidiPreferences preferences)
     const auto identifier = juce::String (performancePreferences.midi.outputIdentifier);
 
     if (identifier == openedMidiOutputIdentifier)
+    {
+        saveStoredPerformancePreferences();
         return;
+    }
 
     midiOutput.reset();
     openedMidiOutputIdentifier = identifier;
@@ -648,6 +674,7 @@ void MainComponent::applyMidiPreferences (MidiPreferences preferences)
     if (identifier.isEmpty())
     {
         midiStatus = "midi off";
+        saveStoredPerformancePreferences();
         return;
     }
 
@@ -656,10 +683,12 @@ void MainComponent::applyMidiPreferences (MidiPreferences preferences)
     if (midiOutput == nullptr)
     {
         midiStatus = "midi open failed";
+        saveStoredPerformancePreferences();
         return;
     }
 
     midiStatus = "midi " + juce::String (performancePreferences.midi.outputName);
+    saveStoredPerformancePreferences();
 }
 
 void MainComponent::applyLiveIOPreferences (LiveIOPreferences preferences)
@@ -667,6 +696,7 @@ void MainComponent::applyLiveIOPreferences (LiveIOPreferences preferences)
     performancePreferences.liveIO = preferences;
     performancePreferences = sanitizePerformancePreferences (performancePreferences);
     liveIOController.applyLiveIOPreferences (performancePreferences.liveIO);
+    saveStoredPerformancePreferences();
 }
 
 void MainComponent::armMidiTeach (LiveIOMidiTeachTarget target)
@@ -692,17 +722,33 @@ void MainComponent::cancelMidiTeach()
 
 int MainComponent::startMidiTeachListening()
 {
+    midiInputsEnabledForTeach.clear();
+    const auto inputs = juce::MidiInput::getAvailableDevices();
+    std::vector<std::string> availableIdentifiers;
+
+    for (const auto& input : inputs)
+        availableIdentifiers.push_back (input.identifier.toStdString());
+
+    const auto selectedIdentifiers = midiTeachInputIdentifiers (
+        performancePreferences,
+        availableIdentifiers);
+
+    if (selectedIdentifiers.empty())
+        return 0;
+
     if (! midiTeachCallbackRegistered)
     {
         audioDeviceManager.addMidiInputDeviceCallback ({}, this);
         midiTeachCallbackRegistered = true;
     }
 
-    midiInputsEnabledForTeach.clear();
-    const auto inputs = juce::MidiInput::getAvailableDevices();
-
     for (const auto& input : inputs)
     {
+        if (std::find (selectedIdentifiers.begin(),
+                       selectedIdentifiers.end(),
+                       input.identifier.toStdString()) == selectedIdentifiers.end())
+            continue;
+
         if (! audioDeviceManager.isMidiInputDeviceEnabled (input.identifier))
         {
             audioDeviceManager.setMidiInputDeviceEnabled (input.identifier, true);
@@ -710,7 +756,7 @@ int MainComponent::startMidiTeachListening()
         }
     }
 
-    return inputs.size();
+    return static_cast<int> (selectedIdentifiers.size());
 }
 
 void MainComponent::stopMidiTeachListening()

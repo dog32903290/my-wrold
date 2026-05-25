@@ -72,6 +72,16 @@ juce::File activeWorkManifestFile()
     return defaultActiveWorkManifestFile();
 }
 
+juce::File performancePreferencesFile()
+{
+    const auto environmentPath = juce::SystemStats::getEnvironmentVariable ("MY_WORLD_PERFORMANCE_PREFERENCES", {});
+
+    if (environmentPath.isNotEmpty())
+        return juce::File (environmentPath);
+
+    return projectDirectory().getChildFile ("debug").getChildFile ("performance-preferences.properties");
+}
+
 std::vector<std::string> repoCandidatePaths (const juce::String& relativePath)
 {
     return candidatePaths (relativePath);

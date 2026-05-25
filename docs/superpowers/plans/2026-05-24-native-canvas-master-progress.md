@@ -21,6 +21,22 @@ Then follow links from this file only when a lane needs detail.
 
 Do not use old implementation plans as current status. Many old plans contain "parked" notes that were true at that slice but are no longer current after C2/C3.
 
+## Lane Selection Gate
+
+Before any new implementation lane starts, check this gate. If one item fails, do not start the lane; update the plan or close the previous lane first.
+
+```text
+1. `git status -sb` has been checked for active or uncommitted work.
+2. This master plan marks exactly one active lane, or explicitly marks `None`.
+3. Any dirty files are either owned by the selected lane or listed in Session Safety.
+4. The selected lane has a one-line proof before code starts.
+5. The verification commands are named before code starts.
+6. The previous lane has closure evidence or an explicit parked reason.
+7. Tempting adjacent work is written into parked scope instead of entering the lane silently.
+```
+
+Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-worker work from being opened just because a gap is visible.
+
 ## Source Hierarchy
 
 | Rank | Document type | Role |
@@ -86,6 +102,27 @@ adaeb53 Extract C6 repair proof runner
 5cc6399 Close R runtime render backbone
 ebeab9f Add R2 headless render runtime
 ```
+
+## Session Safety
+
+As of 2026-05-25 14:33 Asia/Taipei, `git status -sb` no longer reports uncommitted P-LIVE-H1 source files. The earlier P-LIVE-H1 safety note has been resolved; current dirty files are owned by the closed P-LIVE11 MIDI input selector/preference lane plus the closed P-LIVE12 preference disk persistence lane:
+
+```text
+M docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+ M source/app/AppPaths.cpp
+ M source/app/AppPaths.h
+ M source/app/MainComponent.cpp
+ M source/app/MainComponent.h
+ M source/app/PreferencesPanel.cpp
+ M source/app/PreferencesPanel.h
+ M source/preferences/PerformancePreferences.cpp
+ M source/preferences/PerformancePreferences.h
+ M tests/PerformancePreferencesTests.cpp
+?? docs/superpowers/specs/2026-05-25-p-live11-midi-input-selector-preference.md
+?? docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md
+```
+
+P-LIVE-H1, P-LIVE11, and P-LIVE12 remain closed. New implementation work may start only after these owned dirty files are committed, stashed, or explicitly handed off.
 
 Current C4 note:
 
@@ -284,7 +321,9 @@ Latest accepted targeted result:
 | P-LIVE9 send mode preferences | closed | `docs/superpowers/specs/2026-05-25-p-live9-send-mode-preferences.md`; `PerformancePreferences.liveIO` defaults to dry-run, sanitizes invalid send modes back to dry-run, `PreferencesPanel` exposes dry-run/controlled-send, and `MainComponent` maps the sanitized preference into `LiveIOControlTimerConfig.sendMode`; `ctest` 71/71 | MIDI teach is closed in P-LIVE10; OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE10 MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live10-midi-teach.md`; `LiveIOMidiTeach` arms loudness/map CC targets, learns the next incoming MIDI CC, disarms, and `MainComponent` temporarily routes MIDI input callbacks to PreferencesPanel learned channel/CC updates without UI work in the callback; `ctest` 72/72 | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE-H1 live IO app controller cleanup | closed | `docs/superpowers/specs/2026-05-25-p-live-h1-app-controller-cleanup.md`; `LiveIOAppController` owns app-timer live IO state and MIDI teach state, while `MainComponent` keeps JUCE UI/device registration; focused controller test, app build, and `ctest` 73/73 passed | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE-H1 closure |
+| P-LIVE11 MIDI input selector/preference | closed | `docs/superpowers/specs/2026-05-25-p-live11-midi-input-selector-preference.md`; `PerformancePreferences` stores selected MIDI input, `PreferencesPanel` exposes input selection, and `MainComponent` narrows MIDI teach listening to the selected input while preserving all-input fallback; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, preference disk persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
+| P-LIVE12 preference disk persistence | closed | `docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md`; `savePerformancePreferences()` / `loadPerformancePreferences()` roundtrip the full app preference snapshot, `MainComponent` loads it on startup and saves UI preference changes; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE12 closure |
 
 ## Active Lane Protocol
 
@@ -293,45 +332,45 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE-H1 live IO app controller cleanup closure as of 2026-05-25 14:14 Asia/Taipei.
+None after P-LIVE12 preference disk persistence closure as of 2026-05-25 14:33 Asia/Taipei.
 
-P-LIVE-H1 live IO app controller cleanup closed.
+P-LIVE12 preference disk persistence closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live-h1-app-controller-cleanup.md
-- source/app/LiveIOAppController.h
-- source/app/LiveIOAppController.cpp
-- tests/LiveIOAppControllerTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md
+- source/preferences/PerformancePreferences.h
+- source/preferences/PerformancePreferences.cpp
+- source/app/AppPaths.h
+- source/app/AppPaths.cpp
+- source/app/PreferencesPanel.h
+- source/app/PreferencesPanel.cpp
 - source/app/MainComponent.h
 - source/app/MainComponent.cpp
-- CMakeLists.txt
+- tests/PerformancePreferencesTests.cpp
 
 Closed line:
-MainComponent::tickLiveIOControl()
--> LiveIOAppController::tick()
--> LiveIOControlTimer
--> LiveIOStatusIndicatorState
--> MainComponent liveIOStatusLabel
-
-MainComponent MIDI teach buttons / callback
--> LiveIOAppController teach API
--> PreferencesPanel apply learned channel/CC
+PerformancePreferences
+-> app preference file roundtrip
+-> MainComponent loads preferences on startup and saves UI preference changes
+-> MIDI teach learned CC/input/output/send mode survive app restart
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_live_io_app_controller_tests` failed RED first on missing `source/app/LiveIOAppController.cpp`.
-- `cmake -S . -B build && cmake --build build --target my_world_live_io_app_controller_tests && ./build/my_world_live_io_app_controller_tests`
-- `cmake --build build --target my_world_live_io_app_controller_tests my-world && ./build/my_world_live_io_app_controller_tests`
+- `cmake --build build --target my_world_performance_preferences_tests` failed RED first on missing `savePerformancePreferences()` and `loadPerformancePreferences()`.
+- `cmake --build build --target my_world_performance_preferences_tests && ./build/my_world_performance_preferences_tests`
+- `cmake --build build --target my_world_performance_preferences_tests my-world`
+- `./build/my_world_performance_preferences_tests`
+- `ctest --test-dir build --output-on-failure -R "performance_preferences|live_io_app_controller"`
 - `ctest --test-dir build --output-on-failure`
 - `git diff --check`
 
 Latest accepted result:
-- `live io app controller ok`
+- `performance preferences ok`
 - app target `my-world` builds.
 - `73/73 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
+- Arbitrary binding teach, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.

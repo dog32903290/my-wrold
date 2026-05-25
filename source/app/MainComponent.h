@@ -61,6 +61,8 @@ private:
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
+    void loadStoredPerformancePreferences();
+    void saveStoredPerformancePreferences();
     void startAudioInput();
     void updateAudioMeters();
     void applyMidiPreferences (MidiPreferences preferences);
