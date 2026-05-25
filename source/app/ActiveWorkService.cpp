@@ -4,6 +4,9 @@
 #include "StorageContract.h"
 
 #include <cctype>
+#include <filesystem>
+#include <fstream>
+#include <system_error>
 
 namespace myworld
 {
@@ -107,6 +110,52 @@ void refreshPreparationDiagnostics (ActiveWorkPreparationResult& result)
         result.diagnostics.push_back ("activeWorkPreparationError=" + result.error);
 }
 
+bool regularFileExists (const std::filesystem::path& path)
+{
+    std::error_code error;
+    return std::filesystem::is_regular_file (path, error);
+}
+
+bool writeTextFile (const std::filesystem::path& path, const std::string& text, std::string& error)
+{
+    std::error_code filesystemError;
+    std::filesystem::create_directories (path.parent_path(), filesystemError);
+    if (filesystemError)
+    {
+        error = "could not create directory: " + filesystemError.message();
+        return false;
+    }
+
+    std::ofstream output (path, std::ios::trunc);
+    if (! output)
+    {
+        error = "could not open file for writing: " + path.string();
+        return false;
+    }
+
+    output << text;
+    if (! output)
+    {
+        error = "could not write file: " + path.string();
+        return false;
+    }
+
+    return true;
+}
+
+void refreshCreateProjectDiagnostics (CreateActiveWorkProjectResult& result)
+{
+    result.diagnostics = {
+        "createActiveWorkProjectOk=" + std::string (result.ok ? "true" : "false"),
+        "createActiveWorkProjectStatus=" + noneIfEmpty (result.status),
+        "createActiveWorkProjectManifestPath=" + noneIfEmpty (result.workManifestPath),
+        "createActiveWorkProjectPatchPath=" + noneIfEmpty (result.patchPath)
+    };
+
+    if (! result.error.empty())
+        result.diagnostics.push_back ("createActiveWorkProjectError=" + result.error);
+}
+
 std::string safeIdentifier (const std::string& text)
 {
     std::string result;
@@ -154,6 +203,80 @@ ActiveWorkPreparationResult prepareActiveWorkProjectForOpen()
     result.status = wasAlreadyPrepared ? "default-active-work-ready"
                                        : "default-active-work-prepared";
     refreshPreparationDiagnostics (result);
+    return result;
+}
+
+CreateActiveWorkProjectResult createActiveWorkProject (const CreateActiveWorkProjectRequest& request)
+{
+    CreateActiveWorkProjectResult result;
+    const auto manifestPath = request.projectDirectory / "myworld.work.json";
+    const auto patchPath = request.projectDirectory / "patches" / "main.patch.json";
+    result.workManifestPath = manifestPath.string();
+    result.patchPath = patchPath.string();
+
+    if (request.projectDirectory.empty()
+        || request.workId.empty()
+        || request.workTitle.empty()
+        || request.patchId.empty()
+        || request.patchTitle.empty())
+    {
+        result.status = "validation-failed";
+        result.error = "project directory, work identity, and patch identity are required";
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    if (! request.overwriteExisting
+        && (regularFileExists (manifestPath) || regularFileExists (patchPath)))
+    {
+        result.status = "already-exists";
+        result.error = "active work project files already exist";
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    const auto work = makeMinimalWorkProject (request.workId, request.workTitle);
+    const auto patch = makePatchDocument (request.patchId, request.patchTitle, makeDefaultShaderOutputGraph());
+
+    std::string error;
+    if (! writeTextFile (manifestPath, toJson (work), error))
+    {
+        result.status = "write-failed";
+        result.error = error;
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    const auto savedPatch = savePatchDocument (patchPath.string(), patch);
+    if (! savedPatch.ok)
+    {
+        result.status = savedPatch.status;
+        result.error = savedPatch.error;
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    const auto loadedWork = loadWorkProjectManifest (manifestPath.string());
+    if (! loadedWork.ok)
+    {
+        result.status = "validation-failed";
+        result.error = loadedWork.error;
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    const auto loadedPatch = loadMainPatchDocumentForWork (manifestPath.string());
+    if (! loadedPatch.ok)
+    {
+        result.status = "validation-failed";
+        result.error = loadedPatch.error;
+        refreshCreateProjectDiagnostics (result);
+        return result;
+    }
+
+    result.ok = true;
+    result.status = "created";
+    refreshCreateProjectDiagnostics (result);
     return result;
 }
 

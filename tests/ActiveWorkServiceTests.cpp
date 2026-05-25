@@ -151,5 +151,51 @@ int main()
             "external active work diagnostics status");
     expect (! std::filesystem::exists (externalManifestPath), "external active work stays caller-owned");
 
+    const auto createdProjectRoot = tempRoot / "created-project";
+    myworld::CreateActiveWorkProjectRequest createRequest;
+    createRequest.projectDirectory = createdProjectRoot;
+    createRequest.workId = "work.project1";
+    createRequest.workTitle = "Project One";
+    createRequest.patchId = "patch.project1-main";
+    createRequest.patchTitle = "Project One Main";
+
+    const auto created = myworld::createActiveWorkProject (createRequest);
+    expect (created.ok, created.error);
+    expect (created.status == "created", "created project status");
+    expect (created.workManifestPath == (createdProjectRoot / "myworld.work.json").string(),
+            "created work manifest path");
+    expect (created.patchPath == (createdProjectRoot / "patches" / "main.patch.json").string(),
+            "created main patch path");
+    expect (containsCommand (created.diagnostics, "createActiveWorkProjectStatus=created"),
+            "created project diagnostics status");
+    expect (std::filesystem::exists (created.workManifestPath), "created work manifest exists");
+    expect (std::filesystem::exists (created.patchPath), "created main patch exists");
+
+    const auto createdManifest = myworld::loadWorkProjectManifest (created.workManifestPath);
+    expect (createdManifest.ok, createdManifest.error);
+    expect (createdManifest.manifest.id == "work.project1", "created work id");
+    expect (createdManifest.manifest.title == "Project One", "created work title");
+    expect (createdManifest.manifest.mainPatchPath == "patches/main.patch.json",
+            "created work main patch path");
+
+    const auto createdPatch = myworld::loadMainPatchDocumentForWork (created.workManifestPath);
+    expect (createdPatch.ok, createdPatch.error);
+    expect (createdPatch.document.id == "patch.project1-main", "created patch id");
+    expect (createdPatch.document.title == "Project One Main", "created patch title");
+
+    const auto duplicate = myworld::createActiveWorkProject (createRequest);
+    expect (! duplicate.ok, "duplicate project should not overwrite by default");
+    expect (duplicate.status == "already-exists", "duplicate project status");
+    expect (! duplicate.error.empty(), "duplicate project error");
+
+    createRequest.overwriteExisting = true;
+    createRequest.workTitle = "Project One Overwrite";
+    const auto overwritten = myworld::createActiveWorkProject (createRequest);
+    expect (overwritten.ok, overwritten.error);
+    expect (overwritten.status == "created", "overwrite project status");
+    const auto overwrittenManifest = myworld::loadWorkProjectManifest (overwritten.workManifestPath);
+    expect (overwrittenManifest.ok, overwrittenManifest.error);
+    expect (overwrittenManifest.manifest.title == "Project One Overwrite", "overwrite work title");
+
     return 0;
 }
