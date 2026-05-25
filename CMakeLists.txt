@@ -89,6 +89,7 @@ add_test(NAME startup_proof COMMAND my_world_startup_proof_tests)
 
 add_library(my_world_core
     source/core/GraphContract.cpp
+    source/core/GraphIOMapping.cpp
     source/core/LiveIOBus.cpp
     source/core/LiveIOControlDispatcher.cpp
     source/core/LiveIOControlPump.cpp
@@ -434,6 +435,20 @@ target_link_libraries(my_world_live_io_bus_tests
 )
 
 add_test(NAME live_io_bus COMMAND my_world_live_io_bus_tests)
+
+add_executable(my_world_graph_io_mapping_tests
+    tests/GraphIOMappingTests.cpp
+)
+
+target_link_libraries(my_world_graph_io_mapping_tests
+    PRIVATE
+        my_world_storage
+)
+
+add_test(NAME graph_io_mapping COMMAND my_world_graph_io_mapping_tests)
+set_tests_properties(graph_io_mapping PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 add_executable(my_world_live_io_send_adapter_tests
     tests/LiveIOSendAdapterTests.cpp
@@ -821,6 +836,7 @@ target_link_libraries(my_world_live_io_app_controller_tests
 add_test(NAME live_io_app_controller COMMAND my_world_live_io_app_controller_tests)
 
 add_library(my_world_storage
+    source/storage/GraphIOMappingStorage.cpp
     source/storage/StorageContract.cpp
     source/storage/StorageContractJson.cpp
     source/storage/StorageContractModules.cpp

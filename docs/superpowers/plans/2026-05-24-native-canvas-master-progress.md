@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 16:56 Asia/Taipei.
+Date: 2026-05-25 17:48 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/tooll3-interaction-t0-t7
+codex/g1-graph-io-mapping-foundation
 ```
 
 Local repo relocation note:
@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+3d8653c Add portable JUCE build bootstrap
 08da80b Harden OSC parsing and proof output
 0b0cfac Close audio visual proof segment
 09f53a5 Record app visual reaction proof readback
@@ -130,15 +131,20 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE29 is committed in `2bd8e8a`. Current dirty files, if any, should belong to the closing P-LIVE30 A1 to V1 handoff closure lane.
+As of 2026-05-25 17:48 Asia/Taipei, G1 graph IO mapping foundation is closed in the current working tree. GitHub Actions CMake passed for BUILD1 on run `26393521138`. Current dirty files, if any, should belong only to G1 closure/commit preparation.
 
 ```text
-P-LIVE30 owned files:
+G1 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md
+- docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md
+- fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
+- source/core/GraphIOMapping.*
+- source/storage/GraphIOMappingStorage.*
+- tests/GraphIOMappingTests.cpp
+- CMakeLists.txt
 ```
 
-Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, OpenGL backend wiring, or any audio callback work in P-LIVE30.
+Do not add a full mapping editor, graph UI node surface, dynamic OSC scanning, new MIDI operator kinds, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend wiring, Metal, or analyzer DSP in G1.
 
 Current C4 note:
 
@@ -364,6 +370,7 @@ Latest accepted targeted result:
 | AV5 audio visual segment closure | closed | `docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md`; closes the AV segment from live IO shader uniform evidence through preview loudness input, quiet/loud OpenGL capture, V1 artifact writing, and app dump readback | Headless/offscreen GL harness, user-facing graph IO mapping, full mapping editor, direct realtime callback send, Metal, and visual polish remain parked |
 | Gemini risk triage hardening | closed | `docs/superpowers/specs/2026-05-25-gemini-risk-triage-hardening.md`; OSC proof readback now uses bounded decoder, malformed OSC tests cover missing null/truncated payloads, UDP receive buffers no longer truncate at 1024/256 bytes, OpenGL proof artifact writes run off the render thread, and source/CMake no longer contain user-specific hardcoded paths | Full OSC bundle parsing, JSON report writer replacement, non-loopback send UI/lifecycle, dedicated proof job system, and CI JUCE bootstrap remain parked |
 | BUILD1 portable JUCE bootstrap | closed | `docs/superpowers/specs/2026-05-25-build1-portable-juce-bootstrap.md`; CMake can use explicit/local JUCE or fetch pinned JUCE 8.0.12, GitHub Actions has a macOS CMake workflow, and build docs explain both paths | CI cache tuning, Linux/Windows matrix, package manager integration, and automatic JUCE version bumps remain parked |
+| G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph now loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, and emits graph IO mapping JSON evidence; `ctest` 78/78 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -373,7 +380,32 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after BUILD1 portable JUCE bootstrap closure as of 2026-05-25.
+None after G1 graph IO mapping foundation closure as of 2026-05-25 17:48 Asia/Taipei.
+
+G1 graph IO mapping foundation closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md
+- fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
+- source/core/GraphIOMapping.*
+- source/storage/GraphIOMappingStorage.*
+- tests/GraphIOMappingTests.cpp
+- CMakeLists.txt
+
+Closed line:
+fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
+-> GraphIOMapping validation
+-> LiveIOBus binding generation
+-> graph_io_mapping_report.json
+
+Latest accepted result:
+- cmake -S . -B build passed.
+- cmake --build build --target my_world_graph_io_mapping_tests
+- ./build/my_world_graph_io_mapping_tests passed.
+- cmake --build build --target my_world_live_io_bus_tests
+- ./build/my_world_live_io_bus_tests passed.
+- ctest --test-dir build --output-on-failure passed 78/78.
+- git diff --check passed.
+- cmake --build build --target my-world passed.
 
 BUILD1 portable JUCE bootstrap closed.
 Evidence:
@@ -2408,6 +2440,7 @@ raw callback-buffer runtime
 | `2026-05-24-r-segment-implementation.md` | R implementation/closure history | no, unless auditing R evidence |
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | TiXL-visible parity sub-ledger, not the current active lane | only from this master plan |
+| `2026-05-25-g1-graph-io-mapping-foundation.md` | G1 graph IO mapping foundation closure evidence | no, unless auditing G1 evidence |
 
 ## Session Safety
 
@@ -2480,7 +2513,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after BUILD1 portable JUCE bootstrap. The P-LIVE and AV lanes are closed through app-level visual reaction proof, the external review safety pass is closed, and app builds no longer require a hardcoded local JUCE path. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after G1 graph IO mapping foundation closure. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
