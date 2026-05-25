@@ -261,6 +261,7 @@ void OpenGLShaderPreview::renderOpenGL()
     const auto elapsed = static_cast<float> (nowSeconds - startTimeSeconds);
     renderBackend.resize (juce::jmax (1, width), juce::jmax (1, height), scale);
     renderBackend.renderFrame ({ elapsed, frameIndex, loudness.load (std::memory_order_relaxed) });
+    handlePendingProofDump (juce::jmax (1, width), juce::jmax (1, height), elapsed, frameIndex);
 
     const auto deltaSeconds = static_cast<float> (nowSeconds - lastFrameSeconds);
     lastFrameSeconds = nowSeconds;
@@ -268,7 +269,6 @@ void OpenGLShaderPreview::renderOpenGL()
     imguiOverlay.drawSmokePanel (seedNodeSpecs, loudnessCompound, lastStatus.toStdString());
     imguiOverlay.render();
 
-    handlePendingProofDump (juce::jmax (1, width), juce::jmax (1, height), elapsed, frameIndex);
     ++frameIndex;
 }
 
@@ -366,7 +366,14 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     if (dump == nullptr)
         return;
 
+    const auto activeLoudness = loudness.load (std::memory_order_relaxed);
     const auto frameImage = capturedFrameToImage (renderBackend.captureFrame());
+    renderBackend.renderFrame ({ timeSeconds, currentFrameIndex, 0.0f });
+    const auto quietFrameImage = capturedFrameToImage (renderBackend.captureFrame());
+    renderBackend.renderFrame ({ timeSeconds, currentFrameIndex, 1.0f });
+    const auto loudFrameImage = capturedFrameToImage (renderBackend.captureFrame());
+    renderBackend.renderFrame ({ timeSeconds, currentFrameIndex, activeLoudness });
+
     V1ShaderProofArtifactRequest request;
     request.outputDirectory = dump->outputDirectory.getFullPathName().toStdString();
     request.candidateRoots = proofCandidateRoots();
@@ -378,6 +385,10 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     request.frameIndex = currentFrameIndex;
     request.backendName = renderBackend.backendName();
     request.backendStatus = renderBackend.lastStatus();
+    request.quietFrameImage = quietFrameImage;
+    request.loudFrameImage = loudFrameImage;
+    request.quietLoudness = 0.0f;
+    request.loudLoudness = 1.0f;
     request.loudnessCompound = loudnessCompound;
     request.runtimeOpDiagnostics = runtimeOpDiagnostics;
 
