@@ -26,10 +26,11 @@ int main()
     selected.dumpA1AudioProof = true;
     selected.dumpLiveIOProof = true;
     selected.dumpC2StorageProof = true;
+    selected.dumpAPPWorkbenchSessionProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 4, "selected options should create four tasks");
+    expect (selectedTasks.size() == 5, "selected options should create five tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -38,6 +39,9 @@ int main()
     expect (selectedTasks[2].delayMilliseconds == 500, "live io task should keep 500ms startup delay");
     expect (selectedTasks[3].id == myworld::StartupProofTaskId::c2Storage, "c2 task should keep fourth position");
     expect (selectedTasks[3].delayMilliseconds == 500, "c2 task should keep 500ms startup delay");
+    expect (selectedTasks[4].id == myworld::StartupProofTaskId::appWorkbenchSession,
+            "app workbench task should be stable app task");
+    expect (selectedTasks[4].delayMilliseconds == 500, "app workbench task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -60,9 +64,10 @@ int main()
     all.dumpPVB1AnalyzerEnvironmentProof = true;
     all.dumpAPP1WorkbenchSessionProof = true;
     all.dumpAPP2WorkbenchOpenStatusProof = true;
+    all.dumpAPPWorkbenchSessionProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 20, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 21, "all options should create every startup proof task");
 
     return 0;
 }

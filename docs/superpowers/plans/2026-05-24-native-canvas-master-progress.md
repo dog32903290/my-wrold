@@ -49,7 +49,7 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 19:18 Asia/Taipei.
+Date: 2026-05-25 19:22 Asia/Taipei.
 
 Branch:
 
@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+7e5b6ca Add APP4 active work source truth
 e479cc9 Correct APP3 master plan status
 1c2323e Add APP3 workbench app controller spine
 7b4fb0c Add APP2 workbench open status spine
@@ -385,7 +386,8 @@ Latest accepted targeted result:
 | APP1 workbench session spine | closed | `docs/superpowers/specs/2026-05-25-app1-workbench-session-spine.md`; work fixture + G1 mapping fixture builds a `WorkbenchSession` snapshot with document, graph counts, dirty/save/proof/preview, output/timeline, and mapping validity evidence; `APP1WorkbenchSessionProofRunner` writes `workbench_session_report.json`; app startup proof command writes `debug/app1-workbench-session-proof/workbench_session_report.json`; `ctest` 81/81 passed | Workbench UI panels, canvas gestures, mapping editor, runtime cook loop, save command integration, AI worker visible task surface, shader preview live-binding expansion, Metal, and visual polish remain parked |
 | APP2 workbench open/status spine | closed locally | `docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md`; app opens and holds `currentWorkbenchSession` from active work if present, otherwise C2 fixture + G1 mapping; `MainComponent` reads snapshot status; app proof writes `debug/app2-workbench-open-status-proof/workbench_open_status_report.json` with `ok: true`; local commit `7b4fb0c` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
 | APP3 workbench app controller spine | closed locally | `docs/superpowers/specs/2026-05-25-app3-workbench-app-controller-spine.md`; `WorkbenchAppController` owns current session snapshot, status text, and APP2 proof request creation; `MainComponent` reads controller state instead of owning the snapshot directly; local commit `1c2323e` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
-| APP4 active work source truth | closed locally, uncommitted | `docs/superpowers/specs/2026-05-25-app4-active-work-source-truth.md`; workbench session reports `active-work-opened`, `fixture-fallback-active-missing`, or `active-work-blocked`; APP2 app dump proof writes `workSourceStatus` and `activeWorkManifestPath` | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
+| APP4 active work source truth | closed locally | `docs/superpowers/specs/2026-05-25-app4-active-work-source-truth.md`; workbench session reports `active-work-opened`, `fixture-fallback-active-missing`, or `active-work-blocked`; app dump proof writes `workSourceStatus` and `activeWorkManifestPath`; local commit `7e5b6ca` | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
+| APP5 stable workbench proof alias | closed locally, uncommitted | `docs/superpowers/specs/2026-05-25-app5-stable-workbench-proof-alias.md`; stable `--dump-app-workbench-session-proof-and-exit` writes `debug/app-workbench-session-proof/workbench_open_status_report.json`; legacy APP2 flag remains accepted | Internal legacy APP2 proof runner names, node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -395,7 +397,36 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-APP4 active work source truth closed locally as of 2026-05-25 19:18 Asia/Taipei. Not committed or pushed.
+APP5 stable workbench proof alias closed locally as of 2026-05-25 19:22 Asia/Taipei. Not committed or pushed.
+
+APP5 stable workbench proof alias closed locally.
+Evidence:
+- docs/superpowers/specs/2026-05-25-app5-stable-workbench-proof-alias.md
+- source/app/StartupProof.*
+- source/app/Main.cpp
+- source/app/MainComponent.*
+- source/app/APP2WorkbenchOpenStatusProofRunner.*
+- tests/StartupProofTests.cpp
+
+Closed line:
+--dump-app-workbench-session-proof-and-exit
+or legacy --dump-app2-workbench-open-status-proof-and-exit
+-> WorkbenchAppController held snapshot
+-> debug/app-workbench-session-proof/workbench_open_status_report.json
+
+Latest accepted result:
+- Red test: cmake --build build --target my_world_startup_proof_tests failed because dumpAPPWorkbenchSessionProof and StartupProofTaskId::appWorkbenchSession did not exist.
+- cmake --build build --target my_world_startup_proof_tests my_world_app2_workbench_open_status_proof_runner_tests my-world passed.
+- ./build/my_world_startup_proof_tests passed.
+- ./build/my_world_app2_workbench_open_status_proof_runner_tests passed.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit passed and wrote `debug/app-workbench-session-proof/workbench_open_status_report.json` with `ok: true`.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app2-workbench-open-status-proof-and-exit passed as the legacy alias.
+- ctest --test-dir build --output-on-failure passed 84/84.
+- git diff --check passed.
+
+Previous closure:
+
+APP4 active work source truth closed locally as of 2026-05-25 19:18 Asia/Taipei. Local commit `7e5b6ca`; not pushed.
 
 APP4 active work source truth closed locally.
 Evidence:
@@ -2611,17 +2642,20 @@ raw callback-buffer runtime
 | `2026-05-25-app2-workbench-open-status-spine.md` | APP2 workbench open/status closure evidence | no, unless auditing APP2 evidence |
 | `2026-05-25-app3-workbench-app-controller-spine.md` | APP3 workbench app controller closure evidence | no, unless auditing APP3 evidence |
 | `2026-05-25-app4-active-work-source-truth.md` | APP4 active work source truth closure evidence | no, unless auditing APP4 evidence |
+| `2026-05-25-app5-stable-workbench-proof-alias.md` | APP5 stable workbench proof alias closure evidence | no, unless auditing APP5 evidence |
 
 ## Session Safety
 
-APP4 owned files for the current local uncommitted pass:
+APP5 owned files for the current local uncommitted pass:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-25-app4-active-work-source-truth.md
-source/app/WorkbenchSession.*
-source/app/WorkbenchSessionOpenStatus.*
-tests/WorkbenchSessionOpenStatusTests.cpp
+docs/superpowers/specs/2026-05-25-app5-stable-workbench-proof-alias.md
+source/app/StartupProof.*
+source/app/Main.cpp
+source/app/MainComponent.*
+source/app/APP2WorkbenchOpenStatusProofRunner.*
+tests/StartupProofTests.cpp
 ```
 
 Avoid unrelated files and parked lanes:
@@ -2639,7 +2673,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after APP4 active work source truth local closure. APP1-APP3 are local-only commits; APP4 is uncommitted/unpushed. Do not push unless explicitly requested. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after APP5 stable workbench proof alias local closure. APP1-APP4 are local-only commits; APP5 is uncommitted/unpushed. Do not push unless explicitly requested. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

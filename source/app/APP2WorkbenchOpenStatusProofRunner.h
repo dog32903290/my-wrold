@@ -26,6 +26,8 @@ struct APP2WorkbenchOpenStatusProofRunResult
 
 const char* app2WorkbenchOpenStatusProofDisplayName();
 const char* app2WorkbenchOpenStatusProofDirectoryName();
+const char* appWorkbenchSessionProofDisplayName();
+const char* appWorkbenchSessionProofDirectoryName();
 
 APP2WorkbenchOpenStatusProofRunResult runAPP2WorkbenchOpenStatusProof (
     const APP2WorkbenchOpenStatusProofRunRequest& request);

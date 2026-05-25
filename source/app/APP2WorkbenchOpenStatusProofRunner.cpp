@@ -9,6 +9,8 @@ namespace
 {
 constexpr const char* displayName = "APP2 workbench open status";
 constexpr const char* directoryName = "app2-workbench-open-status-proof";
+constexpr const char* stableDisplayName = "app workbench session";
+constexpr const char* stableDirectoryName = "app-workbench-session-proof";
 constexpr const char* reportFileName = "workbench_open_status_report.json";
 }
 
@@ -20,6 +22,16 @@ const char* app2WorkbenchOpenStatusProofDisplayName()
 const char* app2WorkbenchOpenStatusProofDirectoryName()
 {
     return directoryName;
+}
+
+const char* appWorkbenchSessionProofDisplayName()
+{
+    return stableDisplayName;
+}
+
+const char* appWorkbenchSessionProofDirectoryName()
+{
+    return stableDirectoryName;
 }
 
 APP2WorkbenchOpenStatusProofRunResult runAPP2WorkbenchOpenStatusProof (

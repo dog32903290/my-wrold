@@ -25,7 +25,8 @@ enum class StartupProofTaskId
     pvAggregatePressure,
     pvB1AnalyzerEnvironment,
     app1WorkbenchSession,
-    app2WorkbenchOpenStatus
+    app2WorkbenchOpenStatus,
+    appWorkbenchSession
 };
 
 struct StartupProofTask
@@ -56,6 +57,7 @@ struct StartupProofOptions
     bool dumpPVB1AnalyzerEnvironmentProof = false;
     bool dumpAPP1WorkbenchSessionProof = false;
     bool dumpAPP2WorkbenchOpenStatusProof = false;
+    bool dumpAPPWorkbenchSessionProof = false;
     bool quitAfterStartupDump = false;
 };
 

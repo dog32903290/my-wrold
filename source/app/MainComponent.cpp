@@ -295,7 +295,10 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             dumpAPP1WorkbenchSessionProof();
             break;
         case StartupProofTaskId::app2WorkbenchOpenStatus:
-            dumpAPP2WorkbenchOpenStatusProof();
+            dumpAPPWorkbenchSessionProof();
+            break;
+        case StartupProofTaskId::appWorkbenchSession:
+            dumpAPPWorkbenchSessionProof();
             break;
     }
 }
@@ -588,13 +591,18 @@ void MainComponent::dumpAPP1WorkbenchSessionProof()
 
 void MainComponent::dumpAPP2WorkbenchOpenStatusProof()
 {
-    const auto directory = proofDumpDirectory (app2WorkbenchOpenStatusProofDirectoryName());
+    dumpAPPWorkbenchSessionProof();
+}
+
+void MainComponent::dumpAPPWorkbenchSessionProof()
+{
+    const auto directory = proofDumpDirectory (appWorkbenchSessionProofDirectoryName());
 
     const auto request = workbenchController.makeOpenStatusProofRequest (
         directory.getFullPathName().toStdString());
 
     const auto result = runAPP2WorkbenchOpenStatusProof (request);
-    finishProofDump (juce::String (app2WorkbenchOpenStatusProofDisplayName()), result.status, result.error, directory);
+    finishProofDump (juce::String (appWorkbenchSessionProofDisplayName()), result.status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
