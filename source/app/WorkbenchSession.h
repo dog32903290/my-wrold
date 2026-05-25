@@ -11,6 +11,8 @@ namespace myworld
 struct WorkbenchSessionRequest
 {
     std::string workManifestPath;
+    std::string workSource = "unknown";
+    std::string graphIOMappingSourcePath;
     PatchDocument document;
     std::vector<GraphIOMapping> graphIOMappings;
     bool dirty = false;
@@ -25,6 +27,8 @@ struct WorkbenchSessionSnapshot
     std::string status;
     std::string message;
     std::string workManifestPath;
+    std::string workSource;
+    std::string graphIOMappingSourcePath;
     std::string documentId;
     std::string documentTitle;
     int documentVersion = 0;

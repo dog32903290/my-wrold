@@ -59,9 +59,10 @@ int main()
     all.dumpPVAggregatePressureProof = true;
     all.dumpPVB1AnalyzerEnvironmentProof = true;
     all.dumpAPP1WorkbenchSessionProof = true;
+    all.dumpAPP2WorkbenchOpenStatusProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 19, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 20, "all options should create every startup proof task");
 
     return 0;
 }

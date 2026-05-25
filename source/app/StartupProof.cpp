@@ -22,7 +22,8 @@ bool hasStartupProofRequest (const StartupProofOptions& options)
            || options.dumpPVResidueDetectorProof
            || options.dumpPVAggregatePressureProof
            || options.dumpPVB1AnalyzerEnvironmentProof
-           || options.dumpAPP1WorkbenchSessionProof;
+           || options.dumpAPP1WorkbenchSessionProof
+           || options.dumpAPP2WorkbenchOpenStatusProof;
 }
 
 std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& options)
@@ -54,6 +55,7 @@ std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& opti
     addTask (options.dumpPVAggregatePressureProof, StartupProofTaskId::pvAggregatePressure, 500);
     addTask (options.dumpPVB1AnalyzerEnvironmentProof, StartupProofTaskId::pvB1AnalyzerEnvironment, 500);
     addTask (options.dumpAPP1WorkbenchSessionProof, StartupProofTaskId::app1WorkbenchSession, 500);
+    addTask (options.dumpAPP2WorkbenchOpenStatusProof, StartupProofTaskId::app2WorkbenchOpenStatus, 500);
 
     return tasks;
 }

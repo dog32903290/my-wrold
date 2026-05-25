@@ -3,6 +3,7 @@
 #include "A1AudioProofRunner.h"
 #include "ActiveWorkService.h"
 #include "APP1WorkbenchSessionProofRunner.h"
+#include "APP2WorkbenchOpenStatusProofRunner.h"
 #include "AppPaths.h"
 #include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
@@ -21,6 +22,7 @@
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
 #include "ShaderPreviewInputBridge.h"
+#include "WorkbenchSessionOpenStatus.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -101,6 +103,7 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     statusLabel.setColour (juce::Label::textColourId, juce::Colour::fromRGB (172, 184, 204));
     statusLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
     addAndMakeVisible (statusLabel);
+    openWorkbenchSession();
 
     audioStatusLabel.setText ("audio input starting", juce::dontSendNotification);
     audioStatusLabel.setColour (juce::Label::textColourId, juce::Colour::fromRGB (157, 198, 218));
@@ -291,6 +294,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::app1WorkbenchSession:
             dumpAPP1WorkbenchSessionProof();
+            break;
+        case StartupProofTaskId::app2WorkbenchOpenStatus:
+            dumpAPP2WorkbenchOpenStatusProof();
             break;
     }
 }
@@ -581,6 +587,18 @@ void MainComponent::dumpAPP1WorkbenchSessionProof()
     finishProofDump (juce::String (app1WorkbenchSessionProofDisplayName()), result.status, result.error, directory);
 }
 
+void MainComponent::dumpAPP2WorkbenchOpenStatusProof()
+{
+    const auto directory = proofDumpDirectory (app2WorkbenchOpenStatusProofDirectoryName());
+
+    APP2WorkbenchOpenStatusProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.snapshot = currentWorkbenchSession;
+
+    const auto result = runAPP2WorkbenchOpenStatusProof (request);
+    finishProofDump (juce::String (app2WorkbenchOpenStatusProofDisplayName()), result.status, result.error, directory);
+}
+
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
 {
     const auto result = saveActiveWorkProject (session);
@@ -621,6 +639,22 @@ void MainComponent::setShaderStatus (juce::String message)
 
     if (shouldQuit)
         quitAfterDelay();
+}
+
+void MainComponent::openWorkbenchSession()
+{
+    WorkbenchSessionOpenStatusRequest request;
+    request.activeWorkManifestPath = activeWorkManifestFile().getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+    request.saveStatus = "clean";
+    request.proofStatus = "g1-ready";
+    request.previewStatus = "preview-ready";
+
+    const auto opened = openCurrentWorkbenchSession (request);
+    currentWorkbenchSession = opened.snapshot;
+
+    statusLabel.setText (juce::String (makeWorkbenchSessionStatusText (currentWorkbenchSession)),
+                         juce::dontSendNotification);
 }
 
 void MainComponent::loadStoredPerformancePreferences()

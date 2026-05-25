@@ -7,6 +7,7 @@
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
 #include "StartupProof.h"
+#include "WorkbenchSession.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -52,6 +53,7 @@ private:
     void dumpPVAggregatePressureProof();
     void dumpPVB1AnalyzerEnvironmentProof();
     void dumpAPP1WorkbenchSessionProof();
+    void dumpAPP2WorkbenchOpenStatusProof();
     void dumpPVDetectorProof (PVDetectorProofKind kind);
     void scheduleStartupProofs (const StartupProofOptions& options);
     void runStartupProofTask (StartupProofTaskId task);
@@ -63,6 +65,7 @@ private:
     CommandResult publishSelectedModule (GraphSession& session, const std::string& sourceNodeId);
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
+    void openWorkbenchSession();
     void loadStoredPerformancePreferences();
     void saveStoredPerformancePreferences();
     void startAudioInput();
@@ -96,6 +99,7 @@ private:
     juce::Label midiStatusLabel;
     juce::Label liveIOStatusLabel;
     GraphContract graph;
+    WorkbenchSessionSnapshot currentWorkbenchSession;
     PerformancePreferences performancePreferences;
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;

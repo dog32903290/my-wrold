@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 18:39 Asia/Taipei.
+Date: 2026-05-25 18:50 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/app1-workbench-session-spine
+codex/app2-workbench-open-status-spine
 ```
 
 Local repo relocation note:
@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+7a56cc4 Add APP1 workbench session spine
 fa6a762 Add G1 graph IO mapping proof artifact
 5d11ae3 Add graph IO mapping foundation
 3d8653c Add portable JUCE build bootstrap
@@ -133,24 +134,25 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 18:39 Asia/Taipei, APP1 workbench session spine is closed locally and not pushed. Current dirty files, if any, should belong only to commit preparation for APP1. Do not push APP1 until explicitly requested.
+As of 2026-05-25 18:50 Asia/Taipei, APP1 workbench session spine is closed locally and not pushed. APP2 workbench open/status spine is closed locally but uncommitted. Do not push either branch until explicitly requested.
 
 ```text
-APP1 owned files:
+APP2 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-app1-workbench-session-spine.md
+- docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md
 - source/app/WorkbenchSession.*
-- source/app/APP1WorkbenchSessionProofRunner.*
+- source/app/WorkbenchSessionOpenStatus.*
+- source/app/APP2WorkbenchOpenStatusProofRunner.*
 - source/app/Main.cpp
 - source/app/MainComponent.*
 - source/app/StartupProof.*
-- tests/WorkbenchSessionTests.cpp
-- tests/APP1WorkbenchSessionProofRunnerTests.cpp
+- tests/WorkbenchSessionOpenStatusTests.cpp
+- tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
 - tests/StartupProofTests.cpp
 - CMakeLists.txt
 ```
 
-Do not add workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend wiring, Metal, or analyzer DSP in APP1.
+Do not add workbench UI panels, canvas gestures, mapping editor, graph UI node surface, runtime cook loop, save mutation, direct realtime MIDI/OSC send, shader preview live binding expansion, OpenGL backend expansion, Metal, or analyzer DSP in APP2.
 
 Current C4 note:
 
@@ -378,6 +380,7 @@ Latest accepted targeted result:
 | BUILD1 portable JUCE bootstrap | closed | `docs/superpowers/specs/2026-05-25-build1-portable-juce-bootstrap.md`; CMake can use explicit/local JUCE or fetch pinned JUCE 8.0.12, GitHub Actions has a macOS CMake workflow, and build docs explain both paths | CI cache tuning, Linux/Windows matrix, package manager integration, and automatic JUCE version bumps remain parked |
 | G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, emits graph IO mapping JSON evidence, and `G1GraphIOMappingProofRunner` writes `graph_io_mapping_report.json`; `ctest` 79/79 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
 | APP1 workbench session spine | closed | `docs/superpowers/specs/2026-05-25-app1-workbench-session-spine.md`; work fixture + G1 mapping fixture builds a `WorkbenchSession` snapshot with document, graph counts, dirty/save/proof/preview, output/timeline, and mapping validity evidence; `APP1WorkbenchSessionProofRunner` writes `workbench_session_report.json`; app startup proof command writes `debug/app1-workbench-session-proof/workbench_session_report.json`; `ctest` 81/81 passed | Workbench UI panels, canvas gestures, mapping editor, runtime cook loop, save command integration, AI worker visible task surface, shader preview live-binding expansion, Metal, and visual polish remain parked |
+| APP2 workbench open/status spine | closed locally, uncommitted | `docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md`; app opens and holds `currentWorkbenchSession` from active work if present, otherwise C2 fixture + G1 mapping; `MainComponent` reads snapshot status; app proof writes `debug/app2-workbench-open-status-proof/workbench_open_status_report.json` with `ok: true` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -387,6 +390,42 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+APP2 workbench open/status spine closed locally as of 2026-05-25 18:50 Asia/Taipei. Not committed or pushed.
+
+APP2 workbench open/status spine closed locally.
+Evidence:
+- docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md
+- source/app/WorkbenchSession.*
+- source/app/WorkbenchSessionOpenStatus.*
+- source/app/APP2WorkbenchOpenStatusProofRunner.*
+- source/app/Main.cpp
+- source/app/MainComponent.*
+- source/app/StartupProof.*
+- tests/WorkbenchSessionOpenStatusTests.cpp
+- tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
+
+Closed line:
+active work manifest if present
+or fixtures/storage/c2-compound-work/myworld.work.json
++ fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
+-> MainComponent::currentWorkbenchSession
+-> debug/app2-workbench-open-status-proof/workbench_open_status_report.json
+
+Latest accepted result:
+- cmake -S . -B build passed.
+- cmake --build build --target my_world_workbench_session_open_status_tests my_world_app2_workbench_open_status_proof_runner_tests my_world_startup_proof_tests passed.
+- ./build/my_world_workbench_session_open_status_tests passed.
+- ./build/my_world_app2_workbench_open_status_proof_runner_tests passed.
+- ./build/my_world_startup_proof_tests passed.
+- cmake --build build --target my-world passed.
+- MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app2-workbench-open-status-proof-and-exit passed and wrote `debug/app2-workbench-open-status-proof/workbench_open_status_report.json` with `ok: true`.
+- ctest --test-dir build --output-on-failure passed 83/83.
+- git diff --check passed.
+
+Previous closure:
+
 None after APP1 workbench session spine closure as of 2026-05-25 18:39 Asia/Taipei.
 
 APP1 workbench session spine closed.
@@ -2510,79 +2549,44 @@ raw callback-buffer runtime
 | `2026-05-24-flow-runner-automation.md` | untracked separate flow-runner lane owned outside C6 | no |
 | `2026-05-24-tixl-parity-construction-ledger.md` | TiXL-visible parity sub-ledger, not the current active lane | only from this master plan |
 | `2026-05-25-g1-graph-io-mapping-foundation.md` | G1 graph IO mapping foundation closure evidence | no, unless auditing G1 evidence |
+| `2026-05-25-app1-workbench-session-spine.md` | APP1 workbench session closure evidence | no, unless auditing APP1 evidence |
+| `2026-05-25-app2-workbench-open-status-spine.md` | APP2 workbench open/status closure evidence | no, unless auditing APP2 evidence |
 
 ## Session Safety
 
-Files outside PV detector expansion ownership that this pass must not edit or include unless explicitly requested:
+APP2 owned files for the current local uncommitted pass:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md
+source/app/WorkbenchSession.*
+source/app/WorkbenchSessionOpenStatus.*
+source/app/APP2WorkbenchOpenStatusProofRunner.*
+source/app/Main.cpp
+source/app/MainComponent.*
+source/app/StartupProof.*
+tests/WorkbenchSessionOpenStatusTests.cpp
+tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
+tests/StartupProofTests.cpp
+CMakeLists.txt
+```
+
+Avoid unrelated files and parked lanes:
 
 ```text
 AGENTS.md
 docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 docs/superpowers/plans/2026-05-24-flow-runner-automation.md
+docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md
+docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
+docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 scripts/
 tests/test_myworld_flow.py
 ```
 
-PV analyzer owned files:
-
-```text
-docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-24-pv-analyzer-attack-detector.md
-docs/superpowers/specs/2026-05-24-pv-analyzer-detector-expansion-closure.md
-docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion.md
-docs/superpowers/specs/2026-05-24-pv-b1-analyzer-environment-promotion-closure.md
-docs/nodes/analyzer.attack.md
-docs/nodes/analyzer.density.md
-docs/nodes/analyzer.silence.md
-fixtures/analyzer/
-fixtures/compounds/attack.compound.json
-fixtures/compounds/density.compound.json
-fixtures/compounds/silence.compound.json
-fixtures/compounds/sustain.compound.json
-fixtures/compounds/residue.compound.json
-fixtures/compounds/aggregate-pressure.compound.json
-fixtures/module-libraries/pv-analyzer-visible.module-library.json
-fixtures/module-libraries/pv-*-detector.module-library.json
-fixtures/module-libraries/pv-aggregate-pressure.module-library.json
-fixtures/modules/attack/
-fixtures/modules/density/
-fixtures/modules/silence/
-fixtures/modules/sustain/
-fixtures/modules/residue/
-fixtures/modules/aggregate-pressure/
-source/audio/Analyzer*Detector.*
-source/audio/AnalyzerAggregatePressure.*
-source/core/Analyzer*DetectorFixture.*
-source/core/AnalyzerAggregatePressureFixture.*
-source/core/AnalyzerVisibleCatalog.*
-source/core/RuntimeRegistrySynthetic.cpp
-source/app/Main.*
-source/render/OpenGLShaderPreview.cpp
-CMakeLists.txt
-tests/Analyzer*DetectorTests.cpp
-tests/AnalyzerVisibleCatalogTests.cpp
-tests/RuntimeRegistryTests.cpp
-```
-
-Closed H cleanup files, do not edit for PV:
-
-```text
-docs/superpowers/specs/2026-05-24-post-c-three-layer-cleanup.md
-source/core/RuntimeRegistry.*
-source/storage/StorageContract.*
-source/ui/ImGuiSmokeOverlay.*
-```
-
-Closed R routing files, do not edit for PV:
-
-```text
-docs/superpowers/specs/2026-05-24-r-runtime-render-backbone-roadmap.md
-docs/superpowers/plans/2026-05-24-r-segment-implementation.md
-```
-
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after G1 graph IO mapping foundation closure. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after APP2 workbench open/status spine local closure. APP1 is local-only and APP2 is uncommitted/unpushed; do not push unless explicitly requested. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
