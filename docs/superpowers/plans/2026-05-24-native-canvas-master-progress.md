@@ -49,7 +49,7 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 16:51 Asia/Taipei.
+Date: 2026-05-25 16:56 Asia/Taipei.
 
 Branch:
 
@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+09f53a5 Record app visual reaction proof readback
 9bfbf58 Capture visual reaction frames in shader proof
 380e071 Add visual reaction proof artifact
 318b100 Bridge live IO uniforms into shader preview
@@ -358,7 +359,8 @@ Latest accepted targeted result:
 | AV2 visual reaction proof | closed | `docs/superpowers/specs/2026-05-25-av2-visual-reaction-proof.md`; V1 proof artifacts can now write `visual_reaction.json` comparing quiet/loud frames with changed pixel count and mean absolute pixel delta | Real OpenGL offscreen capture pair, shader preview live binding, graph node mapping, and Metal remain parked |
 | AV3 real OpenGL capture pair | closed | `docs/superpowers/specs/2026-05-25-av3-real-opengl-capture-pair.md`; shader preview proof dump now renders quiet/loud frame pairs through the active OpenGL preview backend and passes them to `V1ShaderProofArtifacts` for `visual_reaction.json` | Headless/offscreen GL harness, graph node mapping, full mapping editor, direct realtime callback send, and Metal remain parked |
 | AV4 app dump visual reaction readback | closed | `docs/superpowers/specs/2026-05-25-av4-app-dump-visual-reaction-readback.md`; `--dump-proof-and-exit` now produces and reads back `debug/v1-shader-proof/visual_reaction.json` with `ok: true`, `status: changed`, `changedPixels: 4147429`, and `meanAbsDelta: 0.071055` | Headless/offscreen GL harness, graph node mapping, full mapping editor, direct realtime callback send, and Metal remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after AV4 closure |
+| AV5 audio visual segment closure | closed | `docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md`; closes the AV segment from live IO shader uniform evidence through preview loudness input, quiet/loud OpenGL capture, V1 artifact writing, and app dump readback | Headless/offscreen GL harness, user-facing graph IO mapping, full mapping editor, direct realtime callback send, Metal, and visual polish remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after AV5 closure |
 
 ## Active Lane Protocol
 
@@ -367,6 +369,34 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after AV5 audio visual segment closure as of 2026-05-25.
+
+AV5 audio visual segment closure closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md
+- docs/superpowers/specs/2026-05-25-av1-audio-to-visual-bridge.md
+- docs/superpowers/specs/2026-05-25-av2-visual-reaction-proof.md
+- docs/superpowers/specs/2026-05-25-av3-real-opengl-capture-pair.md
+- docs/superpowers/specs/2026-05-25-av4-app-dump-visual-reaction-readback.md
+
+Closed line:
+live IO shader.uniform evidence
+-> MainComponent audio-to-visual bridge
+-> OpenGLShaderPreview loudness input
+-> quiet/loud OpenGL proof frames
+-> V1ShaderProofArtifacts
+-> debug/v1-shader-proof/visual_reaction.json
+-> ok true / changed / non-zero pixel delta
+
+Latest accepted result:
+- AV3 app target `my-world` builds.
+- AV3 `77/77 tests passed`.
+- AV4 app dump command exited cleanly.
+- AV4 readback reported `ok: true`, `status: changed`, `changedPixels: 4147429`, `meanAbsDelta: 0.071055`.
+- AV5 `git diff --check` passed.
+
+Previous closure:
+
 None after AV4 app dump visual reaction readback closure as of 2026-05-25.
 
 AV4 app dump visual reaction readback closed.
@@ -2386,7 +2416,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after AV4 app dump visual reaction readback closure. The P-LIVE lane is closed. The AV segment has a closed audio-to-visual handoff through app-level visual reaction proof. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after AV5 audio visual segment closure. The P-LIVE and AV lanes are closed through app-level visual reaction proof. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
