@@ -28,6 +28,19 @@ LiveIOSendModePreference sanitizeLiveIOSendMode (LiveIOSendModePreference sendMo
     return LiveIOSendModePreference::dryRun;
 }
 
+LiveIOOutputOperatorPreference sanitizeLiveIOOutputOperator (
+    LiveIOOutputOperatorPreference outputOperator)
+{
+    if (outputOperator == LiveIOOutputOperatorPreference::midiNoteOn
+        || outputOperator == LiveIOOutputOperatorPreference::oscFloat
+        || outputOperator == LiveIOOutputOperatorPreference::shaderUniform)
+    {
+        return outputOperator;
+    }
+
+    return LiveIOOutputOperatorPreference::midiCc;
+}
+
 std::string sanitizeOscHost (const std::string& host)
 {
     return host.empty() ? "127.0.0.1" : host;
@@ -114,6 +127,7 @@ PerformancePreferences sanitizePerformancePreferences (PerformancePreferences pr
     preferences.midi.loudnessCc = clampInt (preferences.midi.loudnessCc, 0, 127);
     preferences.midi.mapCc = clampInt (preferences.midi.mapCc, 0, 127);
     preferences.liveIO.sendMode = sanitizeLiveIOSendMode (preferences.liveIO.sendMode);
+    preferences.liveIO.outputOperator = sanitizeLiveIOOutputOperator (preferences.liveIO.outputOperator);
     preferences.liveIO.oscHost = sanitizeOscHost (preferences.liveIO.oscHost);
     preferences.liveIO.oscPort = clampInt (preferences.liveIO.oscPort, 1, 65535);
     preferences.liveIO.oscLoudnessAddress = sanitizeOscAddress (preferences.liveIO.oscLoudnessAddress);
@@ -134,6 +148,33 @@ LiveIOSendModePreference liveIOSendModePreferenceFromString (const std::string& 
         return LiveIOSendModePreference::controlledSend;
 
     return LiveIOSendModePreference::dryRun;
+}
+
+std::string liveIOOutputOperatorPreferenceToString (LiveIOOutputOperatorPreference outputOperator)
+{
+    switch (outputOperator)
+    {
+        case LiveIOOutputOperatorPreference::midiCc:        return "midi.cc";
+        case LiveIOOutputOperatorPreference::midiNoteOn:    return "midi.note_on";
+        case LiveIOOutputOperatorPreference::oscFloat:      return "osc.float";
+        case LiveIOOutputOperatorPreference::shaderUniform: return "shader.uniform";
+    }
+
+    return "midi.cc";
+}
+
+LiveIOOutputOperatorPreference liveIOOutputOperatorPreferenceFromString (const std::string& text)
+{
+    if (text == "midi.note_on")
+        return LiveIOOutputOperatorPreference::midiNoteOn;
+
+    if (text == "osc.float")
+        return LiveIOOutputOperatorPreference::oscFloat;
+
+    if (text == "shader.uniform")
+        return LiveIOOutputOperatorPreference::shaderUniform;
+
+    return LiveIOOutputOperatorPreference::midiCc;
 }
 
 std::vector<std::string> midiTeachInputIdentifiers (const PerformancePreferences& rawPreferences,
@@ -179,6 +220,8 @@ PerformancePreferencesSaveResult savePerformancePreferences (const std::filesyst
     output << "midi.outputIdentifier=" << preferences.midi.outputIdentifier << "\n";
     output << "midi.outputName=" << preferences.midi.outputName << "\n";
     output << "liveIO.sendMode=" << liveIOSendModePreferenceToString (preferences.liveIO.sendMode) << "\n";
+    output << "liveIO.outputOperator=" << liveIOOutputOperatorPreferenceToString (
+        preferences.liveIO.outputOperator) << "\n";
     output << "liveIO.oscHost=" << preferences.liveIO.oscHost << "\n";
     output << "liveIO.oscPort=" << preferences.liveIO.oscPort << "\n";
     output << "liveIO.oscLoudnessAddress=" << preferences.liveIO.oscLoudnessAddress << "\n";
@@ -236,6 +279,10 @@ PerformancePreferencesStoreResult loadPerformancePreferences (const std::filesys
     preferences.midi.outputName = valueOr (values, "midi.outputName", preferences.midi.outputName);
     preferences.liveIO.sendMode = liveIOSendModePreferenceFromString (
         valueOr (values, "liveIO.sendMode", liveIOSendModePreferenceToString (preferences.liveIO.sendMode)));
+    preferences.liveIO.outputOperator = liveIOOutputOperatorPreferenceFromString (
+        valueOr (values,
+                 "liveIO.outputOperator",
+                 liveIOOutputOperatorPreferenceToString (preferences.liveIO.outputOperator)));
     preferences.liveIO.oscHost = valueOr (values, "liveIO.oscHost", preferences.liveIO.oscHost);
     preferences.liveIO.oscPort = intFromText (
         valueOr (values, "liveIO.oscPort", std::to_string (preferences.liveIO.oscPort)),

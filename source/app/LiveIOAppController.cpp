@@ -25,14 +25,19 @@ LiveIOMidiOutputInventory selectedMidiOutputInventory (const MidiPreferences& mi
 std::vector<LiveIOBinding> makeAppLiveIOBindings (const MidiPreferences& midiPreferences,
                                                   const LiveIOPreferences& liveIOPreferences)
 {
-    return {
-        makeLiveIOMidiCcBinding ("midi.loudness",
-                                 "out",
-                                 midiPreferences.channel,
-                                 midiPreferences.loudnessCc),
-        makeLiveIOOscFloatBinding ("osc.loudness", "out", liveIOPreferences.oscLoudnessAddress),
-        makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness")
-    };
+    if (liveIOPreferences.outputOperator == LiveIOOutputOperatorPreference::midiNoteOn)
+        return { makeLiveIOMidiNoteOnBinding ("midi.note.loudness", "out", midiPreferences.channel, 60) };
+
+    if (liveIOPreferences.outputOperator == LiveIOOutputOperatorPreference::oscFloat)
+        return { makeLiveIOOscFloatBinding ("osc.loudness", "out", liveIOPreferences.oscLoudnessAddress) };
+
+    if (liveIOPreferences.outputOperator == LiveIOOutputOperatorPreference::shaderUniform)
+        return { makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness") };
+
+    return { makeLiveIOMidiCcBinding ("midi.loudness",
+                                      "out",
+                                      midiPreferences.channel,
+                                      midiPreferences.loudnessCc) };
 }
 
 std::string midiTeachStatusText (const LiveIOMidiTeachState& state, int inputCount)

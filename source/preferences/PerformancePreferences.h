@@ -31,9 +31,18 @@ enum class LiveIOSendModePreference
     controlledSend
 };
 
+enum class LiveIOOutputOperatorPreference
+{
+    midiCc,
+    midiNoteOn,
+    oscFloat,
+    shaderUniform
+};
+
 struct LiveIOPreferences
 {
     LiveIOSendModePreference sendMode = LiveIOSendModePreference::dryRun;
+    LiveIOOutputOperatorPreference outputOperator = LiveIOOutputOperatorPreference::midiCc;
     std::string oscHost = "127.0.0.1";
     int oscPort = 9000;
     std::string oscLoudnessAddress = "/my-world/loudness";
@@ -71,6 +80,8 @@ PerformancePreferences makeDefaultPerformancePreferences();
 PerformancePreferences sanitizePerformancePreferences (PerformancePreferences preferences);
 std::string liveIOSendModePreferenceToString (LiveIOSendModePreference mode);
 LiveIOSendModePreference liveIOSendModePreferenceFromString (const std::string& text);
+std::string liveIOOutputOperatorPreferenceToString (LiveIOOutputOperatorPreference outputOperator);
+LiveIOOutputOperatorPreference liveIOOutputOperatorPreferenceFromString (const std::string& text);
 std::vector<std::string> midiTeachInputIdentifiers (const PerformancePreferences& preferences,
                                                     const std::vector<std::string>& availableIdentifiers);
 PerformancePreferencesSaveResult savePerformancePreferences (const std::filesystem::path& path,

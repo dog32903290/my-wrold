@@ -54,12 +54,14 @@ private:
     juce::Label mapCcLabel;
     juce::Label liveIOLabel;
     juce::Label liveIOSendModeLabel;
+    juce::Label liveIOOperatorLabel;
     juce::Label midiTeachLabel;
     juce::Label midiTeachStatusLabel;
     juce::Slider analysisGainSlider;
     juce::ComboBox midiInputBox;
     juce::ComboBox midiOutputBox;
     juce::ComboBox liveIOSendModeBox;
+    juce::ComboBox liveIOOperatorBox;
     juce::Slider midiChannelSlider;
     juce::Slider loudnessCcSlider;
     juce::Slider mapCcSlider;

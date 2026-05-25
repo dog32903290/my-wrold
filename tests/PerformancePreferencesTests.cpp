@@ -43,18 +43,24 @@ int main()
     expectEqual (preferences.midi.inputName, "", "default midi input name");
     expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
             "live IO send mode defaults to dry-run");
+    expect (preferences.liveIO.outputOperator == myworld::LiveIOOutputOperatorPreference::midiCc,
+            "live IO operator defaults to MIDI CC");
     expectEqual (preferences.liveIO.oscHost, "127.0.0.1", "default osc host");
     expectEqual (preferences.liveIO.oscPort, 9000, "default osc port");
     expectEqual (preferences.liveIO.oscLoudnessAddress, "/my-world/loudness", "default osc loudness address");
     expectEqual (myworld::liveIOSendModePreferenceToString (preferences.liveIO.sendMode),
                  "dry_run",
                  "default live IO send mode string");
+    expectEqual (myworld::liveIOOutputOperatorPreferenceToString (preferences.liveIO.outputOperator),
+                 "midi.cc",
+                 "default live IO operator string");
 
     preferences.audio.analysisGain = -4.0f;
     preferences.midi.channel = 99;
     preferences.midi.loudnessCc = -9;
     preferences.midi.mapCc = 300;
     preferences.liveIO.sendMode = static_cast<myworld::LiveIOSendModePreference> (-20);
+    preferences.liveIO.outputOperator = static_cast<myworld::LiveIOOutputOperatorPreference> (-20);
     preferences.liveIO.oscHost = "";
     preferences.liveIO.oscPort = 70000;
     preferences.liveIO.oscLoudnessAddress = "bad-address";
@@ -66,15 +72,20 @@ int main()
     expectEqual (preferences.midi.mapCc, 127, "map cc clamps high");
     expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::dryRun,
             "invalid live IO send mode sanitizes to dry-run");
+    expect (preferences.liveIO.outputOperator == myworld::LiveIOOutputOperatorPreference::midiCc,
+            "invalid live IO operator sanitizes to MIDI CC");
     expectEqual (preferences.liveIO.oscHost, "127.0.0.1", "empty osc host sanitizes to loopback");
     expectEqual (preferences.liveIO.oscPort, 65535, "osc port clamps high");
     expectEqual (preferences.liveIO.oscLoudnessAddress, "/my-world/loudness", "invalid osc address sanitizes to default");
 
     preferences = myworld::makeDefaultPerformancePreferences();
     preferences.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::oscFloat;
     preferences = myworld::sanitizePerformancePreferences (preferences);
     expect (preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::controlledSend,
             "controlled send survives sanitization");
+    expect (preferences.liveIO.outputOperator == myworld::LiveIOOutputOperatorPreference::oscFloat,
+            "OSC float operator survives sanitization");
     preferences.midi.inputIdentifier = "midi-in-1";
     preferences.midi.inputName = "Keyboard In";
     preferences = myworld::sanitizePerformancePreferences (preferences);
@@ -83,6 +94,13 @@ int main()
     expectEqual (myworld::liveIOSendModePreferenceToString (preferences.liveIO.sendMode),
                  "controlled_send",
                  "controlled live IO send mode string");
+    expectEqual (myworld::liveIOOutputOperatorPreferenceToString (
+                     myworld::liveIOOutputOperatorPreferenceFromString ("midi.note_on")),
+                 "midi.note_on",
+                 "MIDI note operator string roundtrip");
+    expect (myworld::liveIOOutputOperatorPreferenceFromString ("bad")
+                == myworld::LiveIOOutputOperatorPreference::midiCc,
+            "bad operator string falls back to MIDI CC");
 
     std::vector<std::string> availableInputs { "midi-in-1", "midi-in-2" };
     auto teachInputs = myworld::midiTeachInputIdentifiers (preferences, availableInputs);
@@ -129,6 +147,7 @@ int main()
     persisted.midi.outputIdentifier = "output-device";
     persisted.midi.outputName = "Output Device";
     persisted.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
+    persisted.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::shaderUniform;
     persisted.liveIO.oscHost = "192.168.1.24";
     persisted.liveIO.oscPort = 9123;
     persisted.liveIO.oscLoudnessAddress = "/stage/loudness";
@@ -151,6 +170,8 @@ int main()
     expectEqual (loaded.preferences.midi.outputName, "Output Device", "persisted output name");
     expect (loaded.preferences.liveIO.sendMode == myworld::LiveIOSendModePreference::controlledSend,
             "persisted live IO send mode");
+    expect (loaded.preferences.liveIO.outputOperator == myworld::LiveIOOutputOperatorPreference::shaderUniform,
+            "persisted live IO operator");
     expectEqual (loaded.preferences.liveIO.oscHost, "192.168.1.24", "persisted osc host");
     expectEqual (loaded.preferences.liveIO.oscPort, 9123, "persisted osc port");
     expectEqual (loaded.preferences.liveIO.oscLoudnessAddress, "/stage/loudness", "persisted osc address");

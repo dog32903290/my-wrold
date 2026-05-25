@@ -91,10 +91,20 @@ int main()
 
     const auto dry = controller.tick (dryRequest);
     expect (dry.tick.ok, dry.tick.message);
-    expectEqual (dry.indicator.text, "live io dry pumped m1 o1", "dry-run indicator text");
+    expectEqual (dry.indicator.text, "live io dry pumped m1 o0", "dry-run indicator text");
     expectEqual (dry.indicator.tone, "dry_run", "dry-run indicator tone");
 
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::midiNoteOn;
+    myworld::LiveIOAppTimerRequest noteRequest;
+    noteRequest.preferences = preferences;
+    noteRequest.snapshot = makeSnapshot (0.75f, true, 96);
+    noteRequest.timestampMs = 60;
+    const auto noteDry = controller.tick (noteRequest);
+    expect (noteDry.tick.ok, noteDry.tick.message);
+    expectEqual (noteDry.indicator.text, "live io dry pumped m2 o0", "MIDI note operator still uses MIDI lane only");
+
     preferences.liveIO.sendMode = myworld::LiveIOSendModePreference::controlledSend;
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::midiCc;
     preferences.midi.outputIdentifier = "app-midi";
     preferences.midi.outputName = "App MIDI";
     controller.applyLiveIOPreferences (preferences.liveIO);
@@ -103,7 +113,7 @@ int main()
     myworld::LiveIOAppTimerRequest sendRequest;
     sendRequest.preferences = preferences;
     sendRequest.snapshot = makeSnapshot (0.75f, true, 128);
-    sendRequest.timestampMs = 60;
+    sendRequest.timestampMs = 120;
     sendRequest.midiSender = [&] (const myworld::LiveIOMidiOutputDevice& device,
                                   const myworld::LiveIOMidiCcMessage& message)
     {
@@ -124,13 +134,14 @@ int main()
     preferences.liveIO.oscHost = "192.168.1.24";
     preferences.liveIO.oscPort = 9123;
     preferences.liveIO.oscLoudnessAddress = "/stage/loudness";
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::oscFloat;
     controller.applyLiveIOPreferences (preferences.liveIO);
 
     int externalOscSendCount = 0;
     myworld::LiveIOAppTimerRequest oscRequest;
     oscRequest.preferences = preferences;
     oscRequest.snapshot = makeSnapshot (0.25f, true, 192);
-    oscRequest.timestampMs = 120;
+    oscRequest.timestampMs = 180;
     oscRequest.midiSender = [&] (const myworld::LiveIOMidiOutputDevice&,
                                  const myworld::LiveIOMidiCcMessage&)
     {
@@ -149,8 +160,20 @@ int main()
     const auto externalOsc = controller.tick (oscRequest);
     expect (externalOsc.tick.ok, externalOsc.tick.message);
     expectEqual (externalOscSendCount, 1, "controlled external osc send count");
+    expectEqual (externalOsc.indicator.text, "live io send controlled_sent m1 o1", "OSC operator uses OSC lane");
+
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::shaderUniform;
+    controller.applyLiveIOPreferences (preferences.liveIO);
+    myworld::LiveIOAppTimerRequest shaderRequest;
+    shaderRequest.preferences = preferences;
+    shaderRequest.snapshot = makeSnapshot (0.4f, true, 216);
+    shaderRequest.timestampMs = 240;
+    const auto shader = controller.tick (shaderRequest);
+    expect (shader.tick.ok, shader.tick.message);
+    expectEqual (shader.indicator.text, "live io send controlled_sent m1 o1", "shader operator does not send MIDI or OSC");
 
     preferences.liveIO.oscHost = "127.0.0.1";
+    preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::oscFloat;
     const auto receivePort = findAvailableUdpPort();
     preferences.liveIO.oscPort = receivePort;
     preferences.liveIO.oscLoudnessAddress = "/stage/in";
@@ -159,7 +182,7 @@ int main()
     myworld::LiveIOAppTimerRequest receiveOpenRequest;
     receiveOpenRequest.preferences = preferences;
     receiveOpenRequest.snapshot = makeSnapshot (0.1f, true, 240);
-    receiveOpenRequest.timestampMs = 180;
+    receiveOpenRequest.timestampMs = 300;
 
     const auto receiveOpen = controller.tick (receiveOpenRequest);
     expect (receiveOpen.oscReceiverOpen, receiveOpen.oscReceiverStatus);
@@ -169,7 +192,7 @@ int main()
              myworld::makeLiveIOOscFloatDatagram ("/stage/in", 0.625f));
     ::usleep (10000);
 
-    receiveOpenRequest.timestampMs = 240;
+    receiveOpenRequest.timestampMs = 360;
     const auto receivePoll = controller.tick (receiveOpenRequest);
     expect (receivePoll.oscReceived, receivePoll.oscReceiverStatus);
     expectEqual (static_cast<int> (receivePoll.oscFrame.values.size()), 1, "app controller osc frame count");

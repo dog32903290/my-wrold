@@ -32,6 +32,7 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     configureLabel (mapCcLabel, "map CC");
     configureLabel (liveIOLabel, "Live IO");
     configureLabel (liveIOSendModeLabel, "send mode");
+    configureLabel (liveIOOperatorLabel, "operator");
     configureLabel (midiTeachLabel, "teach");
     configureLabel (midiTeachStatusLabel, "teach idle");
 
@@ -46,6 +47,7 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     addAndMakeVisible (mapCcLabel);
     addAndMakeVisible (liveIOLabel);
     addAndMakeVisible (liveIOSendModeLabel);
+    addAndMakeVisible (liveIOOperatorLabel);
     addAndMakeVisible (midiTeachLabel);
     addAndMakeVisible (midiTeachStatusLabel);
 
@@ -67,6 +69,14 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     liveIOSendModeBox.setSelectedId (1, juce::dontSendNotification);
     liveIOSendModeBox.onChange = [this] { emitLiveIOPreferences(); };
     addAndMakeVisible (liveIOSendModeBox);
+
+    liveIOOperatorBox.addItem ("MIDI CC", 1);
+    liveIOOperatorBox.addItem ("MIDI Note", 2);
+    liveIOOperatorBox.addItem ("OSC Float", 3);
+    liveIOOperatorBox.addItem ("Shader Uniform", 4);
+    liveIOOperatorBox.setSelectedId (1, juce::dontSendNotification);
+    liveIOOperatorBox.onChange = [this] { emitLiveIOPreferences(); };
+    addAndMakeVisible (liveIOOperatorBox);
 
     configureSlider (midiChannelSlider, 1.0, 16.0, 1.0, 1.0);
     midiChannelSlider.onValueChange = [this] { emitMidiPreferences(); };
@@ -175,6 +185,13 @@ LiveIOPreferences PreferencesPanel::getLiveIOPreferences() const
     preferences.sendMode = liveIOSendModeBox.getSelectedId() == 2
                                ? LiveIOSendModePreference::controlledSend
                                : LiveIOSendModePreference::dryRun;
+    switch (liveIOOperatorBox.getSelectedId())
+    {
+        case 2:  preferences.outputOperator = LiveIOOutputOperatorPreference::midiNoteOn; break;
+        case 3:  preferences.outputOperator = LiveIOOutputOperatorPreference::oscFloat; break;
+        case 4:  preferences.outputOperator = LiveIOOutputOperatorPreference::shaderUniform; break;
+        default: preferences.outputOperator = LiveIOOutputOperatorPreference::midiCc; break;
+    }
 
     PerformancePreferences allPreferences;
     allPreferences.liveIO = preferences;
@@ -194,6 +211,14 @@ void PreferencesPanel::applyPerformancePreferences (const PerformancePreferences
     liveIOSendModeBox.setSelectedId (
         preferences.liveIO.sendMode == LiveIOSendModePreference::controlledSend ? 2 : 1,
         juce::dontSendNotification);
+    int outputOperatorId = 1;
+    if (preferences.liveIO.outputOperator == LiveIOOutputOperatorPreference::midiNoteOn)
+        outputOperatorId = 2;
+    else if (preferences.liveIO.outputOperator == LiveIOOutputOperatorPreference::oscFloat)
+        outputOperatorId = 3;
+    else if (preferences.liveIO.outputOperator == LiveIOOutputOperatorPreference::shaderUniform)
+        outputOperatorId = 4;
+    liveIOOperatorBox.setSelectedId (outputOperatorId, juce::dontSendNotification);
     midiInputBox.setSelectedId (1, juce::dontSendNotification);
     midiOutputBox.setSelectedId (1, juce::dontSendNotification);
 
@@ -281,7 +306,10 @@ void PreferencesPanel::resized()
     row = area.removeFromTop (24);
     liveIOLabel.setBounds (row.removeFromLeft (74));
     liveIOSendModeLabel.setBounds (row.removeFromLeft (82));
-    liveIOSendModeBox.setBounds (row.removeFromLeft (180));
+    liveIOSendModeBox.setBounds (row.removeFromLeft (150));
+    row.removeFromLeft (8);
+    liveIOOperatorLabel.setBounds (row.removeFromLeft (70));
+    liveIOOperatorBox.setBounds (row.removeFromLeft (150));
 
     area.removeFromTop (4);
     row = area.removeFromTop (24);

@@ -71,6 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+888f26c Add OSC receiver lifecycle to live IO controller
+3999703 Add realtime delivery backpressure telemetry
 dca3f31 Show realtime delivery in live IO status
 9113fee Add realtime delivery status telemetry
 0d31a2e Add realtime live IO snapshot delivery
@@ -115,18 +117,23 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE21 is committed in `3999703`. Current dirty files, if any, should belong to the closing P-LIVE22 OSC server lifecycle lane.
+As of 2026-05-25, P-LIVE22 is committed in `888f26c`. Current dirty files, if any, should belong to the closing P-LIVE23 UI operator picker foundation lane.
 
 ```text
-P-LIVE22 owned files:
+P-LIVE23 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md
+- docs/superpowers/specs/2026-05-25-p-live23-ui-operator-picker-foundation.md
+- source/preferences/PerformancePreferences.h
+- source/preferences/PerformancePreferences.cpp
+- source/app/PreferencesPanel.h
+- source/app/PreferencesPanel.cpp
 - source/app/LiveIOAppController.h
 - source/app/LiveIOAppController.cpp
+- tests/PerformancePreferencesTests.cpp
 - tests/LiveIOAppControllerTests.cpp
 ```
 
-Do not add OSC receive work, MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE22.
+Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, or any audio callback work in P-LIVE23.
 
 Current C4 note:
 
@@ -337,7 +344,8 @@ Latest accepted targeted result:
 | P-LIVE20 live IO realtime indicator | closed | `docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md`; app-side `AudioRealtimeDeliveryResult` telemetry flows into existing live IO status indicator text/json and the live IO label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
 | P-LIVE21 realtime delivery backpressure | closed | `docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md`; `AudioRealtimeDelivery` now uses four fixed slots and reports skipped vs overwritten snapshots separately into the existing live IO indicator; focused tests and app build passed | Sequential catch-up API, dynamic queues, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
 | P-LIVE22 OSC server lifecycle | closed | `docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md`; `LiveIOAppController` owns the app/control-side OSC receiver lifecycle, polls once on app timer tick, and exposes matching incoming OSC float values as `LiveIOValueFrame` evidence; focused tests and app build passed | Graph OSC input node, separate receive UI fields, dynamic OSC address routing, and direct realtime callback send/receive remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE22 closure |
+| P-LIVE23 UI operator picker foundation | closed | `docs/superpowers/specs/2026-05-25-p-live23-ui-operator-picker-foundation.md`; live IO preferences now store one selected output operator, PreferencesPanel exposes it, and `LiveIOAppController` builds the primary loudness binding for `midi.cc`, `midi.note_on`, `osc.float`, or `shader.uniform`; focused tests and app build passed | Full mapping editor, multiple simultaneous user-selected bindings, graph IO node, dynamic OSC scanning, and new MIDI operator kinds remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE23 closure |
 
 ## Active Lane Protocol
 
@@ -346,6 +354,36 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE23 UI operator picker foundation closure as of 2026-05-25.
+
+P-LIVE23 UI operator picker foundation closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live23-ui-operator-picker-foundation.md
+- source/preferences/PerformancePreferences.h
+- source/preferences/PerformancePreferences.cpp
+- source/app/PreferencesPanel.h
+- source/app/PreferencesPanel.cpp
+- source/app/LiveIOAppController.cpp
+- tests/PerformancePreferencesTests.cpp
+- tests/LiveIOAppControllerTests.cpp
+
+Closed line:
+LiveIOPreferences.outputOperator
+-> PreferencesPanel combo
+-> LiveIOAppController binding selection
+-> existing LiveIOControlTimer/dispatcher
+-> live IO status evidence
+
+Latest accepted result:
+- RED first on missing `LiveIOOutputOperatorPreference` / `LiveIOPreferences::outputOperator`.
+- RED first on fixed controller MIDI+OSC binding behavior.
+- focused `performance_preferences` and `live_io_app_controller` tests passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE22 OSC server lifecycle closure as of 2026-05-25.
 
 P-LIVE22 OSC server lifecycle closed.
@@ -2060,7 +2098,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE22 OSC server lifecycle closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE23 UI operator picker foundation closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
