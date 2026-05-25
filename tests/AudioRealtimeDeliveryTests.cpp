@@ -23,6 +23,11 @@ void expectEqual (int actual, int expected, const std::string& message)
                                 + " got " + std::to_string (actual));
 }
 
+void expectEqual (const std::string& actual, const std::string& expected, const std::string& message)
+{
+    expect (actual == expected, message + " expected " + expected + " got " + actual);
+}
+
 myworld::AudioAnalyzerSnapshot makeSnapshot (float loudness, bool active, std::uint64_t sampleCounter)
 {
     myworld::AudioAnalyzerSnapshot snapshot;
@@ -44,12 +49,14 @@ int main()
 
     auto empty = delivery.consumeLatest (lastSeenSequence);
     expect (! empty.available, "empty delivery has no snapshot");
+    expectEqual (audioRealtimeDeliveryStatusToString (empty.status), "empty", "empty status");
     expectEqual (static_cast<int> (lastSeenSequence), 0, "empty consume preserves sequence");
 
     delivery.publishFromRealtime (makeSnapshot (0.5f, true, 64));
 
     auto first = delivery.consumeLatest (lastSeenSequence);
     expect (first.available, "first realtime snapshot is available");
+    expectEqual (audioRealtimeDeliveryStatusToString (first.status), "delivered", "first status");
     expect (first.snapshot.active, "first snapshot active");
     expect (first.snapshot.loudness > 0.499f && first.snapshot.loudness < 0.501f,
             "first loudness delivered");
@@ -58,12 +65,17 @@ int main()
 
     auto repeated = delivery.consumeLatest (lastSeenSequence);
     expect (! repeated.available, "same sequence is not delivered twice");
+    expectEqual (audioRealtimeDeliveryStatusToString (repeated.status), "repeated", "repeated status");
+    expect (repeated.sequence == first.sequence, "repeated status reports the current sequence");
 
     delivery.publishFromRealtime (makeSnapshot (0.75f, true, 128));
+    delivery.publishFromRealtime (makeSnapshot (0.9f, true, 192));
 
     auto second = delivery.consumeLatest (lastSeenSequence);
     expect (second.available, "second realtime snapshot is available");
-    expectEqual (static_cast<int> (second.snapshot.sampleCounter), 128, "second sample counter");
+    expectEqual (static_cast<int> (second.snapshot.sampleCounter), 192, "second sample counter");
+    expectEqual (static_cast<int> (second.droppedSnapshots), 1, "single-slot overwrite reports dropped snapshot");
+    expectEqual (makeAudioRealtimeDeliveryStatusText (second), "rt delivered seq 6 drop 1", "delivery status text");
 
     myworld::LiveIOControlTimerConfig config;
     config.bindings = {
@@ -81,7 +93,7 @@ int main()
     expect (tick.ok, tick.message);
     expect (tick.pumped, "control timer pumps consumed realtime snapshot outside callback");
     expectEqual (state.midiDryRunCount, 1, "control timer dry-run MIDI count");
-    expectEqual (static_cast<int> (state.lastSampleCounter), 128, "control timer sees realtime sample counter");
+    expectEqual (static_cast<int> (state.lastSampleCounter), 192, "control timer sees realtime sample counter");
 
     std::cout << "audio realtime delivery ok\n";
     return 0;

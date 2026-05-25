@@ -71,6 +71,14 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+0d31a2e Add realtime live IO snapshot delivery
+5895944 Add broader live IO MIDI operators
+f52a3a1 Add live IO OSC receive spine
+5b35fcc Add external live IO OSC target proof
+5d57a75 Add live IO OSC target preferences
+afd7b18 Add arbitrary live IO MIDI teach
+e71d69c Add live IO preference persistence
+85bc645 Extract live IO app controller
 ba7d142 Add live IO MIDI teach
 663e440 Add live IO send mode preferences
 96075a0 Add live IO status indicator
@@ -105,23 +113,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 16:00 Asia/Taipei, P-LIVE17 is committed and pushed in `5895944`. Current dirty files, if any, should belong to the closing P-LIVE18 realtime callback delivery lane.
+As of 2026-05-25, P-LIVE18 is committed in `0d31a2e`. Current dirty files, if any, should belong to the closing P-LIVE19 realtime delivery status lane.
 
 ```text
-P-LIVE18 owned files:
+P-LIVE19 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md
+- docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md
 - source/audio/AudioRealtimeDelivery.h
 - source/audio/AudioRealtimeDelivery.cpp
-- source/audio/AudioInputAnalyzer.h
-- source/audio/AudioInputAnalyzer.cpp
-- source/app/MainComponent.h
 - source/app/MainComponent.cpp
 - tests/AudioRealtimeDeliveryTests.cpp
-- CMakeLists.txt
 ```
 
-Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE18.
+Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE19.
 
 Current C4 note:
 
@@ -328,7 +332,8 @@ Latest accepted targeted result:
 | P-LIVE16 OSC receive spine | closed | `docs/superpowers/specs/2026-05-25-p-live16-osc-receive-spine.md`; `LiveIOOscReceiver` opens/polls/closes a controlled UDP receiver, decodes OSC float datagrams, and emits matching `LiveIOValueFrame` values; focused tests, app build, and `ctest` 74/74 passed | UI/server lifecycle, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE17 broader MIDI output operators | closed | `docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md`; `LiveIOBus` can emit `midi.cc` and `midi.note_on`, `LiveIOMidiMessage` reports byte-level CC/note-on output, and the control-rate dispatcher sends both through the existing injected MIDI sender; focused tests and app build passed | UI operator picker, note-off/program-change/pitch-bend, and realtime callback delivery remain parked |
 | P-LIVE18 realtime callback delivery | closed | `docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md`; `AudioInputAnalyzer` publishes callback snapshots into `AudioRealtimeDelivery`, `MainComponent` consumes completed sequences on the app timer, and `LiveIOControlTimer` remains outside the callback; focused test and app build passed | Direct realtime MIDI/OSC send, multi-slot backpressure telemetry, and delivery UI remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE18 closure |
+| P-LIVE19 realtime delivery status | closed | `docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md`; `AudioRealtimeDeliveryResult` reports empty/writing/repeated/delivered state, completed sequence, and coarse single-slot dropped snapshot count, and the app timer shows it in the audio status label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE19 closure |
 
 ## Active Lane Protocol
 
@@ -337,6 +342,29 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE19 realtime delivery status closure as of 2026-05-25.
+
+P-LIVE19 realtime delivery status closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md
+- source/audio/AudioRealtimeDelivery.h
+- source/audio/AudioRealtimeDelivery.cpp
+- source/app/MainComponent.cpp
+- tests/AudioRealtimeDeliveryTests.cpp
+
+Closed line:
+AudioRealtimeDelivery.consumeLatest()
+-> status / sequence / droppedSnapshots
+-> MainComponent app timer status text
+-> existing audio status label
+
+Latest accepted result:
+- RED first on missing `AudioRealtimeDeliveryResult::status`, `AudioRealtimeDeliveryResult::droppedSnapshots`, and `makeAudioRealtimeDeliveryStatusText()`.
+- focused `audio_realtime_delivery` passed.
+- app target `my-world` builds.
+
+Previous closure:
+
 None after P-LIVE18 realtime callback delivery closure as of 2026-05-25 16:00 Asia/Taipei.
 
 P-LIVE18 realtime callback delivery closed.
@@ -1947,7 +1975,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE18 realtime callback delivery closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE19 realtime delivery status closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

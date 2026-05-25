@@ -4,15 +4,29 @@
 
 #include <atomic>
 #include <cstdint>
+#include <string>
 
 namespace myworld
 {
+enum class AudioRealtimeDeliveryStatus
+{
+    empty,
+    writing,
+    repeated,
+    delivered
+};
+
 struct AudioRealtimeDeliveryResult
 {
     bool available = false;
+    AudioRealtimeDeliveryStatus status = AudioRealtimeDeliveryStatus::empty;
     std::uint64_t sequence = 0;
+    std::uint64_t droppedSnapshots = 0;
     AudioAnalyzerSnapshot snapshot;
 };
+
+const char* audioRealtimeDeliveryStatusToString (AudioRealtimeDeliveryStatus status) noexcept;
+std::string makeAudioRealtimeDeliveryStatusText (const AudioRealtimeDeliveryResult& result);
 
 class AudioRealtimeDelivery
 {

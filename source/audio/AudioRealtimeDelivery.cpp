@@ -1,7 +1,31 @@
 #include "AudioRealtimeDelivery.h"
 
+#include <sstream>
+
 namespace myworld
 {
+const char* audioRealtimeDeliveryStatusToString (AudioRealtimeDeliveryStatus status) noexcept
+{
+    switch (status)
+    {
+        case AudioRealtimeDeliveryStatus::empty:     return "empty";
+        case AudioRealtimeDeliveryStatus::writing:   return "writing";
+        case AudioRealtimeDeliveryStatus::repeated:  return "repeated";
+        case AudioRealtimeDeliveryStatus::delivered: return "delivered";
+    }
+
+    return "unknown";
+}
+
+std::string makeAudioRealtimeDeliveryStatusText (const AudioRealtimeDeliveryResult& result)
+{
+    std::ostringstream text;
+    text << "rt " << audioRealtimeDeliveryStatusToString (result.status)
+         << " seq " << result.sequence
+         << " drop " << result.droppedSnapshots;
+    return text.str();
+}
+
 void AudioRealtimeDelivery::publishFromRealtime (const AudioAnalyzerSnapshot& snapshot) noexcept
 {
     auto writingSequence = sequence.load (std::memory_order_relaxed) + 1;
@@ -24,8 +48,25 @@ AudioRealtimeDeliveryResult AudioRealtimeDelivery::consumeLatest (std::uint64_t&
     AudioRealtimeDeliveryResult result;
 
     const auto startSequence = sequence.load (std::memory_order_acquire);
-    if (startSequence == 0 || (startSequence % 2) != 0 || startSequence == lastSeenSequence)
+    result.sequence = startSequence;
+
+    if (startSequence == 0)
+    {
+        result.status = AudioRealtimeDeliveryStatus::empty;
         return result;
+    }
+
+    if ((startSequence % 2) != 0)
+    {
+        result.status = AudioRealtimeDeliveryStatus::writing;
+        return result;
+    }
+
+    if (startSequence == lastSeenSequence)
+    {
+        result.status = AudioRealtimeDeliveryStatus::repeated;
+        return result;
+    }
 
     AudioAnalyzerSnapshot snapshot;
     snapshot.rms = rms.load (std::memory_order_relaxed);
@@ -38,10 +79,18 @@ AudioRealtimeDeliveryResult AudioRealtimeDelivery::consumeLatest (std::uint64_t&
 
     const auto endSequence = sequence.load (std::memory_order_acquire);
     if (startSequence != endSequence || (endSequence % 2) != 0)
+    {
+        result.status = AudioRealtimeDeliveryStatus::writing;
+        result.sequence = endSequence;
         return result;
+    }
+
+    if (lastSeenSequence > 0 && endSequence > lastSeenSequence + 2)
+        result.droppedSnapshots = ((endSequence - lastSeenSequence) / 2) - 1;
 
     lastSeenSequence = endSequence;
     result.available = true;
+    result.status = AudioRealtimeDeliveryStatus::delivered;
     result.sequence = endSequence;
     result.snapshot = snapshot;
     return result;

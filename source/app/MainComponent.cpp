@@ -629,6 +629,7 @@ void MainComponent::startAudioInput()
 void MainComponent::updateAudioMeters()
 {
     const auto realtime = audioInputAnalyzer.consumeRealtimeDelivery (audioRealtimeLastSeenSequence);
+    const auto realtimeStatusText = makeAudioRealtimeDeliveryStatusText (realtime);
     const auto analyzerSnapshot = realtime.available ? realtime.snapshot : audioInputAnalyzer.getSnapshot();
     const auto bridge = makeLoudnessRuntimeBridgeSnapshot (RuntimeExecutionSnapshot{}, analyzerSnapshot);
     const auto& snapshot = bridge.analyzer;
@@ -652,7 +653,8 @@ void MainComponent::updateAudioMeters()
                                       + juce::String (sampleRate, 0)
                                       + "Hz / "
                                       + juce::String (audioInputAnalyzer.getBufferSize())
-                                      + " samples",
+                                      + " samples / "
+                                      + juce::String (realtimeStatusText),
                                   juce::dontSendNotification);
     }
 }
