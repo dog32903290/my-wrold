@@ -2,6 +2,7 @@
 
 #include "AudioAnalyzerState.h"
 #include "LiveIOBus.h"
+#include "LiveIOControlDispatcher.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
 #include "LiveIOSendAdapter.h"
@@ -29,6 +30,7 @@ constexpr const char* liveIOSendReportFileName = "live_io_send_report.json";
 constexpr const char* liveIOOscLoopbackReportFileName = "live_io_osc_loopback_report.json";
 constexpr const char* liveIOMidiInventoryReportFileName = "live_io_midi_inventory_report.json";
 constexpr const char* liveIOMidiSendReportFileName = "live_io_midi_send_report.json";
+constexpr const char* liveIOControlDispatchReportFileName = "live_io_control_dispatch_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -136,6 +138,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOOscLoopbackReportFileName,
         request.outputDirectory / liveIOMidiInventoryReportFileName,
         request.outputDirectory / liveIOMidiSendReportFileName,
+        request.outputDirectory / liveIOControlDispatchReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -170,6 +173,25 @@ LiveIOValueFrame makeLiveIOFrameFromRuntimeExecution (const RuntimeExecutionSnap
     }
 
     return frame;
+}
+
+LiveIOValueFrame makeLiveIOFrameFromLoudness (double loudness)
+{
+    LiveIOValueFrame frame;
+    frame.values = {
+        { "out", loudness, "compound.loudness.publicOutputs" }
+    };
+    return frame;
+}
+
+std::vector<LiveIOControlFrame> makeProofControlFrames()
+{
+    return {
+        { 0, makeLiveIOFrameFromLoudness (0.1) },
+        { 10, makeLiveIOFrameFromLoudness (0.2) },
+        { 50, makeLiveIOFrameFromLoudness (0.5) },
+        { 120, makeLiveIOFrameFromLoudness (0.75) }
+    };
 }
 
 std::vector<LiveIOBinding> makeProofBindings()
@@ -235,6 +257,21 @@ LiveIOMidiOutputSendReport makeMidiSendReport (const LiveIOMidiOutputInventory& 
     report.message = "live io bus has no midi cc event";
     report.errors.push_back (report.message);
     return report;
+}
+
+LiveIOControlDispatchReport makeControlDispatchReport (const LiveIOProofRunRequest& request)
+{
+    LiveIOControlDispatchRequest dispatchRequest;
+    dispatchRequest.frames = makeProofControlFrames();
+    dispatchRequest.bindings = makeProofBindings();
+    dispatchRequest.minIntervalMs = 50;
+    dispatchRequest.midiOutputInventory = request.midiOutputInventory;
+    dispatchRequest.midiOutputIdentifier = request.midiOutputInventory.devices.empty()
+        ? std::string ("__no_live_io_midi_outputs__")
+        : request.midiOutputInventory.devices.front().identifier;
+    dispatchRequest.midiSender = request.midiOutputSender;
+    dispatchRequest.oscSender = request.controlOscSender;
+    return executeLiveIOControlDispatch (dispatchRequest);
 }
 
 LoopbackReceiver openLoopbackReceiver (std::string& error)
@@ -496,6 +533,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
     if (! midiSendReport.ok)
         return fail (midiSendReport.message);
 
+    const auto controlDispatchReport = makeControlDispatchReport (request);
+    if (! controlDispatchReport.ok)
+        return fail (controlDispatchReport.message);
+
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOReportFileName,
@@ -516,6 +557,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOMidiSendReportFileName,
             makeLiveIOMidiOutputSendReportJson (midiSendReport)
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOControlDispatchReportFileName,
+            makeLiveIOControlDispatchReportJson (controlDispatchReport)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,

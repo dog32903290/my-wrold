@@ -329,6 +329,13 @@ void MainComponent::dumpLiveIOProof()
             message.value));
         return LiveIOMidiOutputDeviceSendResult { true, true, "" };
     };
+    request.controlOscSender = [] (const LiveIOOscFloatMessage& message)
+    {
+        if (message.oscAddress.empty())
+            return LiveIOOscFloatSendResult { false, "osc address is required: " + message.bindingId };
+
+        return LiveIOOscFloatSendResult { true, "" };
+    };
     request.loudness = 0.5f;
 
     const auto result = runLiveIOProof (request);

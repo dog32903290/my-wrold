@@ -1,5 +1,6 @@
 #pragma once
 
+#include "LiveIOControlDispatcher.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
 
@@ -15,6 +16,7 @@ struct LiveIOProofRunRequest
     std::vector<std::filesystem::path> candidateRoots;
     LiveIOMidiOutputInventory midiOutputInventory;
     LiveIOMidiOutputSender midiOutputSender;
+    LiveIOOscFloatSender controlOscSender;
     float loudness = 0.5f;
 };
 

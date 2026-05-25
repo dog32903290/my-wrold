@@ -47,13 +47,17 @@ int main()
     {
         return myworld::LiveIOMidiOutputDeviceSendResult { true, true, "" };
     };
+    request.controlOscSender = [] (const myworld::LiveIOOscFloatMessage&)
+    {
+        return myworld::LiveIOOscFloatSendResult { true, "" };
+    };
 
     const auto result = myworld::runLiveIOProof (request);
 
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 6, "artifact count");
+    expect (result.artifactPaths.size() == 7, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
@@ -64,6 +68,8 @@ int main()
             "live io midi inventory report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_midi_send_report.json"),
             "live io midi send report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_control_dispatch_report.json"),
+            "live io control dispatch report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -136,6 +142,24 @@ int main()
     expectContains (midiSendReport, "\"data1\": 20", "midi send data1");
     expectContains (midiSendReport, "\"data2\": 64", "midi send data2");
     expectContains (midiSendReport, "\"errors\": []", "midi send no errors");
+
+    const auto controlDispatchReport = readTextFile (outputDirectory / "live_io_control_dispatch_report.json");
+    expectContains (controlDispatchReport, "\"kind\": \"liveIOControlDispatchProof\"",
+                    "control dispatch kind");
+    expectContains (controlDispatchReport, "\"ok\": true", "control dispatch ok");
+    expectContains (controlDispatchReport, "\"status\": \"dispatched\"", "control dispatch status");
+    expectContains (controlDispatchReport, "\"frameCount\": 4", "control dispatch frame count");
+    expectContains (controlDispatchReport, "\"dispatchedFrameCount\": 3",
+                    "control dispatch dispatched count");
+    expectContains (controlDispatchReport, "\"rateLimitedFrameCount\": 1",
+                    "control dispatch rate limit count");
+    expectContains (controlDispatchReport, "\"midiSentCount\": 3", "control dispatch midi count");
+    expectContains (controlDispatchReport, "\"oscSentCount\": 3", "control dispatch osc count");
+    expectContains (controlDispatchReport, "\"shaderSkippedCount\": 3",
+                    "control dispatch shader skipped count");
+    expectContains (controlDispatchReport, "\"status\": \"rate_limited\"",
+                    "control dispatch rate limited frame");
+    expectContains (controlDispatchReport, "\"errors\": []", "control dispatch no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

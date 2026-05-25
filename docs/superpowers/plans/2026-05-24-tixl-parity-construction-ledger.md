@@ -154,8 +154,8 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping | L4 live | `audio_input_to_meter_to_uniform` | P-LIVE1 maps loaded runtime output to target events; realtime callback wiring remains parked |
 | LIVE-002 | Global audio mixers | Live parity | mixer settings | parked | L4 live | `audio_mixer_mute_route` | audio graph/mix bus |
 | LIVE-003 | MIDI input taxonomy and teach | Live parity | MIDI input UI | partial | L4 live | `teach_midi_cc_binding_flash` | MIDI input manager |
-| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven controlled CC output | L4 live | `loudness_cc_output_stream_enabled`, `live_io_midi_controlled_send` | P-LIVE1.5 proves selected MIDI output open/send for one loudness CC event; teach mode, realtime wiring, and broader output operators remain parked |
-| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback | L4 live | `osc_address_to_signal_value` | P-LIVE1.3 proves localhost OSC float send/receive loopback; external UDP receive/send remains parked |
+| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven controlled CC output | L4 live | `loudness_cc_output_stream_enabled`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited` | P-LIVE2 proves control-rate rate-limited MIDI sink calls after selected MIDI open/send; teach mode, realtime wiring, and broader output operators remain parked |
+| LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback/dispatch sink | L4 live | `osc_address_to_signal_value`, `live_io_control_dispatch_rate_limited` | P-LIVE1.3 proves localhost OSC float send/receive loopback; P-LIVE2 proves rate-limited OSC sink calls; external UDP receive/send remains parked |
 | LIVE-006 | Audio analyzer/operator family | Live parity | `io/audio`, `AudioReaction`, `DetectBpm` | partial/proven loudness | L4 live | `loaded_loudness_outputs_drive_live_surface` | C1.19/C1.20 line |
 | LIVE-007 | Exported executable and live show controls | Live parity | executable settings | parked | L4 live | `exported_show_keyboard_playback` | packaging/runtime mode |
 
@@ -168,7 +168,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
 | NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
-| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send` | MIDI teach mode, realtime callback wiring, live UI mapping, and broader MIDI/OSC live IO remain parked |
+| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOMidiSendProof` / `LiveIOControlDispatcher` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report`, `live_io_midi_controlled_send`, `live_io_control_dispatch_rate_limited` | MIDI teach mode, realtime callback wiring, live UI mapping, and broader MIDI/OSC live IO remain parked |
 
 ## Immediate Work Queue
 
@@ -1141,6 +1141,50 @@ It does not implement MIDI teach/learn mode, realtime callback delivery, live UI
 Latest accepted result: live io midi send proof ok; live io proof runner ok; app proof dump wrote live_io_midi_send_report.json with opened=true, sent=true, IAC selected output, ch1 cc20 value64; 67/67 tests passed; git diff --check passed.
 ```
 
+### P-LIVE2 Control-Rate Live IO Dispatcher Proof
+
+Claim:
+
+```text
+The live IO proof can feed multiple loudness frames through a control-rate dispatcher, rate-limit dispatches, call MIDI/OSC control sinks, and report sent/skipped counts without touching realtime callbacks or adding UI.
+```
+
+Evidence target:
+
+```text
+source/core/LiveIOControlDispatcher.h
+source/core/LiveIOControlDispatcher.cpp
+source/app/LiveIOProofRunner.h
+source/app/LiveIOProofRunner.cpp
+source/app/MainComponent.cpp
+tests/LiveIOControlDispatcherTests.cpp
+tests/LiveIOProofRunnerTests.cpp
+debug/p-live1-live-io-proof/live_io_control_dispatch_report.json
+docs/superpowers/specs/2026-05-25-p-live2-control-rate-dispatcher.md
+```
+
+- [x] Write RED tests for rate-limited frame dispatch, MIDI sink calls, OSC sink calls, shader-uniform skip counts, missing OSC sender failure, and JSON report fields.
+- [x] Add `LiveIOControlDispatcher` as a pure control-rate contract with sender callbacks.
+- [x] Extend `LiveIOProofRunner` to write `live_io_control_dispatch_report.json`.
+- [x] Wire app proof to the existing MIDI sender and an injected OSC proof sink.
+
+P-LIVE2 closed as control-rate live IO dispatcher proof as of 2026-05-25 12:38 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+live_io_control_dispatch_rate_limited
+live_io_app_control_dispatch_report_dump
+```
+
+Scope boundary:
+
+```text
+P-LIVE2 proves control-rate dispatch scheduling and sender invocation only.
+It does not deliver from the realtime audio callback, implement live UI mapping, implement MIDI teach/learn mode, add external OSC targets, add always-on OSC receive nodes/server, or broaden MIDI output operators beyond the existing CC proof.
+Latest accepted result: live io control dispatcher ok; live io proof runner ok; app proof dump wrote live_io_control_dispatch_report.json with frameCount=4, dispatchedFrameCount=3, rateLimitedFrameCount=1, midiSentCount=3, oscSentCount=3, shaderSkippedCount=3; 68/68 tests passed; git diff --check passed.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -1160,7 +1204,7 @@ The next plans should be created only when the previous queue item has proof evi
 | 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
 | 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
 | 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
-| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, and P-LIVE1.5 controlled MIDI open/send; teach mode and realtime wiring remain later |
+| 14 | P-LIVE MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, P-LIVE1.4 MIDI inventory route report, P-LIVE1.5 controlled MIDI open/send, and P-LIVE2 control-rate dispatcher; teach mode and realtime wiring remain later |
 
 ## Self-Review
 
