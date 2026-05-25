@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 09:15 Asia/Taipei.
+Date: 2026-05-25 09:24 Asia/Taipei.
 
 Branch:
 
@@ -245,7 +245,8 @@ Latest accepted targeted result:
 | P-OPS1B richer graph operation continuation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; command helpers plus `t3_t5_commands` and `interaction_traces` prove hidden input, ordered input insert, existing-node edge insert, snap/unsnap, and shake disconnect | Next requested lane is P-OUT1 output pinning |
 | P-OUT1 output pinning | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `OutputViewState` plus `output_view_state`, PatchDocument/saveWork roundtrip, and visible workspace state prove selection-following output and pin persistence | Next selectable parity lane is P-PARAM1 or P-TIME1; keep output slots/render toolbar parked |
 | P-PARAM1A parameter row states | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParameterRowState` plus `parameter_row_state`, command/storage roundtrip, and visible inspector state prove default/manual/connected/animated/reset rows | Next selectable parity lane is P-PARAM1B typed controls or P-TIME1; keep presets/snapshots parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-PARAM1A closure |
+| P-PARAM1B typed parameter controls | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParameterControl` plus `parameter_controls`, PatchDocument roundtrip, and visible inspector typed controls prove typed edit normalization before `set_param` | Next requested lane is P-TIME1 bars-native timeline |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-PARAM1B closure |
 
 ## Active Lane Protocol
 
@@ -254,42 +255,39 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-PARAM1A parameter row state closure as of 2026-05-25 09:15 Asia/Taipei.
+None after P-PARAM1B typed parameter controls closure as of 2026-05-25 09:24 Asia/Taipei.
 
-P-PARAM1A closed.
+P-PARAM1B closed.
 Evidence:
-- source/core/ParameterRowState.h
-- source/core/ParameterRowState.cpp
-- tests/ParameterRowStateTests.cpp
-- source/core/InteractionContract.h
-- source/core/InteractionContract.cpp
-- source/core/GraphLanguage.cpp
+- source/core/ParameterControl.h
+- source/core/ParameterControl.cpp
+- tests/ParameterControlTests.cpp
 - source/ui/ImGuiSmokeOverlayInspector.cpp
 - docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
 - docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
 
 Closed line:
-default/manual/connected/animated inspector rows
--> derive state from GraphNode params, port bindings, and editor edges
--> reset parameter and port binding through commandGraph
--> undo/redo restores row state
--> PatchDocument preserves row state
+ParamSpec type/range
+-> deterministic control kind
+-> normalized typed edit
+-> existing set_param command path
+-> PatchDocument preserves typed value
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_parameter_row_state_tests` failed RED first on missing `source/core/ParameterRowState.h`
-- `cmake --build build --target my_world_parameter_row_state_tests`
-- `./build/my_world_parameter_row_state_tests`
-- `ctest --test-dir build --output-on-failure -R "parameter_row_state|graph_commands|interaction_storage_roundtrip|patch_document|save_work_command"`
+- `cmake -S . -B build && cmake --build build --target my_world_parameter_control_tests` failed RED first on missing `source/core/ParameterControl.h`
+- `cmake --build build --target my_world_parameter_control_tests`
+- `./build/my_world_parameter_control_tests`
+- `ctest --test-dir build --output-on-failure -R "parameter_controls|parameter_row_state|graph_commands"`
+- `cmake --build build --target my_world_imgui`
 - `cmake --build build`
 - `ctest --test-dir build --output-on-failure`
 
 Latest accepted result:
-- `parameter row state ok`
-- `5/5 focused tests passed`
-- `57/57 full tests passed`
+- `parameter controls ok`
+- `3/3 focused tests passed`
+- `58/58 full tests passed`
 
 Next selectable lane:
-- P-PARAM1B typed parameter controls
 - P-TIME1 bars-native timeline model
 
 Previous closure:
@@ -1465,7 +1463,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-OPS1B graph operation continuation closure. User requested P-OUT1 output pinning next; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-PARAM1B typed parameter controls closure. User requested P-TIME1 bars-native timeline next; non-TiXL alternatives still require selecting a fresh active lane. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

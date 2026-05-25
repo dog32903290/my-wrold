@@ -121,11 +121,11 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 
 | ID | Feature | Spec row | Witness | Status | Phase | Acceptance trace | Blocker / next proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | row state shell proven; richer typed widgets remain PARAM-004/PARAM-005 |
-| PARAM-002 | Row states: normal, connected, animated, default/reset | Parameter parity | input UI state | proven | L3 visible | `default_manual_connected_animated_undo` | typed widget behavior remains later |
+| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | row state and typed core controls proven; richer layout/metadata remains PARAM-007 |
+| PARAM-002 | Row states: normal, connected, animated, default/reset | Parameter parity | input UI state | proven | L3 visible | `default_manual_connected_animated_undo` | none for current row-state layer |
 | PARAM-003 | Type color families | Parameter parity | `TypeUiProperties` | partial | L3 visible | `port_type_family_visual_mapping` | TypeSpec color map |
-| PARAM-004 | Scalar/vector controls | Parameter parity | typed input UIs | planned | L3 visible | `typed_scalar_vector_param_roundtrip` | param storage schema |
-| PARAM-005 | Enum, string, path, multiline controls | Parameter parity | typed input UIs | planned | L3 visible | `typed_text_enum_path_param_roundtrip` | param storage schema |
+| PARAM-004 | Scalar/vector controls | Parameter parity | typed input UIs | proven | L3 visible | `typed_scalar_vector_param_roundtrip` | dedicated vector UI polish remains later |
+| PARAM-005 | Enum, string, path, multiline controls | Parameter parity | typed input UIs | proven | L3 visible | `typed_text_enum_path_param_roundtrip` | enum flags and native file picker remain parked |
 | PARAM-006 | Lists, curves, gradients, ADSR | Parameter parity | specialized input UIs | parked | L3 visible | `list_curve_gradient_adsr_roundtrip` | curve/gradient value types |
 | PARAM-007 | Parameter metadata: groups, relevancy, descriptions, exclude from presets | Parameter parity | input metadata | planned | L3 visible | `nodespec_parameter_metadata_visibility` | NodeSpec metadata extension |
 | PARAM-008 | Input operations menu | Parameter parity | input context menu | partial | L2 command | `reset_param_set_default_extract_value_node` | command verbs for extract/reset |
@@ -452,6 +452,62 @@ P-PARAM1A proves row state derivation and reset command mechanics for existing P
 It does not implement typed scalar/vector widgets, enum/path/multiline controls, lists/curves/gradients/ADSR, parameter grouping/relevancy metadata, context menus, extract-value-node commands, preset capture, snapshot capture, or variation blending.
 ```
 
+### P-PARAM1B Typed Parameter Controls
+
+Claim:
+
+```text
+ParamSpec data types map to deterministic control kinds, typed edits normalize before set_param, invalid edits leave the graph unchanged, and stored typed values roundtrip through PatchDocument.
+```
+
+Evidence target:
+
+```text
+source/core/ParameterControl.h/.cpp
+tests/ParameterControlTests.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+```
+
+- [x] Write tests for scalar, vector, enum, string, path, multiline, invalid edits, commandGraph logging, and PatchDocument roundtrip.
+- [x] Implement deterministic `ParamSpec` type/range to control-kind selection.
+- [x] Implement typed edit normalization before `set_param`.
+- [x] Reject invalid typed edits without graph mutation.
+- [x] Wire the visible inspector to consume typed control state and call the typed command path.
+- [x] Run `cmake --build build --target my_world_parameter_control_tests`.
+- [x] Run focused parameter/command tests.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-PARAM1B closed as of 2026-05-25 09:24 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_parameter_control_tests
+# RED first failed on missing source/core/ParameterControl.h.
+cmake --build build --target my_world_parameter_control_tests
+./build/my_world_parameter_control_tests
+ctest --test-dir build --output-on-failure -R "parameter_controls|parameter_row_state|graph_commands"
+cmake --build build --target my_world_imgui
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+parameter controls ok
+3/3 focused tests passed.
+58/58 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-PARAM1B proves deterministic typed control mapping and value normalization for float, double, int, bool, vec2/vec3/vec4/quaternion, enum, string, resource/path, and text.* params.
+It does not implement enum flag sets, native file chooser dialogs, specialized list/curve/gradient/ADSR editors, parameter grouping/relevancy metadata, extract-value-node commands, preset/snapshot capture, or variation blending.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -462,15 +518,16 @@ The next plans should be created only when the previous queue item has proof evi
 | 2 | P-SEARCH1 browser/search/compatible create | P-TAX1 | Search must read taxonomy and NodeSpec metadata |
 | 3 | P-OPS1 richer graph gestures | P-SEARCH1 can run in parallel after query helper exists | Split/reconnect needs compatible-create semantics |
 | 4 | P-OUT1 output pinning | current live compound runtime surface is stable | Output behavior affects workspace composition |
-| 5 | P-PARAM1 parameter row states | P-SEARCH1 and P-OPS1 | Inspector actions need commandGraph verbs and NodeSpec metadata |
-| 6 | P-VAR1 presets/snapshots foundation | P-PARAM1 | Variation capture depends on parameter state semantics |
-| 7 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
-| 8 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
+| 5 | P-PARAM1A parameter row states | P-SEARCH1 and P-OPS1 | Inspector actions need commandGraph verbs and NodeSpec metadata |
+| 6 | P-PARAM1B typed parameter controls | P-PARAM1A | Typed edit normalization should precede presets/snapshots |
+| 7 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
+| 8 | P-TIME1 bars-native timeline model | P-OUT1 | Timeline affects render/export and transport |
+| 9 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
 
 ## Self-Review
 
 - The ledger covers taxonomy, browser/search, compatible creation, graph gestures, parameters, presets/snapshots, output, timeline, render/export, audio/MIDI/OSC, and native carrying lines.
 - Rows point back to the taxonomy parity spec or existing skeleton/interaction/skin specs instead of redefining their law.
-- The immediate queue is limited to P-TAX1, P-SEARCH1, P-OPS1, and P-OUT1 so current work remains controllable.
+- The immediate queue is limited to the selected parity lane so current work remains controllable.
 - Parked rows name a blocker or next proof condition instead of becoming vague future scope.
 - No implementation is considered complete from UI visuals alone; each queue item names a test, fixture, trace, or proof dump.

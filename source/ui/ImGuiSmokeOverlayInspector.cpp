@@ -3,6 +3,7 @@
 #include "GraphEndpoint.h"
 #include "ImGuiSmokeOverlayHelpers.h"
 #include "NodeSpec.h"
+#include "ParameterControl.h"
 #include "ParameterRowState.h"
 #include "Tooll3SkinContract.h"
 
@@ -10,10 +11,36 @@
 #include <misc/cpp/imgui_stdlib.h>
 
 #include <cfloat>
+#include <cstdlib>
 
 namespace myworld
 {
 using namespace imgui_overlay;
+
+namespace
+{
+bool parseFloatForControl (const std::string& text, float& value)
+{
+    char* end = nullptr;
+    const auto parsed = std::strtof (text.c_str(), &end);
+    if (end == text.c_str())
+        return false;
+
+    value = parsed;
+    return true;
+}
+
+bool parseIntForControl (const std::string& text, int& value)
+{
+    char* end = nullptr;
+    const auto parsed = std::strtol (text.c_str(), &end, 10);
+    if (end == text.c_str())
+        return false;
+
+    value = static_cast<int> (parsed);
+    return true;
+}
+}
 
 void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus)
 {
@@ -69,12 +96,101 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
             if (param.dataType == "text.glsl")
                 continue;
 
-            const auto label = "Set##param-" + node->id + "-" + param.id;
-            if (ImGui::Button (label.c_str()))
-                runInteractionCommand ("set " + param.id,
-                                       setParam (interactionSession, node->id, param.id, demoValueForParam (param)));
+            const auto control = parameterControlForParam (param);
+            ImGui::PushID (("typed-param-" + node->id + "-" + param.id).c_str());
 
-            ImGui::SameLine();
+            switch (control.kind)
+            {
+                case ParameterControlKind::floatSlider:
+                {
+                    float next = 0.0f;
+                    if (! parseFloatForControl (value.empty() ? param.defaultValue : value, next))
+                        next = 0.0f;
+
+                    const auto changed = control.hasRange
+                                             ? ImGui::SliderFloat ("##value",
+                                                                  &next,
+                                                                  static_cast<float> (control.minimum),
+                                                                  static_cast<float> (control.maximum))
+                                             : ImGui::InputFloat ("##value", &next);
+
+                    if (changed)
+                        runInteractionCommand ("set " + param.id,
+                                               setTypedParam (interactionSession, node->id, param, std::to_string (next)));
+                    break;
+                }
+                case ParameterControlKind::integerStepper:
+                {
+                    int next = 0;
+                    if (! parseIntForControl (value.empty() ? param.defaultValue : value, next))
+                        next = 0;
+
+                    if (ImGui::InputInt ("##value", &next))
+                        runInteractionCommand ("set " + param.id,
+                                               setTypedParam (interactionSession, node->id, param, std::to_string (next)));
+                    break;
+                }
+                case ParameterControlKind::toggle:
+                {
+                    auto next = value == "true" || value == "1" || value == "on";
+                    if (ImGui::Checkbox ("##value", &next))
+                        runInteractionCommand ("set " + param.id,
+                                               setTypedParam (interactionSession, node->id, param, next ? "true" : "false"));
+                    break;
+                }
+                case ParameterControlKind::enumMenu:
+                {
+                    const auto preview = value.empty() ? param.defaultValue : value;
+                    if (ImGui::BeginCombo ("##value", preview.c_str()))
+                    {
+                        for (const auto& option : control.options)
+                        {
+                            if (ImGui::Selectable (option.c_str(), option == preview))
+                                runInteractionCommand ("set " + param.id,
+                                                       setTypedParam (interactionSession, node->id, param, option));
+                        }
+
+                        ImGui::EndCombo();
+                    }
+                    break;
+                }
+                case ParameterControlKind::vectorEditor:
+                case ParameterControlKind::textField:
+                case ParameterControlKind::pathField:
+                {
+                    auto next = value;
+                    if (ImGui::InputText ("##value", &next, ImGuiInputTextFlags_EnterReturnsTrue))
+                        runInteractionCommand ("set " + param.id,
+                                               setTypedParam (interactionSession, node->id, param, next));
+                    break;
+                }
+                case ParameterControlKind::multilineText:
+                {
+                    auto next = value;
+                    if (ImGui::InputTextMultiline ("##value",
+                                                   &next,
+                                                   { -FLT_MIN, 96.0f },
+                                                   ImGuiInputTextFlags_AllowTabInput))
+                    {
+                        runInteractionCommand ("set " + param.id,
+                                               setTypedParam (interactionSession, node->id, param, next));
+                    }
+                    break;
+                }
+                case ParameterControlKind::unsupported:
+                {
+                    const auto label = "Set##value";
+                    if (ImGui::Button (label))
+                        runInteractionCommand ("set " + param.id,
+                                               setParam (interactionSession, node->id, param.id, demoValueForParam (param)));
+                    break;
+                }
+            }
+
+            ImGui::PopID();
+
+            if (control.kind != ParameterControlKind::multilineText)
+                ImGui::SameLine();
             const auto resetLabel = "Reset##param-" + node->id + "-" + param.id;
             if (ImGui::Button (resetLabel.c_str()))
                 runInteractionCommand ("reset " + param.id,

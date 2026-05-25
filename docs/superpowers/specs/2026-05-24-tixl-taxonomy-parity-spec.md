@@ -291,11 +291,11 @@ One user action must become one undo unit even when the native implementation lo
 
 | Feature | TiXL witness | Policy | Current status | Required trace |
 | --- | --- | --- | --- | --- |
-| Parameter inspector shell | `ParameterWindow`, `IInputUi` | mirror | partial; row state shell proven | `select_node_inspector_rows_set_param` |
+| Parameter inspector shell | `ParameterWindow`, `IInputUi` | mirror | partial; row state and typed control core proven | `select_node_inspector_rows_set_param` |
 | Row state model | normal, connected, animated, default/reset | mirror | proven at core/storage/visible-state level | `default_manual_connected_animated_undo` |
 | Type color families | `TypeUiProperties` | mirror user families, adapt TypeSpec | partial | `port_type_family_visual_mapping` |
-| Scalar/vector controls | float, int, bool, double, vector, quaternion | mirror core widgets | gap | `typed_scalar_vector_param_roundtrip` |
-| Enum/string/path/multiline | enum combo/flags, string usage modes | mirror | gap | `typed_text_enum_path_param_roundtrip` |
+| Scalar/vector controls | float, int, bool, double, vector, quaternion | mirror core widgets | proven at core/storage/visible-state level | `typed_scalar_vector_param_roundtrip` |
+| Enum/string/path/multiline | enum combo/flags, string usage modes | mirror | proven for enum menu, string, path, multiline; enum flags parked | `typed_text_enum_path_param_roundtrip` |
 | Lists, curves, gradients, ADSR | specialized input UIs | parked | parked | `list_curve_gradient_adsr_roundtrip` |
 | Parameter metadata | group title, padding, relevancy, description, exclude-from-presets | mirror | gap | `nodespec_parameter_metadata_visibility` |
 | Input operations menu | set default, reset default, extract value node, connect/search, rename, settings | mirror core ops | partial | `reset_param_set_default_extract_value_node` |
@@ -353,6 +353,28 @@ default_manual_connected_animated_undo
 ```
 
 This proves default/manual parameter rows, edge-connected input rows, animated/manual port binding rows, `reset_param`, `reset_port_binding`, undo/redo for reset, PatchDocument roundtrip, and visible inspector state consumption. It does not implement typed scalar/vector widgets, enum/path/multiline controls, lists/curves/gradients/ADSR, parameter metadata grouping/relevancy, extract-value-node commands, preset/snapshot capture, or variation blending.
+
+## P-PARAM1B Fixture Evidence
+
+Closed as of 2026-05-25 09:24 Asia/Taipei.
+
+Typed parameter controls are proven at core, commandGraph, storage, and visible inspector consumption level by:
+
+```text
+source/core/ParameterControl.h
+source/core/ParameterControl.cpp
+tests/ParameterControlTests.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+```
+
+Verified acceptance traces:
+
+```text
+typed_scalar_vector_param_roundtrip
+typed_text_enum_path_param_roundtrip
+```
+
+This proves deterministic control-kind selection and edit normalization for float, double, int, bool, vec2/vec3/vec4/quaternion, enum options encoded as `a|b|c`, string, resource/path, and multiline `text.*` params. It also proves range clamping with `min..max`, invalid edit rejection without graph mutation, `setTypedParam -> set_param`, PatchDocument roundtrip, and visible inspector typed-control consumption. It does not implement enum flag sets, native file chooser dialogs, specialized list/curve/gradient/ADSR editors, parameter grouping/relevancy metadata, extract-value-node commands, preset/snapshot capture, or variation blending.
 
 ## P-OUT1 Fixture Evidence
 
@@ -464,8 +486,15 @@ default/manual parameter rows
 -> reset commands with undo/redo
 -> save/load preserves row state
 
+P-PARAM1B typed parameter controls: closed at core/storage/visible-state level
+ParamSpec type/range
+-> typed control kind
+-> normalized edit
+-> set_param command
+-> save/load preserves typed value
+
 Next selectable parity line:
-P-PARAM1B typed parameter controls or P-TIME1 bars-native timeline model, depending on which surface needs to bear weight next.
+P-TIME1 bars-native timeline model.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.
