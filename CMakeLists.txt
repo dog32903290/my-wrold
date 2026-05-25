@@ -1687,6 +1687,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_a1_audio_proof_runner
             my_world_live_io_app_controller
             my_world_live_io_proof_runner
+            my_world_shader_preview_input_bridge
             my_world_v1_shader_proof_artifacts
             my_world_c2_storage_proof_runner
             my_world_c3_save_work_proof_runner

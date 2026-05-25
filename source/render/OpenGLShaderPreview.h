@@ -5,6 +5,7 @@
 #include "ImGuiSmokeOverlay.h"
 #include "NodeSpec.h"
 #include "OpenGLRenderBackend.h"
+#include "ShaderPreviewInputBridge.h"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <juce_opengl/juce_opengl.h>
@@ -31,6 +32,7 @@ public:
 
     void setFragmentShader (std::string source);
     void setLoudness (float newLoudness);
+    void setInputSnapshot (const ShaderPreviewInputSnapshot& snapshot);
     void requestProofDump (juce::File outputDirectory, GraphContract graph);
 
     StatusCallback onStatusMessage;

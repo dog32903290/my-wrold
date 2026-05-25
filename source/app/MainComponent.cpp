@@ -19,6 +19,7 @@
 #include "PVDetectorProofRunner.h"
 #include "ProofReports.h"
 #include "RuntimeRegistry.h"
+#include "ShaderPreviewInputBridge.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -875,6 +876,14 @@ void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot,
     const auto indicator = withLiveIORealtimeTelemetry (
         result.indicator,
         makeRealtimeIndicatorTelemetry (realtime));
+    if (indicator.hasShaderUniform)
+    {
+        preview.setInputSnapshot (makeShaderPreviewInputFromUniformEvidence (
+            indicator.shaderUniformBindingId,
+            indicator.shaderUniformName,
+            indicator.shaderUniformValue,
+            indicator.shaderUniformSampleCounter));
+    }
     liveIOStatus = juce::String (indicator.text);
     liveIOStatusTone = juce::String (indicator.tone);
 }

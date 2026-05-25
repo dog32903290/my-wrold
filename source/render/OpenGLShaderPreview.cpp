@@ -207,6 +207,16 @@ void OpenGLShaderPreview::setLoudness (float newLoudness)
     loudness.store (juce::jlimit (0.0f, 1.0f, newLoudness), std::memory_order_relaxed);
 }
 
+void OpenGLShaderPreview::setInputSnapshot (const ShaderPreviewInputSnapshot& snapshot)
+{
+    const auto input = makeRenderFrameInputFromShaderPreviewInput (
+        snapshot,
+        0.0,
+        frameIndex,
+        loudness.load (std::memory_order_relaxed));
+    setLoudness (input.loudness);
+}
+
 void OpenGLShaderPreview::requestProofDump (juce::File outputDirectory, GraphContract graph)
 {
     {

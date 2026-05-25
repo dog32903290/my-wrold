@@ -351,6 +351,7 @@ Latest accepted targeted result:
 | P-LIVE28 shader preview input bridge contract | closed | `docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md`; `ShaderPreviewInputBridge` defines a JUCE-free uniform snapshot contract and JSON shape for preview input without wiring OpenGL live binding | Shader preview smoke-read, OpenGL backend wiring, and live binding remain parked |
 | P-LIVE29 shader preview smoke-read | closed | `docs/superpowers/specs/2026-05-25-p-live29-shader-preview-smoke-read.md`; `ShaderPreviewInputBridge` can convert a `u_loudness` snapshot into `RenderFrameInput`, and a fake render backend reads the value in a smoke test | OpenGL backend wiring, live binding, and visual reaction remain parked |
 | P-LIVE30 A1 to V1 handoff closure | closed | `docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md`; closes the P-LIVE lane at app/control-rate handoff: loudness now has live IO evidence, standalone uniform artifact, preview input bridge, and render-side smoke-read | Next work should leave P-LIVE naming and open an `AV1 audio-to-visual bridge` lane for real preview reaction |
+| AV1 audio-to-visual bridge | closed | `docs/superpowers/specs/2026-05-25-av1-audio-to-visual-bridge.md`; `MainComponent::tickLiveIOControl()` feeds `shader.uniform` evidence into `OpenGLShaderPreview::setInputSnapshot()`, and preview converts the snapshot through `ShaderPreviewInputBridge` before updating its render loudness input | Pixel-diff visual proof, graph node mapping, OpenGL uniform list expansion, and Metal remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE30 closure |
 
 ## Active Lane Protocol
@@ -360,6 +361,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after AV1 audio-to-visual bridge closure as of 2026-05-25.
+
+AV1 audio-to-visual bridge closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-av1-audio-to-visual-bridge.md
+- source/app/MainComponent.cpp
+- source/render/OpenGLShaderPreview.h
+- source/render/OpenGLShaderPreview.cpp
+- CMakeLists.txt
+
+Closed line:
+LiveIOStatusIndicatorState shader uniform evidence
+-> MainComponent::tickLiveIOControl()
+-> ShaderPreviewInputSnapshot
+-> OpenGLShaderPreview::setInputSnapshot()
+-> existing preview loudness render input
+
+Latest accepted result:
+- RED first on missing `OpenGLShaderPreview::setInputSnapshot`.
+- app target `my-world` builds.
+- `77/77 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE30 A1 to V1 handoff closure as of 2026-05-25.
 
 P-LIVE30 A1 to V1 handoff closure closed.
@@ -2291,7 +2317,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE30 A1 to V1 handoff closure. The P-LIVE lane is closed; the next audio-to-visual work should open a fresh `AV1 audio-to-visual bridge` lane explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after AV1 audio-to-visual bridge closure. The P-LIVE lane is closed. The next audio-to-visual work should be an explicit AV lane, likely AV2 visual reaction proof. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
