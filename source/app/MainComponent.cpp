@@ -67,70 +67,6 @@ juce::Colour liveIOToneColour (const juce::String& tone)
     return juce::Colour::fromRGB (202, 211, 226);
 }
 
-juce::String midiTeachStatusText (const LiveIOMidiTeachState& state, int inputCount)
-{
-    if (state.status == "armed")
-    {
-        auto text = juce::String ("teach ")
-                    + juce::String (liveIOMidiTeachTargetToString (state.target))
-                    + " waiting";
-
-        if (inputCount == 0)
-            text += " / no inputs";
-
-        return text;
-    }
-
-    if (state.status == "learned")
-    {
-        return juce::String ("learned ch")
-               + juce::String (state.learnedChannel)
-               + " cc"
-               + juce::String (state.learnedCc);
-    }
-
-    if (state.status == "ignored")
-        return "teach waiting for CC";
-
-    if (state.status == "cancelled")
-        return "teach cancelled";
-
-    if (state.status == "failed")
-        return "teach failed";
-
-    return "teach idle";
-}
-
-LiveIOControlTimerSendMode liveIOSendModeFromPreference (LiveIOSendModePreference sendMode)
-{
-    if (sendMode == LiveIOSendModePreference::controlledSend)
-        return LiveIOControlTimerSendMode::controlledSend;
-
-    return LiveIOControlTimerSendMode::dryRun;
-}
-
-LiveIOMidiOutputInventory selectedMidiOutputInventory (const MidiPreferences& midiPreferences)
-{
-    LiveIOMidiOutputInventory inventory;
-
-    if (! midiPreferences.outputIdentifier.empty())
-        inventory.devices.push_back ({ midiPreferences.outputName, midiPreferences.outputIdentifier });
-
-    return inventory;
-}
-
-std::vector<LiveIOBinding> makeAppLiveIOBindings (const MidiPreferences& midiPreferences)
-{
-    return {
-        makeLiveIOMidiCcBinding ("midi.loudness",
-                                 "out",
-                                 midiPreferences.channel,
-                                 midiPreferences.loudnessCc),
-        makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness"),
-        makeLiveIOShaderUniformBinding ("uniform.loudness", "out", "u_loudness")
-    };
-}
-
 }
 
 MainComponent::MainComponent (StartupProofOptions startupProofOptions)
@@ -730,29 +666,28 @@ void MainComponent::applyLiveIOPreferences (LiveIOPreferences preferences)
 {
     performancePreferences.liveIO = preferences;
     performancePreferences = sanitizePerformancePreferences (performancePreferences);
-    liveIOSendMode = liveIOSendModeFromPreference (performancePreferences.liveIO.sendMode);
+    liveIOController.applyLiveIOPreferences (performancePreferences.liveIO);
 }
 
 void MainComponent::armMidiTeach (LiveIOMidiTeachTarget target)
 {
     stopMidiTeachListening();
 
-    const auto result = armLiveIOMidiTeach (midiTeachState, target);
-    midiTeachArmedForCallback.store (result.ok && midiTeachState.armed);
+    const auto inputCount = startMidiTeachListening();
+    const auto view = liveIOController.armMidiTeach (target, inputCount);
+    midiTeachArmedForCallback.store (view.shouldListen);
 
-    if (result.ok)
-        midiTeachInputCount = startMidiTeachListening();
-    else
+    if (! view.shouldListen)
         stopMidiTeachListening();
 
-    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+    preferencesPanel.setMidiTeachStatus (juce::String (view.statusText));
 }
 
 void MainComponent::cancelMidiTeach()
 {
-    (void) cancelLiveIOMidiTeach (midiTeachState);
+    const auto view = liveIOController.cancelMidiTeach();
     stopMidiTeachListening();
-    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+    preferencesPanel.setMidiTeachStatus (juce::String (view.statusText));
 }
 
 int MainComponent::startMidiTeachListening()
@@ -792,20 +727,19 @@ void MainComponent::stopMidiTeachListening()
         audioDeviceManager.setMidiInputDeviceEnabled (identifier, false);
 
     midiInputsEnabledForTeach.clear();
-    midiTeachInputCount = 0;
 }
 
 void MainComponent::handleMidiTeachMessage (LiveIOMidiTeachIncomingMessage message)
 {
-    const auto result = handleLiveIOMidiTeachMessage (midiTeachState, message);
+    const auto view = liveIOController.handleMidiTeachMessage (message);
 
-    if (result.learned)
+    if (view.learned)
     {
         stopMidiTeachListening();
-        preferencesPanel.applyLearnedMidiCc (result.target, result.channel, result.cc);
+        preferencesPanel.applyLearnedMidiCc (view.learnedTarget, view.learnedChannel, view.learnedCc);
     }
 
-    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+    preferencesPanel.setMidiTeachStatus (juce::String (view.statusText));
 }
 
 void MainComponent::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& message)
@@ -851,45 +785,31 @@ void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
 
 void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot)
 {
-    const auto preferences = sanitizePerformancePreferences (performancePreferences);
-
-    LiveIOControlTimerConfig config;
-    config.bindings = makeAppLiveIOBindings (preferences.midi);
-    config.tickIntervalMs = 50;
-    config.dispatchMinIntervalMs = 0;
-    config.enabled = true;
-    config.sendMode = liveIOSendMode;
-
-    if (liveIOSendMode == LiveIOControlTimerSendMode::controlledSend)
+    LiveIOAppTimerRequest request;
+    request.preferences = performancePreferences;
+    request.snapshot = snapshot;
+    request.timestampMs = static_cast<std::int64_t> (juce::Time::getMillisecondCounterHiRes());
+    request.midiSender = [this] (const LiveIOMidiOutputDevice& device,
+                                 const LiveIOMidiCcMessage& message)
     {
-        config.midiOutputInventory = selectedMidiOutputInventory (preferences.midi);
-        config.midiOutputIdentifier = preferences.midi.outputIdentifier;
-        config.oscEnabled = false;
-        config.midiSender = [this] (const LiveIOMidiOutputDevice& device,
-                                    const LiveIOMidiCcMessage& message)
+        if (midiOutput == nullptr)
         {
-            if (midiOutput == nullptr)
-            {
-                return LiveIOMidiOutputDeviceSendResult {
-                    false,
-                    false,
-                    "midi output is not open: " + device.identifier
-                };
-            }
+            return LiveIOMidiOutputDeviceSendResult {
+                false,
+                false,
+                "midi output is not open: " + device.identifier
+            };
+        }
 
-            midiOutput->sendMessageNow (juce::MidiMessage::controllerEvent (
-                message.channel,
-                message.cc,
-                message.value));
-            return LiveIOMidiOutputDeviceSendResult { true, true, "" };
-        };
-    }
+        midiOutput->sendMessageNow (juce::MidiMessage::controllerEvent (
+            message.channel,
+            message.cc,
+            message.value));
+        return LiveIOMidiOutputDeviceSendResult { true, true, "" };
+    };
 
-    const auto nowMs = static_cast<std::int64_t> (juce::Time::getMillisecondCounterHiRes());
-    (void) tickLiveIOControlTimer (liveIOTimerState, config, nowMs, snapshot);
-
-    const auto indicator = makeLiveIOStatusIndicatorState (liveIOTimerState, liveIOSendMode);
-    liveIOStatus = juce::String (indicator.text);
-    liveIOStatusTone = juce::String (indicator.tone);
+    const auto result = liveIOController.tick (request);
+    liveIOStatus = juce::String (result.indicator.text);
+    liveIOStatusTone = juce::String (result.indicator.tone);
 }
 }

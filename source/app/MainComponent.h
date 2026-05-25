@@ -2,9 +2,7 @@
 
 #include "AudioInputAnalyzer.h"
 #include "InteractionContract.h"
-#include "LiveIOControlTimer.h"
-#include "LiveIOMidiTeach.h"
-#include "LiveIOStatusIndicator.h"
+#include "LiveIOAppController.h"
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
 #include "PreferencesPanel.h"
@@ -97,14 +95,11 @@ private:
     std::unique_ptr<juce::MidiOutput> midiOutput;
     juce::String openedMidiOutputIdentifier;
     juce::String midiStatus = "midi off";
-    LiveIOControlTimerSendMode liveIOSendMode = LiveIOControlTimerSendMode::dryRun;
-    LiveIOControlTimerState liveIOTimerState;
+    LiveIOAppController liveIOController;
     juce::String liveIOStatus = "live io dry idle m0 o0";
     juce::String liveIOStatusTone = "idle";
-    LiveIOMidiTeachState midiTeachState;
     std::atomic<bool> midiTeachArmedForCallback { false };
     bool midiTeachCallbackRegistered = false;
-    int midiTeachInputCount = 0;
     std::vector<juce::String> midiInputsEnabledForTeach;
     bool shouldQuitAfterStartupDump = false;
 

@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 14:04 Asia/Taipei.
+Date: 2026-05-25 14:14 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+ba7d142 Add live IO MIDI teach
 663e440 Add live IO send mode preferences
 96075a0 Add live IO status indicator
 329f878 Add live IO app timer OSC loopback proof
@@ -282,7 +283,8 @@ Latest accepted targeted result:
 | P-LIVE8 live UI indicator | closed | `docs/superpowers/specs/2026-05-25-p-live8-live-ui-indicator.md`; `LiveIOStatusIndicator` turns real `LiveIOControlTimerState` plus send mode into compact text/tone/counts, and `MainComponent` shows it in a dedicated status label; `ctest` 71/71 | Send mode preferences are closed in P-LIVE9; MIDI teach is closed in P-LIVE10; external OSC targets/receive nodes, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE9 send mode preferences | closed | `docs/superpowers/specs/2026-05-25-p-live9-send-mode-preferences.md`; `PerformancePreferences.liveIO` defaults to dry-run, sanitizes invalid send modes back to dry-run, `PreferencesPanel` exposes dry-run/controlled-send, and `MainComponent` maps the sanitized preference into `LiveIOControlTimerConfig.sendMode`; `ctest` 71/71 | MIDI teach is closed in P-LIVE10; OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
 | P-LIVE10 MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live10-midi-teach.md`; `LiveIOMidiTeach` arms loudness/map CC targets, learns the next incoming MIDI CC, disarms, and `MainComponent` temporarily routes MIDI input callbacks to PreferencesPanel learned channel/CC updates without UI work in the callback; `ctest` 72/72 | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE10 closure |
+| P-LIVE-H1 live IO app controller cleanup | closed | `docs/superpowers/specs/2026-05-25-p-live-h1-app-controller-cleanup.md`; `LiveIOAppController` owns app-timer live IO state and MIDI teach state, while `MainComponent` keeps JUCE UI/device registration; focused controller test, app build, and `ctest` 73/73 passed | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE-H1 closure |
 
 ## Active Lane Protocol
 
@@ -291,40 +293,40 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE10 MIDI teach closure as of 2026-05-25 14:04 Asia/Taipei.
+None after P-LIVE-H1 live IO app controller cleanup closure as of 2026-05-25 14:14 Asia/Taipei.
 
-P-LIVE10 MIDI teach closed.
+P-LIVE-H1 live IO app controller cleanup closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live10-midi-teach.md
-- source/core/LiveIOMidiTeach.h
-- source/core/LiveIOMidiTeach.cpp
-- tests/LiveIOMidiTeachTests.cpp
-- source/app/PreferencesPanel.h
-- source/app/PreferencesPanel.cpp
+- docs/superpowers/specs/2026-05-25-p-live-h1-app-controller-cleanup.md
+- source/app/LiveIOAppController.h
+- source/app/LiveIOAppController.cpp
+- tests/LiveIOAppControllerTests.cpp
 - source/app/MainComponent.h
 - source/app/MainComponent.cpp
 - CMakeLists.txt
 
 Closed line:
-PreferencesPanel Learn Loudness / Learn Map
--> MainComponent::armMidiTeach()
--> temporary MIDI input callback
--> incoming MIDI CC parsed only
--> MessageManager::callAsync
--> handleLiveIOMidiTeachMessage()
--> PreferencesPanel::applyLearnedMidiCc()
--> emitMidiPreferences()
--> MIDI teach listener removed
+MainComponent::tickLiveIOControl()
+-> LiveIOAppController::tick()
+-> LiveIOControlTimer
+-> LiveIOStatusIndicatorState
+-> MainComponent liveIOStatusLabel
+
+MainComponent MIDI teach buttons / callback
+-> LiveIOAppController teach API
+-> PreferencesPanel apply learned channel/CC
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_live_io_midi_teach_tests` failed RED first on missing `LiveIOMidiTeach.h`.
-- `cmake --build build --target my_world_live_io_midi_teach_tests my-world && ./build/my_world_live_io_midi_teach_tests`
-- `cmake --build build --target my_world_live_io_midi_teach_tests my-world && ./build/my_world_live_io_midi_teach_tests && ctest --test-dir build --output-on-failure && git diff --check`
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_app_controller_tests` failed RED first on missing `source/app/LiveIOAppController.cpp`.
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_app_controller_tests && ./build/my_world_live_io_app_controller_tests`
+- `cmake --build build --target my_world_live_io_app_controller_tests my-world && ./build/my_world_live_io_app_controller_tests`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
 
 Latest accepted result:
-- `live io midi teach ok`
+- `live io app controller ok`
 - app target `my-world` builds.
-- `72/72 tests passed`
+- `73/73 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
@@ -1769,7 +1771,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE10 MIDI teach closure. The next lane must be selected explicitly. Do not add analyzer DSP, arbitrary MIDI teach bindings, MIDI input selector/preferences, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE-H1 live IO app controller cleanup closure. The next lane must be selected explicitly. Do not add analyzer DSP, arbitrary MIDI teach bindings, MIDI input selector/preferences, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

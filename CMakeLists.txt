@@ -719,6 +719,35 @@ target_link_libraries(my_world_performance_preferences_tests
 
 add_test(NAME performance_preferences COMMAND my_world_performance_preferences_tests)
 
+add_library(my_world_live_io_app_controller
+    source/app/LiveIOAppController.cpp
+)
+
+target_include_directories(my_world_live_io_app_controller
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/audio
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/preferences
+)
+
+target_link_libraries(my_world_live_io_app_controller
+    PUBLIC
+        my_world_core
+        my_world_preferences
+)
+
+add_executable(my_world_live_io_app_controller_tests
+    tests/LiveIOAppControllerTests.cpp
+)
+
+target_link_libraries(my_world_live_io_app_controller_tests
+    PRIVATE
+        my_world_live_io_app_controller
+)
+
+add_test(NAME live_io_app_controller COMMAND my_world_live_io_app_controller_tests)
+
 add_library(my_world_storage
     source/storage/StorageContract.cpp
     source/storage/StorageContractJson.cpp
@@ -1595,6 +1624,7 @@ if(EXISTS "${MY_WORLD_JUCE_DIR}/CMakeLists.txt")
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
             my_world_a1_audio_proof_runner
+            my_world_live_io_app_controller
             my_world_live_io_proof_runner
             my_world_v1_shader_proof_artifacts
             my_world_c2_storage_proof_runner
