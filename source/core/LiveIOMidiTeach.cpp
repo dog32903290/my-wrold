@@ -37,13 +37,15 @@ std::string jsonQuoted (const std::string& text)
 bool targetIsLearnable (LiveIOMidiTeachTarget target)
 {
     return target == LiveIOMidiTeachTarget::loudnessCc
-        || target == LiveIOMidiTeachTarget::mapCc;
+        || target == LiveIOMidiTeachTarget::mapCc
+        || target == LiveIOMidiTeachTarget::bindingMidiCc;
 }
 
 LiveIOMidiTeachResult makeResult (bool ok,
                                   bool consumed,
                                   bool learned,
                                   LiveIOMidiTeachTarget target,
+                                  const std::string& bindingId,
                                   const std::string& status,
                                   const std::string& message,
                                   int channel,
@@ -54,6 +56,7 @@ LiveIOMidiTeachResult makeResult (bool ok,
         consumed,
         learned,
         target,
+        bindingId,
         status,
         message,
         channel,
@@ -69,6 +72,9 @@ std::string liveIOMidiTeachTargetToString (LiveIOMidiTeachTarget target)
 
     if (target == LiveIOMidiTeachTarget::mapCc)
         return "map_cc";
+
+    if (target == LiveIOMidiTeachTarget::bindingMidiCc)
+        return "binding_midi_cc";
 
     return "none";
 }
@@ -90,23 +96,48 @@ LiveIOMidiTeachResult armLiveIOMidiTeach (LiveIOMidiTeachState& state,
     {
         state.armed = false;
         state.target = LiveIOMidiTeachTarget::none;
+        state.bindingId.clear();
         state.status = "failed";
         state.message = "midi teach target is required";
-        return makeResult (false, false, false, target, state.status, state.message, 1, 0);
+        return makeResult (false, false, false, target, "", state.status, state.message, 1, 0);
     }
 
     state.armed = true;
     state.target = target;
+    state.bindingId.clear();
     state.status = "armed";
     state.message = "midi_teach_armed:" + liveIOMidiTeachTargetToString (target);
 
-    return makeResult (true, false, false, target, state.status, state.message, state.learnedChannel, state.learnedCc);
+    return makeResult (true, false, false, target, "", state.status, state.message, state.learnedChannel, state.learnedCc);
+}
+
+LiveIOMidiTeachResult armLiveIOMidiTeachForBinding (LiveIOMidiTeachState& state,
+                                                    const std::string& bindingId)
+{
+    if (bindingId.empty())
+    {
+        state.armed = false;
+        state.target = LiveIOMidiTeachTarget::none;
+        state.bindingId.clear();
+        state.status = "failed";
+        state.message = "midi teach binding id is required";
+        return makeResult (false, false, false, LiveIOMidiTeachTarget::bindingMidiCc, "", state.status, state.message, 1, 0);
+    }
+
+    state.armed = true;
+    state.target = LiveIOMidiTeachTarget::bindingMidiCc;
+    state.bindingId = bindingId;
+    state.status = "armed";
+    state.message = "midi_teach_armed:binding_midi_cc:" + bindingId;
+
+    return makeResult (true, false, false, state.target, state.bindingId, state.status, state.message, state.learnedChannel, state.learnedCc);
 }
 
 LiveIOMidiTeachResult cancelLiveIOMidiTeach (LiveIOMidiTeachState& state)
 {
     state.armed = false;
     state.target = LiveIOMidiTeachTarget::none;
+    state.bindingId.clear();
     state.status = "cancelled";
     state.message = "midi_teach_cancelled";
 
@@ -115,6 +146,7 @@ LiveIOMidiTeachResult cancelLiveIOMidiTeach (LiveIOMidiTeachState& state)
         false,
         false,
         LiveIOMidiTeachTarget::none,
+        "",
         state.status,
         state.message,
         state.learnedChannel,
@@ -134,6 +166,7 @@ LiveIOMidiTeachResult handleLiveIOMidiTeachMessage (
             false,
             false,
             LiveIOMidiTeachTarget::none,
+            "",
             state.status,
             state.message,
             state.learnedChannel,
@@ -150,6 +183,7 @@ LiveIOMidiTeachResult handleLiveIOMidiTeachMessage (
             false,
             false,
             state.target,
+            state.bindingId,
             state.status,
             state.message,
             state.learnedChannel,
@@ -157,12 +191,15 @@ LiveIOMidiTeachResult handleLiveIOMidiTeachMessage (
     }
 
     const auto learnedTarget = state.target;
+    const auto learnedBindingId = state.bindingId;
     const auto channel = clampInt (message.channel, 1, 16);
     const auto cc = clampInt (message.cc, 0, 127);
 
     state.armed = false;
     state.target = LiveIOMidiTeachTarget::none;
+    state.bindingId.clear();
     state.lastLearnedTarget = learnedTarget;
+    state.lastLearnedBindingId = learnedBindingId;
     state.learnedChannel = channel;
     state.learnedCc = cc;
     ++state.learnedMessageCount;
@@ -174,10 +211,34 @@ LiveIOMidiTeachResult handleLiveIOMidiTeachMessage (
         true,
         true,
         learnedTarget,
+        learnedBindingId,
         state.status,
         state.message,
         channel,
         cc);
+}
+
+LiveIOMidiTeachBindingApplyResult applyLiveIOMidiTeachToBindings (
+    std::vector<LiveIOBinding>& bindings,
+    const LiveIOMidiTeachResult& result)
+{
+    if (! result.learned || result.target != LiveIOMidiTeachTarget::bindingMidiCc)
+        return { false, "ignored", "midi teach result is not a learned binding" };
+
+    for (auto& binding : bindings)
+    {
+        if (binding.id != result.bindingId)
+            continue;
+
+        if (binding.targetKind != LiveIOTargetKind::midiCc)
+            return { false, "blocked", "binding is not midi.cc: " + result.bindingId };
+
+        binding.midiChannel = result.channel;
+        binding.midiCc = result.cc;
+        return { true, "updated", "midi teach binding updated: " + result.bindingId };
+    }
+
+    return { false, "missing", "binding not found: " + result.bindingId };
 }
 
 std::string makeLiveIOMidiTeachStateJson (const LiveIOMidiTeachState& state)
@@ -188,6 +249,8 @@ std::string makeLiveIOMidiTeachStateJson (const LiveIOMidiTeachState& state)
     out << "  \"armed\": " << (state.armed ? "true" : "false") << ",\n";
     out << "  \"target\": " << jsonQuoted (liveIOMidiTeachTargetToString (state.target)) << ",\n";
     out << "  \"lastLearnedTarget\": " << jsonQuoted (liveIOMidiTeachTargetToString (state.lastLearnedTarget)) << ",\n";
+    out << "  \"bindingId\": " << jsonQuoted (state.bindingId) << ",\n";
+    out << "  \"lastLearnedBindingId\": " << jsonQuoted (state.lastLearnedBindingId) << ",\n";
     out << "  \"status\": " << jsonQuoted (state.status) << ",\n";
     out << "  \"message\": " << jsonQuoted (state.message) << ",\n";
     out << "  \"learnedChannel\": " << state.learnedChannel << ",\n";

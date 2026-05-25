@@ -105,24 +105,18 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 14:33 Asia/Taipei, `git status -sb` no longer reports uncommitted P-LIVE-H1 source files. The earlier P-LIVE-H1 safety note has been resolved; current dirty files are owned by the closed P-LIVE11 MIDI input selector/preference lane plus the closed P-LIVE12 preference disk persistence lane:
+As of 2026-05-25 14:44 Asia/Taipei, P-LIVE11/P-LIVE12 are committed and pushed in `e71d69c`. Current dirty files, if any, belong to the closed P-LIVE13 arbitrary binding MIDI teach lane.
 
 ```text
-M docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
- M source/app/AppPaths.cpp
- M source/app/AppPaths.h
- M source/app/MainComponent.cpp
- M source/app/MainComponent.h
- M source/app/PreferencesPanel.cpp
- M source/app/PreferencesPanel.h
- M source/preferences/PerformancePreferences.cpp
- M source/preferences/PerformancePreferences.h
- M tests/PerformancePreferencesTests.cpp
-?? docs/superpowers/specs/2026-05-25-p-live11-midi-input-selector-preference.md
-?? docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md
+P-LIVE13 owned files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md
+- source/core/LiveIOMidiTeach.h
+- source/core/LiveIOMidiTeach.cpp
+- tests/LiveIOMidiTeachTests.cpp
 ```
 
-P-LIVE-H1, P-LIVE11, and P-LIVE12 remain closed. New implementation work may start only after these owned dirty files are committed, stashed, or explicitly handed off.
+Do not edit OSC target preferences, external OSC send/receive, realtime callback delivery, or broader MIDI output operators in P-LIVE13.
 
 Current C4 note:
 
@@ -323,7 +317,8 @@ Latest accepted targeted result:
 | P-LIVE-H1 live IO app controller cleanup | closed | `docs/superpowers/specs/2026-05-25-p-live-h1-app-controller-cleanup.md`; `LiveIOAppController` owns app-timer live IO state and MIDI teach state, while `MainComponent` keeps JUCE UI/device registration; focused controller test, app build, and `ctest` 73/73 passed | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE11 MIDI input selector/preference | closed | `docs/superpowers/specs/2026-05-25-p-live11-midi-input-selector-preference.md`; `PerformancePreferences` stores selected MIDI input, `PreferencesPanel` exposes input selection, and `MainComponent` narrows MIDI teach listening to the selected input while preserving all-input fallback; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, preference disk persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
 | P-LIVE12 preference disk persistence | closed | `docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md`; `savePerformancePreferences()` / `loadPerformancePreferences()` roundtrip the full app preference snapshot, `MainComponent` loads it on startup and saves UI preference changes; focused tests, app build, and `ctest` 73/73 passed | Arbitrary binding teach, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE12 closure |
+| P-LIVE13 arbitrary binding MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md`; `armLiveIOMidiTeachForBinding()` learns a CC for an arbitrary binding id and `applyLiveIOMidiTeachToBindings()` updates only the matching `midi.cc` binding; focused tests, app build, and `ctest` 73/73 passed | UI binding chooser, OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE13 closure |
 
 ## Active Lane Protocol
 
@@ -332,45 +327,40 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE12 preference disk persistence closure as of 2026-05-25 14:33 Asia/Taipei.
+None after P-LIVE13 arbitrary binding MIDI teach closure as of 2026-05-25 14:44 Asia/Taipei.
 
-P-LIVE12 preference disk persistence closed.
+P-LIVE13 arbitrary binding MIDI teach closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live12-preference-disk-persistence.md
-- source/preferences/PerformancePreferences.h
-- source/preferences/PerformancePreferences.cpp
-- source/app/AppPaths.h
-- source/app/AppPaths.cpp
-- source/app/PreferencesPanel.h
-- source/app/PreferencesPanel.cpp
-- source/app/MainComponent.h
-- source/app/MainComponent.cpp
-- tests/PerformancePreferencesTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live13-arbitrary-binding-midi-teach.md
+- source/core/LiveIOMidiTeach.h
+- source/core/LiveIOMidiTeach.cpp
+- tests/LiveIOMidiTeachTests.cpp
 
 Closed line:
-PerformancePreferences
--> app preference file roundtrip
--> MainComponent loads preferences on startup and saves UI preference changes
--> MIDI teach learned CC/input/output/send mode survive app restart
+LiveIOBinding list
+-> arm MIDI teach for one binding id
+-> incoming MIDI CC
+-> update only that binding's MIDI channel/CC
+-> preserve fixed loudness/map CC teach behavior
 
 Latest verification:
-- `cmake --build build --target my_world_performance_preferences_tests` failed RED first on missing `savePerformancePreferences()` and `loadPerformancePreferences()`.
-- `cmake --build build --target my_world_performance_preferences_tests && ./build/my_world_performance_preferences_tests`
-- `cmake --build build --target my_world_performance_preferences_tests my-world`
-- `./build/my_world_performance_preferences_tests`
-- `ctest --test-dir build --output-on-failure -R "performance_preferences|live_io_app_controller"`
+- `cmake --build build --target my_world_live_io_midi_teach_tests` failed RED first on missing `armLiveIOMidiTeachForBinding()`, `LiveIOMidiTeachResult::bindingId`, and `applyLiveIOMidiTeachToBindings()`.
+- `cmake --build build --target my_world_live_io_midi_teach_tests`
+- `./build/my_world_live_io_midi_teach_tests`
+- `cmake --build build --target my-world`
+- `ctest --test-dir build --output-on-failure -R "live_io_midi_teach|live_io_app_controller|performance_preferences"`
 - `ctest --test-dir build --output-on-failure`
 - `git diff --check`
 
 Latest accepted result:
-- `performance preferences ok`
+- `live io midi teach ok`
 - app target `my-world` builds.
 - `73/73 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- Arbitrary binding teach, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
+- UI binding chooser, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.

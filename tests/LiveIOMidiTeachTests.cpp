@@ -1,4 +1,5 @@
 #include "LiveIOMidiTeach.h"
+#include "LiveIOBus.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -105,6 +106,28 @@ int main()
     expectContains (json, "\"status\": \"cancelled\"", "teach json status");
     expectContains (json, "\"lastLearnedTarget\": \"map_cc\"", "teach json target");
     expectContains (json, "\"learnedMessageCount\": 2", "teach json learned count");
+
+    std::vector<myworld::LiveIOBinding> bindings {
+        myworld::makeLiveIOMidiCcBinding ("midi.loudness", "out", 1, 20),
+        myworld::makeLiveIOMidiCcBinding ("midi.attack", "attack", 2, 21),
+        myworld::makeLiveIOOscFloatBinding ("osc.loudness", "out", "/my-world/loudness")
+    };
+    const auto bindingArm = myworld::armLiveIOMidiTeachForBinding (state, "midi.attack");
+    expect (bindingArm.ok, bindingArm.message);
+    expectEqual (bindingArm.bindingId, "midi.attack", "armed binding id");
+    const auto bindingLearned = myworld::handleLiveIOMidiTeachMessage (
+        state,
+        myworld::makeLiveIOMidiTeachControlChange (6, 88, 127));
+    expect (bindingLearned.learned, "binding teach learns");
+    expectEqual (bindingLearned.bindingId, "midi.attack", "learned binding id");
+
+    const auto applyResult = myworld::applyLiveIOMidiTeachToBindings (bindings, bindingLearned);
+    expect (applyResult.ok, applyResult.message);
+    expectEqual (bindings[0].midiChannel, 1, "unselected midi binding channel unchanged");
+    expectEqual (bindings[0].midiCc, 20, "unselected midi binding cc unchanged");
+    expectEqual (bindings[1].midiChannel, 6, "selected binding channel updated");
+    expectEqual (bindings[1].midiCc, 88, "selected binding cc updated");
+    expectEqual (bindings[2].oscAddress, "/my-world/loudness", "non-midi binding unchanged");
 
     std::cout << "live io midi teach ok\n";
     return 0;
