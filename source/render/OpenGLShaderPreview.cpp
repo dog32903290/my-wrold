@@ -8,6 +8,7 @@
 #include <atomic>
 #include <filesystem>
 #include <iterator>
+#include <thread>
 #include <vector>
 
 namespace myworld
@@ -392,14 +393,26 @@ void OpenGLShaderPreview::handlePendingProofDump (int width,
     request.loudnessCompound = loudnessCompound;
     request.runtimeOpDiagnostics = runtimeOpDiagnostics;
 
-    const auto result = writeV1ShaderProofArtifacts (request);
-    if (result.ok)
+    const auto outputDirectoryName = dump->outputDirectory.getFullPathName();
+    std::thread ([safe = juce::Component::SafePointer<OpenGLShaderPreview> (this),
+                  outputDirectoryName,
+                  proofRequest = std::move (request)]() mutable
     {
-        reportStatus ("proof dumped: " + dump->outputDirectory.getFullPathName());
-        return;
-    }
+        const auto result = writeV1ShaderProofArtifacts (proofRequest);
+        juce::MessageManager::callAsync ([safe, outputDirectoryName, result]
+        {
+            if (safe == nullptr)
+                return;
 
-    reportStatus (juce::String (result.error));
+            if (result.ok)
+            {
+                safe->reportStatus ("proof dumped: " + outputDirectoryName);
+                return;
+            }
+
+            safe->reportStatus (juce::String (result.error));
+        });
+    }).detach();
 }
 
 juce::Image OpenGLShaderPreview::capturedFrameToImage (const CapturedFrame& frame) const

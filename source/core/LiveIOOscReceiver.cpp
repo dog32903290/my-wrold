@@ -11,6 +11,8 @@ namespace myworld
 {
 namespace
 {
+constexpr size_t maxOscDatagramBytes = 65536;
+
 void appendPaddedOscString (std::vector<unsigned char>& bytes, const std::string& text)
 {
     for (const auto character : text)
@@ -197,7 +199,7 @@ LiveIOOscReceiverPollResult LiveIOOscReceiver::pollOnce (int timeoutMs)
     if (ready < 0)
         return { false, false, "failed", "osc receiver poll failed", {} };
 
-    std::vector<unsigned char> buffer (1024);
+    std::vector<unsigned char> buffer (maxOscDatagramBytes);
     const auto bytes = ::recv (socketFd, buffer.data(), buffer.size(), 0);
     if (bytes <= 0)
         return { false, false, "failed", "osc receiver read failed", {} };

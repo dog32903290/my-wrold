@@ -1,8 +1,8 @@
 #include "LiveIOBus.h"
+#include "LiveIOOscReceiver.h"
 #include "LiveIOSendAdapter.h"
 
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <netinet/in.h>
 #include <sys/select.h>
@@ -82,24 +82,6 @@ std::vector<unsigned char> receiveDatagram (int fd)
     return buffer;
 }
 
-size_t paddedOscStringSize (const char* text)
-{
-    const auto lengthWithNull = std::strlen (text) + 1;
-    return ((lengthWithNull + 3) / 4) * 4;
-}
-
-float readOscFloat (const std::vector<unsigned char>& datagram, size_t offset)
-{
-    expect (offset + 4 <= datagram.size(), "osc float bytes");
-    const uint32_t bits = (static_cast<uint32_t> (datagram[offset]) << 24)
-        | (static_cast<uint32_t> (datagram[offset + 1]) << 16)
-        | (static_cast<uint32_t> (datagram[offset + 2]) << 8)
-        | static_cast<uint32_t> (datagram[offset + 3]);
-
-    float value = 0.0f;
-    std::memcpy (&value, &bits, sizeof (value));
-    return value;
-}
 }
 
 int main()
@@ -193,14 +175,11 @@ int main()
     expectEqual (loopbackAction.oscPort, receiverPort, "controlled loopback port");
     expectEqual (loopbackAction.oscAddress, "/my-world/loudness", "controlled loopback address");
 
-    expect (std::string (reinterpret_cast<const char*> (datagram.data())) == "/my-world/loudness",
-            "osc datagram address");
-    const auto typeOffset = paddedOscStringSize ("/my-world/loudness");
-    expect (std::string (reinterpret_cast<const char*> (datagram.data() + typeOffset)) == ",f",
-            "osc datagram type tag");
-    const auto valueOffset = typeOffset + paddedOscStringSize (",f");
-    const auto receivedValue = readOscFloat (datagram, valueOffset);
-    expect (receivedValue > 0.499f && receivedValue < 0.501f, "osc datagram float value");
+    const auto decodedDatagram = myworld::decodeLiveIOOscFloatDatagram (datagram);
+    expect (decodedDatagram.ok, decodedDatagram.message);
+    expectEqual (decodedDatagram.address, "/my-world/loudness", "osc datagram address");
+    expect (decodedDatagram.floatValue > 0.499f && decodedDatagram.floatValue < 0.501f,
+            "osc datagram float value");
 
     const auto loopbackJson = myworld::makeLiveIOSendReportJson (loopbackReport);
     expectContains (loopbackJson, "\"status\": \"controlled_send\"", "loopback json");

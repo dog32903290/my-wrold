@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+0b0cfac Close audio visual proof segment
 09f53a5 Record app visual reaction proof readback
 9bfbf58 Capture visual reaction frames in shader proof
 380e071 Add visual reaction proof artifact
@@ -360,7 +361,8 @@ Latest accepted targeted result:
 | AV3 real OpenGL capture pair | closed | `docs/superpowers/specs/2026-05-25-av3-real-opengl-capture-pair.md`; shader preview proof dump now renders quiet/loud frame pairs through the active OpenGL preview backend and passes them to `V1ShaderProofArtifacts` for `visual_reaction.json` | Headless/offscreen GL harness, graph node mapping, full mapping editor, direct realtime callback send, and Metal remain parked |
 | AV4 app dump visual reaction readback | closed | `docs/superpowers/specs/2026-05-25-av4-app-dump-visual-reaction-readback.md`; `--dump-proof-and-exit` now produces and reads back `debug/v1-shader-proof/visual_reaction.json` with `ok: true`, `status: changed`, `changedPixels: 4147429`, and `meanAbsDelta: 0.071055` | Headless/offscreen GL harness, graph node mapping, full mapping editor, direct realtime callback send, and Metal remain parked |
 | AV5 audio visual segment closure | closed | `docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md`; closes the AV segment from live IO shader uniform evidence through preview loudness input, quiet/loud OpenGL capture, V1 artifact writing, and app dump readback | Headless/offscreen GL harness, user-facing graph IO mapping, full mapping editor, direct realtime callback send, Metal, and visual polish remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after AV5 closure |
+| Gemini risk triage hardening | closed | `docs/superpowers/specs/2026-05-25-gemini-risk-triage-hardening.md`; OSC proof readback now uses bounded decoder, malformed OSC tests cover missing null/truncated payloads, UDP receive buffers no longer truncate at 1024/256 bytes, OpenGL proof artifact writes run off the render thread, and source/CMake no longer contain user-specific hardcoded paths | Full OSC bundle parsing, JSON report writer replacement, non-loopback send UI/lifecycle, dedicated proof job system, and CI JUCE bootstrap remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after Gemini hardening closure |
 
 ## Active Lane Protocol
 
@@ -369,6 +371,39 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after Gemini risk triage hardening closure as of 2026-05-25.
+
+Gemini risk triage hardening closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-gemini-risk-triage-hardening.md
+- source/core/LiveIOOscReceiver.cpp
+- source/app/LiveIOProofRunner.cpp
+- source/render/OpenGLShaderPreview.cpp
+- source/ui/ImGuiSmokeOverlayHelpers.cpp
+- tests/LiveIOOscReceiverTests.cpp
+- tests/LiveIOSendAdapterTests.cpp
+- CMakeLists.txt
+
+Closed line:
+malformed OSC packet
+-> bounded decode
+-> failed packet status
+-> no null-terminated over-read
+
+OpenGL proof dump
+-> capture frames on GL thread
+-> write artifacts on background thread
+-> status callback on message thread
+
+Latest accepted result:
+- focused live IO send adapter/OSC receiver/proof runner tests passed.
+- app target `my-world` builds.
+- app proof dump command exits cleanly.
+- full suite passed.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after AV5 audio visual segment closure as of 2026-05-25.
 
 AV5 audio visual segment closure closed.
@@ -2416,7 +2451,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after AV5 audio visual segment closure. The P-LIVE and AV lanes are closed through app-level visual reaction proof. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after Gemini risk triage hardening. The P-LIVE and AV lanes are closed through app-level visual reaction proof, and the external review safety pass is closed. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

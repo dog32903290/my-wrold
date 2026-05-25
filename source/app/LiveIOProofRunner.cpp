@@ -7,6 +7,7 @@
 #include "LiveIOControlTimer.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
+#include "LiveIOOscReceiver.h"
 #include "LiveIOSendAdapter.h"
 #include "ProofRunSupport.h"
 #include "RuntimeRegistry.h"
@@ -431,7 +432,7 @@ std::vector<unsigned char> receiveLoopbackDatagram (int socketFd, std::string& e
         return {};
     }
 
-    std::vector<unsigned char> buffer (256);
+    std::vector<unsigned char> buffer (65536);
     const auto bytes = ::recv (socketFd, buffer.data(), buffer.size(), 0);
     if (bytes <= 0)
     {
@@ -443,28 +444,21 @@ std::vector<unsigned char> receiveLoopbackDatagram (int socketFd, std::string& e
     return buffer;
 }
 
-size_t paddedOscStringSize (const std::string& text)
+bool readLoopbackOscFloatPacket (const std::vector<unsigned char>& datagram,
+                                 std::string& address,
+                                 double& value,
+                                 std::string& error)
 {
-    const auto lengthWithNull = text.size() + 1;
-    return ((lengthWithNull + 3) / 4) * 4;
-}
-
-float readOscFloat (const std::vector<unsigned char>& datagram, size_t offset, std::string& error)
-{
-    if (offset + 4 > datagram.size())
+    const auto packet = decodeLiveIOOscFloatDatagram (datagram);
+    if (! packet.ok)
     {
-        error = "osc loopback packet is missing float payload";
-        return 0.0f;
+        error = packet.message;
+        return false;
     }
 
-    const uint32_t bits = (static_cast<uint32_t> (datagram[offset]) << 24)
-        | (static_cast<uint32_t> (datagram[offset + 1]) << 16)
-        | (static_cast<uint32_t> (datagram[offset + 2]) << 8)
-        | static_cast<uint32_t> (datagram[offset + 3]);
-
-    float value = 0.0f;
-    std::memcpy (&value, &bits, sizeof (value));
-    return value;
+    address = packet.address;
+    value = packet.floatValue;
+    return true;
 }
 
 OscLoopbackProof runOscLoopbackProof (const LiveIOBusReport& busReport)
@@ -499,19 +493,7 @@ OscLoopbackProof runOscLoopbackProof (const LiveIOBusReport& busReport)
         return proof;
     }
 
-    proof.receivedAddress = std::string (reinterpret_cast<const char*> (datagram.data()));
-    const auto typeOffset = paddedOscStringSize (proof.receivedAddress);
-    const auto typeTag = std::string (reinterpret_cast<const char*> (datagram.data() + typeOffset));
-    if (typeTag != ",f")
-    {
-        proof.error = "osc loopback packet has unexpected type tag";
-        proof.errors.push_back (proof.error);
-        return proof;
-    }
-
-    const auto valueOffset = typeOffset + paddedOscStringSize (typeTag);
-    proof.receivedFloatValue = readOscFloat (datagram, valueOffset, error);
-    if (! error.empty())
+    if (! readLoopbackOscFloatPacket (datagram, proof.receivedAddress, proof.receivedFloatValue, error))
     {
         proof.error = error;
         proof.errors.push_back (error);
@@ -585,19 +567,7 @@ AppTimerOscLoopbackProof runAppTimerOscLoopbackProof (const LiveIOProofRunReques
         return proof;
     }
 
-    proof.receivedAddress = std::string (reinterpret_cast<const char*> (datagram.data()));
-    const auto typeOffset = paddedOscStringSize (proof.receivedAddress);
-    const auto typeTag = std::string (reinterpret_cast<const char*> (datagram.data() + typeOffset));
-    if (typeTag != ",f")
-    {
-        proof.error = "osc loopback packet has unexpected type tag";
-        proof.errors.push_back (proof.error);
-        return proof;
-    }
-
-    const auto valueOffset = typeOffset + paddedOscStringSize (typeTag);
-    proof.receivedFloatValue = readOscFloat (datagram, valueOffset, error);
-    if (! error.empty())
+    if (! readLoopbackOscFloatPacket (datagram, proof.receivedAddress, proof.receivedFloatValue, error))
     {
         proof.error = error;
         proof.errors.push_back (error);

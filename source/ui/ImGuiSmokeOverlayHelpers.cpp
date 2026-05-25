@@ -268,8 +268,7 @@ BehaviorTraceReport runBundledTraceFixture()
 {
     const std::vector<std::string> candidatePaths {
         "fixtures/interaction/tooll3-t0-t7.behavior.json",
-        "../../../../../fixtures/interaction/tooll3-t0-t7.behavior.json",
-        "/Users/chenbaiwei/Desktop/我的世界/fixtures/interaction/tooll3-t0-t7.behavior.json"
+        "../../../../../fixtures/interaction/tooll3-t0-t7.behavior.json"
     };
 
     BehaviorTraceReport lastReport;

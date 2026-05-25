@@ -60,6 +60,25 @@ int main()
     expectEqual (decoded.address, "/stage/loudness", "decoded address");
     expect (decoded.floatValue > 0.749f && decoded.floatValue < 0.751f, "decoded float");
 
+    const std::vector<unsigned char> missingNullAddress { '/', 'x' };
+    const auto missingNullDecoded = myworld::decodeLiveIOOscFloatDatagram (missingNullAddress);
+    expect (! missingNullDecoded.ok, "missing address null should fail");
+    expectEqual (missingNullDecoded.message, "osc address is required", "missing address null message");
+
+    const std::vector<unsigned char> truncatedTypeTag {
+        '/', 'x', 0, 0,
+        ',', 'f'
+    };
+    const auto truncatedTypeDecoded = myworld::decodeLiveIOOscFloatDatagram (truncatedTypeTag);
+    expect (! truncatedTypeDecoded.ok, "truncated typetag should fail");
+    expectEqual (truncatedTypeDecoded.message, "osc float typetag is required", "truncated typetag message");
+
+    auto truncatedFloat = myworld::makeLiveIOOscFloatDatagram ("/stage/loudness", 0.75f);
+    truncatedFloat.pop_back();
+    const auto truncatedFloatDecoded = myworld::decodeLiveIOOscFloatDatagram (truncatedFloat);
+    expect (! truncatedFloatDecoded.ok, "truncated float should fail");
+    expectEqual (truncatedFloatDecoded.message, "osc float value is required", "truncated float message");
+
     myworld::LiveIOOscReceiver receiver;
     const auto opened = receiver.open ({ "127.0.0.1", 0, "/stage/loudness", "osc.loudness" });
     expect (opened.ok, opened.message);

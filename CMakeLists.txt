@@ -9,7 +9,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(MY_WORLD_DISPLAY_NAME "我的世界")
-set(MY_WORLD_JUCE_DIR "/Users/chenbaiwei/Documents/GitHub/sound-in-area-analyzer-plugin/JUCE" CACHE PATH "Path to a JUCE checkout")
+set(MY_WORLD_DEFAULT_JUCE_DIR "")
+if(DEFINED ENV{MY_WORLD_JUCE_DIR})
+    set(MY_WORLD_DEFAULT_JUCE_DIR "$ENV{MY_WORLD_JUCE_DIR}")
+elseif(DEFINED ENV{JUCE_DIR})
+    set(MY_WORLD_DEFAULT_JUCE_DIR "$ENV{JUCE_DIR}")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE/CMakeLists.txt")
+    set(MY_WORLD_DEFAULT_JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../JUCE")
+endif()
+set(MY_WORLD_JUCE_DIR "${MY_WORLD_DEFAULT_JUCE_DIR}" CACHE PATH "Path to a JUCE checkout")
 
 enable_testing()
 
