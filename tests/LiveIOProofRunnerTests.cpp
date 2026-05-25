@@ -57,7 +57,7 @@ int main()
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 8, "artifact count");
+    expect (result.artifactPaths.size() == 9, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
@@ -72,6 +72,8 @@ int main()
             "live io control dispatch report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_control_pump_report.json"),
             "live io control pump report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_app_timer_midi_report.json"),
+            "live io app timer midi report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -182,6 +184,24 @@ int main()
                     "control pump tick rate limited");
     expectContains (controlPumpReport, "\"status\": \"inactive\"", "control pump inactive");
     expectContains (controlPumpReport, "\"errors\": []", "control pump no errors");
+
+    const auto appTimerMidiReport = readTextFile (outputDirectory / "live_io_app_timer_midi_report.json");
+    expectContains (appTimerMidiReport, "\"kind\": \"liveIOAppTimerMidiProof\"",
+                    "app timer midi kind");
+    expectContains (appTimerMidiReport, "\"ok\": true", "app timer midi ok");
+    expectContains (appTimerMidiReport, "\"status\": \"controlled_sent\"",
+                    "app timer midi status");
+    expectContains (appTimerMidiReport, "\"sendMode\": \"controlled_send\"",
+                    "app timer midi send mode");
+    expectContains (appTimerMidiReport, "\"midiControlledSendCount\": 1",
+                    "app timer midi controlled count");
+    expectContains (appTimerMidiReport, "\"oscControlledSendCount\": 0",
+                    "app timer midi osc count");
+    expectContains (appTimerMidiReport, "\"shaderSkippedCount\": 1",
+                    "app timer midi shader skip");
+    expectContains (appTimerMidiReport, "\"lastSampleCounter\": 64",
+                    "app timer midi sample counter");
+    expectContains (appTimerMidiReport, "\"errors\": []", "app timer midi no errors");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

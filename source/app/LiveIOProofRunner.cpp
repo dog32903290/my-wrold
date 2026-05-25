@@ -4,6 +4,7 @@
 #include "LiveIOBus.h"
 #include "LiveIOControlDispatcher.h"
 #include "LiveIOControlPump.h"
+#include "LiveIOControlTimer.h"
 #include "LiveIOMidiOutputInventory.h"
 #include "LiveIOMidiSendProof.h"
 #include "LiveIOSendAdapter.h"
@@ -33,6 +34,7 @@ constexpr const char* liveIOMidiInventoryReportFileName = "live_io_midi_inventor
 constexpr const char* liveIOMidiSendReportFileName = "live_io_midi_send_report.json";
 constexpr const char* liveIOControlDispatchReportFileName = "live_io_control_dispatch_report.json";
 constexpr const char* liveIOControlPumpReportFileName = "live_io_control_pump_report.json";
+constexpr const char* liveIOAppTimerMidiReportFileName = "live_io_app_timer_midi_report.json";
 constexpr const char* runtimeExecutionFileName = "live_io_runtime_execution.json";
 constexpr const char* moduleLibraryPath = "fixtures/module-libraries/default.module-library.json";
 
@@ -142,6 +144,7 @@ LiveIOProofRunResult makeInitialResult (const LiveIOProofRunRequest& request)
         request.outputDirectory / liveIOMidiSendReportFileName,
         request.outputDirectory / liveIOControlDispatchReportFileName,
         request.outputDirectory / liveIOControlPumpReportFileName,
+        request.outputDirectory / liveIOAppTimerMidiReportFileName,
         request.outputDirectory / runtimeExecutionFileName
     };
     return result;
@@ -315,6 +318,30 @@ LiveIOControlPumpReport makeControlPumpReport (const LiveIOProofRunRequest& requ
     pumpRequest.midiSender = request.midiOutputSender;
     pumpRequest.oscSender = request.controlOscSender;
     return executeLiveIOControlPump (pumpRequest);
+}
+
+LiveIOControlTimerState makeAppTimerMidiProofState (const LiveIOProofRunRequest& request)
+{
+    LiveIOControlTimerConfig config;
+    config.bindings = makeProofBindings();
+    config.tickIntervalMs = 50;
+    config.dispatchMinIntervalMs = 0;
+    config.enabled = true;
+    config.sendMode = LiveIOControlTimerSendMode::controlledSend;
+    config.midiOutputInventory = request.midiOutputInventory;
+    config.midiOutputIdentifier = request.midiOutputInventory.devices.empty()
+        ? std::string ("__no_live_io_midi_outputs__")
+        : request.midiOutputInventory.devices.front().identifier;
+    config.midiSender = request.midiOutputSender;
+    config.oscEnabled = false;
+
+    LiveIOControlTimerState state;
+    const auto result = tickLiveIOControlTimer (state, config, 0, makeProofAnalyzerSnapshot (request.loudness));
+
+    if (! result.ok && state.errors.empty())
+        state.errors.push_back (result.message);
+
+    return state;
 }
 
 LoopbackReceiver openLoopbackReceiver (std::string& error)
@@ -513,6 +540,32 @@ std::string makeOscLoopbackProofJson (const OscLoopbackProof& proof)
     out << "}\n";
     return out.str();
 }
+
+std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"liveIOAppTimerMidiProof\",\n";
+    out << "  \"ok\": " << (state.lastStatus == "controlled_sent" ? "true" : "false") << ",\n";
+    out << "  \"status\": " << jsonQuoted (state.lastStatus) << ",\n";
+    out << "  \"message\": " << jsonQuoted (state.lastMessage) << ",\n";
+    out << "  \"sendMode\": " << jsonQuoted (state.lastSendMode) << ",\n";
+    out << "  \"tickCount\": " << state.tickCount << ",\n";
+    out << "  \"pumpCount\": " << state.pumpCount << ",\n";
+    out << "  \"midiDryRunCount\": " << state.midiDryRunCount << ",\n";
+    out << "  \"oscDryRunCount\": " << state.oscDryRunCount << ",\n";
+    out << "  \"midiControlledSendCount\": " << state.midiControlledSendCount << ",\n";
+    out << "  \"oscControlledSendCount\": " << state.oscControlledSendCount << ",\n";
+    out << "  \"shaderSkippedCount\": " << state.shaderSkippedCount << ",\n";
+    out << "  \"lastLoudness\": " << state.lastLoudness << ",\n";
+    out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
+    out << "  \"errors\": ";
+    appendErrorsJson (out, state.errors);
+    out << "\n";
+    out << "}\n";
+    return out.str();
+}
 }
 
 const char* liveIOProofDisplayName()
@@ -584,6 +637,12 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
     if (! controlPumpReport.ok)
         return fail (controlPumpReport.message);
 
+    const auto appTimerMidiState = makeAppTimerMidiProofState (request);
+    if (appTimerMidiState.lastStatus != "controlled_sent")
+        return fail (appTimerMidiState.lastMessage.empty()
+                         ? "live io app timer midi proof failed"
+                         : appTimerMidiState.lastMessage);
+
     const auto writes = {
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOReportFileName,
@@ -612,6 +671,10 @@ LiveIOProofRunResult runLiveIOProof (const LiveIOProofRunRequest& request)
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / liveIOControlPumpReportFileName,
             makeLiveIOControlPumpReportJson (controlPumpReport)
+        },
+        std::pair<std::filesystem::path, std::string> {
+            request.outputDirectory / liveIOAppTimerMidiReportFileName,
+            makeAppTimerMidiProofJson (appTimerMidiState)
         },
         std::pair<std::filesystem::path, std::string> {
             request.outputDirectory / runtimeExecutionFileName,
