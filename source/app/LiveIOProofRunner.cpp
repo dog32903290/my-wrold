@@ -682,6 +682,10 @@ std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state,
     out << "  \"midiControlledSendCount\": " << state.midiControlledSendCount << ",\n";
     out << "  \"oscControlledSendCount\": " << state.oscControlledSendCount << ",\n";
     out << "  \"shaderSkippedCount\": " << state.shaderSkippedCount << ",\n";
+    out << "  \"hasLastShaderUniform\": " << (state.hasLastShaderUniform ? "true" : "false") << ",\n";
+    out << "  \"lastShaderUniformName\": " << jsonQuoted (state.lastShaderUniformName) << ",\n";
+    out << "  \"lastShaderUniformValue\": " << state.lastShaderUniformValue << ",\n";
+    out << "  \"lastShaderUniformSampleCounter\": " << state.lastShaderUniformSampleCounter << ",\n";
     out << "  \"lastLoudness\": " << state.lastLoudness << ",\n";
     out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
     out << "  \"errors\": ";
@@ -709,6 +713,10 @@ std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& pr
     out << "  \"midiControlledSendCount\": " << proof.timerState.midiControlledSendCount << ",\n";
     out << "  \"oscControlledSendCount\": " << proof.timerState.oscControlledSendCount << ",\n";
     out << "  \"shaderSkippedCount\": " << proof.timerState.shaderSkippedCount << ",\n";
+    out << "  \"hasLastShaderUniform\": " << (proof.timerState.hasLastShaderUniform ? "true" : "false") << ",\n";
+    out << "  \"lastShaderUniformName\": " << jsonQuoted (proof.timerState.lastShaderUniformName) << ",\n";
+    out << "  \"lastShaderUniformValue\": " << proof.timerState.lastShaderUniformValue << ",\n";
+    out << "  \"lastShaderUniformSampleCounter\": " << proof.timerState.lastShaderUniformSampleCounter << ",\n";
     out << "  \"received\": " << (proof.received ? "true" : "false") << ",\n";
     out << "  \"oscHost\": " << jsonQuoted (proof.oscHost) << ",\n";
     out << "  \"oscPort\": " << proof.oscPort << ",\n";

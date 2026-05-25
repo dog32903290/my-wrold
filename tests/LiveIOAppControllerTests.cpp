@@ -183,6 +183,10 @@ int main()
                  "live io send controlled_sent m1 o1 op shader.uniform",
                  "shader operator does not send MIDI or OSC");
     expectEqual (shader.indicator.outputOperator, "shader.uniform", "shader operator field");
+    expect (shader.indicator.hasShaderUniform, "shader operator records uniform evidence");
+    expectEqual (shader.indicator.shaderUniformName, "u_loudness", "shader operator uniform name");
+    expect (shader.indicator.shaderUniformValue > 0.399 && shader.indicator.shaderUniformValue < 0.401,
+            "shader operator uniform value");
 
     preferences.liveIO.oscHost = "127.0.0.1";
     preferences.liveIO.outputOperator = myworld::LiveIOOutputOperatorPreference::oscFloat;

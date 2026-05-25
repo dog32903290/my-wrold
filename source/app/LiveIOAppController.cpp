@@ -183,6 +183,15 @@ LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& req
     result.indicator = withLiveIOOutputOperator (
         makeLiveIOStatusIndicatorState (timerState, liveIOSendMode),
         liveIOOutputOperatorPreferenceToString (preferences.liveIO.outputOperator));
+    if (timerState.hasLastShaderUniform)
+    {
+        result.indicator = withLiveIOShaderUniformEvidence (
+            result.indicator,
+            timerState.lastShaderUniformBindingId,
+            timerState.lastShaderUniformName,
+            timerState.lastShaderUniformValue,
+            timerState.lastShaderUniformSampleCounter);
+    }
     return result;
 }
 

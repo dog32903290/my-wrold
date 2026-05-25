@@ -15,6 +15,11 @@ struct LiveIOStatusIndicatorState
     std::string status;
     std::string tone;
     std::string outputOperator;
+    bool hasShaderUniform = false;
+    std::string shaderUniformBindingId;
+    std::string shaderUniformName;
+    double shaderUniformValue = 0.0;
+    std::uint64_t shaderUniformSampleCounter = 0;
     int midiCount = 0;
     int oscCount = 0;
     std::uint64_t sampleCounter = 0;
@@ -41,6 +46,13 @@ LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (
 LiveIOStatusIndicatorState withLiveIOOutputOperator (
     LiveIOStatusIndicatorState state,
     const std::string& outputOperator);
+
+LiveIOStatusIndicatorState withLiveIOShaderUniformEvidence (
+    LiveIOStatusIndicatorState state,
+    const std::string& bindingId,
+    const std::string& uniformName,
+    double value,
+    std::uint64_t sampleCounter);
 
 LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
     LiveIOStatusIndicatorState state,

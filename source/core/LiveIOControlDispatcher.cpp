@@ -122,6 +122,32 @@ void appendFrameReportsJson (std::ostringstream& out,
 
     out << "  ]";
 }
+
+void appendShaderUniformsJson (std::ostringstream& out,
+                               const std::vector<LiveIOShaderUniformEvidence>& uniforms,
+                               const std::string& indent)
+{
+    out << "[\n";
+
+    for (size_t index = 0; index < uniforms.size(); ++index)
+    {
+        const auto& uniform = uniforms[index];
+        out << indent << "  {\n";
+        out << indent << "    \"timestampMs\": " << uniform.timestampMs << ",\n";
+        out << indent << "    \"bindingId\": " << jsonQuoted (uniform.bindingId) << ",\n";
+        out << indent << "    \"sourceId\": " << jsonQuoted (uniform.sourceId) << ",\n";
+        out << indent << "    \"uniformName\": " << jsonQuoted (uniform.uniformName) << ",\n";
+        out << indent << "    \"floatValue\": " << uniform.floatValue << "\n";
+        out << indent << "  }";
+
+        if (index + 1 < uniforms.size())
+            out << ",";
+
+        out << "\n";
+    }
+
+    out << indent << "]";
+}
 }
 
 LiveIOControlDispatchReport executeLiveIOControlDispatch (const LiveIOControlDispatchRequest& request)
@@ -173,6 +199,14 @@ LiveIOControlDispatchReport executeLiveIOControlDispatch (const LiveIOControlDis
         {
             if (event.targetKind == LiveIOTargetKind::shaderUniform)
             {
+                LiveIOShaderUniformEvidence uniform;
+                uniform.timestampMs = frame.timestampMs;
+                uniform.bindingId = event.bindingId;
+                uniform.sourceId = event.sourceId;
+                uniform.uniformName = event.uniformName;
+                uniform.floatValue = event.floatValue;
+                frameReport.shaderUniforms.push_back (uniform);
+                report.shaderUniforms.push_back (uniform);
                 ++frameReport.shaderSkippedCount;
                 ++report.shaderSkippedCount;
                 continue;
@@ -247,6 +281,8 @@ LiveIOControlDispatchReport executeLiveIOControlDispatch (const LiveIOControlDis
 std::string makeLiveIOControlDispatchReportJson (const LiveIOControlDispatchReport& report)
 {
     std::ostringstream out;
+    out << std::fixed;
+    out.precision (6);
     out << "{\n";
     out << "  \"kind\": \"liveIOControlDispatchProof\",\n";
     out << "  \"ok\": " << (report.ok ? "true" : "false") << ",\n";
@@ -258,6 +294,9 @@ std::string makeLiveIOControlDispatchReportJson (const LiveIOControlDispatchRepo
     out << "  \"midiSentCount\": " << report.midiSentCount << ",\n";
     out << "  \"oscSentCount\": " << report.oscSentCount << ",\n";
     out << "  \"shaderSkippedCount\": " << report.shaderSkippedCount << ",\n";
+    out << "  \"shaderUniforms\": ";
+    appendShaderUniformsJson (out, report.shaderUniforms, "  ");
+    out << ",\n";
     out << "  \"frames\": ";
     appendFrameReportsJson (out, report.frames);
     out << ",\n";

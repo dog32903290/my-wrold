@@ -203,6 +203,14 @@ int main()
                     "app timer midi osc count");
     expectContains (appTimerMidiReport, "\"shaderSkippedCount\": 1",
                     "app timer midi shader skip");
+    expectContains (appTimerMidiReport, "\"hasLastShaderUniform\": true",
+                    "app timer midi has shader uniform");
+    expectContains (appTimerMidiReport, "\"lastShaderUniformName\": \"u_loudness\"",
+                    "app timer midi shader uniform name");
+    expectContains (appTimerMidiReport, "\"lastShaderUniformValue\": 0.500000",
+                    "app timer midi shader uniform value");
+    expectContains (appTimerMidiReport, "\"lastShaderUniformSampleCounter\": 64",
+                    "app timer midi shader uniform sample");
     expectContains (appTimerMidiReport, "\"lastSampleCounter\": 64",
                     "app timer midi sample counter");
     expectContains (appTimerMidiReport, "\"errors\": []", "app timer midi no errors");
@@ -224,6 +232,12 @@ int main()
                     "app timer osc controlled count");
     expectContains (appTimerOscReport, "\"shaderSkippedCount\": 1",
                     "app timer osc shader skip");
+    expectContains (appTimerOscReport, "\"hasLastShaderUniform\": true",
+                    "app timer osc has shader uniform");
+    expectContains (appTimerOscReport, "\"lastShaderUniformName\": \"u_loudness\"",
+                    "app timer osc shader uniform name");
+    expectContains (appTimerOscReport, "\"lastShaderUniformValue\": 0.500000",
+                    "app timer osc shader uniform value");
     expectContains (appTimerOscReport, "\"received\": true", "app timer osc received");
     expectContains (appTimerOscReport, "\"oscHost\": \"127.0.0.1\"", "app timer osc host");
     expectContains (appTimerOscReport, "\"oscAddress\": \"/my-world/loudness\"",

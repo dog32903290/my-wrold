@@ -104,6 +104,11 @@ int main()
     expectEqual (state.midiDryRunCount, 2, "state midi dry-run count");
     expectEqual (state.oscDryRunCount, 2, "state osc dry-run count");
     expectEqual (state.shaderSkippedCount, 2, "state shader skipped count");
+    expect (state.hasLastShaderUniform, "state records latest shader uniform");
+    expectEqual (state.lastShaderUniformName, "u_loudness", "state shader uniform name");
+    expect (state.lastShaderUniformValue > 0.749 && state.lastShaderUniformValue < 0.751,
+            "state shader uniform value");
+    expectEqual (state.lastShaderUniformSampleCounter, 256, "state shader uniform sample counter");
     expectEqual (state.lastStatus, "pumped", "state last status");
     expect (state.lastLoudness > 0.749 && state.lastLoudness < 0.751, "state last loudness");
     expectEqual (state.lastSampleCounter, 256, "state last sample counter");
@@ -132,6 +137,10 @@ int main()
     expectContains (json, "\"midiControlledSendCount\": 0", "timer json controlled midi count");
     expectContains (json, "\"oscControlledSendCount\": 0", "timer json controlled osc count");
     expectContains (json, "\"shaderSkippedCount\": 2", "timer json shader count");
+    expectContains (json, "\"hasLastShaderUniform\": true", "timer json has uniform");
+    expectContains (json, "\"lastShaderUniformName\": \"u_loudness\"", "timer json uniform name");
+    expectContains (json, "\"lastShaderUniformValue\": 0.750000", "timer json uniform value");
+    expectContains (json, "\"lastShaderUniformSampleCounter\": 256", "timer json uniform sample");
     expectContains (json, "\"lastStatus\": \"disabled\"", "timer json last status");
     expectContains (json, "\"lastSendMode\": \"dry_run\"", "timer json send mode");
     expectContains (json, "\"lastSampleCounter\": 320", "timer json sample counter");

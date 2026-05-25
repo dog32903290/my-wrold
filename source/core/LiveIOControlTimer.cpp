@@ -186,6 +186,15 @@ LiveIOControlTimerTickResult tickLiveIOControlTimer (
     }
 
     state.shaderSkippedCount += report.dispatch.shaderSkippedCount;
+    if (! report.dispatch.shaderUniforms.empty())
+    {
+        const auto& uniform = report.dispatch.shaderUniforms.back();
+        state.hasLastShaderUniform = true;
+        state.lastShaderUniformBindingId = uniform.bindingId;
+        state.lastShaderUniformName = uniform.uniformName;
+        state.lastShaderUniformValue = uniform.floatValue;
+        state.lastShaderUniformSampleCounter = snapshot.sampleCounter;
+    }
     state.lastLoudness = snapshot.loudness;
     state.hasLastPumpTimestamp = true;
     state.lastPumpTimestampMs = timestampMs;
@@ -227,6 +236,11 @@ std::string makeLiveIOControlTimerStateJson (const LiveIOControlTimerState& stat
     out << "  \"midiControlledSendCount\": " << state.midiControlledSendCount << ",\n";
     out << "  \"oscControlledSendCount\": " << state.oscControlledSendCount << ",\n";
     out << "  \"shaderSkippedCount\": " << state.shaderSkippedCount << ",\n";
+    out << "  \"hasLastShaderUniform\": " << (state.hasLastShaderUniform ? "true" : "false") << ",\n";
+    out << "  \"lastShaderUniformBindingId\": " << jsonQuoted (state.lastShaderUniformBindingId) << ",\n";
+    out << "  \"lastShaderUniformName\": " << jsonQuoted (state.lastShaderUniformName) << ",\n";
+    out << "  \"lastShaderUniformValue\": " << state.lastShaderUniformValue << ",\n";
+    out << "  \"lastShaderUniformSampleCounter\": " << state.lastShaderUniformSampleCounter << ",\n";
     out << "  \"lastLoudness\": " << state.lastLoudness << ",\n";
     out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
     out << "  \"lastStatus\": " << jsonQuoted (state.lastStatus) << ",\n";

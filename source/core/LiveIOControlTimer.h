@@ -45,6 +45,11 @@ struct LiveIOControlTimerState
     int midiControlledSendCount = 0;
     int oscControlledSendCount = 0;
     int shaderSkippedCount = 0;
+    bool hasLastShaderUniform = false;
+    std::string lastShaderUniformBindingId;
+    std::string lastShaderUniformName;
+    double lastShaderUniformValue = 0.0;
+    std::uint64_t lastShaderUniformSampleCounter = 0;
     double lastLoudness = 0.0;
     std::uint64_t lastSampleCounter = 0;
     std::string lastStatus = "idle";

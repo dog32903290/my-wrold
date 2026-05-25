@@ -49,7 +49,7 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 15:50 Asia/Taipei.
+Date: 2026-05-25 15:57 Asia/Taipei.
 
 Branch:
 
@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+b174f2e Add live IO operator status evidence
 7db3233 Add live IO operator picker foundation
 888f26c Add OSC receiver lifecycle to live IO controller
 3999703 Add realtime delivery backpressure telemetry
@@ -118,22 +119,28 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE23 is committed in `7db3233`. Current dirty files, if any, should belong to the closing P-LIVE24 live IO operator status evidence lane.
+As of 2026-05-25, P-LIVE24 is committed in `b174f2e`. Current dirty files, if any, should belong to the closing P-LIVE25 shader uniform control evidence lane.
 
 ```text
-P-LIVE24 owned files:
+P-LIVE25 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live24-live-io-operator-status-evidence.md
+- docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md
+- source/core/LiveIOControlDispatcher.h
+- source/core/LiveIOControlDispatcher.cpp
+- source/core/LiveIOControlTimer.h
+- source/core/LiveIOControlTimer.cpp
 - source/core/LiveIOStatusIndicator.h
 - source/core/LiveIOStatusIndicator.cpp
 - source/app/LiveIOAppController.cpp
 - source/app/LiveIOProofRunner.cpp
+- tests/LiveIOControlDispatcherTests.cpp
+- tests/LiveIOControlTimerTests.cpp
 - tests/LiveIOStatusIndicatorTests.cpp
 - tests/LiveIOAppControllerTests.cpp
 - tests/LiveIOProofRunnerTests.cpp
 ```
 
-Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, or any audio callback work in P-LIVE24.
+Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, or any audio callback work in P-LIVE25.
 
 Current C4 note:
 
@@ -346,7 +353,8 @@ Latest accepted targeted result:
 | P-LIVE22 OSC server lifecycle | closed | `docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md`; `LiveIOAppController` owns the app/control-side OSC receiver lifecycle, polls once on app timer tick, and exposes matching incoming OSC float values as `LiveIOValueFrame` evidence; focused tests and app build passed | Graph OSC input node, separate receive UI fields, dynamic OSC address routing, and direct realtime callback send/receive remain parked |
 | P-LIVE23 UI operator picker foundation | closed | `docs/superpowers/specs/2026-05-25-p-live23-ui-operator-picker-foundation.md`; live IO preferences now store one selected output operator, PreferencesPanel exposes it, and `LiveIOAppController` builds the primary loudness binding for `midi.cc`, `midi.note_on`, `osc.float`, or `shader.uniform`; focused tests and app build passed | Full mapping editor, multiple simultaneous user-selected bindings, graph IO node, dynamic OSC scanning, and new MIDI operator kinds remain parked |
 | P-LIVE24 live IO operator status evidence | closed | `docs/superpowers/specs/2026-05-25-p-live24-live-io-operator-status-evidence.md`; `LiveIOStatusIndicatorState` carries the selected output operator, app controller status text exposes `op <kind>`, and app-timer proof reports record `outputOperator`; focused tests passed | Full mapping editor, multiple simultaneous user-selected bindings, graph IO node, dynamic OSC scanning, and new MIDI operator kinds remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE24 closure |
+| P-LIVE25 shader uniform control evidence | closed | `docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md`; `shader.uniform` control dispatch now records `u_loudness` evidence, timer/status state expose the latest uniform value/sample counter, and app-timer proof JSON writes it back | Shader preview live binding, standalone uniform artifact, graph IO node, and full mapping editor remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE25 closure |
 
 ## Active Lane Protocol
 
@@ -355,6 +363,41 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE25 shader uniform control evidence closure as of 2026-05-25.
+
+P-LIVE25 shader uniform control evidence closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md
+- source/core/LiveIOControlDispatcher.h
+- source/core/LiveIOControlDispatcher.cpp
+- source/core/LiveIOControlTimer.h
+- source/core/LiveIOControlTimer.cpp
+- source/core/LiveIOStatusIndicator.h
+- source/core/LiveIOStatusIndicator.cpp
+- source/app/LiveIOAppController.cpp
+- source/app/LiveIOProofRunner.cpp
+- tests/LiveIOControlDispatcherTests.cpp
+- tests/LiveIOControlTimerTests.cpp
+- tests/LiveIOStatusIndicatorTests.cpp
+- tests/LiveIOAppControllerTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+
+Closed line:
+LiveIOPreferences.outputOperator
+-> shader.uniform binding
+-> LiveIOControlDispatchReport.shaderUniforms
+-> LiveIOControlTimerState latest uniform evidence
+-> app status JSON and app timer proof JSON
+
+Latest accepted result:
+- RED first on missing `LiveIOControlDispatchReport::shaderUniforms`.
+- focused `live_io_control_dispatcher`, `live_io_control_timer`, `live_io_status_indicator`, `live_io_app_controller`, and `live_io_proof_runner` tests passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE24 live IO operator status evidence closure as of 2026-05-25.
 
 P-LIVE24 live IO operator status evidence closed.
@@ -2128,7 +2171,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE24 live IO operator status evidence closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE25 shader uniform control evidence closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

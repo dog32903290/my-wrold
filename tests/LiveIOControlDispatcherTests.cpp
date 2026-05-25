@@ -90,6 +90,7 @@ int main()
     expectEqual (report.midiSentCount, 6, "midi sent count");
     expectEqual (report.oscSentCount, 3, "osc sent count");
     expectEqual (report.shaderSkippedCount, 3, "shader skipped count");
+    expectEqual (static_cast<int> (report.shaderUniforms.size()), 3, "shader uniform evidence count");
     expectEqual (static_cast<int> (midiMessages.size()), 6, "midi sender call count");
     expectEqual (static_cast<int> (oscMessages.size()), 3, "osc sender call count");
 
@@ -103,6 +104,9 @@ int main()
     expectEqual (oscMessages.at (0).oscAddress, "/my-world/loudness", "osc address");
     expect (oscMessages.at (1).floatValue > 0.499 && oscMessages.at (1).floatValue < 0.501,
             "second osc value");
+    expectEqual (report.shaderUniforms.at (0).uniformName, "u_loudness", "first uniform name");
+    expect (report.shaderUniforms.at (2).floatValue > 0.749 && report.shaderUniforms.at (2).floatValue < 0.751,
+            "third uniform value");
 
     expectEqual (report.frames.at (0).status, "dispatched", "first frame status");
     expectEqual (report.frames.at (1).status, "rate_limited", "second frame status");
@@ -126,6 +130,9 @@ int main()
     expectContains (json, "\"midiSentCount\": 6", "dispatch json midi count");
     expectContains (json, "\"oscSentCount\": 3", "dispatch json osc count");
     expectContains (json, "\"shaderSkippedCount\": 3", "dispatch json shader skipped count");
+    expectContains (json, "\"shaderUniforms\": [", "dispatch json shader uniforms");
+    expectContains (json, "\"uniformName\": \"u_loudness\"", "dispatch json uniform name");
+    expectContains (json, "\"floatValue\": 0.750000", "dispatch json uniform value");
     expectContains (json, "\"status\": \"rate_limited\"", "dispatch json frame status");
     expectContains (json, "\"errors\": []", "dispatch json no errors");
 

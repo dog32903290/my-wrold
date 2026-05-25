@@ -66,6 +66,15 @@ int main()
     expectEqual (operatorState.text, "live io dry pumped m3 o2 op osc.float", "operator text");
     expectEqual (operatorState.outputOperator, "osc.float", "operator field");
 
+    const auto uniformState = myworld::withLiveIOShaderUniformEvidence (
+        operatorState,
+        "uniform.loudness",
+        "u_loudness",
+        0.75,
+        256);
+    expect (uniformState.hasShaderUniform, "indicator records uniform evidence");
+    expectEqual (uniformState.shaderUniformName, "u_loudness", "indicator uniform name");
+
     myworld::LiveIOControlTimerState controlledState;
     controlledState.lastStatus = "controlled_sent";
     controlledState.lastMessage = "live_io_timer_controlled_sent";
@@ -130,6 +139,12 @@ int main()
 
     const auto operatorJson = myworld::makeLiveIOStatusIndicatorJson (operatorState);
     expectContains (operatorJson, "\"outputOperator\": \"osc.float\"", "indicator json operator");
+
+    const auto uniformJson = myworld::makeLiveIOStatusIndicatorJson (uniformState);
+    expectContains (uniformJson, "\"hasShaderUniform\": true", "indicator json has uniform");
+    expectContains (uniformJson, "\"shaderUniformName\": \"u_loudness\"", "indicator json uniform name");
+    expectContains (uniformJson, "\"shaderUniformValue\": 0.750000", "indicator json uniform value");
+    expectContains (uniformJson, "\"shaderUniformSampleCounter\": 256", "indicator json uniform sample");
 
     std::cout << "live io status indicator ok\n";
     return 0;

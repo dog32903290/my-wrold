@@ -1,5 +1,6 @@
 #include "LiveIOStatusIndicator.h"
 
+#include <iomanip>
 #include <sstream>
 
 namespace myworld
@@ -115,6 +116,21 @@ LiveIOStatusIndicatorState withLiveIOOutputOperator (
     return state;
 }
 
+LiveIOStatusIndicatorState withLiveIOShaderUniformEvidence (
+    LiveIOStatusIndicatorState state,
+    const std::string& bindingId,
+    const std::string& uniformName,
+    double value,
+    std::uint64_t sampleCounter)
+{
+    state.hasShaderUniform = true;
+    state.shaderUniformBindingId = bindingId;
+    state.shaderUniformName = uniformName;
+    state.shaderUniformValue = value;
+    state.shaderUniformSampleCounter = sampleCounter;
+    return state;
+}
+
 LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
     LiveIOStatusIndicatorState state,
     const LiveIORealtimeIndicatorTelemetry& telemetry)
@@ -142,6 +158,7 @@ LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
 std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& state)
 {
     std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
     out << "{\n";
     out << "  \"kind\": \"liveIOStatusIndicator\",\n";
     out << "  \"text\": " << jsonQuoted (state.text) << ",\n";
@@ -150,6 +167,11 @@ std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& sta
     out << "  \"status\": " << jsonQuoted (state.status) << ",\n";
     out << "  \"tone\": " << jsonQuoted (state.tone) << ",\n";
     out << "  \"outputOperator\": " << jsonQuoted (state.outputOperator) << ",\n";
+    out << "  \"hasShaderUniform\": " << (state.hasShaderUniform ? "true" : "false") << ",\n";
+    out << "  \"shaderUniformBindingId\": " << jsonQuoted (state.shaderUniformBindingId) << ",\n";
+    out << "  \"shaderUniformName\": " << jsonQuoted (state.shaderUniformName) << ",\n";
+    out << "  \"shaderUniformValue\": " << state.shaderUniformValue << ",\n";
+    out << "  \"shaderUniformSampleCounter\": " << state.shaderUniformSampleCounter << ",\n";
     out << "  \"midiCount\": " << state.midiCount << ",\n";
     out << "  \"oscCount\": " << state.oscCount << ",\n";
     out << "  \"sampleCounter\": " << state.sampleCounter << ",\n";

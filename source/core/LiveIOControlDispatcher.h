@@ -33,6 +33,15 @@ struct LiveIOOscFloatSendResult
 
 using LiveIOOscFloatSender = std::function<LiveIOOscFloatSendResult (const LiveIOOscFloatMessage& message)>;
 
+struct LiveIOShaderUniformEvidence
+{
+    std::int64_t timestampMs = 0;
+    std::string bindingId;
+    std::string sourceId;
+    std::string uniformName;
+    double floatValue = 0.0;
+};
+
 struct LiveIOControlDispatchRequest
 {
     std::vector<LiveIOControlFrame> frames;
@@ -56,6 +65,7 @@ struct LiveIOControlDispatchFrameReport
     int midiSentCount = 0;
     int oscSentCount = 0;
     int shaderSkippedCount = 0;
+    std::vector<LiveIOShaderUniformEvidence> shaderUniforms;
     std::vector<std::string> errors;
 };
 
@@ -70,6 +80,7 @@ struct LiveIOControlDispatchReport
     int midiSentCount = 0;
     int oscSentCount = 0;
     int shaderSkippedCount = 0;
+    std::vector<LiveIOShaderUniformEvidence> shaderUniforms;
     std::vector<LiveIOControlDispatchFrameReport> frames;
     std::vector<std::string> errors;
 };
