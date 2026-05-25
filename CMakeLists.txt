@@ -906,6 +906,37 @@ target_link_libraries(my_world_work_project_lifecycle_tests
 
 add_test(NAME work_project_lifecycle COMMAND my_world_work_project_lifecycle_tests)
 
+add_library(my_world_work_project_resolver
+    source/app/WorkProjectResolver.cpp
+)
+
+target_include_directories(my_world_work_project_resolver
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_work_project_resolver
+    PUBLIC
+        my_world_proof_run_support
+        my_world_storage
+        my_world_work_project_lifecycle
+)
+
+add_executable(my_world_work_project_resolver_tests
+    tests/WorkProjectResolverTests.cpp
+)
+
+target_link_libraries(my_world_work_project_resolver_tests
+    PRIVATE
+        my_world_work_project_resolver
+)
+
+add_test(NAME work_project_resolver COMMAND my_world_work_project_resolver_tests)
+set_tests_properties(work_project_resolver PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_workbench_session_open_status
     source/app/WorkbenchSessionOpenStatus.cpp
 )
@@ -920,7 +951,7 @@ target_include_directories(my_world_workbench_session_open_status
 target_link_libraries(my_world_workbench_session_open_status
     PUBLIC
         my_world_proof_run_support
-        my_world_work_project_lifecycle
+        my_world_work_project_resolver
         my_world_workbench_session
 )
 

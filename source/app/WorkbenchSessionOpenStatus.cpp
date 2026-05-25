@@ -2,10 +2,7 @@
 
 #include "GraphIOMappingStorage.h"
 #include "ProofRunSupport.h"
-#include "StorageContract.h"
-#include "WorkProjectLifecycle.h"
-
-#include <filesystem>
+#include "WorkProjectResolver.h"
 
 namespace myworld
 {
@@ -13,20 +10,6 @@ namespace
 {
 constexpr const char* workFixturePath = "fixtures/storage/c2-compound-work/myworld.work.json";
 constexpr const char* mappingFixturePath = "fixtures/graphs/g1_loudness_to_shader_uniform.graph.json";
-
-struct LoadedWorkbenchInputs
-{
-    PatchDocument document;
-    std::string workManifestPath;
-    std::string workSource;
-    std::string workSourceStatus;
-};
-
-bool fileExists (const std::filesystem::path& path)
-{
-    std::error_code error;
-    return std::filesystem::is_regular_file (path, error);
-}
 }
 
 WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
@@ -34,70 +17,24 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
 {
     WorkbenchSessionOpenStatusResult result;
     std::string lastError;
-    LoadedWorkbenchInputs loadedInputs;
 
-    if (! request.activeWorkManifestPath.empty() && fileExists (request.activeWorkManifestPath))
+    WorkProjectResolveRequest workRequest;
+    workRequest.activeWorkManifestPath = request.activeWorkManifestPath;
+    workRequest.candidateRoots = request.candidateRoots;
+    workRequest.fallbackWorkManifestPath = workFixturePath;
+
+    const auto resolvedWork = resolveWorkProjectForWorkbench (workRequest);
+    if (! resolvedWork.ok)
     {
-        const auto loaded = loadMainPatchDocumentForWork (request.activeWorkManifestPath.string());
-        if (! loaded.ok)
-        {
-            const auto lifecycle = makeWorkProjectLifecycle (WorkProjectLifecycleStatus::activeWorkBlocked);
-
-            result.status = "failed";
-            result.error = loaded.error;
-            result.snapshot.ok = false;
-            result.snapshot.status = "blocked";
-            result.snapshot.message = loaded.error;
-            result.snapshot.workManifestPath = request.activeWorkManifestPath.string();
-            result.snapshot.workSource = lifecycle.workSource;
-            result.snapshot.workSourceStatus = lifecycle.workSourceStatus;
-            result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
-            return result;
-        }
-
-        const auto lifecycle = makeWorkProjectLifecycle (WorkProjectLifecycleStatus::activeWorkOpened);
-        loadedInputs.document = loaded.document;
-        loadedInputs.workManifestPath = request.activeWorkManifestPath.string();
-        loadedInputs.workSource = lifecycle.workSource;
-        loadedInputs.workSourceStatus = lifecycle.workSourceStatus;
-    }
-    else
-    {
-        for (const auto& candidate : proofCandidatePaths (request.candidateRoots, workFixturePath))
-        {
-            const auto loaded = loadMainPatchDocumentForWork (candidate.string());
-            if (loaded.ok)
-            {
-                const auto lifecycle = makeWorkProjectLifecycle (
-                    request.activeWorkManifestPath.empty()
-                        ? WorkProjectLifecycleStatus::fixtureFallbackNoActiveRequest
-                        : WorkProjectLifecycleStatus::fixtureFallbackActiveMissing);
-
-                loadedInputs.document = loaded.document;
-                loadedInputs.workManifestPath = candidate.string();
-                loadedInputs.workSource = lifecycle.workSource;
-                loadedInputs.workSourceStatus = lifecycle.workSourceStatus;
-                break;
-            }
-
-            lastError = loaded.error;
-        }
-    }
-
-    if (loadedInputs.workManifestPath.empty())
-    {
-        const auto lifecycle = makeWorkProjectLifecycle (
-            request.activeWorkManifestPath.empty() ? WorkProjectLifecycleStatus::fixtureBlockedNoActiveRequest
-                                                   : WorkProjectLifecycleStatus::fixtureBlockedActiveMissing);
-
         result.status = "failed";
-        result.error = lastError.empty() ? "could not open current workbench session work" : lastError;
+        result.error = resolvedWork.error;
         result.snapshot.ok = false;
         result.snapshot.status = "blocked";
         result.snapshot.message = result.error;
-        result.snapshot.workSource = lifecycle.workSource;
-        result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
-        result.snapshot.workSourceStatus = lifecycle.workSourceStatus;
+        result.snapshot.workManifestPath = resolvedWork.workManifestPath;
+        result.snapshot.workSource = resolvedWork.lifecycle.workSource;
+        result.snapshot.activeWorkManifestPath = resolvedWork.activeWorkManifestPath;
+        result.snapshot.workSourceStatus = resolvedWork.lifecycle.workSourceStatus;
         return result;
     }
 
@@ -122,22 +59,23 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         result.snapshot.ok = false;
         result.snapshot.status = "blocked";
         result.snapshot.message = result.error;
-        result.snapshot.workManifestPath = loadedInputs.workManifestPath;
-        result.snapshot.workSource = loadedInputs.workSource;
-        result.snapshot.workSourceStatus = loadedInputs.workSourceStatus;
-        result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
+        result.snapshot.workManifestPath = resolvedWork.workManifestPath;
+        result.snapshot.workSource = resolvedWork.lifecycle.workSource;
+        result.snapshot.workSourceStatus = resolvedWork.lifecycle.workSourceStatus;
+        result.snapshot.activeWorkManifestPath = resolvedWork.activeWorkManifestPath;
         return result;
     }
 
-    loadedInputs.document.outputView.followedNodeId = "out1";
+    auto document = resolvedWork.document;
+    document.outputView.followedNodeId = "out1";
 
     WorkbenchSessionRequest sessionRequest;
-    sessionRequest.workManifestPath = loadedInputs.workManifestPath;
-    sessionRequest.workSource = loadedInputs.workSource;
-    sessionRequest.workSourceStatus = loadedInputs.workSourceStatus;
-    sessionRequest.activeWorkManifestPath = request.activeWorkManifestPath.string();
+    sessionRequest.workManifestPath = resolvedWork.workManifestPath;
+    sessionRequest.workSource = resolvedWork.lifecycle.workSource;
+    sessionRequest.workSourceStatus = resolvedWork.lifecycle.workSourceStatus;
+    sessionRequest.activeWorkManifestPath = resolvedWork.activeWorkManifestPath;
     sessionRequest.graphIOMappingSourcePath = mappingSourcePath;
-    sessionRequest.document = loadedInputs.document;
+    sessionRequest.document = document;
     sessionRequest.graphIOMappings = loadedMappings.mappings;
     sessionRequest.dirty = request.dirty;
     sessionRequest.saveStatus = request.saveStatus;
