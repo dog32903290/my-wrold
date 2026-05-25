@@ -3,6 +3,7 @@
 #include "GraphEndpoint.h"
 #include "ImGuiSmokeOverlayHelpers.h"
 #include "NodeSpec.h"
+#include "ParameterRowState.h"
 #include "Tooll3SkinContract.h"
 
 #include <imgui.h>
@@ -29,6 +30,16 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     }
 
     const auto policy = makeTooll3InspectorPolicy (node->type, true);
+    const auto rowStates = parameterRowsForNode (interactionSession.graph, *node, *spec);
+    const auto rowFor = [&rowStates] (const std::string& rowId) -> const ParameterRowState*
+    {
+        for (const auto& row : rowStates)
+            if (row.id == rowId)
+                return &row;
+
+        return nullptr;
+    };
+
     ImGui::Text ("%s", node->id.c_str());
     ImGui::TextDisabled ("%s", node->type.c_str());
 
@@ -50,9 +61,10 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     {
         for (const auto& param : spec->params)
         {
-            const auto stored = paramValueForNode (*node, param.id);
-            const auto state = stored.empty() ? "default" : "manual";
-            drawInspectorRow (param.id, compactInspectorValue (param, stored), state);
+            const auto* row = rowFor ("param." + param.id);
+            const auto value = row == nullptr ? param.defaultValue : row->value;
+            const auto state = row == nullptr ? "missing" : row->stateLabel;
+            drawInspectorRow (param.id, compactInspectorValue (param, value), state);
 
             if (param.dataType == "text.glsl")
                 continue;
@@ -61,6 +73,12 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
             if (ImGui::Button (label.c_str()))
                 runInteractionCommand ("set " + param.id,
                                        setParam (interactionSession, node->id, param.id, demoValueForParam (param)));
+
+            ImGui::SameLine();
+            const auto resetLabel = "Reset##param-" + node->id + "-" + param.id;
+            if (ImGui::Button (resetLabel.c_str()))
+                runInteractionCommand ("reset " + param.id,
+                                       resetParam (interactionSession, node->id, param.id));
         }
     }
 
@@ -72,9 +90,10 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
     {
         for (const auto& input : spec->inputs)
         {
-            const auto stored = bindingValueForPort (*node, input.id);
-            const auto state = bindingModeForPort (*node, input.id);
-            drawInspectorRow ("input " + input.id, stored.empty() ? input.dataType : stored, state);
+            const auto* row = rowFor ("input." + input.id);
+            drawInspectorRow ("input " + input.id,
+                              row == nullptr ? input.dataType : row->value,
+                              row == nullptr ? "missing" : row->stateLabel);
 
             const auto label = "Bind##input-" + node->id + "-" + input.id;
             if (ImGui::Button (label.c_str()))
@@ -84,6 +103,12 @@ void ImGuiSmokeOverlay::drawInspectorPanel (const std::vector<NodeSpec>& nodeSpe
                                                        input.id,
                                                        "connected",
                                                        "shader1.output"));
+
+            ImGui::SameLine();
+            const auto resetLabel = "Reset##input-" + node->id + "-" + input.id;
+            if (ImGui::Button (resetLabel.c_str()))
+                runInteractionCommand ("reset " + input.id,
+                                       resetPortBinding (interactionSession, node->id, input.id));
         }
     }
 

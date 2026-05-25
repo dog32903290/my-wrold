@@ -340,6 +340,15 @@ void upsertParam (GraphNode& node, const std::string& paramId, const std::string
     node.params.push_back ({ paramId, value });
 }
 
+bool eraseParam (GraphNode& node, const std::string& paramId)
+{
+    const auto originalSize = node.params.size();
+    node.params.erase (std::remove_if (node.params.begin(), node.params.end(), [&paramId] (const auto& param) {
+        return param.id == paramId;
+    }), node.params.end());
+    return node.params.size() != originalSize;
+}
+
 void upsertPortBinding (GraphNode& node,
                         const std::string& portId,
                         const std::string& bindingMode,
@@ -356,6 +365,15 @@ void upsertPortBinding (GraphNode& node,
     }
 
     node.portBindings.push_back ({ portId, bindingMode, value });
+}
+
+bool erasePortBinding (GraphNode& node, const std::string& portId)
+{
+    const auto originalSize = node.portBindings.size();
+    node.portBindings.erase (std::remove_if (node.portBindings.begin(), node.portBindings.end(), [&portId] (const auto& binding) {
+        return binding.portId == portId;
+    }), node.portBindings.end());
+    return node.portBindings.size() != originalSize;
 }
 
 std::string readTextFile (const std::string& path)
@@ -1166,6 +1184,19 @@ CommandResult setParam (GraphSession& session,
     return commitCommand (session, "set_param", before);
 }
 
+CommandResult resetParam (GraphSession& session, const std::string& nodeId, const std::string& paramId)
+{
+    auto* node = findEditorNode (session.graph, nodeId);
+    if (node == nullptr)
+        return { false, "missing node: " + nodeId };
+
+    const auto before = snapshotOf (session);
+    if (! eraseParam (*node, paramId))
+        return { false, "param already default: " + paramId };
+
+    return commitCommand (session, "reset_param", before);
+}
+
 CommandResult setPortBinding (GraphSession& session,
                               const std::string& nodeId,
                               const std::string& portId,
@@ -1179,6 +1210,19 @@ CommandResult setPortBinding (GraphSession& session,
     const auto before = snapshotOf (session);
     upsertPortBinding (*node, portId, bindingMode, value);
     return commitCommand (session, "set_port_binding", before);
+}
+
+CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId, const std::string& portId)
+{
+    auto* node = findEditorNode (session.graph, nodeId);
+    if (node == nullptr)
+        return { false, "missing node: " + nodeId };
+
+    const auto before = snapshotOf (session);
+    if (! erasePortBinding (*node, portId))
+        return { false, "port binding already default: " + portId };
+
+    return commitCommand (session, "reset_port_binding", before);
 }
 
 bool undo (GraphSession& session)

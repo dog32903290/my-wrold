@@ -276,6 +276,7 @@ add_library(my_world_interaction
     source/core/GraphEndpoint.cpp
     source/core/InteractionContract.cpp
     source/core/NodeSpecQueries.cpp
+    source/core/ParameterRowState.cpp
 )
 
 target_include_directories(my_world_interaction
@@ -361,6 +362,18 @@ target_link_libraries(my_world_output_view_state_tests
 )
 
 add_test(NAME output_view_state COMMAND my_world_output_view_state_tests)
+
+add_executable(my_world_parameter_row_state_tests
+    tests/ParameterRowStateTests.cpp
+)
+
+target_link_libraries(my_world_parameter_row_state_tests
+    PRIVATE
+        my_world_storage
+        my_world_interaction
+)
+
+add_test(NAME parameter_row_state COMMAND my_world_parameter_row_state_tests)
 
 add_executable(my_world_graph_command_tests
     tests/GraphCommandTests.cpp

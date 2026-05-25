@@ -33,6 +33,8 @@ int main()
     expect (myworld::isKnownCommandType ("snap_connect"), "snap connect command vocabulary");
     expect (myworld::isKnownCommandType ("unsnap_disconnect"), "unsnap disconnect command vocabulary");
     expect (myworld::isKnownCommandType ("shake_disconnect"), "shake disconnect command vocabulary");
+    expect (myworld::isKnownCommandType ("reset_param"), "reset param command vocabulary");
+    expect (myworld::isKnownCommandType ("reset_port_binding"), "reset port binding command vocabulary");
 
     auto session = myworld::makeGraphSession (myworld::makeDefaultShaderOutputGraph());
 

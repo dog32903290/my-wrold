@@ -234,11 +234,13 @@ CommandResult storeExpandedPatchLayout (GraphSession& session,
                                         const std::string& parentNodeId,
                                         const GraphContract& expandedGraph);
 CommandResult setParam (GraphSession& session, const std::string& nodeId, const std::string& paramId, const std::string& value);
+CommandResult resetParam (GraphSession& session, const std::string& nodeId, const std::string& paramId);
 CommandResult setPortBinding (GraphSession& session,
                               const std::string& nodeId,
                               const std::string& portId,
                               const std::string& bindingMode,
                               const std::string& value);
+CommandResult resetPortBinding (GraphSession& session, const std::string& nodeId, const std::string& portId);
 bool undo (GraphSession& session);
 bool redo (GraphSession& session);
 GraphInvariantReport validateGraphInvariants (const GraphContract& graph, const std::vector<NodeSpec>& specs);

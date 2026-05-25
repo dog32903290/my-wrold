@@ -291,8 +291,8 @@ One user action must become one undo unit even when the native implementation lo
 
 | Feature | TiXL witness | Policy | Current status | Required trace |
 | --- | --- | --- | --- | --- |
-| Parameter inspector shell | `ParameterWindow`, `IInputUi` | mirror | partial | `select_node_inspector_rows_set_param` |
-| Row state model | normal, connected, animated, default/reset | mirror | partial | `default_manual_connected_animated_undo` |
+| Parameter inspector shell | `ParameterWindow`, `IInputUi` | mirror | partial; row state shell proven | `select_node_inspector_rows_set_param` |
+| Row state model | normal, connected, animated, default/reset | mirror | proven at core/storage/visible-state level | `default_manual_connected_animated_undo` |
 | Type color families | `TypeUiProperties` | mirror user families, adapt TypeSpec | partial | `port_type_family_visual_mapping` |
 | Scalar/vector controls | float, int, bool, double, vector, quaternion | mirror core widgets | gap | `typed_scalar_vector_param_roundtrip` |
 | Enum/string/path/multiline | enum combo/flags, string usage modes | mirror | gap | `typed_text_enum_path_param_roundtrip` |
@@ -330,6 +330,29 @@ excludedFromPresets
 unsupportedType
 missingInput
 ```
+
+## P-PARAM1A Fixture Evidence
+
+Closed as of 2026-05-25 09:15 Asia/Taipei.
+
+Parameter row state is proven at core, commandGraph, storage, and visible inspector state level by:
+
+```text
+source/core/ParameterRowState.h
+source/core/ParameterRowState.cpp
+tests/ParameterRowStateTests.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+```
+
+Verified acceptance trace:
+
+```text
+default_manual_connected_animated_undo
+```
+
+This proves default/manual parameter rows, edge-connected input rows, animated/manual port binding rows, `reset_param`, `reset_port_binding`, undo/redo for reset, PatchDocument roundtrip, and visible inspector state consumption. It does not implement typed scalar/vector widgets, enum/path/multiline controls, lists/curves/gradients/ADSR, parameter metadata grouping/relevancy, extract-value-node commands, preset/snapshot capture, or variation blending.
 
 ## P-OUT1 Fixture Evidence
 
@@ -435,8 +458,14 @@ selection-following output
 -> selection changes do not change output
 -> save/load preserves pin
 
+P-PARAM1A parameter row states: closed at core/storage/visible-state level
+default/manual parameter rows
+-> connected/animated input rows
+-> reset commands with undo/redo
+-> save/load preserves row state
+
 Next selectable parity line:
-P-PARAM1 parameter row states or P-TIME1 bars-native timeline model, depending on which surface needs to bear weight next.
+P-PARAM1B typed parameter controls or P-TIME1 bars-native timeline model, depending on which surface needs to bear weight next.
 ```
 
 These should stay after C1.19 unless they are needed to unblock the live compound runtime surface.

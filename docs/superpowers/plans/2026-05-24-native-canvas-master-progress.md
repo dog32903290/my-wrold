@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 08:58 Asia/Taipei.
+Date: 2026-05-25 09:15 Asia/Taipei.
 
 Branch:
 
@@ -244,7 +244,8 @@ Latest accepted targeted result:
 | P-OPS1A richer graph operation trace | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `InteractionContract` macro helpers plus `t3_t5_commands` and `interaction_traces` prove reconnect input/output end and split-edge-create-node as one undoable command | Remaining P-OPS1 work is hidden input/multi-input/drag-existing-node/snap/unsnap/shake, or select P-OUT1 |
 | P-OPS1B richer graph operation continuation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; command helpers plus `t3_t5_commands` and `interaction_traces` prove hidden input, ordered input insert, existing-node edge insert, snap/unsnap, and shake disconnect | Next requested lane is P-OUT1 output pinning |
 | P-OUT1 output pinning | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `OutputViewState` plus `output_view_state`, PatchDocument/saveWork roundtrip, and visible workspace state prove selection-following output and pin persistence | Next selectable parity lane is P-PARAM1 or P-TIME1; keep output slots/render toolbar parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-OUT1 closure |
+| P-PARAM1A parameter row states | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParameterRowState` plus `parameter_row_state`, command/storage roundtrip, and visible inspector state prove default/manual/connected/animated/reset rows | Next selectable parity lane is P-PARAM1B typed controls or P-TIME1; keep presets/snapshots parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-PARAM1A closure |
 
 ## Active Lane Protocol
 
@@ -253,41 +254,42 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-OUT1 output pinning closure as of 2026-05-25 08:58 Asia/Taipei.
+None after P-PARAM1A parameter row state closure as of 2026-05-25 09:15 Asia/Taipei.
 
-P-OUT1 closed.
+P-PARAM1A closed.
 Evidence:
-- source/core/OutputViewState.h
-- source/core/OutputViewState.cpp
-- tests/OutputViewStateTests.cpp
-- source/storage/StorageContractPatchDocument.cpp
-- source/storage/StorageCommand.cpp
-- source/ui/ImGuiSmokeOverlay.cpp
+- source/core/ParameterRowState.h
+- source/core/ParameterRowState.cpp
+- tests/ParameterRowStateTests.cpp
+- source/core/InteractionContract.h
+- source/core/InteractionContract.cpp
+- source/core/GraphLanguage.cpp
+- source/ui/ImGuiSmokeOverlayInspector.cpp
 - docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
 - docs/superpowers/specs/2026-05-24-tixl-taxonomy-parity-spec.md
 
 Closed line:
-selection-following output
--> pin output to selected node
--> selection changes do not move a pinned output
--> unpin returns to the current selected node
--> PatchDocument and saveWork preserve the pin
+default/manual/connected/animated inspector rows
+-> derive state from GraphNode params, port bindings, and editor edges
+-> reset parameter and port binding through commandGraph
+-> undo/redo restores row state
+-> PatchDocument preserves row state
 
 Latest verification:
-- `cmake -S . -B build && cmake --build build --target my_world_output_view_state_tests` failed RED first on missing `source/core/OutputViewState.h`
-- `cmake --build build --target my_world_output_view_state_tests`
-- `./build/my_world_output_view_state_tests`
-- `ctest --test-dir build --output-on-failure -R "output_view_state|patch_document|save_work_command|interaction_traces"`
+- `cmake -S . -B build && cmake --build build --target my_world_parameter_row_state_tests` failed RED first on missing `source/core/ParameterRowState.h`
+- `cmake --build build --target my_world_parameter_row_state_tests`
+- `./build/my_world_parameter_row_state_tests`
+- `ctest --test-dir build --output-on-failure -R "parameter_row_state|graph_commands|interaction_storage_roundtrip|patch_document|save_work_command"`
 - `cmake --build build`
 - `ctest --test-dir build --output-on-failure`
 
 Latest accepted result:
-- `output view state ok`
-- `4/4 focused tests passed`
-- `56/56 full tests passed`
+- `parameter row state ok`
+- `5/5 focused tests passed`
+- `57/57 full tests passed`
 
 Next selectable lane:
-- P-PARAM1 parameter row states
+- P-PARAM1B typed parameter controls
 - P-TIME1 bars-native timeline model
 
 Previous closure:

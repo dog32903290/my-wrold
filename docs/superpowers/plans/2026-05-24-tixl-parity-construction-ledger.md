@@ -113,7 +113,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | GEST-013 | Snap move creates connection and unsnap removes connection | Graph Interaction Parity | `MagItemMovement` snap/unsnap | proven | L2 command | `snap_move_connect_unsnap_disconnect_undo` | `snap_connect` / `unsnap_disconnect` traces prove committed graph mutation; preview state remains UI layer |
 | GEST-014 | Shake dragged node to disconnect | Graph Interaction Parity | `ShakeDetector` | proven | L2 command | `shake_disconnect_dragged_node_edges` | `shake_disconnect` trace proves command mutation; gesture detection threshold remains UI layer |
 | GEST-015 | Enter, exit, collapse, expand compound | Graph Interaction Parity | graph navigation state | proven for compounds | L2 command | existing compound traces | public port persistence line continues |
-| GEST-016 | Inspector param and port binding | Graph Interaction Parity | graph input commands | partial | L2 command | `reset_default_manual_binding_fallback` | parameter parity rows |
+| GEST-016 | Inspector param and port binding | Graph Interaction Parity | graph input commands | proven | L2 command | `reset_default_manual_binding_fallback` | `set_param`, `reset_param`, `set_port_binding`, and `reset_port_binding` command path proven; extract-value node remains PARAM-008 |
 | GEST-017 | Annotation add, drag, resize, rename, delete, collapse | Graph Interaction Parity | annotation interaction files | parked | L3 visible | `annotation_frame_move_resize_rename_collapse_undo` | annotation scope decision |
 | GEST-018 | Symbol, file, or asset drop creates graph item | Graph Interaction Parity | `DropHandling` | parked | L3 visible | `drop_symbol_creates_node_undo` | asset browser boundary |
 
@@ -121,8 +121,8 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 
 | ID | Feature | Spec row | Witness | Status | Phase | Acceptance trace | Blocker / next proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | richer NodeSpec params |
-| PARAM-002 | Row states: normal, connected, animated, default/reset | Parameter parity | input UI state | partial | L3 visible | `default_manual_connected_animated_undo` | animated state model |
+| PARAM-001 | Parameter inspector shell | Parameter, Preset, And Snapshot Parity | `ParameterWindow`, `IInputUi` | partial | L3 visible | `select_node_inspector_rows_set_param` | row state shell proven; richer typed widgets remain PARAM-004/PARAM-005 |
+| PARAM-002 | Row states: normal, connected, animated, default/reset | Parameter parity | input UI state | proven | L3 visible | `default_manual_connected_animated_undo` | typed widget behavior remains later |
 | PARAM-003 | Type color families | Parameter parity | `TypeUiProperties` | partial | L3 visible | `port_type_family_visual_mapping` | TypeSpec color map |
 | PARAM-004 | Scalar/vector controls | Parameter parity | typed input UIs | planned | L3 visible | `typed_scalar_vector_param_roundtrip` | param storage schema |
 | PARAM-005 | Enum, string, path, multiline controls | Parameter parity | typed input UIs | planned | L3 visible | `typed_text_enum_path_param_roundtrip` | param storage schema |
@@ -395,6 +395,61 @@ Scope boundary:
 ```text
 P-OUT1 proves core output-view follow/pin/unpin state, PatchDocument save/load persistence, saveWork persistence, and visible workspace reading that state.
 It does not implement multiple output slots, final-eval-start pins, image canvas fit/1:1/custom modes, screenshot/render toolbar actions, resolution presets, or render/export process states.
+```
+
+### P-PARAM1A Parameter Row States
+
+Claim:
+
+```text
+Inspector parameter/input rows can derive default/manual/connected/animated state from graph data, reset state through commandGraph, and survive save/load roundtrip.
+```
+
+Evidence target:
+
+```text
+source/core/ParameterRowState.h/.cpp
+tests/ParameterRowStateTests.cpp
+source/core/InteractionContract.h/.cpp
+source/ui/ImGuiSmokeOverlayInspector.cpp
+```
+
+- [x] Write tests for default param rows, manual param rows, reset param undo/redo, edge-connected input rows, animated/manual port binding rows, reset binding, and PatchDocument roundtrip.
+- [x] Implement parameter row state as data, not ImGui-only state.
+- [x] Add `reset_param` and `reset_port_binding` command paths.
+- [x] Wire the visible inspector to read the row state helper and call reset commands.
+- [x] Run `cmake --build build --target my_world_parameter_row_state_tests`.
+- [x] Run focused command/storage tests.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+P-PARAM1A closed as of 2026-05-25 09:15 Asia/Taipei.
+
+Verification:
+
+```text
+cmake -S . -B build && cmake --build build --target my_world_parameter_row_state_tests
+# RED first failed on missing source/core/ParameterRowState.h.
+cmake --build build --target my_world_parameter_row_state_tests
+./build/my_world_parameter_row_state_tests
+ctest --test-dir build --output-on-failure -R "parameter_row_state|graph_commands|interaction_storage_roundtrip|patch_document|save_work_command"
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Accepted result:
+
+```text
+parameter row state ok
+5/5 focused tests passed.
+57/57 full tests passed.
+```
+
+Scope boundary:
+
+```text
+P-PARAM1A proves row state derivation and reset command mechanics for existing ParamSpec/Input PortSpec rows.
+It does not implement typed scalar/vector widgets, enum/path/multiline controls, lists/curves/gradients/ADSR, parameter grouping/relevancy metadata, context menus, extract-value-node commands, preset capture, snapshot capture, or variation blending.
 ```
 
 ## Downstream Plan Order
