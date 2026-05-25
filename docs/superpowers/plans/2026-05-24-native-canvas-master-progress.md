@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+ea6a883 Add shader uniform control evidence
 b174f2e Add live IO operator status evidence
 7db3233 Add live IO operator picker foundation
 888f26c Add OSC receiver lifecycle to live IO controller
@@ -119,28 +120,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE24 is committed in `b174f2e`. Current dirty files, if any, should belong to the closing P-LIVE25 shader uniform control evidence lane.
+As of 2026-05-25, P-LIVE25 is committed in `ea6a883`. Current dirty files, if any, should belong to the closing P-LIVE26 shader uniform evidence JSON shape lane.
 
 ```text
-P-LIVE25 owned files:
+P-LIVE26 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md
-- source/core/LiveIOControlDispatcher.h
-- source/core/LiveIOControlDispatcher.cpp
-- source/core/LiveIOControlTimer.h
-- source/core/LiveIOControlTimer.cpp
-- source/core/LiveIOStatusIndicator.h
+- docs/superpowers/specs/2026-05-25-p-live26-shader-uniform-evidence-json-shape.md
 - source/core/LiveIOStatusIndicator.cpp
-- source/app/LiveIOAppController.cpp
 - source/app/LiveIOProofRunner.cpp
-- tests/LiveIOControlDispatcherTests.cpp
-- tests/LiveIOControlTimerTests.cpp
 - tests/LiveIOStatusIndicatorTests.cpp
-- tests/LiveIOAppControllerTests.cpp
 - tests/LiveIOProofRunnerTests.cpp
 ```
 
-Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, or any audio callback work in P-LIVE25.
+Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, standalone artifacts, or any audio callback work in P-LIVE26.
 
 Current C4 note:
 
@@ -354,7 +346,8 @@ Latest accepted targeted result:
 | P-LIVE23 UI operator picker foundation | closed | `docs/superpowers/specs/2026-05-25-p-live23-ui-operator-picker-foundation.md`; live IO preferences now store one selected output operator, PreferencesPanel exposes it, and `LiveIOAppController` builds the primary loudness binding for `midi.cc`, `midi.note_on`, `osc.float`, or `shader.uniform`; focused tests and app build passed | Full mapping editor, multiple simultaneous user-selected bindings, graph IO node, dynamic OSC scanning, and new MIDI operator kinds remain parked |
 | P-LIVE24 live IO operator status evidence | closed | `docs/superpowers/specs/2026-05-25-p-live24-live-io-operator-status-evidence.md`; `LiveIOStatusIndicatorState` carries the selected output operator, app controller status text exposes `op <kind>`, and app-timer proof reports record `outputOperator`; focused tests passed | Full mapping editor, multiple simultaneous user-selected bindings, graph IO node, dynamic OSC scanning, and new MIDI operator kinds remain parked |
 | P-LIVE25 shader uniform control evidence | closed | `docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md`; `shader.uniform` control dispatch now records `u_loudness` evidence, timer/status state expose the latest uniform value/sample counter, and app-timer proof JSON writes it back | Shader preview live binding, standalone uniform artifact, graph IO node, and full mapping editor remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE25 closure |
+| P-LIVE26 shader uniform evidence JSON shape | closed | `docs/superpowers/specs/2026-05-25-p-live26-shader-uniform-evidence-json-shape.md`; status JSON and app-timer proof JSON now include a nested `shaderUniformEvidence` object with source, binding, uniform, value, and sample counter | Standalone uniform artifact, shader preview input bridge, shader preview smoke read, and live binding remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE26 closure |
 
 ## Active Lane Protocol
 
@@ -363,6 +356,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE26 shader uniform evidence JSON shape closure as of 2026-05-25.
+
+P-LIVE26 shader uniform evidence JSON shape closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live26-shader-uniform-evidence-json-shape.md
+- source/core/LiveIOStatusIndicator.cpp
+- source/app/LiveIOProofRunner.cpp
+- tests/LiveIOStatusIndicatorTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+
+Closed line:
+P-LIVE25 flat uniform fields
+-> nested shaderUniformEvidence object
+-> status JSON
+-> app timer proof JSON
+
+Latest accepted result:
+- RED first on missing `shaderUniformEvidence` object.
+- focused `live_io_status_indicator` and `live_io_proof_runner` tests passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE25 shader uniform control evidence closure as of 2026-05-25.
 
 P-LIVE25 shader uniform control evidence closed.
@@ -2171,7 +2189,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE25 shader uniform control evidence closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE26 shader uniform evidence JSON shape closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

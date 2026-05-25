@@ -205,6 +205,10 @@ int main()
                     "app timer midi shader skip");
     expectContains (appTimerMidiReport, "\"hasLastShaderUniform\": true",
                     "app timer midi has shader uniform");
+    expectContains (appTimerMidiReport, "\"shaderUniformEvidence\": {",
+                    "app timer midi shader uniform evidence object");
+    expectContains (appTimerMidiReport, "\"source\": \"LiveIOControlTimerState\"",
+                    "app timer midi shader uniform evidence source");
     expectContains (appTimerMidiReport, "\"lastShaderUniformName\": \"u_loudness\"",
                     "app timer midi shader uniform name");
     expectContains (appTimerMidiReport, "\"lastShaderUniformValue\": 0.500000",
@@ -234,6 +238,10 @@ int main()
                     "app timer osc shader skip");
     expectContains (appTimerOscReport, "\"hasLastShaderUniform\": true",
                     "app timer osc has shader uniform");
+    expectContains (appTimerOscReport, "\"shaderUniformEvidence\": {",
+                    "app timer osc shader uniform evidence object");
+    expectContains (appTimerOscReport, "\"source\": \"LiveIOControlTimerState\"",
+                    "app timer osc shader uniform evidence source");
     expectContains (appTimerOscReport, "\"lastShaderUniformName\": \"u_loudness\"",
                     "app timer osc shader uniform name");
     expectContains (appTimerOscReport, "\"lastShaderUniformValue\": 0.500000",

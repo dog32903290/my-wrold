@@ -75,6 +75,18 @@ int oscCountForMode (const LiveIOControlTimerState& state, LiveIOControlTimerSen
 
     return state.oscDryRunCount;
 }
+
+void appendShaderUniformEvidenceJson (std::ostringstream& out,
+                                      const LiveIOStatusIndicatorState& state)
+{
+    out << "{\n";
+    out << "    \"source\": \"LiveIOStatusIndicatorState\",\n";
+    out << "    \"bindingId\": " << jsonQuoted (state.shaderUniformBindingId) << ",\n";
+    out << "    \"uniformName\": " << jsonQuoted (state.shaderUniformName) << ",\n";
+    out << "    \"value\": " << state.shaderUniformValue << ",\n";
+    out << "    \"sampleCounter\": " << state.shaderUniformSampleCounter << "\n";
+    out << "  }";
+}
 }
 
 LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (
@@ -172,6 +184,9 @@ std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& sta
     out << "  \"shaderUniformName\": " << jsonQuoted (state.shaderUniformName) << ",\n";
     out << "  \"shaderUniformValue\": " << state.shaderUniformValue << ",\n";
     out << "  \"shaderUniformSampleCounter\": " << state.shaderUniformSampleCounter << ",\n";
+    out << "  \"shaderUniformEvidence\": ";
+    appendShaderUniformEvidenceJson (out, state);
+    out << ",\n";
     out << "  \"midiCount\": " << state.midiCount << ",\n";
     out << "  \"oscCount\": " << state.oscCount << ",\n";
     out << "  \"sampleCounter\": " << state.sampleCounter << ",\n";

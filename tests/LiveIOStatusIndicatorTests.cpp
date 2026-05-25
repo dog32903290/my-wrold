@@ -142,6 +142,8 @@ int main()
 
     const auto uniformJson = myworld::makeLiveIOStatusIndicatorJson (uniformState);
     expectContains (uniformJson, "\"hasShaderUniform\": true", "indicator json has uniform");
+    expectContains (uniformJson, "\"shaderUniformEvidence\": {", "indicator json uniform evidence object");
+    expectContains (uniformJson, "\"source\": \"LiveIOStatusIndicatorState\"", "indicator json uniform source");
     expectContains (uniformJson, "\"shaderUniformName\": \"u_loudness\"", "indicator json uniform name");
     expectContains (uniformJson, "\"shaderUniformValue\": 0.750000", "indicator json uniform value");
     expectContains (uniformJson, "\"shaderUniformSampleCounter\": 256", "indicator json uniform sample");

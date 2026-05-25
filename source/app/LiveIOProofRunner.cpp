@@ -623,6 +623,18 @@ void appendErrorsJson (std::ostringstream& out, const std::vector<std::string>& 
     out << "]";
 }
 
+void appendTimerShaderUniformEvidenceJson (std::ostringstream& out,
+                                           const LiveIOControlTimerState& state)
+{
+    out << "{\n";
+    out << "    \"source\": \"LiveIOControlTimerState\",\n";
+    out << "    \"bindingId\": " << jsonQuoted (state.lastShaderUniformBindingId) << ",\n";
+    out << "    \"uniformName\": " << jsonQuoted (state.lastShaderUniformName) << ",\n";
+    out << "    \"value\": " << state.lastShaderUniformValue << ",\n";
+    out << "    \"sampleCounter\": " << state.lastShaderUniformSampleCounter << "\n";
+    out << "  }";
+}
+
 std::string makeLiveIOProofJson (const LiveIOBusReport& busReport)
 {
     const auto busJson = makeLiveIOBusReportJson (busReport);
@@ -686,6 +698,9 @@ std::string makeAppTimerMidiProofJson (const LiveIOControlTimerState& state,
     out << "  \"lastShaderUniformName\": " << jsonQuoted (state.lastShaderUniformName) << ",\n";
     out << "  \"lastShaderUniformValue\": " << state.lastShaderUniformValue << ",\n";
     out << "  \"lastShaderUniformSampleCounter\": " << state.lastShaderUniformSampleCounter << ",\n";
+    out << "  \"shaderUniformEvidence\": ";
+    appendTimerShaderUniformEvidenceJson (out, state);
+    out << ",\n";
     out << "  \"lastLoudness\": " << state.lastLoudness << ",\n";
     out << "  \"lastSampleCounter\": " << state.lastSampleCounter << ",\n";
     out << "  \"errors\": ";
@@ -717,6 +732,9 @@ std::string makeAppTimerOscLoopbackProofJson (const AppTimerOscLoopbackProof& pr
     out << "  \"lastShaderUniformName\": " << jsonQuoted (proof.timerState.lastShaderUniformName) << ",\n";
     out << "  \"lastShaderUniformValue\": " << proof.timerState.lastShaderUniformValue << ",\n";
     out << "  \"lastShaderUniformSampleCounter\": " << proof.timerState.lastShaderUniformSampleCounter << ",\n";
+    out << "  \"shaderUniformEvidence\": ";
+    appendTimerShaderUniformEvidenceJson (out, proof.timerState);
+    out << ",\n";
     out << "  \"received\": " << (proof.received ? "true" : "false") << ",\n";
     out << "  \"oscHost\": " << jsonQuoted (proof.oscHost) << ",\n";
     out << "  \"oscPort\": " << proof.oscPort << ",\n";
