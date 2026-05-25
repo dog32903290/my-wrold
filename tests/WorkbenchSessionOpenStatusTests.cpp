@@ -83,6 +83,7 @@ int main()
     const auto statusText = myworld::makeWorkbenchSessionStatusText (result.snapshot);
     expectContains (statusText, "workbench ready", "status text ready");
     expectContains (statusText, "patch.c2-main", "status text document");
+    expectContains (statusText, "source fixture-fallback-active-missing", "status text source");
     expectContains (statusText, "mappings 1/1", "status text mapping count");
 
     const auto brokenWorkRoot = std::filesystem::temp_directory_path() / "my-world-app4-broken-active-work";
@@ -107,6 +108,10 @@ int main()
             "broken active work manifest path");
     expect (brokenResult.snapshot.workManifestPath == brokenRequest.activeWorkManifestPath.string(),
             "broken work manifest path");
+
+    const auto brokenStatusText = myworld::makeWorkbenchSessionStatusText (brokenResult.snapshot);
+    expectContains (brokenStatusText, "workbench blocked", "broken status text");
+    expectContains (brokenStatusText, "source active-work-blocked", "broken source text");
 
     std::filesystem::remove_all (activeWorkRoot);
     std::filesystem::remove_all (brokenWorkRoot);

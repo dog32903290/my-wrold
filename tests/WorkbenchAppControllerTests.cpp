@@ -43,6 +43,9 @@ int main()
     expect (snapshot.graphIOMappingStatus == "valid", "mapping status");
 
     expectContains (controller.statusText(), "workbench ready", "controller status");
+    expectContains (controller.statusText(),
+                    "source fixture-fallback-active-missing",
+                    "controller source status");
 
     const auto proofRequest = controller.makeOpenStatusProofRequest (
         std::filesystem::temp_directory_path() / "my-world-app3-proof");

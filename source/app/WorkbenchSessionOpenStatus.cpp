@@ -95,12 +95,17 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
 std::string makeWorkbenchSessionStatusText (const WorkbenchSessionSnapshot& snapshot)
 {
     if (! snapshot.ok)
-        return "workbench blocked: " + snapshot.message;
+        return "workbench blocked source "
+               + snapshot.workSourceStatus
+               + ": "
+               + snapshot.message;
 
     return "workbench "
            + snapshot.status
            + " "
            + snapshot.documentId
+           + " source "
+           + snapshot.workSourceStatus
            + " mappings "
            + std::to_string (snapshot.validGraphIOMappingCount)
            + "/"
