@@ -39,19 +39,24 @@ int main()
     request.outputDirectory = outputDirectory;
     request.candidateRoots = { std::filesystem::current_path() };
     request.loudness = 0.5f;
+    request.midiOutputInventory.devices = {
+        { "IAC Driver Bus 1", "iac-1" }
+    };
 
     const auto result = myworld::runLiveIOProof (request);
 
     expect (result.ok, result.error);
     expect (result.status == "dumped", "status");
     expect (result.outputDirectory == outputDirectory, "output directory");
-    expect (result.artifactPaths.size() == 4, "artifact count");
+    expect (result.artifactPaths.size() == 5, "artifact count");
     expect (std::filesystem::exists (outputDirectory / "live_io_report.json"),
             "live io report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_send_report.json"),
             "live io send report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_osc_loopback_report.json"),
             "live io osc loopback report exists");
+    expect (std::filesystem::exists (outputDirectory / "live_io_midi_inventory_report.json"),
+            "live io midi inventory report exists");
     expect (std::filesystem::exists (outputDirectory / "live_io_runtime_execution.json"),
             "runtime execution exists");
 
@@ -93,6 +98,20 @@ int main()
     expectContains (loopbackReport, "\"oscAddress\": \"/my-world/loudness\"", "loopback address");
     expectContains (loopbackReport, "\"receivedFloatValue\": 0.500000", "loopback value");
     expectContains (loopbackReport, "\"errors\": []", "loopback no errors");
+
+    const auto midiInventoryReport = readTextFile (outputDirectory / "live_io_midi_inventory_report.json");
+    expectContains (midiInventoryReport, "\"kind\": \"liveIOMidiOutputInventoryProof\"",
+                    "midi inventory kind");
+    expectContains (midiInventoryReport, "\"ok\": true", "midi inventory ok");
+    expectContains (midiInventoryReport, "\"deviceCount\": 1", "midi inventory count");
+    expectContains (midiInventoryReport, "\"name\": \"IAC Driver Bus 1\"", "midi inventory device");
+    expectContains (midiInventoryReport, "\"identifier\": \"iac-1\"", "midi inventory identifier");
+    expectContains (midiInventoryReport, "\"selectedRoute\": {", "midi selected route");
+    expectContains (midiInventoryReport, "\"status\": \"selected\"", "midi selected route");
+    expectContains (midiInventoryReport, "\"unavailableRoute\": {", "midi unavailable route");
+    expectContains (midiInventoryReport, "\"status\": \"unavailable\"", "midi unavailable route");
+    expectContains (midiInventoryReport, "\"errors\": [\"midi output is unavailable: __missing_live_io_midi_output__\"]",
+                    "midi unavailable error");
 
     const auto runtimeExecution = readTextFile (outputDirectory / "live_io_runtime_execution.json");
     expectContains (runtimeExecution, "\"kind\": \"runtimeExecution\"", "runtime execution kind");

@@ -154,7 +154,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | LIVE-001 | Composition audio source | Live parity | audio settings, playback source | partial/proven mapping | L4 live | `audio_input_to_meter_to_uniform` | P-LIVE1 maps loaded runtime output to target events; realtime callback wiring remains parked |
 | LIVE-002 | Global audio mixers | Live parity | mixer settings | parked | L4 live | `audio_mixer_mute_route` | audio graph/mix bus |
 | LIVE-003 | MIDI input taxonomy and teach | Live parity | MIDI input UI | partial | L4 live | `teach_midi_cc_binding_flash` | MIDI input manager |
-| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven dry-run boundary | L4 live | `loudness_cc_output_stream_enabled` | P-LIVE1.2 proves MIDI CC dry-run send action; real device output remains parked |
+| LIVE-004 | MIDI output taxonomy | Live parity | MIDI output operators | proven inventory/route report | L4 live | `loudness_cc_output_stream_enabled` | P-LIVE1.4 proves MIDI output inventory plus selected/unavailable route reports; real device output remains parked |
 | LIVE-005 | OSC input | Live parity | OSC files | proven controlled loopback | L4 live | `osc_address_to_signal_value` | P-LIVE1.3 proves localhost OSC float send/receive loopback; external UDP receive/send remains parked |
 | LIVE-006 | Audio analyzer/operator family | Live parity | `io/audio`, `AudioReaction`, `DetectBpm` | partial/proven loudness | L4 live | `loaded_loudness_outputs_drive_live_surface` | C1.19/C1.20 line |
 | LIVE-007 | Exported executable and live show controls | Live parity | executable settings | parked | L4 live | `exported_show_keyboard_playback` | packaging/runtime mode |
@@ -168,7 +168,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
 | NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
-| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received` | real MIDI/OSC devices, teach mode, and realtime callback wiring remain parked |
+| NATIVE-006 | Live IO bus proof | native live proof | `LiveIOBus` / `LiveIOSendAdapter` / `LiveIOMidiOutputInventory` / `LiveIOProofRunner` | proven | L4 live | `live_io_bus_midi_osc_uniform_mapping`, `live_io_send_boundary_dry_run`, `live_io_osc_loopback_received`, `live_io_midi_inventory_route_report` | real MIDI sends, teach mode, and realtime callback wiring remain parked |
 
 ## Immediate Work Queue
 
@@ -1053,6 +1053,50 @@ It does not open MIDI devices, send MIDI, send to external UDP/OSC targets, impl
 Latest accepted result: live io send adapter ok; live io proof runner ok; app proof dump wrote live_io_osc_loopback_report.json with sent=true, received=true, /my-world/loudness, and 0.500000.
 ```
 
+### P-LIVE1.4 MIDI Output Inventory / Route Report
+
+Claim:
+
+```text
+The live IO proof can capture MIDI output devices and report selected/unavailable routes without opening a MIDI device, sending MIDI, touching realtime callbacks, or adding UI.
+```
+
+Evidence target:
+
+```text
+source/core/LiveIOMidiOutputInventory.h
+source/core/LiveIOMidiOutputInventory.cpp
+source/app/LiveIOProofRunner.h
+source/app/LiveIOProofRunner.cpp
+source/app/MainComponent.cpp
+tests/LiveIOMidiOutputInventoryTests.cpp
+tests/LiveIOProofRunnerTests.cpp
+debug/p-live1-live-io-proof/live_io_midi_inventory_report.json
+docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md
+```
+
+- [x] Write RED tests for inventory route selection by identifier/name, unavailable route failure, empty inventory, and JSON report fields.
+- [x] Add pure `LiveIOMidiOutputInventory` route report contract.
+- [x] Extend `LiveIOProofRunner` to write `live_io_midi_inventory_report.json`.
+- [x] Capture JUCE MIDI output devices in app proof without opening or sending to them.
+
+P-LIVE1.4 closed as MIDI output inventory / route report as of 2026-05-25 12:13 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+live_io_midi_inventory_route_report
+live_io_app_midi_inventory_report_dump
+```
+
+Scope boundary:
+
+```text
+P-LIVE1.4 proves inventory and route reporting only.
+It does not open MIDI devices, send MIDI, implement MIDI learn/teach mode, alter the realtime audio callback, or build live mapping UI.
+Latest accepted result: live io midi output inventory ok; live io proof runner ok; app proof dump wrote live_io_midi_inventory_report.json with an IAC selected route and a missing-output unavailable route.
+```
+
 ## Downstream Plan Order
 
 The next plans should be created only when the previous queue item has proof evidence:
@@ -1072,7 +1116,7 @@ The next plans should be created only when the previous queue item has proof evi
 | 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
 | 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
 | 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
-| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, and P-LIVE1.3 localhost OSC loopback; real devices and teach mode remain later |
+| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Closed mapping foundation, P-LIVE1.2 dry-run send boundary, P-LIVE1.3 localhost OSC loopback, and P-LIVE1.4 MIDI inventory route report; real MIDI sends and teach mode remain later |
 
 ## Self-Review
 

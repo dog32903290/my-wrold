@@ -27,6 +27,16 @@ namespace myworld
 {
 namespace
 {
+LiveIOMidiOutputInventory availableMidiOutputInventory()
+{
+    LiveIOMidiOutputInventory inventory;
+
+    for (const auto& device : juce::MidiOutput::getAvailableDevices())
+        inventory.devices.push_back ({ device.name.toStdString(), device.identifier.toStdString() });
+
+    return inventory;
+}
+
 juce::Font monoFont (float height)
 {
     return juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(), height, juce::Font::plain));
@@ -301,6 +311,7 @@ void MainComponent::dumpLiveIOProof()
     LiveIOProofRunRequest request;
     request.outputDirectory = directory.getFullPathName().toStdString();
     request.candidateRoots = proofCandidateRoots();
+    request.midiOutputInventory = availableMidiOutputInventory();
     request.loudness = 0.5f;
 
     const auto result = runLiveIOProof (request);

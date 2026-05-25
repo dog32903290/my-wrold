@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 12:02 Asia/Taipei.
+Date: 2026-05-25 12:13 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+93b1f8f Add OSC loopback live IO proof
 2728868 Add live IO send boundary proof
 32bf75b Add live IO bus proof
 e1197e5 Close variation blend and thumbnail proof
@@ -263,13 +264,59 @@ Latest accepted targeted result:
 | P-LIVE1 live IO bus foundation | closed | `LiveIOBus` plus `LiveIOProofRunner` map loaded `compound.loudness` public output to MIDI CC, OSC float, and shader uniform target events; app CLI `--dump-live-io-proof-and-exit` writes `live_io_report.json` | Real MIDI/OSC device IO, teach mode, UDP send/receive, realtime callback wiring, and live UI mapping remain parked |
 | P-LIVE1.2 live IO send boundary | closed | `docs/superpowers/specs/2026-05-25-p-live1-2-live-io-send-boundary.md`; `LiveIOSendAdapter` turns `LiveIOBus` MIDI/OSC events into dry-run send actions and app proof writes `live_io_send_report.json`; `ctest` 65/65 | Real MIDI/UDP send, device scan, realtime callback wiring, teach mode, and live UI mapping remain parked |
 | P-LIVE1.3 controlled OSC loopback proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-3-osc-loopback-proof.md`; `LiveIOSendAdapter` sends one OSC float packet to a controlled localhost receiver and app proof writes `live_io_osc_loopback_report.json` | MIDI device send, external UDP target, always-on OSC server, realtime callback wiring, teach mode, and live UI mapping remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.3 closure |
+| P-LIVE1.4 MIDI output inventory / route report | closed | `docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md`; app proof writes `live_io_midi_inventory_report.json` with MIDI output device list plus selected/unavailable route reports | MIDI device open/send, realtime callback wiring, teach mode, and live UI mapping remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE1.4 closure |
 
 ## Active Lane Protocol
 
 Only one lane should be marked `in progress` in this file unless the files are disjoint.
 
 Current active lane:
+
+```text
+None after P-LIVE1.4 MIDI output inventory / route report closure as of 2026-05-25 12:13 Asia/Taipei.
+
+P-LIVE1.4 MIDI output inventory / route report closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live1-4-midi-output-inventory.md
+- source/core/LiveIOMidiOutputInventory.h
+- source/core/LiveIOMidiOutputInventory.cpp
+- source/app/LiveIOProofRunner.h
+- source/app/LiveIOProofRunner.cpp
+- source/app/MainComponent.cpp
+- tests/LiveIOMidiOutputInventoryTests.cpp
+- tests/LiveIOProofRunnerTests.cpp
+- CMakeLists.txt
+
+Closed line:
+JUCE MIDI output device list
+-> LiveIOMidiOutputInventory
+-> selected route report when a device exists
+-> unavailable route report
+-> live_io_midi_inventory_report.json
+
+Latest verification:
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_midi_output_inventory_tests` failed RED first on missing `LiveIOMidiOutputInventory.h`.
+- `./build/my_world_live_io_proof_runner_tests` failed RED first because `LiveIOProofRunRequest` had no `midiOutputInventory`.
+- `cmake --build build --target my_world_live_io_midi_output_inventory_tests my_world_live_io_proof_runner_tests my-world`
+- `./build/my_world_live_io_midi_output_inventory_tests`
+- `./build/my_world_live_io_proof_runner_tests`
+- `./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-live-io-proof-and-exit`
+
+Latest accepted result:
+- `live io midi output inventory ok`
+- `live io proof runner ok`
+- `debug/p-live1-live-io-proof/live_io_midi_inventory_report.json` has `ok: true`, `status: "inventoried"`, `deviceCount: 1`, selected route for `IAC驅動程式 匯流排1`, and unavailable route for `__missing_live_io_midi_output__`.
+
+Next selectable lane:
+- None selected.
+- Real MIDI device open/send, MIDI teach mode, realtime callback wiring, and live UI mapping remain parked.
+- External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
+- Full render/export window/process states remain parked.
+- Variation child enable UI and symbol-browser preset creation remain parked.
+```
+
+Previous closure:
 
 ```text
 None after P-LIVE1.3 controlled OSC loopback proof closure as of 2026-05-25 12:02 Asia/Taipei.
