@@ -13,6 +13,8 @@ WorkbenchSessionSnapshot makeWorkbenchSessionSnapshot (const WorkbenchSessionReq
     WorkbenchSessionSnapshot snapshot;
     snapshot.workManifestPath = request.workManifestPath;
     snapshot.workSource = request.workSource;
+    snapshot.workSourceStatus = request.workSourceStatus;
+    snapshot.activeWorkManifestPath = request.activeWorkManifestPath;
     snapshot.graphIOMappingSourcePath = request.graphIOMappingSourcePath;
     snapshot.documentId = request.document.id;
     snapshot.documentTitle = request.document.title;
@@ -67,6 +69,8 @@ std::string makeWorkbenchSessionReportJson (const WorkbenchSessionSnapshot& snap
     out << "  \"message\": " << jsonQuoted (snapshot.message) << ",\n";
     out << "  \"workManifestPath\": " << jsonQuoted (snapshot.workManifestPath) << ",\n";
     out << "  \"workSource\": " << jsonQuoted (snapshot.workSource) << ",\n";
+    out << "  \"workSourceStatus\": " << jsonQuoted (snapshot.workSourceStatus) << ",\n";
+    out << "  \"activeWorkManifestPath\": " << jsonQuoted (snapshot.activeWorkManifestPath) << ",\n";
     out << "  \"graphIOMappingSourcePath\": " << jsonQuoted (snapshot.graphIOMappingSourcePath) << ",\n";
     out << "  \"documentId\": " << jsonQuoted (snapshot.documentId) << ",\n";
     out << "  \"documentTitle\": " << jsonQuoted (snapshot.documentTitle) << ",\n";

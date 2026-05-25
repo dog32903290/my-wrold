@@ -18,6 +18,7 @@ struct LoadedWorkbenchInputs
     PatchDocument document;
     std::string workManifestPath;
     std::string workSource;
+    std::string workSourceStatus;
 };
 
 bool fileExists (const std::filesystem::path& path)
@@ -46,12 +47,15 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
             result.snapshot.message = loaded.error;
             result.snapshot.workManifestPath = request.activeWorkManifestPath.string();
             result.snapshot.workSource = "active-work";
+            result.snapshot.workSourceStatus = "active-work-blocked";
+            result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
             return result;
         }
 
         loadedInputs.document = loaded.document;
         loadedInputs.workManifestPath = request.activeWorkManifestPath.string();
         loadedInputs.workSource = "active-work";
+        loadedInputs.workSourceStatus = "active-work-opened";
     }
     else
     {
@@ -63,6 +67,9 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
                 loadedInputs.document = loaded.document;
                 loadedInputs.workManifestPath = candidate.string();
                 loadedInputs.workSource = "fixture";
+                loadedInputs.workSourceStatus = request.activeWorkManifestPath.empty()
+                                                    ? "fixture-fallback-no-active-request"
+                                                    : "fixture-fallback-active-missing";
                 break;
             }
 
@@ -77,6 +84,10 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         result.snapshot.ok = false;
         result.snapshot.status = "blocked";
         result.snapshot.message = result.error;
+        result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
+        result.snapshot.workSourceStatus = request.activeWorkManifestPath.empty()
+                                               ? "fixture-blocked-no-active-request"
+                                               : "fixture-blocked-active-missing";
         return result;
     }
 
@@ -103,6 +114,8 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
         result.snapshot.message = result.error;
         result.snapshot.workManifestPath = loadedInputs.workManifestPath;
         result.snapshot.workSource = loadedInputs.workSource;
+        result.snapshot.workSourceStatus = loadedInputs.workSourceStatus;
+        result.snapshot.activeWorkManifestPath = request.activeWorkManifestPath.string();
         return result;
     }
 
@@ -111,6 +124,8 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
     WorkbenchSessionRequest sessionRequest;
     sessionRequest.workManifestPath = loadedInputs.workManifestPath;
     sessionRequest.workSource = loadedInputs.workSource;
+    sessionRequest.workSourceStatus = loadedInputs.workSourceStatus;
+    sessionRequest.activeWorkManifestPath = request.activeWorkManifestPath.string();
     sessionRequest.graphIOMappingSourcePath = mappingSourcePath;
     sessionRequest.document = loadedInputs.document;
     sessionRequest.graphIOMappings = loadedMappings.mappings;
