@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -24,6 +25,13 @@ std::string readText (const std::filesystem::path& path)
     std::ostringstream text;
     text << file.rdbuf();
     return text.str();
+}
+
+std::vector<unsigned char> readBinary (const std::filesystem::path& path)
+{
+    std::ifstream file { path, std::ios::binary };
+    return { std::istreambuf_iterator<char> (file),
+             std::istreambuf_iterator<char>() };
 }
 
 void expectFileContains (const std::filesystem::path& path,
@@ -128,6 +136,10 @@ int main()
             "node stats path");
     expect (result.errorsPath == "debug/r2-top-constant/errors.json",
             "errors path");
+    expect (result.thumbnailPath == "debug/r2-top-constant/thumbnail.png",
+            "thumbnail path");
+    expect (result.thumbnailStatsPath == "debug/r2-top-constant/thumbnail_stats.json",
+            "thumbnail stats path");
 
     expectFileContains (outputDirectory / "texture_summary.json",
                         "\"width\": 1280",
@@ -162,6 +174,27 @@ int main()
     expectFileContains (outputDirectory / "errors.json",
                         "\"ok\": true",
                         "success errors");
+    expectFileContains (outputDirectory / "thumbnail_stats.json",
+                        "\"kind\": \"renderThumbnailStats\"",
+                        "thumbnail stats");
+    expectFileContains (outputDirectory / "thumbnail_stats.json",
+                        "\"thumbnailWidth\": 96",
+                        "thumbnail stats");
+    expectFileContains (outputDirectory / "thumbnail_stats.json",
+                        "\"thumbnailHeight\": 54",
+                        "thumbnail stats");
+    expectFileContains (outputDirectory / "thumbnail_stats.json",
+                        "\"sourceWidth\": 1280",
+                        "thumbnail stats");
+    expectFileContains (outputDirectory / "thumbnail_stats.json",
+                        "\"sourceHeight\": 720",
+                        "thumbnail stats");
+
+    const auto thumbnailBytes = readBinary (outputDirectory / "thumbnail.png");
+    expect (thumbnailBytes.size() > 64, "thumbnail png has bytes");
+    const unsigned char pngSignature[] = { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a };
+    for (std::size_t index = 0; index < sizeof (pngSignature); ++index)
+        expect (thumbnailBytes[index] == pngSignature[index], "thumbnail has png signature");
 
     const std::filesystem::path invalidDirectory { "debug/r2-top-constant-invalid-resolution" };
     std::filesystem::remove_all (invalidDirectory);

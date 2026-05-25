@@ -3,6 +3,9 @@
 #include "JsonWriter.h"
 #include "StorageContractJson.h"
 
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -57,6 +60,8 @@ HeadlessRenderRuntimeResult makeResultFor (const std::string& outputDirectory)
         pathText (directory / "texture_summary.json"),
         pathText (directory / "cook_order.json"),
         pathText (directory / "node_stats.json"),
+        pathText (directory / "thumbnail.png"),
+        pathText (directory / "thumbnail_stats.json"),
         pathText (directory / "errors.json")
     };
 }
@@ -84,6 +89,36 @@ bool writeTextFile (const std::string& path, const std::string& text, std::strin
     return true;
 }
 
+bool writeBinaryFile (const std::string& path, const std::vector<unsigned char>& bytes, std::string& error)
+{
+    const fs::path filePath { path };
+    std::error_code createError;
+    fs::create_directories (filePath.parent_path(), createError);
+
+    if (createError)
+    {
+        error = "could not create output directory: " + createError.message();
+        return false;
+    }
+
+    std::ofstream file { filePath, std::ios::binary };
+    if (! file)
+    {
+        error = "could not write " + path;
+        return false;
+    }
+
+    file.write (reinterpret_cast<const char*> (bytes.data()),
+                static_cast<std::streamsize> (bytes.size()));
+    if (! file)
+    {
+        error = "could not write " + path;
+        return false;
+    }
+
+    return true;
+}
+
 std::string readTextFile (const std::string& path, std::string& error)
 {
     std::ifstream file { path };
@@ -96,6 +131,134 @@ std::string readTextFile (const std::string& path, std::string& error)
     std::ostringstream text;
     text << file.rdbuf();
     return text.str();
+}
+
+void appendU16LE (std::vector<unsigned char>& bytes, std::uint16_t value)
+{
+    bytes.push_back (static_cast<unsigned char> (value & 0xffu));
+    bytes.push_back (static_cast<unsigned char> ((value >> 8u) & 0xffu));
+}
+
+void appendU32BE (std::vector<unsigned char>& bytes, std::uint32_t value)
+{
+    bytes.push_back (static_cast<unsigned char> ((value >> 24u) & 0xffu));
+    bytes.push_back (static_cast<unsigned char> ((value >> 16u) & 0xffu));
+    bytes.push_back (static_cast<unsigned char> ((value >> 8u) & 0xffu));
+    bytes.push_back (static_cast<unsigned char> (value & 0xffu));
+}
+
+std::uint32_t updateCrc32 (std::uint32_t crc, const unsigned char* bytes, std::size_t size)
+{
+    for (std::size_t index = 0; index < size; ++index)
+    {
+        crc ^= bytes[index];
+
+        for (int bit = 0; bit < 8; ++bit)
+            crc = (crc & 1u) != 0u ? (crc >> 1u) ^ 0xedb88320u : crc >> 1u;
+    }
+
+    return crc;
+}
+
+std::uint32_t adler32 (const std::vector<unsigned char>& bytes)
+{
+    constexpr auto modulo = 65521u;
+    std::uint32_t a = 1u;
+    std::uint32_t b = 0u;
+
+    for (const auto byte : bytes)
+    {
+        a = (a + byte) % modulo;
+        b = (b + a) % modulo;
+    }
+
+    return (b << 16u) | a;
+}
+
+void appendPngChunk (std::vector<unsigned char>& png,
+                     const char type[4],
+                     const std::vector<unsigned char>& data)
+{
+    appendU32BE (png, static_cast<std::uint32_t> (data.size()));
+
+    const auto typeOffset = png.size();
+    png.push_back (static_cast<unsigned char> (type[0]));
+    png.push_back (static_cast<unsigned char> (type[1]));
+    png.push_back (static_cast<unsigned char> (type[2]));
+    png.push_back (static_cast<unsigned char> (type[3]));
+    png.insert (png.end(), data.begin(), data.end());
+
+    auto crc = 0xffffffffu;
+    crc = updateCrc32 (crc, png.data() + typeOffset, png.size() - typeOffset);
+    appendU32BE (png, crc ^ 0xffffffffu);
+}
+
+unsigned char colorByte (double value)
+{
+    return static_cast<unsigned char> (std::round (std::clamp (value, 0.0, 1.0) * 255.0));
+}
+
+std::vector<unsigned char> makeConstantThumbnailPng (const ParsedFixture& fixture,
+                                                     int thumbnailWidth,
+                                                     int thumbnailHeight)
+{
+    const auto red = colorByte (fixture.constant.color[0]);
+    const auto green = colorByte (fixture.constant.color[1]);
+    const auto blue = colorByte (fixture.constant.color[2]);
+    const auto alpha = colorByte (fixture.constant.color[3]);
+
+    std::vector<unsigned char> raw;
+    raw.reserve (static_cast<std::size_t> (thumbnailHeight) * (static_cast<std::size_t> (thumbnailWidth) * 4u + 1u));
+
+    for (int y = 0; y < thumbnailHeight; ++y)
+    {
+        raw.push_back (0u);
+
+        for (int x = 0; x < thumbnailWidth; ++x)
+        {
+            raw.push_back (red);
+            raw.push_back (green);
+            raw.push_back (blue);
+            raw.push_back (alpha);
+        }
+    }
+
+    std::vector<unsigned char> zlib;
+    zlib.push_back (0x78u);
+    zlib.push_back (0x01u);
+
+    std::size_t offset = 0;
+    while (offset < raw.size())
+    {
+        const auto blockSize = std::min<std::size_t> (65535u, raw.size() - offset);
+        const auto finalBlock = offset + blockSize == raw.size();
+        zlib.push_back (finalBlock ? 0x01u : 0x00u);
+        appendU16LE (zlib, static_cast<std::uint16_t> (blockSize));
+        appendU16LE (zlib, static_cast<std::uint16_t> (~blockSize));
+        zlib.insert (zlib.end(), raw.begin() + static_cast<std::ptrdiff_t> (offset),
+                     raw.begin() + static_cast<std::ptrdiff_t> (offset + blockSize));
+        offset += blockSize;
+    }
+
+    appendU32BE (zlib, adler32 (raw));
+
+    std::vector<unsigned char> png {
+        0x89u, 0x50u, 0x4eu, 0x47u, 0x0du, 0x0au, 0x1au, 0x0au
+    };
+
+    std::vector<unsigned char> ihdr;
+    appendU32BE (ihdr, static_cast<std::uint32_t> (thumbnailWidth));
+    appendU32BE (ihdr, static_cast<std::uint32_t> (thumbnailHeight));
+    ihdr.push_back (8u);
+    ihdr.push_back (6u);
+    ihdr.push_back (0u);
+    ihdr.push_back (0u);
+    ihdr.push_back (0u);
+
+    appendPngChunk (png, "IHDR", ihdr);
+    appendPngChunk (png, "IDAT", zlib);
+    appendPngChunk (png, "IEND", {});
+    return png;
 }
 
 std::string makeErrorsJson (bool ok, const std::vector<std::string>& errors)
@@ -384,6 +547,33 @@ std::string makeNodeStatsJson (const ParsedFixture& fixture)
     out << "}\n";
     return out.str();
 }
+
+std::string makeThumbnailStatsJson (const ParsedFixture& fixture,
+                                    const std::string& thumbnailPath,
+                                    int thumbnailWidth,
+                                    int thumbnailHeight)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision (6);
+    out << "{\n";
+    out << "  \"kind\": \"renderThumbnailStats\",\n";
+    out << "  \"ok\": true,\n";
+    out << "  \"renderer\": \"headless\",\n";
+    out << "  \"thumbnailPath\": " << jsonQuoted (thumbnailPath) << ",\n";
+    out << "  \"sourceNodeId\": " << jsonQuoted (fixture.constant.id) << ",\n";
+    out << "  \"outputNodeId\": " << jsonQuoted (fixture.output.id) << ",\n";
+    out << "  \"sourceWidth\": " << fixture.constant.width << ",\n";
+    out << "  \"sourceHeight\": " << fixture.constant.height << ",\n";
+    out << "  \"thumbnailWidth\": " << thumbnailWidth << ",\n";
+    out << "  \"thumbnailHeight\": " << thumbnailHeight << ",\n";
+    out << "  \"format\": \"png.rgba8\",\n";
+    out << "  \"color\": [" << fixture.constant.color[0] << ", "
+        << fixture.constant.color[1] << ", "
+        << fixture.constant.color[2] << ", "
+        << fixture.constant.color[3] << "]\n";
+    out << "}\n";
+    return out.str();
+}
 }
 
 HeadlessRenderRuntimeResult runHeadlessRenderRuntimeProof (const std::string& fixturePath,
@@ -408,9 +598,17 @@ HeadlessRenderRuntimeResult runHeadlessRenderRuntimeProofText (const std::string
     if (! parseFixture (fixtureText, fixture, error))
         return failWithError (std::move (result), error);
 
+    constexpr int thumbnailWidth = 96;
+    constexpr int thumbnailHeight = 54;
+    const auto thumbnailPng = makeConstantThumbnailPng (fixture, thumbnailWidth, thumbnailHeight);
+
     if (! writeTextFile (result.textureSummaryPath, makeTextureSummaryJson (fixture), error)
         || ! writeTextFile (result.cookOrderPath, makeCookOrderJson (fixture), error)
         || ! writeTextFile (result.nodeStatsPath, makeNodeStatsJson (fixture), error)
+        || ! writeBinaryFile (result.thumbnailPath, thumbnailPng, error)
+        || ! writeTextFile (result.thumbnailStatsPath,
+                            makeThumbnailStatsJson (fixture, result.thumbnailPath, thumbnailWidth, thumbnailHeight),
+                            error)
         || ! writeTextFile (result.errorsPath, makeErrorsJson (true, {}), error))
     {
         return failWithError (std::move (result), error);

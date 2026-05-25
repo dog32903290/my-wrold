@@ -5,7 +5,10 @@
 #include "GraphEndpoint.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cctype>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <map>
@@ -29,6 +32,7 @@ GraphSession::Snapshot snapshotOf (const GraphSession& session)
              session.outputView,
              session.timeline,
              session.variations,
+             session.selectedVariation,
              session.selectedNodeIds,
              session.selectedEdgeIds,
              session.currentPatchPath,
@@ -42,6 +46,7 @@ void restoreSnapshot (GraphSession& session, const GraphSession::Snapshot& snaps
     session.outputView = snapshot.outputView;
     session.timeline = snapshot.timeline;
     session.variations = snapshot.variations;
+    session.selectedVariation = snapshot.selectedVariation;
     session.selectedNodeIds = snapshot.selectedNodeIds;
     session.selectedEdgeIds = snapshot.selectedEdgeIds;
     session.currentPatchPath = snapshot.currentPatchPath;
@@ -363,6 +368,35 @@ const std::string* paramValueForNode (const GraphNode& node, const std::string& 
     return nullptr;
 }
 
+bool parseFiniteDouble (const std::string& text, double& value)
+{
+    errno = 0;
+    char* end = nullptr;
+    value = std::strtod (text.c_str(), &end);
+    if (end == text.c_str())
+        return false;
+
+    while (end != nullptr && std::isspace (static_cast<unsigned char> (*end)) != 0)
+        ++end;
+
+    return end != nullptr && *end == '\0' && errno != ERANGE && std::isfinite (value);
+}
+
+std::string formatVariationNumber (double value)
+{
+    std::ostringstream output;
+    output << std::fixed << std::setprecision (6) << value;
+    return output.str();
+}
+
+double normalizedVariationBlendWeight (double weight)
+{
+    if (! std::isfinite (weight))
+        return 0.0;
+
+    return std::clamp (weight, 0.0, 1.0);
+}
+
 bool containsString (const std::vector<std::string>& values, const std::string& value)
 {
     return std::find (values.begin(), values.end(), value) != values.end();
@@ -376,6 +410,11 @@ bool variationIdExists (const std::vector<VariationRecord>& records, const std::
 }
 
 std::vector<VariationRecord>& variationRecordsForKind (VariationLibrary& variations, VariationKind kind)
+{
+    return kind == VariationKind::preset ? variations.presets : variations.snapshots;
+}
+
+const std::vector<VariationRecord>& variationRecordsForKind (const VariationLibrary& variations, VariationKind kind)
 {
     return kind == VariationKind::preset ? variations.presets : variations.snapshots;
 }
@@ -1511,6 +1550,119 @@ CommandResult applySnapshot (GraphSession& session, const std::string& snapshotI
     return commitCommand (session, "apply_snapshot", before);
 }
 
+CommandResult selectVariation (GraphSession& session, VariationKind kind, const std::string& variationId)
+{
+    if (variationId.empty())
+        return { false, "variation id is required" };
+
+    const auto& records = variationRecordsForKind (session.variations, kind);
+    if (variationById (records, variationId) == nullptr)
+        return { false, "missing variation: " + variationId };
+
+    session.selectedVariation = { kind, variationId };
+    session.selectedNodeIds.clear();
+    session.selectedEdgeIds.clear();
+    return { true, "select_variation" };
+}
+
+VariationPreviewReport previewVariationBlend (const GraphSession& session,
+                                              VariationKind kind,
+                                              const std::string& variationId,
+                                              double weight)
+{
+    VariationPreviewReport report;
+    report.kind = kind;
+    report.variationId = variationId;
+    report.weight = normalizedVariationBlendWeight (weight);
+
+    if (variationId.empty())
+    {
+        report.message = "variation id is required";
+        report.errors.push_back (report.message);
+        return report;
+    }
+
+    const auto& records = variationRecordsForKind (session.variations, kind);
+    const auto* variation = variationById (records, variationId);
+    if (variation == nullptr)
+    {
+        report.message = "missing variation: " + variationId;
+        report.errors.push_back (report.message);
+        return report;
+    }
+
+    for (const auto& value : variation->values)
+    {
+        VariationPreviewValue preview;
+        preview.nodeId = value.nodeId;
+        preview.paramId = value.paramId;
+        preview.targetValue = value.value;
+
+        const auto* node = findEditorNode (session.graph, value.nodeId);
+        if (node == nullptr)
+        {
+            preview.status = VariationPreviewValueStatus::missingNode;
+            preview.previewValue = value.value;
+            report.errors.push_back ("missing variation target node: " + value.nodeId);
+            report.values.push_back (preview);
+            continue;
+        }
+
+        const auto* currentValue = paramValueForNode (*node, value.paramId);
+        if (currentValue == nullptr)
+        {
+            preview.status = VariationPreviewValueStatus::missingParam;
+            preview.previewValue = value.value;
+            report.errors.push_back ("missing variation target param: " + value.nodeId + "." + value.paramId);
+            report.values.push_back (preview);
+            continue;
+        }
+
+        preview.currentValue = *currentValue;
+
+        double currentNumber = 0.0;
+        double targetNumber = 0.0;
+        if (parseFiniteDouble (*currentValue, currentNumber) && parseFiniteDouble (value.value, targetNumber))
+        {
+            preview.status = VariationPreviewValueStatus::blended;
+            preview.previewValue = formatVariationNumber (currentNumber + (targetNumber - currentNumber) * report.weight);
+        }
+        else
+        {
+            preview.status = VariationPreviewValueStatus::stepped;
+            preview.previewValue = report.weight >= 1.0 ? value.value : *currentValue;
+        }
+
+        report.values.push_back (preview);
+    }
+
+    report.ok = report.errors.empty();
+    report.message = report.ok ? "preview_variation_blend" : report.errors.front();
+    return report;
+}
+
+CommandResult commitVariationBlend (GraphSession& session,
+                                    VariationKind kind,
+                                    const std::string& variationId,
+                                    double weight)
+{
+    const auto preview = previewVariationBlend (session, kind, variationId, weight);
+    if (! preview.ok)
+        return { false, preview.message };
+
+    const auto before = snapshotOf (session);
+    for (const auto& value : preview.values)
+    {
+        auto* node = findEditorNode (session.graph, value.nodeId);
+        if (node == nullptr)
+            return { false, "missing variation target node: " + value.nodeId };
+
+        upsertParam (*node, value.paramId, value.previewValue);
+    }
+
+    return commitCommand (session, "apply_variation_blend", before);
+}
+
 CommandResult renameVariation (GraphSession& session,
                                VariationKind kind,
                                const std::string& variationId,
@@ -1541,6 +1693,8 @@ CommandResult deleteVariation (GraphSession& session, VariationKind kind, const 
 
     const auto before = snapshotOf (session);
     records.erase (records.begin() + static_cast<std::ptrdiff_t> (index));
+    if (variationSelectionMatches (session.selectedVariation, kind, variationId))
+        session.selectedVariation = {};
     return commitCommand (session, "delete_variation", before);
 }
 

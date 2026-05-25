@@ -215,16 +215,12 @@ void ImGuiSmokeOverlay::drawSmokePanel (const std::vector<NodeSpec>& nodeSpecs,
                     if (tab == "Presets")
                     {
                         ImGui::Dummy (ImVec2 (0.0f, 44.0f));
-                        ImGui::TextDisabled ("presets: %d", static_cast<int> (interactionSession.variations.presets.size()));
-                        for (const auto& preset : interactionSession.variations.presets)
-                            ImGui::TextDisabled ("%s", preset.title.c_str());
+                        drawVariationThumbnailPanel (VariationKind::preset);
                     }
                     else if (tab == "Snapshots")
                     {
                         ImGui::Dummy (ImVec2 (0.0f, 44.0f));
-                        ImGui::TextDisabled ("snapshots: %d", static_cast<int> (interactionSession.variations.snapshots.size()));
-                        for (const auto& snapshot : interactionSession.variations.snapshots)
-                            ImGui::TextDisabled ("%s", snapshot.title.c_str());
+                        drawVariationThumbnailPanel (VariationKind::snapshot);
                     }
                     else
                     {
@@ -541,6 +537,145 @@ void ImGuiSmokeOverlay::drawInteractionControls()
     ImGui::SameLine();
     if (ImGui::Button ("Publish Module"))
         requestPublishSelectedModule();
+}
+
+void ImGuiSmokeOverlay::drawVariationThumbnailPanel (VariationKind kind)
+{
+    const auto isPreset = kind == VariationKind::preset;
+    const auto& records = isPreset ? interactionSession.variations.presets : interactionSession.variations.snapshots;
+    ImGui::TextDisabled ("%s: %d", isPreset ? "presets" : "snapshots", static_cast<int> (records.size()));
+
+    if (records.empty())
+        return;
+
+    auto options = VariationThumbnailLayoutOptions {};
+    const auto available = ImGui::GetContentRegionAvail();
+    options.originX = 0.0;
+    options.originY = 0.0;
+    options.availableWidth = std::max (72.0, static_cast<double> (available.x));
+    options.thumbnailWidth = 72.0;
+    options.thumbnailHeight = 42.0;
+    options.gapX = 8.0;
+    options.gapY = 12.0;
+    options.labelHeight = 16.0;
+
+    const auto layout = makeVariationThumbnailLayout (interactionSession.variations,
+                                                      kind,
+                                                      interactionSession.selectedVariation,
+                                                      options);
+    const auto origin = ImGui::GetCursorScreenPos();
+    auto& drawList = *ImGui::GetWindowDrawList();
+
+    const auto toMin = [&origin] (VariationThumbnailBounds bounds)
+    {
+        return ImVec2 { origin.x + static_cast<float> (bounds.x),
+                        origin.y + static_cast<float> (bounds.y) };
+    };
+    const auto toMax = [&origin] (VariationThumbnailBounds bounds)
+    {
+        return ImVec2 { origin.x + static_cast<float> (bounds.x + bounds.width),
+                        origin.y + static_cast<float> (bounds.y + bounds.height) };
+    };
+
+    for (const auto& item : layout.items)
+    {
+        const auto min = toMin (item.bounds);
+        const auto max = toMax (item.bounds);
+        const auto previewMin = toMin (item.previewBounds);
+        const auto previewMax = toMax (item.previewBounds);
+        const auto labelMin = toMin (item.labelBounds);
+        const auto labelMax = toMax (item.labelBounds);
+        const auto fill = item.kind == VariationKind::preset ? rgba (35, 42, 50, 238)
+                                                             : rgba (42, 36, 48, 238);
+        const auto selected = item.selected;
+
+        drawList.AddRectFilled (min, max, rgba (16, 16, 16, 230), 0.0f);
+        drawList.AddRectFilled (previewMin, previewMax, fill, 0.0f);
+        drawList.AddRect (min,
+                          max,
+                          selected ? rgba (116, 166, 226, 245) : rgba (72, 72, 72, 210),
+                          0.0f,
+                          0,
+                          selected ? 2.0f : 1.0f);
+
+        const auto barCount = std::max (1, std::min (5, item.valueCount));
+        const auto barWidth = (item.previewBounds.width - 14.0) / static_cast<double> (barCount);
+        for (int bar = 0; bar < barCount; ++bar)
+        {
+            const auto valuePhase = static_cast<float> ((bar + 1) * (item.enabledNodeCount + 1));
+            const auto barHeight = 8.0f + std::fmod (valuePhase * 7.0f, 22.0f);
+            const auto x = previewMin.x + 7.0f + static_cast<float> (bar) * static_cast<float> (barWidth);
+            const auto y = previewMax.y - 7.0f - barHeight;
+            drawList.AddRectFilled ({ x, y },
+                                    { x + std::max (2.0f, static_cast<float> (barWidth - 3.0)), previewMax.y - 7.0f },
+                                    selected ? rgba (176, 211, 255, 230) : rgba (142, 172, 190, 210),
+                                    0.0f);
+        }
+
+        const ImVec4 clipRect { labelMin.x, labelMin.y, labelMax.x, labelMax.y };
+        drawList.AddText (ImGui::GetFont(),
+                          ImGui::GetFontSize(),
+                          { labelMin.x, labelMin.y + 1.0f },
+                          selected ? rgba (232, 242, 252, 245) : rgba (185, 190, 196, 230),
+                          item.title.c_str(),
+                          nullptr,
+                          0.0f,
+                          &clipRect);
+
+        ImGui::SetCursorScreenPos (min);
+        ImGui::PushID ((variationKindToString (item.kind) + ":" + item.variationId).c_str());
+        const auto size = ImVec2 { static_cast<float> (item.bounds.width),
+                                   static_cast<float> (item.bounds.height) };
+        ImGui::InvisibleButton ("variation-thumbnail", size);
+        if (ImGui::IsItemHovered())
+        {
+            drawList.AddRect (min, max, rgba (210, 225, 238, 230), 0.0f, 0, 1.0f);
+
+            const auto previewWeight = ImGui::GetIO().KeyAlt ? 0.5 : 1.0;
+            const auto preview = previewVariationBlend (interactionSession, item.kind, item.variationId, previewWeight);
+            if (preview.ok && ImGui::BeginTooltip())
+            {
+                ImGui::TextUnformatted (item.title.c_str());
+                ImGui::Separator();
+
+                for (size_t index = 0; index < std::min<size_t> (preview.values.size(), 4); ++index)
+                {
+                    const auto& value = preview.values[index];
+                    ImGui::TextDisabled ("%s.%s  %s",
+                                         value.nodeId.c_str(),
+                                         value.paramId.c_str(),
+                                         value.previewValue.c_str());
+                }
+
+                if (preview.values.size() > 4)
+                    ImGui::TextDisabled ("+%d", static_cast<int> (preview.values.size() - 4));
+
+                ImGui::EndTooltip();
+            }
+        }
+
+        if (ImGui::IsItemClicked (ImGuiMouseButton_Left))
+        {
+            const auto mouse = ImGui::GetMousePos();
+            const auto hit = hitTestVariationThumbnails (layout, mouse.x - origin.x, mouse.y - origin.y);
+            if (hit.hit)
+            {
+                if (ImGui::GetIO().KeyAlt)
+                    runInteractionCommand ("variation blend",
+                                           commitVariationBlend (interactionSession, hit.kind, hit.variationId, 0.5));
+                else
+                {
+                    const auto result = selectVariation (interactionSession, hit.kind, hit.variationId);
+                    lastInteractionMessage = result.ok ? "select variation: " + hit.variationId
+                                                       : "select variation: " + result.message;
+                }
+            }
+        }
+        ImGui::PopID();
+    }
+
+    ImGui::SetCursorScreenPos (origin);
+    ImGui::Dummy ({ available.x, static_cast<float> (layout.contentHeight + 6.0) });
 }
 
 void ImGuiSmokeOverlay::drawInteractionCanvas (const std::vector<NodeSpec>& nodeSpecs,

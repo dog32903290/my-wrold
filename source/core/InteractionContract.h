@@ -89,6 +89,7 @@ struct GraphSession
     OutputViewState outputView;
     TimelineState timeline;
     VariationLibrary variations;
+    VariationSelection selectedVariation;
     std::vector<std::string> selectedNodeIds;
     std::vector<std::string> selectedEdgeIds;
     std::vector<std::string> currentPatchPath;
@@ -103,6 +104,7 @@ struct GraphSession
         OutputViewState outputView;
         TimelineState timeline;
         VariationLibrary variations;
+        VariationSelection selectedVariation;
         std::vector<std::string> selectedNodeIds;
         std::vector<std::string> selectedEdgeIds;
         std::vector<std::string> currentPatchPath;
@@ -268,6 +270,15 @@ CommandResult createSnapshot (GraphSession& session,
                               const std::string& title,
                               const std::vector<std::string>& enabledNodeIds);
 CommandResult applySnapshot (GraphSession& session, const std::string& snapshotId);
+CommandResult selectVariation (GraphSession& session, VariationKind kind, const std::string& variationId);
+VariationPreviewReport previewVariationBlend (const GraphSession& session,
+                                              VariationKind kind,
+                                              const std::string& variationId,
+                                              double weight);
+CommandResult commitVariationBlend (GraphSession& session,
+                                    VariationKind kind,
+                                    const std::string& variationId,
+                                    double weight);
 CommandResult renameVariation (GraphSession& session,
                                VariationKind kind,
                                const std::string& variationId,

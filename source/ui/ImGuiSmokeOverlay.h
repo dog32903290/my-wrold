@@ -50,6 +50,7 @@ private:
     void drawInteractionControls();
     void drawCreateNodePopup (const std::vector<NodeSpec>& nodeSpecs);
     void drawWorkspaceNodeBrowser (const std::vector<NodeSpec>& nodeSpecs);
+    void drawVariationThumbnailPanel (VariationKind kind);
     void drawInspectorPanel (const std::vector<NodeSpec>& nodeSpecs, const std::string& shaderStatus);
     void drawTracePanel();
     void runInteractionCommand (const std::string& label, CommandResult result);

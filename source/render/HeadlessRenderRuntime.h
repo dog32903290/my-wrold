@@ -11,6 +11,8 @@ struct HeadlessRenderRuntimeResult
     std::string textureSummaryPath;
     std::string cookOrderPath;
     std::string nodeStatsPath;
+    std::string thumbnailPath;
+    std::string thumbnailStatsPath;
     std::string errorsPath;
 };
 

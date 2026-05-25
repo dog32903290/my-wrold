@@ -133,7 +133,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | VAR-002 | Preset capture and apply | Variation parity | `SymbolVariationPool` | proven foundation | L2 command | `create_apply_preset_capture_report` | preset browser/blend remains parked |
 | VAR-003 | Snapshot capture and apply | Variation parity | snapshot-enabled children | proven foundation | L2 command | `create_apply_snapshot_enabled_children` | child enable UI remains parked |
 | VAR-004 | Variation canvas CRUD | Variation parity | `VariationBaseCanvas` | proven foundation | L2 command | `variation_thumbnail_crud_undo` | thumbnail UI polish remains parked |
-| VAR-005 | Hover preview and Alt blend | Variation parity | `ValueUtils` blend rules | parked | L3 visible | `deterministic_variation_blend_preview_commit_cancel` | deterministic blend rules |
+| VAR-005 | Hover preview and Alt blend | Variation parity | `ValueUtils` blend rules | proven foundation | L3 visible | `deterministic_variation_blend_preview_commit_cancel` | child enable UI and browser preset creation remain parked |
 | VAR-006 | Presets in symbol browser | Variation parity | browser preset creation | parked | L3 visible | `drag_pin_choose_node_preset_create_apply_connect` | browser plus variation bridge |
 
 ### Output, Timeline, Render, Live IO
@@ -145,7 +145,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | OUT-003 | Image canvas Fit, 1:1, Custom pan/zoom, overlay | Output parity | `ImageOutputCanvas` | partial | L3 visible | `output_fit_1to1_custom_view_state` | RenderBackend extraction |
 | OUT-004 | Output toolbar screenshot and render settings vocabulary | Output parity | output window toolbar | parked mixed | L3 visible | `screenshot_or_frame_dump_active_output` | active output view state |
 | OUT-005 | Resolution presets | Output parity | output settings | parked | L3 visible | `requested_resolution_preset_roundtrip` | output state model |
-| OUT-006 | Render/export window | Output parity | render export files | parked | L4 live | `render_settings_roundtrip_frame_count` | RenderBackend plus timeline |
+| OUT-006 | Render/export window | Output parity | render export files | parked | L4 live | `render_settings_roundtrip_frame_count` | real thumbnail proof is split into NATIVE-005; full render/export still needs RenderBackend plus timeline |
 | OUT-007 | Render process states | Output parity | render state model | parked | L4 live | `invalid_output_blocks_render_state` | active output type system |
 | TIME-001 | Bars are canonical timeline truth; seconds/frames are views | Timeline parity | timeline files | proven | L2 command | `bars_seconds_frames_conversion_bpm_fps` | P-TIME1 closed; transport/render/export remain separate |
 | TIME-002 | Playback controls and IO indicator | Timeline parity | transport controls | proven for transport controls | L4 live | `transport_play_loop_io_indicator` | P-TIME2 closed for play/pause/stop/step/loop; IO bus indicator remains parked |
@@ -167,6 +167,7 @@ L4 live      runtime, audio, timeline, render/export, or performance proof
 | NATIVE-002 | A1 audio proof | skeleton design A1 | local audio analyzer | proven/partial | L4 live | audio proof dumps and `u_loudness` uniform | live sample-window runner |
 | NATIVE-003 | C1 loaded loudness compound runtime | skeleton design C1 | module fixtures and RuntimeRegistry | partial/proven through C1.20 | L4 live | loudness runtime execution and bridge dumps | current public-port persistence/runtime bridge lines |
 | NATIVE-004 | AI worker commandGraph loop | skeleton design AI worker | local commandGraph contract | parked | L2 command | `ai_worker_create_repair_proof_loop` | command vocabulary and proof runner |
+| NATIVE-005 | Headless real thumbnail artifact | native render proof | `HeadlessRenderRuntime` | proven | L4 live | `headless_constant_thumbnail_png_stats` | full render/export window and interactive render-cache thumbnails remain parked |
 
 ## Immediate Work Queue
 
@@ -690,7 +691,7 @@ Scope boundary:
 ```text
 P-VAR1 proves preset/snapshot separation, preset capture/apply for supported non-default params, snapshot capture/apply for enabled nodes, commandGraph logging, undo for apply, capture skip reasons, PatchDocument roundtrip, saveWork roundtrip, and visible left-rail state consumption.
 P-PARAM007 proves NodeSpec-owned parameter metadata at row state, visible inspector grouping/description tooltip, relevancy filtering, and preset exclusion level.
-Open variation work still includes preset thumbnails, variation canvas CRUD, rename/delete/move commands, hover preview, Alt blend, child enable UI, preset creation from symbol browser, or blend rules.
+Later lanes close variation CRUD, thumbnail selection, and hover/Alt blend foundation. Remaining variation work includes child enable UI, preset creation from symbol browser, persistent preview overlays, and richer type-specific blend rules.
 ```
 
 ### P-PARAM007 Parameter Metadata Foundation
@@ -736,7 +737,7 @@ Scope boundary:
 
 ```text
 P-PARAM007 proves groups, descriptions, relevance filtering by another parameter value, and NodeSpec-owned preset exclusion at core/visible-state/capture level.
-It does not implement richer inspector layout controls, collapsible groups, expression-based relevance rules, preset thumbnails, variation canvas CRUD, hover preview, Alt blend, or browser preset creation.
+It does not implement richer inspector layout controls, collapsible groups, expression-based relevance rules, or browser preset creation. Preset thumbnails, variation CRUD, and hover/Alt blend are closed later as separate lanes.
 Latest accepted result: 7/7 focused tests passed; 62/62 full tests passed.
 ```
 
@@ -776,8 +777,146 @@ Scope boundary:
 
 ```text
 P-VAR004 proves create/read/update/delete/reorder at commandGraph level for presets and snapshots, including undo/redo and PatchDocument/saveWork preservation.
-It does not implement thumbnail rendering, thumbnail hit-test geometry, hover preview, Alt blend, child enable UI, or symbol-browser preset creation.
+P-VAR005 now proves thumbnail layout, thumbnail hit-test geometry, and selection.
+VAR-005 now proves hover preview and Alt blend foundation.
+It does not implement child enable UI or symbol-browser preset creation.
 Latest accepted result: 1/1 focused test passed; 62/62 full tests passed.
+```
+
+### P-VAR005 Variation Thumbnail Selection Hit-Test
+
+Claim:
+
+```text
+Preset and snapshot records have real thumbnail layout, point hit-test, and selectable left-rail thumbnails without applying or blending the variation.
+```
+
+Evidence target:
+
+```text
+source/core/VariationState.h
+source/core/VariationState.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/ui/ImGuiSmokeOverlay.h
+source/ui/ImGuiSmokeOverlay.cpp
+tests/VariationStateTests.cpp
+```
+
+- [x] Write RED tests for thumbnail layout order, selected flag, preview/label bounds, hit-test, gap miss, preset/snapshot separation, selectVariation behavior, missing variation guard, and delete-selected cleanup.
+- [x] Add `VariationThumbnailLayout`, `VariationThumbnailItem`, and `VariationThumbnailHitTest`.
+- [x] Add `GraphSession::selectedVariation` and `selectVariation` without graph command logging or preset/snapshot apply.
+- [x] Clear dangling selected variation on delete, with undo restoring the pre-delete selection.
+- [x] Wire Presets/Snapshots left rail to draw clickable thumbnails through the same layout/hit-test contract.
+- [x] Run `cmake --build build --target my_world_variation_state_tests`.
+- [x] Run `./build/my_world_variation_state_tests`.
+- [x] Run `cmake --build build --target my_world_variation_state_tests my-world`.
+- [x] Run focused interaction tests.
+- [x] Run `cmake --build build`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+- [x] Run `git diff --check`.
+
+P-VAR005 closed as thumbnail/selection/hit-test foundation as of 2026-05-25 10:41 Asia/Taipei.
+
+Verified acceptance traces:
+
+```text
+variation_thumbnail_selection_hit_test
+left_rail_thumbnail_selection
+```
+
+Scope boundary:
+
+```text
+P-VAR005 proves thumbnail layout, visible left-rail thumbnail drawing, thumbnail hit-test, selected variation state, non-mutating selection, missing variation rejection, and delete-selected cleanup for presets and snapshots.
+This thumbnail foundation did not itself implement hover preview, Alt blend, child enable UI, symbol-browser preset creation, real render-cache thumbnails, or applying/blending by click. VAR-005 hover/Alt blend and R-TN1 headless thumbnails are now closed separately.
+Latest accepted result: 5/5 focused interaction tests passed; 62/62 full tests passed; git diff --check passed.
+```
+
+### VAR-005 Hover Preview And Alt Blend
+
+Claim:
+
+```text
+Hovering a preset/snapshot thumbnail can compute a deterministic preview without mutating the graph; Alt-click commits a bounded variation blend as one undoable command.
+```
+
+Evidence target:
+
+```text
+source/core/VariationState.h
+source/core/VariationState.cpp
+source/core/InteractionContract.h
+source/core/InteractionContract.cpp
+source/ui/ImGuiSmokeOverlay.cpp
+tests/VariationStateTests.cpp
+```
+
+- [x] Write RED tests for non-mutating preview, command-log stability, numeric half blend, stepped enum/string behavior, full-weight target, missing variation rejection, commit, and undo.
+- [x] Add `VariationPreviewReport`, `VariationPreviewValue`, and preview status vocabulary.
+- [x] Add `previewVariationBlend()` as a read-only graph/variation report.
+- [x] Add `commitVariationBlend()` as a single `apply_variation_blend` command path with undo/redo.
+- [x] Wire left-rail hover tooltip to preview report and Alt-click to half-weight blend commit.
+- [x] Run `cmake --build build --target my_world_variation_state_tests`.
+- [x] Run `./build/my_world_variation_state_tests`.
+- [x] Run `cmake --build build --target my_world_variation_state_tests my_world_headless_render_runtime_tests my-world`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+VAR-005 closed as hover preview / Alt blend foundation as of 2026-05-25 11:05 Asia/Taipei.
+
+Verified acceptance trace:
+
+```text
+deterministic_variation_blend_preview_commit_cancel
+```
+
+Scope boundary:
+
+```text
+VAR-005 proves deterministic numeric blend, stepped nonnumeric values, hover preview without mutation, Alt-click half blend through commandGraph, and undo restoration.
+It does not implement child enable UI, symbol-browser preset creation, persistent preview overlays, richer vector/color blend semantics, or real render-cache thumbnails.
+Latest accepted result: variation state ok; 62/62 full tests passed.
+```
+
+### R-TN1 Real Thumbnail Headless Proof
+
+Claim:
+
+```text
+The first headless render runtime graph can produce a real thumbnail artifact, not just JSON summaries.
+```
+
+Evidence target:
+
+```text
+source/render/HeadlessRenderRuntime.h
+source/render/HeadlessRenderRuntime.cpp
+tests/HeadlessRenderRuntimeTests.cpp
+```
+
+- [x] Write RED tests for `thumbnail.png`, `thumbnail_stats.json`, source/thumbnail dimensions, and PNG signature.
+- [x] Keep the proof scoped to `image.constant -> output.texture_summary`.
+- [x] Emit deterministic 96x54 `thumbnail.png` without adding a JUCE dependency to the headless runtime.
+- [x] Emit `thumbnail_stats.json` with source ids, dimensions, format, and color.
+- [x] Run `cmake --build build --target my_world_headless_render_runtime_tests`.
+- [x] Run `./build/my_world_headless_render_runtime_tests`.
+- [x] Run `cmake --build build --target my_world_variation_state_tests my_world_headless_render_runtime_tests my-world`.
+- [x] Run `ctest --test-dir build --output-on-failure`.
+
+R-TN1 closed as real thumbnail headless proof as of 2026-05-25 11:05 Asia/Taipei.
+
+Verified acceptance trace:
+
+```text
+headless_constant_thumbnail_png_stats
+```
+
+Scope boundary:
+
+```text
+R-TN1 proves a real PNG thumbnail and stats artifact for the existing constant texture headless proof.
+It does not implement render/export UI, render queues, frame ranges, timeline export, GPU readback thumbnails, live preview cache invalidation, or interactive node thumbnails.
+Latest accepted result: headless render runtime ok; 62/62 full tests passed.
 ```
 
 ## Downstream Plan Order
@@ -796,7 +935,10 @@ The next plans should be created only when the previous queue item has proof evi
 | 8 | P-VAR1 presets/snapshots foundation | P-PARAM1B | Variation capture depends on parameter state semantics |
 | 9 | P-PARAM007 parameter metadata | P-VAR1 | Preset capture should read NodeSpec-owned exclusion and inspector metadata before variation CRUD |
 | 10 | P-VAR004 variation canvas CRUD foundation | P-PARAM007 | Variation records need command-backed update/delete/reorder before thumbnail UI |
-| 11 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
+| 11 | P-VAR005 variation thumbnail selection hit-test | P-VAR004 | Thumbnail UI must read command-backed variation records and select without applying/blending |
+| 12 | VAR-005 hover preview / Alt blend | P-VAR005 | Blend semantics need selectable thumbnails and command-backed variations |
+| 13 | R-TN1 real thumbnail headless proof | R2 headless constant runtime | Real thumbnail artifacts should be proven before full render/export UI |
+| 14 | P-LIVE1 MIDI/OSC/live IO bus | A1/C1 live runtime remains stable | Live IO should drive proof-backed graph values |
 
 ## Self-Review
 

@@ -4,6 +4,7 @@
 #include "StorageContract.h"
 #include "VariationState.h"
 
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -59,6 +60,18 @@ const myworld::VariationRecord& requireVariation (const std::vector<myworld::Var
     return records.front();
 }
 
+const myworld::VariationPreviewValue& requirePreviewValue (const myworld::VariationPreviewReport& report,
+                                                           const std::string& nodeId,
+                                                           const std::string& paramId)
+{
+    for (const auto& value : report.values)
+        if (value.nodeId == nodeId && value.paramId == paramId)
+            return value;
+
+    expect (false, "missing preview value " + nodeId + "." + paramId);
+    return report.values.front();
+}
+
 bool hasVariation (const std::vector<myworld::VariationRecord>& records, const std::string& variationId)
 {
     for (const auto& record : records)
@@ -66,6 +79,16 @@ bool hasVariation (const std::vector<myworld::VariationRecord>& records, const s
             return true;
 
     return false;
+}
+
+void expectThumbnailHit (const myworld::VariationThumbnailHitTest& hit,
+                         myworld::VariationKind kind,
+                         const std::string& variationId,
+                         const std::string& message)
+{
+    expect (hit.hit, message + " hit");
+    expect (hit.kind == kind, message + " kind");
+    expect (hit.variationId == variationId, message + " id");
 }
 
 void writeText (const std::filesystem::path& path, const std::string& text)
@@ -144,8 +167,135 @@ int main()
     expect (paramValue (requireNode (session.graph, "var1"), "gain") == "3.0", "snapshot restores gain");
 
     expect (myworld::setParam (session, "var1", "gain", "4.0").ok, "set second preset gain");
+    expect (myworld::setParam (session, "var1", "mode", "hard").ok, "set second preset mode");
     expect (myworld::createPreset (session, "var1", spec, "preset.alt", "Alt", {}).ok,
             "create second preset");
+
+    expect (myworld::setParam (session, "var1", "gain", "8.0").ok, "set current gain before preview");
+    expect (myworld::setParam (session, "var1", "mode", "soft").ok, "set current mode before preview");
+    const auto commandCountBeforePreview = session.commandLog.size();
+    const auto halfPreview = myworld::previewVariationBlend (session,
+                                                             myworld::VariationKind::preset,
+                                                             "preset.alt",
+                                                             0.5);
+    expect (halfPreview.ok, halfPreview.message);
+    expect (std::abs (halfPreview.weight - 0.5) < 0.000001, "preview keeps requested weight");
+    expect (session.commandLog.size() == commandCountBeforePreview, "preview does not log command");
+    expect (paramValue (requireNode (session.graph, "var1"), "gain") == "8.0",
+            "preview does not mutate numeric param");
+    expect (paramValue (requireNode (session.graph, "var1"), "mode") == "soft",
+            "preview does not mutate stepped param");
+
+    const auto& gainPreview = requirePreviewValue (halfPreview, "var1", "gain");
+    expect (gainPreview.status == myworld::VariationPreviewValueStatus::blended,
+            "numeric preview is blended got " + myworld::variationPreviewValueStatusToString (gainPreview.status)
+                + " current=" + gainPreview.currentValue + " target=" + gainPreview.targetValue);
+    expect (std::abs (std::stod (gainPreview.previewValue) - 6.0) < 0.000001,
+            "numeric preview blends current and target");
+
+    const auto& modePreview = requirePreviewValue (halfPreview, "var1", "mode");
+    expect (modePreview.status == myworld::VariationPreviewValueStatus::stepped,
+            "enum preview is stepped");
+    expect (modePreview.previewValue == "soft", "stepped preview stays current before full weight");
+
+    const auto fullPreview = myworld::previewVariationBlend (session,
+                                                             myworld::VariationKind::preset,
+                                                             "preset.alt",
+                                                             1.0);
+    expect (fullPreview.ok, fullPreview.message);
+    expect (requirePreviewValue (fullPreview, "var1", "mode").previewValue == "hard",
+            "full stepped preview reaches target");
+
+    expect (! myworld::previewVariationBlend (session,
+                                              myworld::VariationKind::preset,
+                                              "missing",
+                                              0.5)
+                .ok,
+            "preview rejects missing variation");
+
+    expect (myworld::commitVariationBlend (session, myworld::VariationKind::preset, "preset.alt", 0.5).ok,
+            "commit half blend");
+    expect (session.commandLog.back() == "apply_variation_blend", "variation blend command logged");
+    expect (std::abs (std::stod (paramValue (requireNode (session.graph, "var1"), "gain")) - 6.0) < 0.000001,
+            "committed half blend sets numeric param");
+    expect (paramValue (requireNode (session.graph, "var1"), "mode") == "soft",
+            "committed half blend leaves stepped param current");
+    expect (myworld::undo (session), "undo half blend");
+    expect (paramValue (requireNode (session.graph, "var1"), "gain") == "8.0",
+            "undo half blend restores gain");
+    expect (paramValue (requireNode (session.graph, "var1"), "mode") == "soft",
+            "undo half blend restores mode");
+
+    expect (myworld::commitVariationBlend (session, myworld::VariationKind::preset, "preset.alt", 1.0).ok,
+            "commit full blend");
+    expect (paramValue (requireNode (session.graph, "var1"), "mode") == "hard",
+            "committed full blend steps enum target");
+    expect (myworld::undo (session), "undo full blend");
+    expect (! myworld::commitVariationBlend (session, myworld::VariationKind::snapshot, "missing", 0.5).ok,
+            "commit blend rejects missing variation");
+
+    myworld::VariationSelection selectedPreset;
+    selectedPreset.kind = myworld::VariationKind::preset;
+    selectedPreset.variationId = "preset.alt";
+
+    myworld::VariationThumbnailLayoutOptions thumbnailOptions;
+    thumbnailOptions.originX = 10.0;
+    thumbnailOptions.originY = 20.0;
+    thumbnailOptions.availableWidth = 148.0;
+    thumbnailOptions.thumbnailWidth = 64.0;
+    thumbnailOptions.thumbnailHeight = 44.0;
+    thumbnailOptions.gapX = 8.0;
+    thumbnailOptions.gapY = 12.0;
+    thumbnailOptions.labelHeight = 14.0;
+
+    const auto presetThumbnails = myworld::makeVariationThumbnailLayout (session.variations,
+                                                                         myworld::VariationKind::preset,
+                                                                         selectedPreset,
+                                                                         thumbnailOptions);
+    expect (presetThumbnails.items.size() == 2, "preset thumbnails include both presets");
+    expect (presetThumbnails.items.front().variationId == "preset.hot", "preset thumbnail keeps record order");
+    expect (presetThumbnails.items[1].selected, "selected preset thumbnail marked");
+    expect (presetThumbnails.items[1].valueCount == 3, "preset thumbnail records captured value count");
+    expect (presetThumbnails.items[1].previewBounds.width == thumbnailOptions.thumbnailWidth,
+            "preset thumbnail preview width");
+    expect (presetThumbnails.contentHeight > thumbnailOptions.thumbnailHeight, "preset thumbnail content height");
+
+    expectThumbnailHit (myworld::hitTestVariationThumbnails (presetThumbnails,
+                                                             presetThumbnails.items[1].bounds.x + 4.0,
+                                                             presetThumbnails.items[1].bounds.y + 4.0),
+                        myworld::VariationKind::preset,
+                        "preset.alt",
+                        "preset thumbnail");
+    expect (! myworld::hitTestVariationThumbnails (presetThumbnails,
+                                                   presetThumbnails.items[0].bounds.x + thumbnailOptions.thumbnailWidth + 2.0,
+                                                   presetThumbnails.items[0].bounds.y + 4.0)
+                .hit,
+            "gap between thumbnails is not a hit");
+
+    const auto snapshotThumbnails = myworld::makeVariationThumbnailLayout (session.variations,
+                                                                           myworld::VariationKind::snapshot,
+                                                                           {},
+                                                                           thumbnailOptions);
+    expect (snapshotThumbnails.items.size() == 1, "snapshot thumbnails stay separate");
+    expect (snapshotThumbnails.items.front().kind == myworld::VariationKind::snapshot, "snapshot thumbnail kind");
+    expect (snapshotThumbnails.items.front().enabledNodeCount == 1, "snapshot thumbnail records enabled nodes");
+
+    const auto commandCountBeforeSelect = session.commandLog.size();
+    session.selectedNodeIds = { "shader1" };
+    session.selectedEdgeIds = { "edge.shader1.output.out1.input" };
+    expect (myworld::selectVariation (session, myworld::VariationKind::preset, "preset.alt").ok,
+            "select preset thumbnail");
+    expect (myworld::hasVariationSelection (session.selectedVariation), "variation selection present");
+    expect (myworld::variationSelectionMatches (session.selectedVariation,
+                                                myworld::VariationKind::preset,
+                                                "preset.alt"),
+            "selected preset thumbnail id");
+    expect (session.selectedNodeIds.empty(), "variation selection clears node selection");
+    expect (session.selectedEdgeIds.empty(), "variation selection clears edge selection");
+    expect (session.commandLog.size() == commandCountBeforeSelect, "variation selection does not log command");
+    expect (! myworld::selectVariation (session, myworld::VariationKind::preset, "missing").ok,
+            "select variation rejects missing thumbnail");
+
     expect (myworld::renameVariation (session, myworld::VariationKind::preset, "preset.alt", "Alt Renamed").ok,
             "rename preset");
     expect (session.commandLog.back() == "rename_variation", "rename variation command logged");
@@ -178,6 +328,17 @@ int main()
     expect (! hasVariation (session.variations.presets, "preset.hot"), "preset deleted");
     expect (myworld::undo (session), "undo delete preset");
     expect (hasVariation (session.variations.presets, "preset.hot"), "undo restores deleted preset");
+
+    expect (myworld::selectVariation (session, myworld::VariationKind::preset, "preset.hot").ok,
+            "select preset before delete");
+    expect (myworld::deleteVariation (session, myworld::VariationKind::preset, "preset.hot").ok,
+            "delete selected preset");
+    expect (! myworld::hasVariationSelection (session.selectedVariation), "delete clears selected variation");
+    expect (myworld::undo (session), "undo selected preset delete");
+    expect (myworld::variationSelectionMatches (session.selectedVariation,
+                                                myworld::VariationKind::preset,
+                                                "preset.hot"),
+            "undo selected preset delete restores selection");
 
     expect (myworld::renameVariation (session, myworld::VariationKind::snapshot, "snapshot.one", "Snapshot Renamed").ok,
             "rename snapshot");

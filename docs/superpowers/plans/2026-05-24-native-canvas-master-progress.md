@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 09:57 Asia/Taipei.
+Date: 2026-05-25 11:05 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,9 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+f11bff3 Add variation CRUD commands
+6872983 Add parameter metadata contract
+e7037f5 Add presets and snapshots foundation
 8660bd3 Reuse proof support in PV runners
 4f86e70 Reuse proof support in A1 and C2
 30845a7 Extract proof run support helpers
@@ -251,7 +254,10 @@ Latest accepted targeted result:
 | P-VAR1 presets/snapshots foundation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `VariationState` plus `variation_state`, command create/apply, skip reasons, PatchDocument roundtrip, saveWork roundtrip, and left-rail state consumption prove presets/snapshots foundation | No active parity lane selected after P-VAR1 |
 | P-PARAM007 parameter metadata | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `ParamSpec` metadata plus `parameter_metadata` prove groups, descriptions, value-based relevance filtering, inspector grouping/tooltips, and NodeSpec-owned preset exclusion | Next selectable parity lane is VAR-004 variation canvas CRUD |
 | P-VAR004 variation canvas CRUD foundation | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `InteractionContract` variation CRUD verbs plus `variation_state` prove rename/delete/move for presets and snapshots with undo/redo and storage preservation | No active parity lane after P-VAR004 |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-VAR004 closure |
+| P-VAR005 variation thumbnail selection hit-test | closed | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md`; `VariationThumbnailLayout`, thumbnail hit-test, `selectVariation`, and left-rail thumbnail UI prove preset/snapshot thumbnails can be selected without applying/blending | VAR-005 hover preview / Alt blend is now closed separately |
+| VAR-005 hover preview / Alt blend | closed | `VariationPreviewReport`, `previewVariationBlend`, `commitVariationBlend`, and left-rail hover/Alt-click prove deterministic non-mutating preview plus one undoable blend command | Child enable UI, symbol-browser preset creation, richer type-specific blend rules remain parked |
+| R-TN1 real thumbnail headless proof | closed | `HeadlessRenderRuntime` writes `thumbnail.png` and `thumbnail_stats.json` for `image.constant -> output.texture_summary`; `headless_render_runtime`, app build, and full `ctest` passed | Full render/export window, render process states, render queue, and UI render settings remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after VAR-005 hover/Alt blend closure |
 
 ## Active Lane Protocol
 
@@ -260,6 +266,101 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after VAR-005 hover preview / Alt blend and R-TN1 real thumbnail headless proof closure as of 2026-05-25 11:05 Asia/Taipei.
+
+VAR-005 hover preview / Alt blend closed.
+Evidence:
+- source/core/VariationState.h
+- source/core/VariationState.cpp
+- source/core/InteractionContract.h
+- source/core/InteractionContract.cpp
+- source/ui/ImGuiSmokeOverlay.cpp
+- tests/VariationStateTests.cpp
+- docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
+
+Closed line:
+VariationRecord values
+-> previewVariationBlend reads current graph state without mutation or command logging
+-> numeric values blend deterministically by weight
+-> enum/string/bool-style values step: current before full weight, target at weight 1.0
+-> commitVariationBlend writes one `apply_variation_blend` command with undo/redo
+-> left-rail hover tooltip reads preview report; Alt-click commits a 0.5 blend
+
+R-TN1 real thumbnail headless proof closed.
+Evidence:
+- source/render/HeadlessRenderRuntime.h
+- source/render/HeadlessRenderRuntime.cpp
+- tests/HeadlessRenderRuntimeTests.cpp
+
+Closed line:
+runtime proof fixture
+-> `image.constant -> output.texture_summary`
+-> `texture_summary.json`, `cook_order.json`, `node_stats.json`, and `errors.json`
+-> deterministic 96x54 `thumbnail.png`
+-> `thumbnail_stats.json` records source/thumbnail dimensions, format, color, and source ids
+
+Latest verification:
+- `cmake --build build --target my_world_variation_state_tests` failed RED first on missing `VariationPreviewReport`, `VariationPreviewValue`, `previewVariationBlend`, and `commitVariationBlend`.
+- `cmake --build build --target my_world_headless_render_runtime_tests` failed RED first on missing `thumbnailPath` and `thumbnailStatsPath`.
+- `cmake --build build --target my_world_variation_state_tests`
+- `./build/my_world_variation_state_tests`
+- `cmake --build build --target my_world_headless_render_runtime_tests`
+- `./build/my_world_headless_render_runtime_tests`
+- `cmake --build build --target my_world_variation_state_tests my_world_headless_render_runtime_tests my-world`
+- `ctest --test-dir build --output-on-failure`
+
+Latest accepted result:
+- `variation state ok`
+- `headless render runtime ok`
+- `62/62 full tests passed`
+
+Next selectable lane:
+- None selected.
+- P-LIVE1 MIDI/OSC/live IO remains parked.
+- Full render/export window/process states remain parked.
+- Variation child enable UI and symbol-browser preset creation remain parked.
+
+Previous closure:
+None after P-VAR005 variation thumbnail selection hit-test closure as of 2026-05-25 10:41 Asia/Taipei.
+
+P-VAR005 closed.
+Evidence:
+- source/core/VariationState.h
+- source/core/VariationState.cpp
+- source/core/InteractionContract.h
+- source/core/InteractionContract.cpp
+- source/ui/ImGuiSmokeOverlay.h
+- source/ui/ImGuiSmokeOverlay.cpp
+- tests/VariationStateTests.cpp
+- docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md
+
+Closed line:
+VariationLibrary records
+-> VariationThumbnailLayout for presets and snapshots
+-> point hit-test returns variation kind/id/index
+-> selectVariation stores selected variation without applying preset/snapshot or logging a graph command
+-> left-rail Presets/Snapshots tabs render and select thumbnails through the same layout/hit-test contract
+
+Latest verification:
+- `cmake --build build --target my_world_variation_state_tests` failed RED first on missing `VariationThumbnailHitTest`, `VariationSelection`, `makeVariationThumbnailLayout`, `hitTestVariationThumbnails`, `selectVariation`, and `GraphSession::selectedVariation`.
+- `cmake --build build --target my_world_variation_state_tests`
+- `./build/my_world_variation_state_tests`
+- `cmake --build build --target my_world_variation_state_tests my-world`
+- `ctest --test-dir build --output-on-failure -R "variation_state|canvas_hands|node_hit_tests|interaction_storage_roundtrip|graph_commands"`
+- `cmake --build build`
+- `ctest --test-dir build --output-on-failure`
+- `git diff --check`
+
+Latest accepted result:
+- `variation state ok`
+- `5/5 focused interaction tests passed`
+- `62/62 full tests passed`
+- `git diff --check passed`
+
+Next selectable lane:
+- At P-VAR005 closure time, hover preview / Alt blend remained parked and were not touched in that thumbnail-only slice; later VAR-005 closes that line.
+
+Previous closure:
 None after P-VAR004 variation canvas CRUD foundation closure as of 2026-05-25 10:19 Asia/Taipei.
 
 P-VAR004 closed.
@@ -288,9 +389,6 @@ Latest accepted result:
 - `variation state ok`
 - `1/1 focused tests passed`
 - `62/62 full tests passed`
-
-Next selectable lane:
-- None selected; closest remaining variation lane is hover preview / Alt blend after thumbnail UI is selected.
 
 Previous closure:
 None after P-OPS1A reconnect/split macro closure as of 2026-05-25 08:36 Asia/Taipei.
@@ -1465,7 +1563,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-VAR004 variation canvas CRUD foundation closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, node thumbnails, SOP/MAT/POINT, render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after VAR-005 hover preview / Alt blend and R-TN1 real thumbnail headless proof closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI mapping, shader uniform mapping, browser polish, live callback-buffer runtime, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
