@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+2bd8e8a Add shader preview smoke read
 1bd20d5 Add shader preview input bridge contract
 6f3f995 Add shader uniform proof artifact
 aa6c6cf Shape shader uniform evidence JSON
@@ -123,19 +124,15 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE28 is committed in `1bd20d5`. Current dirty files, if any, should belong to the closing P-LIVE29 shader preview smoke-read lane.
+As of 2026-05-25, P-LIVE29 is committed in `2bd8e8a`. Current dirty files, if any, should belong to the closing P-LIVE30 A1 to V1 handoff closure lane.
 
 ```text
-P-LIVE29 owned files:
-- CMakeLists.txt
+P-LIVE30 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live29-shader-preview-smoke-read.md
-- source/render/ShaderPreviewInputBridge.h
-- source/render/ShaderPreviewInputBridge.cpp
-- tests/ShaderPreviewSmokeReadTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md
 ```
 
-Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, OpenGL backend wiring, or any audio callback work in P-LIVE29.
+Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, OpenGL backend wiring, or any audio callback work in P-LIVE30.
 
 Current C4 note:
 
@@ -353,7 +350,8 @@ Latest accepted targeted result:
 | P-LIVE27 shader uniform proof artifact | closed | `docs/superpowers/specs/2026-05-25-p-live27-shader-uniform-proof-artifact.md`; live IO proof runner now writes `live_io_shader_uniform_report.json` as an independent artifact containing `u_loudness` evidence | Shader preview input bridge, shader preview smoke read, and live binding remain parked |
 | P-LIVE28 shader preview input bridge contract | closed | `docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md`; `ShaderPreviewInputBridge` defines a JUCE-free uniform snapshot contract and JSON shape for preview input without wiring OpenGL live binding | Shader preview smoke-read, OpenGL backend wiring, and live binding remain parked |
 | P-LIVE29 shader preview smoke-read | closed | `docs/superpowers/specs/2026-05-25-p-live29-shader-preview-smoke-read.md`; `ShaderPreviewInputBridge` can convert a `u_loudness` snapshot into `RenderFrameInput`, and a fake render backend reads the value in a smoke test | OpenGL backend wiring, live binding, and visual reaction remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE29 closure |
+| P-LIVE30 A1 to V1 handoff closure | closed | `docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md`; closes the P-LIVE lane at app/control-rate handoff: loudness now has live IO evidence, standalone uniform artifact, preview input bridge, and render-side smoke-read | Next work should leave P-LIVE naming and open an `AV1 audio-to-visual bridge` lane for real preview reaction |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE30 closure |
 
 ## Active Lane Protocol
 
@@ -362,6 +360,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE30 A1 to V1 handoff closure as of 2026-05-25.
+
+P-LIVE30 A1 to V1 handoff closure closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live30-a1-to-v1-handoff-closure.md
+- docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md
+- docs/superpowers/specs/2026-05-25-p-live26-shader-uniform-evidence-json-shape.md
+- docs/superpowers/specs/2026-05-25-p-live27-shader-uniform-proof-artifact.md
+- docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md
+- docs/superpowers/specs/2026-05-25-p-live29-shader-preview-smoke-read.md
+
+Closed line:
+AudioAnalyzerSnapshot.loudness
+-> LiveIO shader.uniform evidence
+-> live_io_shader_uniform_report.json
+-> ShaderPreviewInputSnapshot
+-> RenderFrameInput smoke-read
+
+Latest accepted result:
+- P-LIVE25 through P-LIVE29 each closed with focused tests.
+- Latest full suite at P-LIVE29: `77/77 tests passed`.
+- P-LIVE30 is docs-only closure; `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE29 shader preview smoke-read closure as of 2026-05-25.
 
 P-LIVE29 shader preview smoke-read closed.
@@ -2268,7 +2291,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE29 shader preview smoke-read closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE30 A1 to V1 handoff closure. The P-LIVE lane is closed; the next audio-to-visual work should open a fresh `AV1 audio-to-visual bridge` lane explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
