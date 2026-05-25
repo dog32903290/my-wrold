@@ -4,6 +4,8 @@
 
 Closed on 2026-05-25.
 
+Proof artifact hardening closed as of 2026-05-25 18:23 Asia/Taipei.
+
 ## Trigger
 
 The AV lane proved that analyzer loudness can reach the native shader preview and produce visible reaction evidence. The remaining weak line is that the A1 to V1 mapping still lives mostly as app/controller wiring. G1 makes the first graph-readable mapping contract for one saved control line.
@@ -15,6 +17,7 @@ The AV lane proved that analyzer loudness can reach the native shader preview an
 - The mapping can produce a `LiveIOBinding` for the existing `LiveIOBus`.
 - Missing source or invalid target is reported as diagnostics and emits no event.
 - The proof report is JSON-readable and includes source, target, input value, normalized/clamped value, and diagnostics.
+- A focused proof runner writes `graph_io_mapping_report.json` from the fixture without involving `MainComponent`.
 - No full mapping editor, UI binding surface, extra MIDI/OSC operator, direct realtime send, shader preview live binding expansion, Metal, or analyzer DSP is added.
 
 ## Target Line
@@ -57,9 +60,11 @@ Policy:
 - `cmake -S . -B build`
 - `cmake --build build --target my_world_graph_io_mapping_tests`
 - `./build/my_world_graph_io_mapping_tests`
+- `cmake --build build --target my_world_g1_graph_io_mapping_proof_runner_tests`
+- `./build/my_world_g1_graph_io_mapping_proof_runner_tests`
 - `cmake --build build --target my_world_live_io_bus_tests`
 - `./build/my_world_live_io_bus_tests`
-- `ctest --test-dir build --output-on-failure` passed 78/78.
+- `ctest --test-dir build --output-on-failure` passed 79/79.
 - `git diff --check`
 - `cmake --build build --target my-world`
 
@@ -70,7 +75,10 @@ Policy:
 - `source/core/GraphIOMapping.cpp`
 - `source/storage/GraphIOMappingStorage.h`
 - `source/storage/GraphIOMappingStorage.cpp`
+- `source/app/G1GraphIOMappingProofRunner.h`
+- `source/app/G1GraphIOMappingProofRunner.cpp`
 - `tests/GraphIOMappingTests.cpp`
+- `tests/G1GraphIOMappingProofRunnerTests.cpp`
 - `CMakeLists.txt`
 
 ## Parked

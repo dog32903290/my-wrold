@@ -1345,6 +1345,38 @@ set_tests_properties(proof_run_support PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_g1_graph_io_mapping_proof_runner
+    source/app/G1GraphIOMappingProofRunner.cpp
+)
+
+target_include_directories(my_world_g1_graph_io_mapping_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_g1_graph_io_mapping_proof_runner
+    PUBLIC
+        my_world_proof_run_support
+        my_world_storage
+)
+
+add_executable(my_world_g1_graph_io_mapping_proof_runner_tests
+    tests/G1GraphIOMappingProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_g1_graph_io_mapping_proof_runner_tests
+    PRIVATE
+        my_world_g1_graph_io_mapping_proof_runner
+)
+
+add_test(NAME g1_graph_io_mapping_proof_runner
+         COMMAND my_world_g1_graph_io_mapping_proof_runner_tests)
+set_tests_properties(g1_graph_io_mapping_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_library(my_world_c2_storage_proof_runner
     source/app/C2StorageProofRunner.cpp
 )

@@ -49,7 +49,7 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-25 17:48 Asia/Taipei.
+Date: 2026-05-25 18:23 Asia/Taipei.
 
 Branch:
 
@@ -131,7 +131,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25 17:48 Asia/Taipei, G1 graph IO mapping foundation is closed in the current working tree. GitHub Actions CMake passed for BUILD1 on run `26393521138`. Current dirty files, if any, should belong only to G1 closure/commit preparation.
+As of 2026-05-25 18:23 Asia/Taipei, G1 graph IO mapping foundation plus proof artifact hardening is closed in the current working tree. Current dirty files, if any, should belong only to commit/push preparation for the G1 PR.
 
 ```text
 G1 owned files:
@@ -140,7 +140,9 @@ G1 owned files:
 - fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
 - source/core/GraphIOMapping.*
 - source/storage/GraphIOMappingStorage.*
+- source/app/G1GraphIOMappingProofRunner.*
 - tests/GraphIOMappingTests.cpp
+- tests/G1GraphIOMappingProofRunnerTests.cpp
 - CMakeLists.txt
 ```
 
@@ -370,7 +372,7 @@ Latest accepted targeted result:
 | AV5 audio visual segment closure | closed | `docs/superpowers/specs/2026-05-25-av5-audio-visual-segment-closure.md`; closes the AV segment from live IO shader uniform evidence through preview loudness input, quiet/loud OpenGL capture, V1 artifact writing, and app dump readback | Headless/offscreen GL harness, user-facing graph IO mapping, full mapping editor, direct realtime callback send, Metal, and visual polish remain parked |
 | Gemini risk triage hardening | closed | `docs/superpowers/specs/2026-05-25-gemini-risk-triage-hardening.md`; OSC proof readback now uses bounded decoder, malformed OSC tests cover missing null/truncated payloads, UDP receive buffers no longer truncate at 1024/256 bytes, OpenGL proof artifact writes run off the render thread, and source/CMake no longer contain user-specific hardcoded paths | Full OSC bundle parsing, JSON report writer replacement, non-loopback send UI/lifecycle, dedicated proof job system, and CI JUCE bootstrap remain parked |
 | BUILD1 portable JUCE bootstrap | closed | `docs/superpowers/specs/2026-05-25-build1-portable-juce-bootstrap.md`; CMake can use explicit/local JUCE or fetch pinned JUCE 8.0.12, GitHub Actions has a macOS CMake workflow, and build docs explain both paths | CI cache tuning, Linux/Windows matrix, package manager integration, and automatic JUCE version bumps remain parked |
-| G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph now loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, and emits graph IO mapping JSON evidence; `ctest` 78/78 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
+| G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, emits graph IO mapping JSON evidence, and `G1GraphIOMappingProofRunner` writes `graph_io_mapping_report.json`; `ctest` 79/79 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -380,6 +382,32 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after G1 proof artifact hardening closure as of 2026-05-25 18:23 Asia/Taipei.
+
+G1 proof artifact hardening closed.
+Evidence:
+- source/app/G1GraphIOMappingProofRunner.*
+- tests/G1GraphIOMappingProofRunnerTests.cpp
+- docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- CMakeLists.txt
+
+Closed line:
+fixtures/graphs/g1_loudness_to_shader_uniform.graph.json
+-> G1GraphIOMappingProofRunner
+-> debug/g1-graph-io-mapping-proof/graph_io_mapping_report.json
+
+Latest accepted result:
+- cmake --build build --target my_world_g1_graph_io_mapping_proof_runner_tests
+- ./build/my_world_g1_graph_io_mapping_proof_runner_tests passed.
+- ./build/my_world_graph_io_mapping_tests passed.
+- ./build/my_world_live_io_bus_tests passed.
+- ctest --test-dir build --output-on-failure passed 79/79.
+- cmake --build build --target my-world passed.
+- git diff --check passed.
+
+Previous closure:
+
 None after G1 graph IO mapping foundation closure as of 2026-05-25 17:48 Asia/Taipei.
 
 G1 graph IO mapping foundation closed.
