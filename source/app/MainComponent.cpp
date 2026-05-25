@@ -3,7 +3,7 @@
 #include "A1AudioProofRunner.h"
 #include "ActiveWorkService.h"
 #include "APP1WorkbenchSessionProofRunner.h"
-#include "APP2WorkbenchOpenStatusProofRunner.h"
+#include "AppWorkbenchSessionProofRunner.h"
 #include "AppPaths.h"
 #include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
@@ -601,7 +601,7 @@ void MainComponent::dumpAPPWorkbenchSessionProof()
     const auto request = workbenchController.makeOpenStatusProofRequest (
         directory.getFullPathName().toStdString());
 
-    const auto result = runAPP2WorkbenchOpenStatusProof (request);
+    const auto result = runAppWorkbenchSessionProof (request);
     finishProofDump (juce::String (appWorkbenchSessionProofDisplayName()), result.status, result.error, directory);
 }
 

@@ -21,10 +21,10 @@ std::string WorkbenchAppController::statusText() const
     return currentStatusText;
 }
 
-APP2WorkbenchOpenStatusProofRunRequest WorkbenchAppController::makeOpenStatusProofRequest (
+AppWorkbenchSessionProofRunRequest WorkbenchAppController::makeOpenStatusProofRequest (
     const std::filesystem::path& outputDirectory) const
 {
-    APP2WorkbenchOpenStatusProofRunRequest request;
+    AppWorkbenchSessionProofRunRequest request;
     request.outputDirectory = outputDirectory;
     request.snapshot = currentSessionSnapshot;
     return request;

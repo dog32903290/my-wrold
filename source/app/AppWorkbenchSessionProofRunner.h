@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AppWorkbenchSessionProofRunner.h"
+#include "WorkbenchSession.h"
 
 #include <filesystem>
 #include <string>
@@ -8,13 +8,13 @@
 
 namespace myworld
 {
-struct APP2WorkbenchOpenStatusProofRunRequest
+struct AppWorkbenchSessionProofRunRequest
 {
     std::filesystem::path outputDirectory;
     WorkbenchSessionSnapshot snapshot;
 };
 
-struct APP2WorkbenchOpenStatusProofRunResult
+struct AppWorkbenchSessionProofRunResult
 {
     bool ok = false;
     std::string status;
@@ -24,9 +24,9 @@ struct APP2WorkbenchOpenStatusProofRunResult
     std::vector<std::filesystem::path> artifactPaths;
 };
 
-const char* app2WorkbenchOpenStatusProofDisplayName();
-const char* app2WorkbenchOpenStatusProofDirectoryName();
+const char* appWorkbenchSessionProofDisplayName();
+const char* appWorkbenchSessionProofDirectoryName();
 
-APP2WorkbenchOpenStatusProofRunResult runAPP2WorkbenchOpenStatusProof (
-    const APP2WorkbenchOpenStatusProofRunRequest& request);
+AppWorkbenchSessionProofRunResult runAppWorkbenchSessionProof (
+    const AppWorkbenchSessionProofRunRequest& request);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "APP2WorkbenchOpenStatusProofRunner.h"
+#include "AppWorkbenchSessionProofRunner.h"
 #include "WorkbenchSessionOpenStatus.h"
 
 #include <filesystem>
@@ -18,7 +18,7 @@ public:
     const WorkbenchSessionSnapshot& currentSession() const;
     std::string statusText() const;
 
-    APP2WorkbenchOpenStatusProofRunRequest makeOpenStatusProofRequest (
+    AppWorkbenchSessionProofRunRequest makeOpenStatusProofRequest (
         const std::filesystem::path& outputDirectory) const;
 
 private:

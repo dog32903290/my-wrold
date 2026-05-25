@@ -931,7 +931,7 @@ target_include_directories(my_world_workbench_app_controller
 target_link_libraries(my_world_workbench_app_controller
     PUBLIC
         my_world_workbench_session_open_status
-        my_world_app2_workbench_open_status_proof_runner
+        my_world_app_workbench_session_proof_runner
 )
 
 add_executable(my_world_workbench_app_controller_tests
@@ -993,6 +993,22 @@ target_include_directories(my_world_app2_workbench_open_status_proof_runner
 
 target_link_libraries(my_world_app2_workbench_open_status_proof_runner
     PUBLIC
+        my_world_app_workbench_session_proof_runner
+)
+
+add_library(my_world_app_workbench_session_proof_runner
+    source/app/AppWorkbenchSessionProofRunner.cpp
+)
+
+target_include_directories(my_world_app_workbench_session_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_app_workbench_session_proof_runner
+    PUBLIC
         my_world_proof_run_support
         my_world_workbench_session_open_status
 )
@@ -1009,6 +1025,21 @@ target_link_libraries(my_world_app2_workbench_open_status_proof_runner_tests
 add_test(NAME app2_workbench_open_status_proof_runner
          COMMAND my_world_app2_workbench_open_status_proof_runner_tests)
 set_tests_properties(app2_workbench_open_status_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+add_executable(my_world_app_workbench_session_proof_runner_tests
+    tests/AppWorkbenchSessionProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_app_workbench_session_proof_runner_tests
+    PRIVATE
+        my_world_app_workbench_session_proof_runner
+)
+
+add_test(NAME app_workbench_session_proof_runner
+         COMMAND my_world_app_workbench_session_proof_runner_tests)
+set_tests_properties(app_workbench_session_proof_runner PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -1915,6 +1946,7 @@ if(MY_WORLD_HAVE_JUCE)
             my_world_app1_workbench_session_proof_runner
             my_world_app2_workbench_open_status_proof_runner
             my_world_workbench_app_controller
+            my_world_app_workbench_session_proof_runner
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner
