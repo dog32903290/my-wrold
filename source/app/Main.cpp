@@ -36,6 +36,8 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
         "--dump-pv-aggregate-pressure-proof-and-exit");
     options.dumpPVB1AnalyzerEnvironmentProof = commandLine.contains (
         "--dump-pv-b1-analyzer-environment-proof-and-exit");
+    options.dumpAPP1WorkbenchSessionProof = commandLine.contains (
+        "--dump-app1-workbench-session-proof-and-exit");
     options.quitAfterStartupDump = hasStartupProofRequest (options);
 
     return options;

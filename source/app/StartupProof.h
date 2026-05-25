@@ -23,7 +23,8 @@ enum class StartupProofTaskId
     pvSustainDetector,
     pvResidueDetector,
     pvAggregatePressure,
-    pvB1AnalyzerEnvironment
+    pvB1AnalyzerEnvironment,
+    app1WorkbenchSession
 };
 
 struct StartupProofTask
@@ -52,6 +53,7 @@ struct StartupProofOptions
     bool dumpPVResidueDetectorProof = false;
     bool dumpPVAggregatePressureProof = false;
     bool dumpPVB1AnalyzerEnvironmentProof = false;
+    bool dumpAPP1WorkbenchSessionProof = false;
     bool quitAfterStartupDump = false;
 };
 

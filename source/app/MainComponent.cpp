@@ -2,6 +2,7 @@
 
 #include "A1AudioProofRunner.h"
 #include "ActiveWorkService.h"
+#include "APP1WorkbenchSessionProofRunner.h"
 #include "AppPaths.h"
 #include "C2StorageProofRunner.h"
 #include "C3SaveWorkProofRunner.h"
@@ -288,6 +289,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
         case StartupProofTaskId::pvB1AnalyzerEnvironment:
             dumpPVB1AnalyzerEnvironmentProof();
             break;
+        case StartupProofTaskId::app1WorkbenchSession:
+            dumpAPP1WorkbenchSessionProof();
+            break;
     }
 }
 
@@ -563,6 +567,18 @@ void MainComponent::dumpPVB1AnalyzerEnvironmentProof()
 
     const auto result = runPVB1AnalyzerEnvironmentProof (request);
     finishProofDump (juce::String (pvB1AnalyzerEnvironmentProofDisplayName()), result.status, result.error, directory);
+}
+
+void MainComponent::dumpAPP1WorkbenchSessionProof()
+{
+    const auto directory = proofDumpDirectory (app1WorkbenchSessionProofDirectoryName());
+
+    APP1WorkbenchSessionProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runAPP1WorkbenchSessionProof (request);
+    finishProofDump (juce::String (app1WorkbenchSessionProofDisplayName()), result.status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
