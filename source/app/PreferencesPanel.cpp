@@ -31,6 +31,8 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     configureLabel (mapCcLabel, "map CC");
     configureLabel (liveIOLabel, "Live IO");
     configureLabel (liveIOSendModeLabel, "send mode");
+    configureLabel (midiTeachLabel, "teach");
+    configureLabel (midiTeachStatusLabel, "teach idle");
 
     addAndMakeVisible (titleLabel);
     addAndMakeVisible (audioLabel);
@@ -42,6 +44,8 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     addAndMakeVisible (mapCcLabel);
     addAndMakeVisible (liveIOLabel);
     addAndMakeVisible (liveIOSendModeLabel);
+    addAndMakeVisible (midiTeachLabel);
+    addAndMakeVisible (midiTeachStatusLabel);
 
     audioSelector.setItemHeight (20);
     addAndMakeVisible (audioSelector);
@@ -82,6 +86,30 @@ PreferencesPanel::PreferencesPanel (juce::AudioDeviceManager& deviceManager)
     refreshMidiButton.setButtonText ("Refresh MIDI");
     refreshMidiButton.onClick = [this] { refreshMidiOutputs(); };
     addAndMakeVisible (refreshMidiButton);
+
+    learnLoudnessCcButton.setButtonText ("Learn Loudness");
+    learnLoudnessCcButton.onClick = [this]
+    {
+        if (onLearnLoudnessCcRequested != nullptr)
+            onLearnLoudnessCcRequested();
+    };
+    addAndMakeVisible (learnLoudnessCcButton);
+
+    learnMapCcButton.setButtonText ("Learn Map");
+    learnMapCcButton.onClick = [this]
+    {
+        if (onLearnMapCcRequested != nullptr)
+            onLearnMapCcRequested();
+    };
+    addAndMakeVisible (learnMapCcButton);
+
+    cancelMidiTeachButton.setButtonText ("Cancel");
+    cancelMidiTeachButton.onClick = [this]
+    {
+        if (onMidiTeachCancelRequested != nullptr)
+            onMidiTeachCancelRequested();
+    };
+    addAndMakeVisible (cancelMidiTeachButton);
 
     refreshMidiOutputs();
 }
@@ -128,6 +156,24 @@ LiveIOPreferences PreferencesPanel::getLiveIOPreferences() const
     PerformancePreferences allPreferences;
     allPreferences.liveIO = preferences;
     return sanitizePerformancePreferences (allPreferences).liveIO;
+}
+
+void PreferencesPanel::applyLearnedMidiCc (LiveIOMidiTeachTarget target, int channel, int cc)
+{
+    midiChannelSlider.setValue (channel, juce::dontSendNotification);
+
+    if (target == LiveIOMidiTeachTarget::loudnessCc)
+        loudnessCcSlider.setValue (cc, juce::dontSendNotification);
+
+    if (target == LiveIOMidiTeachTarget::mapCc)
+        mapCcSlider.setValue (cc, juce::dontSendNotification);
+
+    emitMidiPreferences();
+}
+
+void PreferencesPanel::setMidiTeachStatus (juce::String text)
+{
+    midiTeachStatusLabel.setText (std::move (text), juce::dontSendNotification);
 }
 
 void PreferencesPanel::paint (juce::Graphics& g)
@@ -186,6 +232,17 @@ void PreferencesPanel::resized()
     row = area.removeFromTop (24);
     mapCcLabel.setBounds (row.removeFromLeft (74));
     mapCcSlider.setBounds (row.removeFromLeft (150));
+
+    area.removeFromTop (4);
+    row = area.removeFromTop (24);
+    midiTeachLabel.setBounds (row.removeFromLeft (74));
+    learnLoudnessCcButton.setBounds (row.removeFromLeft (124));
+    row.removeFromLeft (6);
+    learnMapCcButton.setBounds (row.removeFromLeft (96));
+    row.removeFromLeft (6);
+    cancelMidiTeachButton.setBounds (row.removeFromLeft (72));
+    row.removeFromLeft (8);
+    midiTeachStatusLabel.setBounds (row);
 }
 
 void PreferencesPanel::refreshMidiOutputs()

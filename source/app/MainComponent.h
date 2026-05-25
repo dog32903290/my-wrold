@@ -3,6 +3,7 @@
 #include "AudioInputAnalyzer.h"
 #include "InteractionContract.h"
 #include "LiveIOControlTimer.h"
+#include "LiveIOMidiTeach.h"
 #include "LiveIOStatusIndicator.h"
 #include "OpenGLShaderPreview.h"
 #include "PerformancePreferences.h"
@@ -12,13 +13,16 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include <atomic>
 #include <string>
+#include <vector>
 
 namespace myworld
 {
 enum class PVDetectorProofKind;
 
 class MainComponent final : public juce::Component,
+                            private juce::MidiInputCallback,
                             private juce::Timer
 {
 public:
@@ -63,6 +67,13 @@ private:
     void updateAudioMeters();
     void applyMidiPreferences (MidiPreferences preferences);
     void applyLiveIOPreferences (LiveIOPreferences preferences);
+    void armMidiTeach (LiveIOMidiTeachTarget target);
+    void cancelMidiTeach();
+    int startMidiTeachListening();
+    void stopMidiTeachListening();
+    void handleMidiTeachMessage (LiveIOMidiTeachIncomingMessage message);
+    void handleIncomingMidiMessage (juce::MidiInput* source,
+                                    const juce::MidiMessage& message) override;
     void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
     void tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot);
 
@@ -90,6 +101,11 @@ private:
     LiveIOControlTimerState liveIOTimerState;
     juce::String liveIOStatus = "live io dry idle m0 o0";
     juce::String liveIOStatusTone = "idle";
+    LiveIOMidiTeachState midiTeachState;
+    std::atomic<bool> midiTeachArmedForCallback { false };
+    bool midiTeachCallbackRegistered = false;
+    int midiTeachInputCount = 0;
+    std::vector<juce::String> midiInputsEnabledForTeach;
     bool shouldQuitAfterStartupDump = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)

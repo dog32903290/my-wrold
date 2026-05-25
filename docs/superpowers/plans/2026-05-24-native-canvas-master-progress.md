@@ -33,7 +33,7 @@ Do not use old implementation plans as current status. Many old plans contain "p
 
 ## Current Snapshot
 
-Date: 2026-05-25 13:58 Asia/Taipei.
+Date: 2026-05-25 14:04 Asia/Taipei.
 
 Branch:
 
@@ -55,6 +55,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+663e440 Add live IO send mode preferences
 96075a0 Add live IO status indicator
 329f878 Add live IO app timer OSC loopback proof
 b4da97f Add live IO app timer MIDI proof
@@ -274,13 +275,14 @@ Latest accepted targeted result:
 | P-LIVE1.5 controlled MIDI open/send proof | closed | `docs/superpowers/specs/2026-05-25-p-live1-5-controlled-midi-send.md`; `LiveIOMidiSendProof` plus `LiveIOProofRunner` open the selected MIDI output and send one CC proof message; app proof writes `live_io_midi_send_report.json` | MIDI teach mode, realtime callback wiring, live UI mapping, broader MIDI output operators, and external OSC/UDP targets remain parked |
 | P-LIVE2 control-rate live IO dispatcher proof | closed | `docs/superpowers/specs/2026-05-25-p-live2-control-rate-dispatcher.md`; `LiveIOControlDispatcher` rate-limits frame dispatch, calls injected MIDI/OSC control sinks, skips shader uniforms, and app proof writes `live_io_control_dispatch_report.json` | Realtime callback delivery, live UI mapping, MIDI teach mode, external OSC/UDP targets, and broader MIDI output operators remain parked |
 | P-LIVE3 control-rate analyzer snapshot pump | closed | `docs/superpowers/specs/2026-05-25-p-live3-control-pump.md`; `LiveIOControlPump` turns analyzer snapshots into control frames, tick-rate-limits inactive/fast ticks, feeds `LiveIOControlDispatcher`, and app proof writes `live_io_control_pump_report.json` | App timer dry-run wiring is closed in P-LIVE4; realtime callback delivery, live UI mapping, MIDI teach mode, and external OSC targets remain parked |
-| P-LIVE4 app timer dry-run wiring | closed | `docs/superpowers/specs/2026-05-25-p-live4-app-timer-dry-run.md`; `LiveIOControlTimer` records app-timer-driven dry-run state from analyzer snapshots, `MainComponent::timerCallback()` reaches it through `updateAudioMeters()`, and status text exposes dry MIDI/OSC counts | Send mode gate is closed in P-LIVE5; live UI indicator is closed in P-LIVE8; realtime callback delivery, MIDI teach mode, and broader output operators remain parked |
-| P-LIVE5 app timer send mode gate | closed | `docs/superpowers/specs/2026-05-25-p-live5-app-timer-send-gate.md`; `LiveIOControlTimerConfig` adds `dryRun` / `controlledSend`, dry-run never calls provided senders, controlled-send calls injected MIDI/OSC senders, and app timer carries the gate while defaulting to dry-run | Controlled MIDI app timer proof is closed in P-LIVE6; OSC app timer loopback is closed in P-LIVE7; live UI indicator is closed in P-LIVE8; UI/preferences mode switch, realtime callback delivery, and MIDI teach mode remain parked |
-| P-LIVE6 controlled app timer MIDI proof | closed | `docs/superpowers/specs/2026-05-25-p-live6-app-timer-midi-proof.md`; `LiveIOProofRunner` opt-in proof drives `LiveIOControlTimerConfig(sendMode: controlledSend)` with MIDI enabled/OSC disabled and writes `live_io_app_timer_midi_report.json` showing one controlled MIDI send | OSC app timer loopback is closed in P-LIVE7; live UI indicator is closed in P-LIVE8; normal app mode switching, MIDI teach mode, and realtime callback delivery remain parked |
-| P-LIVE7 controlled app timer OSC loopback | closed | `docs/superpowers/specs/2026-05-25-p-live7-app-timer-osc-loopback.md`; `LiveIOProofRunner` opt-in proof drives the same `LiveIOControlTimer` body with MIDI disabled/OSC enabled, sends through `LiveIOSendAdapter`, receives localhost OSC, and writes `live_io_app_timer_osc_loopback_report.json` | Live UI indicator is closed in P-LIVE8; normal app mode switching, external OSC targets/receive nodes, MIDI teach mode, and realtime callback delivery remain parked |
-| P-LIVE8 live UI indicator | closed | `docs/superpowers/specs/2026-05-25-p-live8-live-ui-indicator.md`; `LiveIOStatusIndicator` turns real `LiveIOControlTimerState` plus send mode into compact text/tone/counts, and `MainComponent` shows it in a dedicated status label; `ctest` 71/71 | Send mode preferences, MIDI teach, external OSC targets/receive nodes, broader MIDI output operators, and realtime callback delivery remain parked |
-| P-LIVE9 send mode preferences | closed | `docs/superpowers/specs/2026-05-25-p-live9-send-mode-preferences.md`; `PerformancePreferences.liveIO` defaults to dry-run, sanitizes invalid send modes back to dry-run, `PreferencesPanel` exposes dry-run/controlled-send, and `MainComponent` maps the sanitized preference into `LiveIOControlTimerConfig.sendMode`; `ctest` 71/71 | MIDI teach, OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE9 closure |
+| P-LIVE4 app timer dry-run wiring | closed | `docs/superpowers/specs/2026-05-25-p-live4-app-timer-dry-run.md`; `LiveIOControlTimer` records app-timer-driven dry-run state from analyzer snapshots, `MainComponent::timerCallback()` reaches it through `updateAudioMeters()`, and status text exposes dry MIDI/OSC counts | Send mode gate is closed in P-LIVE5; live UI indicator is closed in P-LIVE8; MIDI teach is closed in P-LIVE10; realtime callback delivery and broader output operators remain parked |
+| P-LIVE5 app timer send mode gate | closed | `docs/superpowers/specs/2026-05-25-p-live5-app-timer-send-gate.md`; `LiveIOControlTimerConfig` adds `dryRun` / `controlledSend`, dry-run never calls provided senders, controlled-send calls injected MIDI/OSC senders, and app timer carries the gate while defaulting to dry-run | Controlled MIDI app timer proof is closed in P-LIVE6; OSC app timer loopback is closed in P-LIVE7; live UI indicator is closed in P-LIVE8; UI/preferences mode switch is closed in P-LIVE9; MIDI teach is closed in P-LIVE10; realtime callback delivery remains parked |
+| P-LIVE6 controlled app timer MIDI proof | closed | `docs/superpowers/specs/2026-05-25-p-live6-app-timer-midi-proof.md`; `LiveIOProofRunner` opt-in proof drives `LiveIOControlTimerConfig(sendMode: controlledSend)` with MIDI enabled/OSC disabled and writes `live_io_app_timer_midi_report.json` showing one controlled MIDI send | OSC app timer loopback is closed in P-LIVE7; live UI indicator is closed in P-LIVE8; normal app mode switching is closed in P-LIVE9; MIDI teach is closed in P-LIVE10; realtime callback delivery remains parked |
+| P-LIVE7 controlled app timer OSC loopback | closed | `docs/superpowers/specs/2026-05-25-p-live7-app-timer-osc-loopback.md`; `LiveIOProofRunner` opt-in proof drives the same `LiveIOControlTimer` body with MIDI disabled/OSC enabled, sends through `LiveIOSendAdapter`, receives localhost OSC, and writes `live_io_app_timer_osc_loopback_report.json` | Live UI indicator is closed in P-LIVE8; normal app mode switching is closed in P-LIVE9; MIDI teach is closed in P-LIVE10; external OSC targets/receive nodes and realtime callback delivery remain parked |
+| P-LIVE8 live UI indicator | closed | `docs/superpowers/specs/2026-05-25-p-live8-live-ui-indicator.md`; `LiveIOStatusIndicator` turns real `LiveIOControlTimerState` plus send mode into compact text/tone/counts, and `MainComponent` shows it in a dedicated status label; `ctest` 71/71 | Send mode preferences are closed in P-LIVE9; MIDI teach is closed in P-LIVE10; external OSC targets/receive nodes, broader MIDI output operators, and realtime callback delivery remain parked |
+| P-LIVE9 send mode preferences | closed | `docs/superpowers/specs/2026-05-25-p-live9-send-mode-preferences.md`; `PerformancePreferences.liveIO` defaults to dry-run, sanitizes invalid send modes back to dry-run, `PreferencesPanel` exposes dry-run/controlled-send, and `MainComponent` maps the sanitized preference into `LiveIOControlTimerConfig.sendMode`; `ctest` 71/71 | MIDI teach is closed in P-LIVE10; OSC target preferences, external OSC receive nodes/server, broader MIDI output operators, and realtime callback delivery remain parked |
+| P-LIVE10 MIDI teach | closed | `docs/superpowers/specs/2026-05-25-p-live10-midi-teach.md`; `LiveIOMidiTeach` arms loudness/map CC targets, learns the next incoming MIDI CC, disarms, and `MainComponent` temporarily routes MIDI input callbacks to PreferencesPanel learned channel/CC updates without UI work in the callback; `ctest` 72/72 | MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, external OSC receive nodes/server, and realtime callback delivery remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE10 closure |
 
 ## Active Lane Protocol
 
@@ -289,42 +291,45 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after P-LIVE9 send mode preferences closure as of 2026-05-25 13:58 Asia/Taipei.
+None after P-LIVE10 MIDI teach closure as of 2026-05-25 14:04 Asia/Taipei.
 
-P-LIVE9 send mode preferences closed.
+P-LIVE10 MIDI teach closed.
 Evidence:
-- docs/superpowers/specs/2026-05-25-p-live9-send-mode-preferences.md
-- source/preferences/PerformancePreferences.h
-- source/preferences/PerformancePreferences.cpp
-- tests/PerformancePreferencesTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live10-midi-teach.md
+- source/core/LiveIOMidiTeach.h
+- source/core/LiveIOMidiTeach.cpp
+- tests/LiveIOMidiTeachTests.cpp
 - source/app/PreferencesPanel.h
 - source/app/PreferencesPanel.cpp
 - source/app/MainComponent.h
 - source/app/MainComponent.cpp
+- CMakeLists.txt
 
 Closed line:
-PreferencesPanel live IO send mode combo
--> getLiveIOPreferences()
--> MainComponent::applyLiveIOPreferences()
--> LiveIOControlTimerConfig.sendMode
--> dry_run by default
--> controlled_send only when selected
+PreferencesPanel Learn Loudness / Learn Map
+-> MainComponent::armMidiTeach()
+-> temporary MIDI input callback
+-> incoming MIDI CC parsed only
+-> MessageManager::callAsync
+-> handleLiveIOMidiTeachMessage()
+-> PreferencesPanel::applyLearnedMidiCc()
+-> emitMidiPreferences()
+-> MIDI teach listener removed
 
 Latest verification:
-- `cmake --build build --target my_world_performance_preferences_tests && ./build/my_world_performance_preferences_tests` failed RED first on missing live IO preference fields/helpers.
-- `cmake --build build --target my_world_performance_preferences_tests my-world && ./build/my_world_performance_preferences_tests`
-- `ctest --test-dir build --output-on-failure`
-- `git diff --check`
+- `cmake -S . -B build && cmake --build build --target my_world_live_io_midi_teach_tests` failed RED first on missing `LiveIOMidiTeach.h`.
+- `cmake --build build --target my_world_live_io_midi_teach_tests my-world && ./build/my_world_live_io_midi_teach_tests`
+- `cmake --build build --target my_world_live_io_midi_teach_tests my-world && ./build/my_world_live_io_midi_teach_tests && ctest --test-dir build --output-on-failure && git diff --check`
 
 Latest accepted result:
-- `performance preferences ok`
+- `live io midi teach ok`
 - app target `my-world` builds.
-- `71/71 tests passed`
+- `72/72 tests passed`
 - `git diff --check passed`
 
 Next selectable lane:
 - None selected.
-- MIDI teach, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
+- MIDI input selector/preference, arbitrary binding teach, preference persistence, OSC target preferences, realtime callback delivery, and broader MIDI output operators remain parked.
 - External OSC/UDP targets and always-on OSC receive nodes/server remain parked.
 - Full render/export window/process states remain parked.
 - Variation child enable UI and symbol-browser preset creation remain parked.
@@ -1764,7 +1769,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE9 send mode preferences closure. The next lane must be selected explicitly. Do not add analyzer DSP, MIDI teach mode, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE10 MIDI teach closure. The next lane must be selected explicitly. Do not add analyzer DSP, arbitrary MIDI teach bindings, MIDI input selector/preferences, external OSC/UDP targets, always-on OSC receive nodes/server, realtime callback delivery, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 
@@ -1776,4 +1781,4 @@ After the next lane finishes:
    - move the active lane from `in progress` to `closed` or `blocked`;
    - record proof commands;
    - set the next active lane explicitly.
-4. Do not start MIDI teach mode, shader mapping, live callback-buffer runtime, external OSC/UDP targets, TiXL, browser polish, or another analyzer family until a new active lane row is updated.
+4. Do not start broader MIDI teach work, shader mapping, live callback-buffer runtime, external OSC/UDP targets, TiXL, browser polish, or another analyzer family until a new active lane row is updated.

@@ -82,6 +82,7 @@ add_library(my_world_core
     source/core/LiveIOControlDispatcher.cpp
     source/core/LiveIOControlPump.cpp
     source/core/LiveIOControlTimer.cpp
+    source/core/LiveIOMidiTeach.cpp
     source/core/LiveIOMidiOutputInventory.cpp
     source/core/LiveIOMidiSendProof.cpp
     source/core/LiveIOSendAdapter.cpp
@@ -418,6 +419,17 @@ target_link_libraries(my_world_live_io_midi_send_proof_tests
 )
 
 add_test(NAME live_io_midi_send_proof COMMAND my_world_live_io_midi_send_proof_tests)
+
+add_executable(my_world_live_io_midi_teach_tests
+    tests/LiveIOMidiTeachTests.cpp
+)
+
+target_link_libraries(my_world_live_io_midi_teach_tests
+    PRIVATE
+        my_world_core
+)
+
+add_test(NAME live_io_midi_teach COMMAND my_world_live_io_midi_teach_tests)
 
 add_executable(my_world_live_io_control_dispatcher_tests
     tests/LiveIOControlDispatcherTests.cpp

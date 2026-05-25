@@ -67,6 +67,40 @@ juce::Colour liveIOToneColour (const juce::String& tone)
     return juce::Colour::fromRGB (202, 211, 226);
 }
 
+juce::String midiTeachStatusText (const LiveIOMidiTeachState& state, int inputCount)
+{
+    if (state.status == "armed")
+    {
+        auto text = juce::String ("teach ")
+                    + juce::String (liveIOMidiTeachTargetToString (state.target))
+                    + " waiting";
+
+        if (inputCount == 0)
+            text += " / no inputs";
+
+        return text;
+    }
+
+    if (state.status == "learned")
+    {
+        return juce::String ("learned ch")
+               + juce::String (state.learnedChannel)
+               + " cc"
+               + juce::String (state.learnedCc);
+    }
+
+    if (state.status == "ignored")
+        return "teach waiting for CC";
+
+    if (state.status == "cancelled")
+        return "teach cancelled";
+
+    if (state.status == "failed")
+        return "teach failed";
+
+    return "teach idle";
+}
+
 LiveIOControlTimerSendMode liveIOSendModeFromPreference (LiveIOSendModePreference sendMode)
 {
     if (sendMode == LiveIOSendModePreference::controlledSend)
@@ -148,6 +182,18 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     {
         applyLiveIOPreferences (preferences);
     };
+    preferencesPanel.onLearnLoudnessCcRequested = [this]
+    {
+        armMidiTeach (LiveIOMidiTeachTarget::loudnessCc);
+    };
+    preferencesPanel.onLearnMapCcRequested = [this]
+    {
+        armMidiTeach (LiveIOMidiTeachTarget::mapCc);
+    };
+    preferencesPanel.onMidiTeachCancelRequested = [this]
+    {
+        cancelMidiTeach();
+    };
     addChildComponent (preferencesPanel);
 
     dumpProofButton.setButtonText ("Dump Proof");
@@ -205,6 +251,7 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
 MainComponent::~MainComponent()
 {
     stopTimer();
+    stopMidiTeachListening();
     audioDeviceManager.removeAudioCallback (&audioInputAnalyzer);
     midiOutput.reset();
     preview.onStatusMessage = nullptr;
@@ -684,6 +731,103 @@ void MainComponent::applyLiveIOPreferences (LiveIOPreferences preferences)
     performancePreferences.liveIO = preferences;
     performancePreferences = sanitizePerformancePreferences (performancePreferences);
     liveIOSendMode = liveIOSendModeFromPreference (performancePreferences.liveIO.sendMode);
+}
+
+void MainComponent::armMidiTeach (LiveIOMidiTeachTarget target)
+{
+    stopMidiTeachListening();
+
+    const auto result = armLiveIOMidiTeach (midiTeachState, target);
+    midiTeachArmedForCallback.store (result.ok && midiTeachState.armed);
+
+    if (result.ok)
+        midiTeachInputCount = startMidiTeachListening();
+    else
+        stopMidiTeachListening();
+
+    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+}
+
+void MainComponent::cancelMidiTeach()
+{
+    (void) cancelLiveIOMidiTeach (midiTeachState);
+    stopMidiTeachListening();
+    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+}
+
+int MainComponent::startMidiTeachListening()
+{
+    if (! midiTeachCallbackRegistered)
+    {
+        audioDeviceManager.addMidiInputDeviceCallback ({}, this);
+        midiTeachCallbackRegistered = true;
+    }
+
+    midiInputsEnabledForTeach.clear();
+    const auto inputs = juce::MidiInput::getAvailableDevices();
+
+    for (const auto& input : inputs)
+    {
+        if (! audioDeviceManager.isMidiInputDeviceEnabled (input.identifier))
+        {
+            audioDeviceManager.setMidiInputDeviceEnabled (input.identifier, true);
+            midiInputsEnabledForTeach.push_back (input.identifier);
+        }
+    }
+
+    return inputs.size();
+}
+
+void MainComponent::stopMidiTeachListening()
+{
+    midiTeachArmedForCallback.store (false);
+
+    if (midiTeachCallbackRegistered)
+    {
+        audioDeviceManager.removeMidiInputDeviceCallback ({}, this);
+        midiTeachCallbackRegistered = false;
+    }
+
+    for (const auto& identifier : midiInputsEnabledForTeach)
+        audioDeviceManager.setMidiInputDeviceEnabled (identifier, false);
+
+    midiInputsEnabledForTeach.clear();
+    midiTeachInputCount = 0;
+}
+
+void MainComponent::handleMidiTeachMessage (LiveIOMidiTeachIncomingMessage message)
+{
+    const auto result = handleLiveIOMidiTeachMessage (midiTeachState, message);
+
+    if (result.learned)
+    {
+        stopMidiTeachListening();
+        preferencesPanel.applyLearnedMidiCc (result.target, result.channel, result.cc);
+    }
+
+    preferencesPanel.setMidiTeachStatus (midiTeachStatusText (midiTeachState, midiTeachInputCount));
+}
+
+void MainComponent::handleIncomingMidiMessage (juce::MidiInput*, const juce::MidiMessage& message)
+{
+    if (! midiTeachArmedForCallback.load())
+        return;
+
+    if (! message.isController())
+        return;
+
+    const auto incoming = makeLiveIOMidiTeachControlChange (
+        message.getChannel(),
+        message.getControllerNumber(),
+        message.getControllerValue());
+
+    // MIDI input arrives on a high-priority thread; teach state and UI update on the message thread.
+    juce::MessageManager::callAsync (
+        [safe = juce::Component::SafePointer<MainComponent> (this), incoming]
+        {
+            if (safe != nullptr)
+                safe->handleMidiTeachMessage (incoming);
+        });
 }
 
 void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
