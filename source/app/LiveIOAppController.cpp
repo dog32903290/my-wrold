@@ -86,12 +86,49 @@ void LiveIOAppController::applyLiveIOPreferences (LiveIOPreferences preferences)
     PerformancePreferences allPreferences;
     allPreferences.liveIO = preferences;
     allPreferences = sanitizePerformancePreferences (allPreferences);
+    const auto nextReceiverConfig = makeOscReceiverConfig (allPreferences.liveIO);
+
+    if (oscReceiver.isOpen()
+        && (oscReceiver.config().host != nextReceiverConfig.host
+            || oscReceiver.config().port != nextReceiverConfig.port
+            || oscReceiver.config().address != nextReceiverConfig.address
+            || oscReceiver.config().valueId != nextReceiverConfig.valueId))
+    {
+        oscReceiver.close();
+    }
+
     liveIOSendMode = sendModeFromPreference (allPreferences.liveIO.sendMode);
 }
 
 LiveIOControlTimerSendMode LiveIOAppController::getSendMode() const
 {
     return liveIOSendMode;
+}
+
+LiveIOOscReceiverConfig LiveIOAppController::makeOscReceiverConfig (
+    const LiveIOPreferences& preferences) const
+{
+    LiveIOOscReceiverConfig config;
+    config.host = preferences.oscHost;
+    config.port = preferences.oscPort;
+    config.address = preferences.oscLoudnessAddress;
+    config.valueId = "osc.loudness";
+    return config;
+}
+
+LiveIOOscReceiverOpenResult LiveIOAppController::ensureOscReceiverOpen (
+    const LiveIOOscReceiverConfig& config)
+{
+    if (oscReceiver.isOpen()
+        && oscReceiver.config().host == config.host
+        && oscReceiver.config().port == config.port
+        && oscReceiver.config().address == config.address
+        && oscReceiver.config().valueId == config.valueId)
+    {
+        return { true, "open", "osc_receiver_open", oscReceiver.boundPort() };
+    }
+
+    return oscReceiver.open (config);
 }
 
 LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& request)
@@ -117,6 +154,22 @@ LiveIOAppTimerResult LiveIOAppController::tick (const LiveIOAppTimerRequest& req
     }
 
     LiveIOAppTimerResult result;
+    const auto receiverConfig = makeOscReceiverConfig (preferences.liveIO);
+    const auto receiverOpen = ensureOscReceiverOpen (receiverConfig);
+    result.oscReceiverOpen = receiverOpen.ok;
+    result.oscReceiverPort = receiverOpen.port;
+    result.oscReceiverStatus = receiverOpen.status;
+    result.oscReceiverMessage = receiverOpen.message;
+
+    if (receiverOpen.ok)
+    {
+        const auto poll = oscReceiver.pollOnce (0);
+        result.oscReceived = poll.received;
+        result.oscReceiverStatus = poll.status;
+        result.oscReceiverMessage = poll.message;
+        result.oscFrame = makeLiveIOValueFrameFromOscReceive (oscReceiver.config(), poll.packet);
+    }
+
     result.tick = tickLiveIOControlTimer (
         timerState,
         config,

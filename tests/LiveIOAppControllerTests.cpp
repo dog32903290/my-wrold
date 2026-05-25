@@ -1,9 +1,14 @@
 #include "AudioAnalyzerState.h"
 #include "LiveIOAppController.h"
+#include "LiveIOOscReceiver.h"
 
+#include <arpa/inet.h>
 #include <cstdlib>
 #include <iostream>
+#include <netinet/in.h>
 #include <string>
+#include <sys/socket.h>
+#include <unistd.h>
 
 namespace
 {
@@ -38,6 +43,36 @@ myworld::AudioAnalyzerSnapshot makeSnapshot (float loudness, bool active, std::u
     snapshot.active = active;
     snapshot.sampleCounter = sampleCounter;
     return snapshot;
+}
+
+void sendUdp (int port, const std::vector<unsigned char>& bytes)
+{
+    const auto fd = ::socket (AF_INET, SOCK_DGRAM, 0);
+    expect (fd >= 0, "udp sender socket");
+
+    sockaddr_in address {};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
+    address.sin_port = htons (static_cast<uint16_t> (port));
+
+    const auto sent = ::sendto (fd,
+                                bytes.data(),
+                                bytes.size(),
+                                0,
+                                reinterpret_cast<sockaddr*> (&address),
+                                sizeof (address));
+    ::close (fd);
+    expect (sent == static_cast<ssize_t> (bytes.size()), "udp sender bytes");
+}
+
+int findAvailableUdpPort()
+{
+    myworld::LiveIOOscReceiver receiver;
+    const auto opened = receiver.open ({ "127.0.0.1", 0, "/probe", "probe" });
+    expect (opened.ok, opened.message);
+    const auto port = opened.port;
+    receiver.close();
+    return port;
 }
 }
 
@@ -114,6 +149,35 @@ int main()
     const auto externalOsc = controller.tick (oscRequest);
     expect (externalOsc.tick.ok, externalOsc.tick.message);
     expectEqual (externalOscSendCount, 1, "controlled external osc send count");
+
+    preferences.liveIO.oscHost = "127.0.0.1";
+    const auto receivePort = findAvailableUdpPort();
+    preferences.liveIO.oscPort = receivePort;
+    preferences.liveIO.oscLoudnessAddress = "/stage/in";
+    controller.applyLiveIOPreferences (preferences.liveIO);
+
+    myworld::LiveIOAppTimerRequest receiveOpenRequest;
+    receiveOpenRequest.preferences = preferences;
+    receiveOpenRequest.snapshot = makeSnapshot (0.1f, true, 240);
+    receiveOpenRequest.timestampMs = 180;
+
+    const auto receiveOpen = controller.tick (receiveOpenRequest);
+    expect (receiveOpen.oscReceiverOpen, receiveOpen.oscReceiverStatus);
+    expectEqual (receiveOpen.oscReceiverPort, receivePort, "osc receiver bound port");
+
+    sendUdp (receiveOpen.oscReceiverPort,
+             myworld::makeLiveIOOscFloatDatagram ("/stage/in", 0.625f));
+    ::usleep (10000);
+
+    receiveOpenRequest.timestampMs = 240;
+    const auto receivePoll = controller.tick (receiveOpenRequest);
+    expect (receivePoll.oscReceived, receivePoll.oscReceiverStatus);
+    expectEqual (static_cast<int> (receivePoll.oscFrame.values.size()), 1, "app controller osc frame count");
+    expectEqual (receivePoll.oscFrame.values[0].id, "osc.loudness", "app controller osc value id");
+    expect (receivePoll.oscFrame.values[0].value > 0.624f
+                && receivePoll.oscFrame.values[0].value < 0.626f,
+            "app controller osc value");
+    expectEqual (receivePoll.oscReceiverStatus, "decoded", "app controller osc status");
 
     const auto armed = controller.armMidiTeach (myworld::LiveIOMidiTeachTarget::loudnessCc, 2);
     expect (armed.ok, armed.statusText);

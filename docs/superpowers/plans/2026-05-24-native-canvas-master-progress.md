@@ -115,22 +115,18 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE20 is committed in `dca3f31`. Current dirty files, if any, should belong to the active P-LIVE21 realtime delivery backpressure lane.
+As of 2026-05-25, P-LIVE21 is committed in `3999703`. Current dirty files, if any, should belong to the closing P-LIVE22 OSC server lifecycle lane.
 
 ```text
-P-LIVE21 owned files:
+P-LIVE22 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md
-- source/audio/AudioRealtimeDelivery.h
-- source/audio/AudioRealtimeDelivery.cpp
-- source/core/LiveIOStatusIndicator.h
-- source/core/LiveIOStatusIndicator.cpp
-- source/app/MainComponent.cpp
-- tests/AudioRealtimeDeliveryTests.cpp
-- tests/LiveIOStatusIndicatorTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md
+- source/app/LiveIOAppController.h
+- source/app/LiveIOAppController.cpp
+- tests/LiveIOAppControllerTests.cpp
 ```
 
-Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE21.
+Do not add OSC receive work, MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE22.
 
 Current C4 note:
 
@@ -340,7 +336,8 @@ Latest accepted targeted result:
 | P-LIVE19 realtime delivery status | closed | `docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md`; `AudioRealtimeDeliveryResult` reports empty/writing/repeated/delivered state, completed sequence, and coarse single-slot dropped snapshot count, and the app timer shows it in the audio status label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
 | P-LIVE20 live IO realtime indicator | closed | `docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md`; app-side `AudioRealtimeDeliveryResult` telemetry flows into existing live IO status indicator text/json and the live IO label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
 | P-LIVE21 realtime delivery backpressure | closed | `docs/superpowers/specs/2026-05-25-p-live21-realtime-delivery-backpressure.md`; `AudioRealtimeDelivery` now uses four fixed slots and reports skipped vs overwritten snapshots separately into the existing live IO indicator; focused tests and app build passed | Sequential catch-up API, dynamic queues, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE21 closure |
+| P-LIVE22 OSC server lifecycle | closed | `docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md`; `LiveIOAppController` owns the app/control-side OSC receiver lifecycle, polls once on app timer tick, and exposes matching incoming OSC float values as `LiveIOValueFrame` evidence; focused tests and app build passed | Graph OSC input node, separate receive UI fields, dynamic OSC address routing, and direct realtime callback send/receive remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE22 closure |
 
 ## Active Lane Protocol
 
@@ -349,6 +346,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE22 OSC server lifecycle closure as of 2026-05-25.
+
+P-LIVE22 OSC server lifecycle closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live22-osc-server-lifecycle.md
+- source/app/LiveIOAppController.h
+- source/app/LiveIOAppController.cpp
+- tests/LiveIOAppControllerTests.cpp
+
+Closed line:
+LiveIOPreferences OSC receive config
+-> LiveIOAppController receiver lifecycle
+-> app timer poll
+-> LiveIOValueFrame from incoming OSC float
+-> status evidence
+
+Latest accepted result:
+- RED first on missing `LiveIOAppTimerResult` OSC receiver lifecycle fields.
+- focused `live_io_app_controller` and `live_io_osc_receiver` tests passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE21 realtime delivery backpressure closure as of 2026-05-25.
 
 P-LIVE21 realtime delivery backpressure closed.
@@ -2038,7 +2060,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE21 realtime delivery backpressure closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE22 OSC server lifecycle closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

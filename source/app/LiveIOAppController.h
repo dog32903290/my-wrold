@@ -3,6 +3,7 @@
 #include "AudioAnalyzerState.h"
 #include "LiveIOControlTimer.h"
 #include "LiveIOMidiTeach.h"
+#include "LiveIOOscReceiver.h"
 #include "LiveIOStatusIndicator.h"
 #include "PerformancePreferences.h"
 
@@ -24,6 +25,12 @@ struct LiveIOAppTimerResult
 {
     LiveIOControlTimerTickResult tick;
     LiveIOStatusIndicatorState indicator;
+    bool oscReceiverOpen = false;
+    bool oscReceived = false;
+    int oscReceiverPort = 0;
+    std::string oscReceiverStatus;
+    std::string oscReceiverMessage;
+    LiveIOValueFrame oscFrame;
 };
 
 struct LiveIOAppMidiTeachView
@@ -50,9 +57,13 @@ public:
     LiveIOAppMidiTeachView handleMidiTeachMessage (const LiveIOMidiTeachIncomingMessage& message);
 
 private:
+    LiveIOOscReceiverConfig makeOscReceiverConfig (const LiveIOPreferences& preferences) const;
+    LiveIOOscReceiverOpenResult ensureOscReceiverOpen (const LiveIOOscReceiverConfig& config);
+
     LiveIOControlTimerSendMode liveIOSendMode = LiveIOControlTimerSendMode::dryRun;
     LiveIOControlTimerState timerState;
     LiveIOMidiTeachState midiTeachState;
+    LiveIOOscReceiver oscReceiver;
     int midiTeachInputCount = 0;
 };
 }
