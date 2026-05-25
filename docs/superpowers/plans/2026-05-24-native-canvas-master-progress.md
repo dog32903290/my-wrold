@@ -113,19 +113,20 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE18 is committed in `0d31a2e`. Current dirty files, if any, should belong to the closing P-LIVE19 realtime delivery status lane.
+As of 2026-05-25, P-LIVE19 is committed in `9113fee`. Current dirty files, if any, should belong to the closing P-LIVE20 live IO realtime indicator lane.
 
 ```text
-P-LIVE19 owned files:
+P-LIVE20 owned files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md
-- source/audio/AudioRealtimeDelivery.h
-- source/audio/AudioRealtimeDelivery.cpp
+- docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md
+- source/core/LiveIOStatusIndicator.h
+- source/core/LiveIOStatusIndicator.cpp
 - source/app/MainComponent.cpp
-- tests/AudioRealtimeDeliveryTests.cpp
+- source/app/MainComponent.h
+- tests/LiveIOStatusIndicatorTests.cpp
 ```
 
-Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE19.
+Do not add MIDI/OSC send, allocation, locks, file IO, device scanning, JSON parsing, logging, sleeping, or UI work inside the audio callback in P-LIVE20.
 
 Current C4 note:
 
@@ -333,7 +334,8 @@ Latest accepted targeted result:
 | P-LIVE17 broader MIDI output operators | closed | `docs/superpowers/specs/2026-05-25-p-live17-broader-midi-output-operators.md`; `LiveIOBus` can emit `midi.cc` and `midi.note_on`, `LiveIOMidiMessage` reports byte-level CC/note-on output, and the control-rate dispatcher sends both through the existing injected MIDI sender; focused tests and app build passed | UI operator picker, note-off/program-change/pitch-bend, and realtime callback delivery remain parked |
 | P-LIVE18 realtime callback delivery | closed | `docs/superpowers/specs/2026-05-25-p-live18-realtime-callback-delivery.md`; `AudioInputAnalyzer` publishes callback snapshots into `AudioRealtimeDelivery`, `MainComponent` consumes completed sequences on the app timer, and `LiveIOControlTimer` remains outside the callback; focused test and app build passed | Direct realtime MIDI/OSC send, multi-slot backpressure telemetry, and delivery UI remain parked |
 | P-LIVE19 realtime delivery status | closed | `docs/superpowers/specs/2026-05-25-p-live19-realtime-delivery-status.md`; `AudioRealtimeDeliveryResult` reports empty/writing/repeated/delivered state, completed sequence, and coarse single-slot dropped snapshot count, and the app timer shows it in the audio status label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE19 closure |
+| P-LIVE20 live IO realtime indicator | closed | `docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md`; app-side `AudioRealtimeDeliveryResult` telemetry flows into existing live IO status indicator text/json and the live IO label; focused test and app build passed | Multi-slot queue/backpressure telemetry, standalone delivery UI widget, and direct realtime MIDI/OSC send remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE20 closure |
 
 ## Active Lane Protocol
 
@@ -342,6 +344,32 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE20 live IO realtime indicator closure as of 2026-05-25.
+
+P-LIVE20 live IO realtime indicator closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live20-live-io-realtime-indicator.md
+- source/core/LiveIOStatusIndicator.h
+- source/core/LiveIOStatusIndicator.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/LiveIOStatusIndicatorTests.cpp
+
+Closed line:
+AudioRealtimeDeliveryResult
+-> MainComponent app timer
+-> LiveIOStatusIndicatorState realtime fields
+-> existing live IO status label
+
+Latest accepted result:
+- RED first on missing `LiveIORealtimeIndicatorTelemetry` and `withLiveIORealtimeTelemetry()`.
+- focused `live_io_status_indicator` passed.
+- app target `my-world` builds.
+- `75/75 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE19 realtime delivery status closure as of 2026-05-25.
 
 P-LIVE19 realtime delivery status closed.
@@ -1975,7 +2003,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE19 realtime delivery status closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE20 live IO realtime indicator closure. The next lane must be selected explicitly. Do not add analyzer DSP, UI operator picker, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

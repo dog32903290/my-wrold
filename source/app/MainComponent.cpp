@@ -69,6 +69,16 @@ juce::Colour liveIOToneColour (const juce::String& tone)
     return juce::Colour::fromRGB (202, 211, 226);
 }
 
+LiveIORealtimeIndicatorTelemetry makeRealtimeIndicatorTelemetry (
+    const AudioRealtimeDeliveryResult& realtime)
+{
+    LiveIORealtimeIndicatorTelemetry telemetry;
+    telemetry.status = audioRealtimeDeliveryStatusToString (realtime.status);
+    telemetry.sequence = realtime.sequence;
+    telemetry.droppedSnapshots = realtime.droppedSnapshots;
+    return telemetry;
+}
+
 }
 
 MainComponent::MainComponent (StartupProofOptions startupProofOptions)
@@ -640,7 +650,7 @@ void MainComponent::updateAudioMeters()
     activeLabel.setText (juce::String ("active ") + (snapshot.active ? "yes" : "no"), juce::dontSendNotification);
     preview.setLoudness (snapshot.loudness);
     sendMidiForSnapshot (snapshot);
-    tickLiveIOControl (snapshot);
+    tickLiveIOControl (snapshot, realtime);
     midiStatusLabel.setText (midiStatus, juce::dontSendNotification);
     liveIOStatusLabel.setText (liveIOStatus, juce::dontSendNotification);
     liveIOStatusLabel.setColour (juce::Label::textColourId, liveIOToneColour (liveIOStatusTone));
@@ -833,7 +843,8 @@ void MainComponent::sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot)
                  + " " + juce::String (frame.value);
 }
 
-void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot)
+void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot,
+                                       const AudioRealtimeDeliveryResult& realtime)
 {
     LiveIOAppTimerRequest request;
     request.preferences = performancePreferences;
@@ -859,7 +870,10 @@ void MainComponent::tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot)
     };
 
     const auto result = liveIOController.tick (request);
-    liveIOStatus = juce::String (result.indicator.text);
-    liveIOStatusTone = juce::String (result.indicator.tone);
+    const auto indicator = withLiveIORealtimeTelemetry (
+        result.indicator,
+        makeRealtimeIndicatorTelemetry (realtime));
+    liveIOStatus = juce::String (indicator.text);
+    liveIOStatusTone = juce::String (indicator.tone);
 }
 }

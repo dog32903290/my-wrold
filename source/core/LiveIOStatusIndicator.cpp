@@ -99,6 +99,27 @@ LiveIOStatusIndicatorState makeLiveIOStatusIndicatorState (
     return indicator;
 }
 
+LiveIOStatusIndicatorState withLiveIORealtimeTelemetry (
+    LiveIOStatusIndicatorState state,
+    const LiveIORealtimeIndicatorTelemetry& telemetry)
+{
+    state.realtimeStatus = telemetry.status;
+    state.realtimeSequence = telemetry.sequence;
+    state.realtimeDroppedSnapshots = telemetry.droppedSnapshots;
+
+    if (! state.realtimeStatus.empty())
+    {
+        std::ostringstream text;
+        text << state.text
+             << " rt " << state.realtimeStatus
+             << " s" << state.realtimeSequence
+             << " d" << state.realtimeDroppedSnapshots;
+        state.text = text.str();
+    }
+
+    return state;
+}
+
 std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& state)
 {
     std::ostringstream out;
@@ -111,7 +132,10 @@ std::string makeLiveIOStatusIndicatorJson (const LiveIOStatusIndicatorState& sta
     out << "  \"tone\": " << jsonQuoted (state.tone) << ",\n";
     out << "  \"midiCount\": " << state.midiCount << ",\n";
     out << "  \"oscCount\": " << state.oscCount << ",\n";
-    out << "  \"sampleCounter\": " << state.sampleCounter << "\n";
+    out << "  \"sampleCounter\": " << state.sampleCounter << ",\n";
+    out << "  \"realtimeStatus\": " << jsonQuoted (state.realtimeStatus) << ",\n";
+    out << "  \"realtimeSequence\": " << state.realtimeSequence << ",\n";
+    out << "  \"realtimeDroppedSnapshots\": " << state.realtimeDroppedSnapshots << "\n";
     out << "}\n";
     return out.str();
 }

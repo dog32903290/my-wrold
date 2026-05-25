@@ -76,7 +76,8 @@ private:
     void handleIncomingMidiMessage (juce::MidiInput* source,
                                     const juce::MidiMessage& message) override;
     void sendMidiForSnapshot (const AudioAnalyzerSnapshot& snapshot);
-    void tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot);
+    void tickLiveIOControl (const AudioAnalyzerSnapshot& snapshot,
+                            const AudioRealtimeDeliveryResult& realtime);
 
     OpenGLShaderPreview preview;
     juce::AudioDeviceManager audioDeviceManager;
