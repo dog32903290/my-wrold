@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+6f3f995 Add shader uniform proof artifact
 aa6c6cf Shape shader uniform evidence JSON
 ea6a883 Add shader uniform control evidence
 b174f2e Add live IO operator status evidence
@@ -121,17 +122,19 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-25, P-LIVE26 is committed in `aa6c6cf`. Current dirty files, if any, should belong to the closing P-LIVE27 shader uniform proof artifact lane.
+As of 2026-05-25, P-LIVE27 is committed in `6f3f995`. Current dirty files, if any, should belong to the closing P-LIVE28 shader preview input bridge contract lane.
 
 ```text
-P-LIVE27 owned files:
+P-LIVE28 owned files:
+- CMakeLists.txt
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-25-p-live27-shader-uniform-proof-artifact.md
-- source/app/LiveIOProofRunner.cpp
-- tests/LiveIOProofRunnerTests.cpp
+- docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md
+- source/render/ShaderPreviewInputBridge.h
+- source/render/ShaderPreviewInputBridge.cpp
+- tests/ShaderPreviewInputBridgeTests.cpp
 ```
 
-Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, preview bridge, or any audio callback work in P-LIVE27.
+Do not add graph nodes, dynamic OSC scanning, new MIDI operator kinds, a full mapping editor, shader preview live binding, OpenGL backend wiring, or any audio callback work in P-LIVE28.
 
 Current C4 note:
 
@@ -347,7 +350,8 @@ Latest accepted targeted result:
 | P-LIVE25 shader uniform control evidence | closed | `docs/superpowers/specs/2026-05-25-p-live25-shader-uniform-control-evidence.md`; `shader.uniform` control dispatch now records `u_loudness` evidence, timer/status state expose the latest uniform value/sample counter, and app-timer proof JSON writes it back | Shader preview live binding, standalone uniform artifact, graph IO node, and full mapping editor remain parked |
 | P-LIVE26 shader uniform evidence JSON shape | closed | `docs/superpowers/specs/2026-05-25-p-live26-shader-uniform-evidence-json-shape.md`; status JSON and app-timer proof JSON now include a nested `shaderUniformEvidence` object with source, binding, uniform, value, and sample counter | Standalone uniform artifact, shader preview input bridge, shader preview smoke read, and live binding remain parked |
 | P-LIVE27 shader uniform proof artifact | closed | `docs/superpowers/specs/2026-05-25-p-live27-shader-uniform-proof-artifact.md`; live IO proof runner now writes `live_io_shader_uniform_report.json` as an independent artifact containing `u_loudness` evidence | Shader preview input bridge, shader preview smoke read, and live binding remain parked |
-| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE27 closure |
+| P-LIVE28 shader preview input bridge contract | closed | `docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md`; `ShaderPreviewInputBridge` defines a JUCE-free uniform snapshot contract and JSON shape for preview input without wiring OpenGL live binding | Shader preview smoke-read, OpenGL backend wiring, and live binding remain parked |
+| TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after P-LIVE28 closure |
 
 ## Active Lane Protocol
 
@@ -356,6 +360,31 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
+None after P-LIVE28 shader preview input bridge contract closure as of 2026-05-25.
+
+P-LIVE28 shader preview input bridge contract closed.
+Evidence:
+- docs/superpowers/specs/2026-05-25-p-live28-shader-preview-input-bridge-contract.md
+- source/render/ShaderPreviewInputBridge.h
+- source/render/ShaderPreviewInputBridge.cpp
+- tests/ShaderPreviewInputBridgeTests.cpp
+- CMakeLists.txt
+
+Closed line:
+live_io_shader_uniform_report.json shape
+-> ShaderPreviewInputBridge
+-> ShaderPreviewInputSnapshot JSON
+-> focused bridge test
+
+Latest accepted result:
+- RED first on missing `source/render/ShaderPreviewInputBridge.cpp`.
+- focused `shader_preview_input_bridge` test passed.
+- app target `my-world` builds.
+- `76/76 tests passed`.
+- `git diff --check` passed.
+
+Previous closure:
+
 None after P-LIVE27 shader uniform proof artifact closure as of 2026-05-25.
 
 P-LIVE27 shader uniform proof artifact closed.
@@ -2212,7 +2241,7 @@ docs/superpowers/plans/2026-05-24-r-segment-implementation.md
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after P-LIVE27 shader uniform proof artifact closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
+Open this master plan first. Active lane is `None` after P-LIVE28 shader preview input bridge contract closure. The next lane must be selected explicitly. Do not add analyzer DSP, full mapping editor, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md` without selecting that lane first.
 
 ## Next Master-Plan Maintenance
 

@@ -126,6 +126,26 @@ target_include_directories(my_world_render_backend_contract_tests
 
 add_test(NAME render_backend_contract COMMAND my_world_render_backend_contract_tests)
 
+add_library(my_world_shader_preview_input_bridge
+    source/render/ShaderPreviewInputBridge.cpp
+)
+
+target_include_directories(my_world_shader_preview_input_bridge
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/render
+)
+
+add_executable(my_world_shader_preview_input_bridge_tests
+    tests/ShaderPreviewInputBridgeTests.cpp
+)
+
+target_link_libraries(my_world_shader_preview_input_bridge_tests
+    PRIVATE
+        my_world_shader_preview_input_bridge
+)
+
+add_test(NAME shader_preview_input_bridge COMMAND my_world_shader_preview_input_bridge_tests)
+
 add_library(my_world_graph_language
     source/core/GraphLanguage.cpp
 )
