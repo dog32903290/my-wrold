@@ -71,6 +71,7 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+1c2323e Add APP3 workbench app controller spine
 7b4fb0c Add APP2 workbench open status spine
 7a56cc4 Add APP1 workbench session spine
 fa6a762 Add G1 graph IO mapping proof artifact
@@ -382,7 +383,7 @@ Latest accepted targeted result:
 | G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, emits graph IO mapping JSON evidence, and `G1GraphIOMappingProofRunner` writes `graph_io_mapping_report.json`; `ctest` 79/79 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
 | APP1 workbench session spine | closed | `docs/superpowers/specs/2026-05-25-app1-workbench-session-spine.md`; work fixture + G1 mapping fixture builds a `WorkbenchSession` snapshot with document, graph counts, dirty/save/proof/preview, output/timeline, and mapping validity evidence; `APP1WorkbenchSessionProofRunner` writes `workbench_session_report.json`; app startup proof command writes `debug/app1-workbench-session-proof/workbench_session_report.json`; `ctest` 81/81 passed | Workbench UI panels, canvas gestures, mapping editor, runtime cook loop, save command integration, AI worker visible task surface, shader preview live-binding expansion, Metal, and visual polish remain parked |
 | APP2 workbench open/status spine | closed locally | `docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md`; app opens and holds `currentWorkbenchSession` from active work if present, otherwise C2 fixture + G1 mapping; `MainComponent` reads snapshot status; app proof writes `debug/app2-workbench-open-status-proof/workbench_open_status_report.json` with `ok: true`; local commit `7b4fb0c` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
-| APP3 workbench app controller spine | closed locally, uncommitted | `docs/superpowers/specs/2026-05-25-app3-workbench-app-controller-spine.md`; `WorkbenchAppController` owns current session snapshot, status text, and APP2 proof request creation; `MainComponent` reads controller state instead of owning the snapshot directly | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
+| APP3 workbench app controller spine | closed locally | `docs/superpowers/specs/2026-05-25-app3-workbench-app-controller-spine.md`; `WorkbenchAppController` owns current session snapshot, status text, and APP2 proof request creation; `MainComponent` reads controller state instead of owning the snapshot directly; local commit `1c2323e` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -392,7 +393,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-APP3 workbench app controller spine closed locally as of 2026-05-25 19:04 Asia/Taipei. Not committed or pushed.
+APP3 workbench app controller spine closed locally as of 2026-05-25 19:04 Asia/Taipei. Local commit `1c2323e`; not pushed.
 
 APP3 workbench app controller spine closed locally.
 Evidence:
@@ -2584,7 +2585,7 @@ raw callback-buffer runtime
 
 ## Session Safety
 
-APP3 owned files for the current local uncommitted pass:
+APP3 owned files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -2610,7 +2611,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. Active lane is `None` after APP3 workbench app controller spine local closure. APP1 and APP2 are local-only commits; APP3 is uncommitted/unpushed. Do not push unless explicitly requested. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. Active lane is `None` after APP3 workbench app controller spine local closure. APP1, APP2, and APP3 are local-only commits; do not push unless explicitly requested. The next selectable lane should be chosen explicitly; do not add analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
