@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 12:39 Asia/Taipei.
+Date: 2026-05-26 12:41 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/canvas2-canvas-surface-proof-readback
+codex/canvas3-canvas-segment-closure
 ```
 
 Local repo relocation note:
@@ -85,7 +85,9 @@ GRAPH3 graph segment closure (closed locally)
 f5ef7e6 Close GRAPH segment
 CANVAS1 read-only canvas surface (closed locally)
 efce67d Add CANVAS1 read-only canvas surface
-CANVAS2 canvas surface proof readback (closed locally pending commit)
+CANVAS2 canvas surface proof readback (closed locally)
+1c39523 Add CANVAS2 canvas surface proof readback
+CANVAS3 canvas segment closure (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -182,7 +184,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 12:39 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, and CANVAS2 are closed locally and not pushed. Current branch is `codex/canvas2-canvas-surface-proof-readback`; CANVAS2 owns canvas surface proof runner/readback files until commit. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 12:41 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, and CANVAS3 are closed locally and not pushed. Current branch is `codex/canvas3-canvas-segment-closure`; no active lane is selected after CANVAS3. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -685,6 +687,40 @@ git diff --check
 passed
 ```
 
+CANVAS3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md
+
+CANVAS3 one-line proof before closure:
+
+```text
+CANVAS1-CANVAS2 form a closed canvas segment from workbench graph positions to app proof readback artifact.
+```
+
+CANVAS3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+CANVAS3 accepted result:
+
+```text
+CANVAS1 read-only canvas surface
+-> CANVAS2 canvas surface proof readback
+-> CANVAS3 canvas segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 97
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -947,6 +983,7 @@ Latest accepted targeted result:
 | GRAPH3 graph segment closure | closed locally | `docs/superpowers/specs/2026-05-26-graph3-graph-segment-closure.md`; closes GRAPH1-GRAPH2 as the graph segment from workbench graph summaries to app proof readback; full `ctest` 95/95 and `git diff --check` passed | Next lane should be selected by feature surface from this master plan |
 | CANVAS1 read-only canvas surface | closed locally | `docs/superpowers/specs/2026-05-26-canvas1-read-only-canvas-surface.md`; `WorkbenchCanvasSurface` exposes deterministic node bounds and edge route labels from current workbench graph positions; focused tests, app build, and `git diff --check` passed | CANVAS2 owns app canvas surface proof readback |
 | CANVAS2 canvas surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-canvas2-canvas-surface-proof-readback.md`; app proof flag writes `canvas_surface_report.json` from the same `WorkbenchCanvasSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | CANVAS3 closes the CANVAS segment |
+| CANVAS3 canvas segment closure | closed locally | `docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md`; closes CANVAS1-CANVAS2 as the canvas segment from workbench graph positions to app proof readback; full `ctest` 97/97 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -956,7 +993,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-CANVAS2 canvas surface proof readback is closed locally as of 2026-05-26 12:39 Asia/Taipei on `codex/canvas2-canvas-surface-proof-readback`. Not pushed. Proof target passed: app flag dumps `canvas_surface_report.json` from the same `WorkbenchCanvasSurface` model used by MainComponent canvas labels.
+None after CANVAS3 canvas segment closure as of 2026-05-26 12:41 Asia/Taipei on `codex/canvas3-canvas-segment-closure`. Not pushed. Next feature surface is unselected.
 ```
 
 Previous closure:
@@ -3756,6 +3793,7 @@ raw callback-buffer runtime
 | `2026-05-26-graph3-graph-segment-closure.md` | GRAPH3 closure marker for GRAPH1-GRAPH2 graph segment | no, unless auditing GRAPH segment closure |
 | `2026-05-26-canvas1-read-only-canvas-surface.md` | CANVAS1 read-only canvas surface closure evidence | no, unless auditing CANVAS1 evidence |
 | `2026-05-26-canvas2-canvas-surface-proof-readback.md` | CANVAS2 canvas surface proof readback closure evidence | no, unless auditing CANVAS2 evidence |
+| `2026-05-26-canvas3-canvas-segment-closure.md` | CANVAS3 closure marker for CANVAS1-CANVAS2 canvas segment | no, unless auditing CANVAS segment closure |
 
 ## Session Safety
 
@@ -3921,6 +3959,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+CANVAS3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3936,7 +3981,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. CANVAS2 is closed locally on `codex/canvas2-canvas-surface-proof-readback`; next lane is CANVAS3 canvas segment closure after the CANVAS2 commit. Do not push unless explicitly requested. CANVAS3 may update closure docs and run full verification only. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `CANVAS3 canvas segment closure` on `codex/canvas3-canvas-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
