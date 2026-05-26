@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AppWorkbenchSessionProofRunner.h"
+#include "InteractionContract.h"
 #include "WorkbenchSessionOpenStatus.h"
 
 #include <filesystem>
@@ -15,6 +16,7 @@ class WorkbenchAppController
 {
 public:
     WorkbenchAppControllerOpenResult openCurrentSession (const WorkbenchAppControllerOpenRequest& request);
+    CommandResult saveCurrentSession (GraphSession& session);
     const WorkbenchSessionSnapshot& currentSession() const;
     std::string statusText() const;
 

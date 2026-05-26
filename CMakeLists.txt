@@ -1259,6 +1259,11 @@ target_link_libraries(my_world_storage_command
         my_world_path_resolution
 )
 
+target_link_libraries(my_world_workbench_app_controller
+    PUBLIC
+        my_world_storage_command
+)
+
 add_executable(my_world_save_work_command_tests
     tests/SaveWorkCommandTests.cpp
 )

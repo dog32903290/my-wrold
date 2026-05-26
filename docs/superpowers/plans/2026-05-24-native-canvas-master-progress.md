@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 10:33 Asia/Taipei.
+Date: 2026-05-26 10:47 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/open3-open-segment-closure
+codex/save1-current-session-save-status
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-OPEN3 open segment closure (closed locally)
+SAVE1 current session save status (closed locally)
+d998243 Close OPEN segment
 fc0d845 Add OPEN2 explicit open status
 fa068a0 Add OPEN1 created project open proof
 742a87f Close PROJECT segment
@@ -156,16 +157,20 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 10:33 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, OPEN2, and OPEN3 are closed locally and not pushed. Current branch is `codex/open3-open-segment-closure`; do not push unless explicitly requested.
+As of 2026-05-26 10:47 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, and SAVE1 are closed locally and not pushed. Current branch is `codex/save1-current-session-save-status`; do not push unless explicitly requested.
 
 ```text
-OPEN3 closed-lane files:
+SAVE1 closed-lane files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md
+- docs/superpowers/specs/2026-05-26-save1-current-session-save-status.md
+- CMakeLists.txt
+- source/app/WorkbenchAppController.*
+- source/app/MainComponent.*
+- tests/WorkbenchAppControllerTests.cpp
 ```
-Existing dirty file not owned by OPEN3 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
+Existing dirty file not owned by SAVE1 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
 
-OPEN3 did not add behavior, project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
+SAVE1 routed the existing save action/status through the app-held current session and existing `saveWork()` command. It did not add save UI, project picker, active-work environment mutation, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
 
 Current C4 note:
 
@@ -414,6 +419,7 @@ Latest accepted targeted result:
 | OPEN1 created project workbench open proof | closed locally | `docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md`; `CreatedProjectOpenProofRunner` creates a fresh work project, opens it through `openCurrentWorkbenchSession()`, writes `created_project_open_report.json`, and app flag `--dump-created-project-open-proof-and-exit` dumps `debug/created-project-open-proof/created_project_open_report.json`; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | OPEN2 explicit open request status | closed locally | `docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md`; `ExplicitWorkbenchOpenRequest` opens a selected `myworld.work.json` through the existing workbench session spine, returns explicit source/status wording, blocks missing explicit manifests without fixture fallback, and leaves current active-work open behavior unchanged; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | OPEN3 open segment closure | closed locally | `docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md`; closes OPEN1-OPEN2 as the non-UI workbench open segment: created project open proof plus explicit work manifest request/status; no source files changed | Future open-related work should leave the OPEN prefix and choose a specific surface such as SAVE, UI, STATUS, GRAPH, or RUNTIME |
+| SAVE1 current session save status | closed locally | `docs/superpowers/specs/2026-05-26-save1-current-session-save-status.md`; `WorkbenchAppController::saveCurrentSession()` routes existing save action/status through the held `WorkbenchSessionSnapshot.workManifestPath` and existing `saveWork()` command; `MainComponent` delegates save callback to the controller; `ctest` 89/89 passed | Save UI, project picker, active-work environment mutation, new save format, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -423,8 +429,38 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after OPEN3 open segment closure as of 2026-05-26 10:33 Asia/Taipei. Not pushed.
+None after SAVE1 current session save status closure as of 2026-05-26 10:47 Asia/Taipei. Not pushed.
 ```
+
+Previous closure:
+SAVE1 current session save status closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-save1-current-session-save-status.md
+- CMakeLists.txt
+- source/app/WorkbenchAppController.*
+- source/app/MainComponent.*
+- tests/WorkbenchAppControllerTests.cpp
+
+Closed line:
+WorkbenchAppController currentSessionSnapshot
+-> saveCurrentSession(GraphSession&)
+-> saveWork(session, snapshot.workManifestPath)
+-> controller/MainComponent save status
+
+Latest accepted result:
+- Red test failed because `WorkbenchAppController::saveCurrentSession()` did not exist.
+- `cmake --build build --target my_world_workbench_app_controller_tests` passed.
+- `./build/my_world_workbench_app_controller_tests` passed.
+- `cmake --build build --target my_world_save_work_command_tests my_world_active_work_service_tests my_world_workbench_app_controller_tests my-world` passed, with the existing duplicate static-library linker warning.
+- `./build/my_world_save_work_command_tests` passed on retry after one direct chained run hit a temp git-template copy failure outside SAVE1 behavior; `ctest` also passed the same test.
+- `./build/my_world_active_work_service_tests` passed.
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit` passed.
+- Stable app workbench proof read back `ok: true`, `workSource: active-work`, `workSourceStatus: active-work-opened`, `documentId: patch.c2-main`, `saveStatus: clean`, and empty blocking diagnostics.
+- `ctest --test-dir build --output-on-failure -R "workbench_app_controller|save_work_command|active_work_service|app_workbench_session_proof_runner"` passed 4/4.
+- `ctest --test-dir build --output-on-failure` passed 89/89.
+- Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` was left unstaged and untouched by SAVE1.
+- `git diff --check` passed.
 
 Previous closure:
 OPEN3 open segment closure closed locally.
@@ -3127,17 +3163,22 @@ raw callback-buffer runtime
 | `2026-05-26-open1-created-project-workbench-open-proof.md` | OPEN1 created project workbench open proof closure evidence | no, unless auditing OPEN1 evidence |
 | `2026-05-26-open2-explicit-open-request-status.md` | OPEN2 explicit open request status closure evidence | no, unless auditing OPEN2 evidence |
 | `2026-05-26-open3-open-segment-closure.md` | OPEN3 closure marker for OPEN1-OPEN2 open segment | no, unless auditing OPEN segment closure |
+| `2026-05-26-save1-current-session-save-status.md` | SAVE1 current session save status closure evidence | no, unless auditing SAVE1 evidence |
 
 ## Session Safety
 
-OPEN3 closed-lane files:
+SAVE1 closed-lane files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md
+docs/superpowers/specs/2026-05-26-save1-current-session-save-status.md
+CMakeLists.txt
+source/app/WorkbenchAppController.*
+source/app/MainComponent.*
+tests/WorkbenchAppControllerTests.cpp
 ```
 
-Existing dirty file not owned by OPEN3:
+Existing dirty file not owned by SAVE1:
 
 ```text
 tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
@@ -3158,7 +3199,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `OPEN3 open segment closure` on `codex/open3-open-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1-OPEN3 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by OPEN3 and must not be staged. The OPEN segment is closed; future work should choose a fresh feature-surface lane such as SAVE, UI, STATUS, GRAPH, or RUNTIME. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `SAVE1 current session save status` closure on `codex/save1-current-session-save-status`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, and SAVE1 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by SAVE1 and must not be staged. Recommended next selected lane is SAVE2 app-level save proof artifact if the existing app save callback needs dump-proof evidence, or a fresh feature-surface lane such as UI, STATUS, GRAPH, or RUNTIME. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

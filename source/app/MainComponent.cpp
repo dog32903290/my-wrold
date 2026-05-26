@@ -654,7 +654,7 @@ void MainComponent::dumpCreatedProjectOpenProof()
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
 {
-    const auto result = saveActiveWorkProject (session);
+    const auto result = workbenchController.saveCurrentSession (session);
     statusLabel.setText ((result.ok ? "save_work: " : "save_work failed: ") + juce::String (result.message),
                          juce::dontSendNotification);
 
