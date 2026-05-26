@@ -50,6 +50,8 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
         "--dump-app-save-proof-and-exit");
     options.dumpAppStatusProof = commandLine.contains (
         "--dump-app-status-proof-and-exit");
+    options.dumpWorkbenchStatusSurfaceProof = commandLine.contains (
+        "--dump-workbench-status-surface-proof-and-exit");
     options.quitAfterStartupDump = hasStartupProofRequest (options);
 
     return options;

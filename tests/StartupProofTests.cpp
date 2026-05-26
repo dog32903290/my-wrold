@@ -31,10 +31,11 @@ int main()
     selected.dumpCreatedProjectOpenProof = true;
     selected.dumpAppSaveProof = true;
     selected.dumpAppStatusProof = true;
+    selected.dumpWorkbenchStatusSurfaceProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 9, "selected options should create nine tasks");
+    expect (selectedTasks.size() == 10, "selected options should create ten tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -58,6 +59,10 @@ int main()
     expect (selectedTasks[8].id == myworld::StartupProofTaskId::appStatus,
             "app status task should be selected");
     expect (selectedTasks[8].delayMilliseconds == 500, "app status task should keep 500ms startup delay");
+    expect (selectedTasks[9].id == myworld::StartupProofTaskId::workbenchStatusSurface,
+            "workbench status surface task should be selected");
+    expect (selectedTasks[9].delayMilliseconds == 500,
+            "workbench status surface task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -85,9 +90,10 @@ int main()
     all.dumpCreatedProjectOpenProof = true;
     all.dumpAppSaveProof = true;
     all.dumpAppStatusProof = true;
+    all.dumpWorkbenchStatusSurfaceProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 25, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 26, "all options should create every startup proof task");
 
     return 0;
 }

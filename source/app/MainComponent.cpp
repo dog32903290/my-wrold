@@ -26,6 +26,7 @@
 #include "ProjectCreationProofRunner.h"
 #include "RuntimeRegistry.h"
 #include "ShaderPreviewInputBridge.h"
+#include "WorkbenchStatusSurfaceProofRunner.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -336,6 +337,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::appStatus:
             dumpAppStatusProof();
+            break;
+        case StartupProofTaskId::workbenchStatusSurface:
+            dumpWorkbenchStatusSurfaceProof();
             break;
     }
 }
@@ -727,6 +731,31 @@ void MainComponent::dumpAppStatusProof()
 
     const auto status = result.statusText.empty() ? result.status : result.statusText;
     finishProofDump (juce::String (appStatusProofDisplayName()), status, result.error, directory);
+}
+
+void MainComponent::dumpWorkbenchStatusSurfaceProof()
+{
+    const auto directory = proofDumpDirectory (workbenchStatusSurfaceProofDirectoryName());
+
+    WorkbenchStatusSurfaceProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runWorkbenchStatusSurfaceProof (request);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (workbenchStatusSurfaceProofDisplayName()),
+                         "failed",
+                         result.statusText,
+                         directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (workbenchStatusSurfaceProofDisplayName()),
+                     status,
+                     result.error,
+                     directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
