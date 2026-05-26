@@ -64,6 +64,7 @@ private:
     void dumpAppSaveProof();
     void dumpAppStatusProof();
     void dumpWorkbenchStatusSurfaceProof();
+    void dumpWorkbenchGraphSurfaceProof();
     void dumpPVDetectorProof (PVDetectorProofKind kind);
     void scheduleStartupProofs (const StartupProofOptions& options);
     void runStartupProofTask (StartupProofTaskId task);

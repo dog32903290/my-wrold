@@ -31,7 +31,8 @@ enum class StartupProofTaskId
     createdProjectOpen,
     appSave,
     appStatus,
-    workbenchStatusSurface
+    workbenchStatusSurface,
+    workbenchGraphSurface
 };
 
 struct StartupProofTask
@@ -68,6 +69,7 @@ struct StartupProofOptions
     bool dumpAppSaveProof = false;
     bool dumpAppStatusProof = false;
     bool dumpWorkbenchStatusSurfaceProof = false;
+    bool dumpWorkbenchGraphSurfaceProof = false;
     bool quitAfterStartupDump = false;
 };
 

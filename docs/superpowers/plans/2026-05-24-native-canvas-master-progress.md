@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 12:09 Asia/Taipei.
+Date: 2026-05-26 12:16 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/graph1-read-only-graph-surface
+codex/graph2-graph-surface-proof-readback
 ```
 
 Local repo relocation note:
@@ -78,6 +78,8 @@ UI2 status surface proof readback (closed locally)
 UI3 UI segment closure (closed locally)
 5989162 Close UI segment
 GRAPH1 read-only graph surface (closed locally)
+a8b0548 Add GRAPH1 read-only graph surface
+GRAPH2 graph surface proof readback (active)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -174,7 +176,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 12:09 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, and GRAPH1 are closed locally and not pushed. Current branch is `codex/graph1-read-only-graph-surface`; do not push unless explicitly requested.
+As of 2026-05-26 12:16 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, and GRAPH2 are closed locally and not pushed. Current branch is `codex/graph2-graph-surface-proof-readback`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -492,6 +494,57 @@ git diff --check
 passed
 ```
 
+GRAPH2 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-graph2-graph-surface-proof-readback.md
+- source/app/WorkbenchGraphSurfaceProofRunner.h
+- source/app/WorkbenchGraphSurfaceProofRunner.cpp
+- source/app/StartupProof.h
+- source/app/StartupProof.cpp
+- source/app/Main.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchGraphSurfaceProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
+
+GRAPH2 one-line proof before code:
+
+```text
+The app proof flag dumps graph_surface_report.json from the same WorkbenchGraphSurface model used by MainComponent graph labels.
+```
+
+GRAPH2 verification target:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_graph_surface_proof_runner_tests my_world_startup_proof_tests my-world
+./build/my_world_workbench_graph_surface_proof_runner_tests
+./build/my_world_startup_proof_tests
+MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-workbench-graph-surface-proof-and-exit
+ctest --test-dir build --output-on-failure -R "workbench_graph_surface_proof_runner|startup_proof|workbench_graph_surface|workbench_session|workbench_app_controller"
+git diff --check
+```
+
+GRAPH2 accepted result:
+
+```text
+--dump-workbench-graph-surface-proof-and-exit writes debug/workbench-graph-surface-proof/graph_surface_report.json with ok true, patch.graph2-main, editor/runtime counts 2/1, active output out1, first node shader1 shader.fragment, first edge shader1.output -> out1.input, and the six surface row texts.
+```
+
+Verification:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_graph_surface_proof_runner_tests my_world_startup_proof_tests my-world
+./build/my_world_workbench_graph_surface_proof_runner_tests
+./build/my_world_startup_proof_tests
+MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-workbench-graph-surface-proof-and-exit
+ctest --test-dir build --output-on-failure -R "workbench_graph_surface_proof_runner|startup_proof|workbench_graph_surface|workbench_session|workbench_app_controller"
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -750,6 +803,7 @@ Latest accepted targeted result:
 | UI2 status surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-ui2-status-surface-proof-readback.md`; app proof flag writes `workbench_status_surface_report.json` from the same `WorkbenchStatusSurface` model used by MainComponent labels; focused tests, app build, app proof dump, and `git diff --check` passed | UI3 closes the UI segment |
 | UI3 UI segment closure | closed locally | `docs/superpowers/specs/2026-05-26-ui3-ui-segment-closure.md`; closes UI1-UI2 as the UI segment from controller-backed read-only labels to app proof readback; full `ctest` 93/93 and `git diff --check` passed | Next lane should be selected by feature surface from this master plan |
 | GRAPH1 read-only graph surface | closed locally | `docs/superpowers/specs/2026-05-26-graph1-read-only-graph-surface.md`; current workbench graph summaries now feed `WorkbenchGraphSurface` and MainComponent read-only graph labels; focused tests, app build, and `git diff --check` passed | GRAPH2 owns app graph surface proof readback |
+| GRAPH2 graph surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-graph2-graph-surface-proof-readback.md`; app proof flag writes `graph_surface_report.json` from the same `WorkbenchGraphSurface` model used by MainComponent labels; focused tests, app build, app proof dump, and `git diff --check` passed | GRAPH3 closes the GRAPH segment |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -759,7 +813,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after GRAPH1 read-only graph surface as of 2026-05-26 12:09 Asia/Taipei on `codex/graph1-read-only-graph-surface`. Not pushed. Next selected lane is GRAPH2 app graph surface proof readback.
+None after GRAPH2 graph surface proof readback as of 2026-05-26 12:16 Asia/Taipei on `codex/graph2-graph-surface-proof-readback`. Not pushed. Next selected lane is GRAPH3 graph segment closure.
 ```
 
 Previous closure:
@@ -3555,6 +3609,7 @@ raw callback-buffer runtime
 | `2026-05-26-ui2-status-surface-proof-readback.md` | UI2 status surface proof readback closure evidence | no, unless auditing UI2 evidence |
 | `2026-05-26-ui3-ui-segment-closure.md` | UI3 closure marker for UI1-UI2 UI segment | no, unless auditing UI segment closure |
 | `2026-05-26-graph1-read-only-graph-surface.md` | GRAPH1 read-only graph surface closure evidence | no, unless auditing GRAPH1 evidence |
+| `2026-05-26-graph2-graph-surface-proof-readback.md` | GRAPH2 graph surface proof readback closure evidence | no, unless auditing GRAPH2 evidence |
 
 ## Session Safety
 
@@ -3666,6 +3721,23 @@ tests/WorkbenchGraphSurfaceTests.cpp
 CMakeLists.txt
 ```
 
+GRAPH2 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-graph2-graph-surface-proof-readback.md
+source/app/WorkbenchGraphSurfaceProofRunner.h
+source/app/WorkbenchGraphSurfaceProofRunner.cpp
+source/app/StartupProof.h
+source/app/StartupProof.cpp
+source/app/Main.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchGraphSurfaceProofRunnerTests.cpp
+tests/StartupProofTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3681,7 +3753,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `GRAPH1 read-only graph surface` on `codex/graph1-read-only-graph-surface`; next selected lane is GRAPH2 app graph surface proof readback. Do not push unless explicitly requested. GRAPH2 should prove the visible graph surface through an app proof artifact. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `GRAPH2 graph surface proof readback` on `codex/graph2-graph-surface-proof-readback`; next selected lane is GRAPH3 graph segment closure. Do not push unless explicitly requested. GRAPH3 should close GRAPH1-GRAPH2 without adding behavior. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

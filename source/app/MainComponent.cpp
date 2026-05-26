@@ -26,6 +26,7 @@
 #include "ProjectCreationProofRunner.h"
 #include "RuntimeRegistry.h"
 #include "ShaderPreviewInputBridge.h"
+#include "WorkbenchGraphSurfaceProofRunner.h"
 #include "WorkbenchStatusSurfaceProofRunner.h"
 
 #include <algorithm>
@@ -346,6 +347,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::workbenchStatusSurface:
             dumpWorkbenchStatusSurfaceProof();
+            break;
+        case StartupProofTaskId::workbenchGraphSurface:
+            dumpWorkbenchGraphSurfaceProof();
             break;
     }
 }
@@ -769,6 +773,31 @@ void MainComponent::dumpWorkbenchStatusSurfaceProof()
 
     const auto status = result.statusText.empty() ? result.status : result.statusText;
     finishProofDump (juce::String (workbenchStatusSurfaceProofDisplayName()),
+                     status,
+                     result.error,
+                     directory);
+}
+
+void MainComponent::dumpWorkbenchGraphSurfaceProof()
+{
+    const auto directory = proofDumpDirectory (workbenchGraphSurfaceProofDirectoryName());
+
+    WorkbenchGraphSurfaceProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runWorkbenchGraphSurfaceProof (request);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (workbenchGraphSurfaceProofDisplayName()),
+                         "failed",
+                         result.statusText,
+                         directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (workbenchGraphSurfaceProofDisplayName()),
                      status,
                      result.error,
                      directory);
