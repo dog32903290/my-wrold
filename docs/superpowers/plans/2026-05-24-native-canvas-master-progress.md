@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 11:55 Asia/Taipei.
+Date: 2026-05-26 11:56 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/ui2-status-surface-proof-readback
+codex/ui3-ui-segment-closure
 ```
 
 Local repo relocation note:
@@ -74,6 +74,8 @@ Latest known commits:
 UI1 read-only status surface (closed locally)
 d1d23b6 Add UI1 read-only status surface
 UI2 status surface proof readback (closed locally)
+6fea155 Add UI2 status surface proof readback
+UI3 UI segment closure (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -170,7 +172,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 11:55 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, and UI2 are closed locally and not pushed. Current branch is `codex/ui2-status-surface-proof-readback`; do not push unless explicitly requested.
+As of 2026-05-26 11:56 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, and UI3 are closed locally and not pushed. Current branch is `codex/ui3-ui-segment-closure`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -401,6 +403,40 @@ cmake --build build --target my_world_workbench_status_surface_proof_runner_test
 ./build/my_world_startup_proof_tests
 MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-workbench-status-surface-proof-and-exit
 ctest --test-dir build --output-on-failure -R "workbench_status_surface_proof_runner|startup_proof|workbench_status_surface|workbench_app_controller|app_status_proof_runner"
+git diff --check
+passed
+```
+
+UI3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-ui3-ui-segment-closure.md
+
+UI3 one-line proof before closure:
+
+```text
+UI1-UI2 form a closed UI segment from controller-backed status surface to app proof readback artifact.
+```
+
+UI3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+UI3 accepted result:
+
+```text
+UI1 read-only status surface
+-> UI2 status surface proof readback
+-> UI3 UI segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 93
 git diff --check
 passed
 ```
@@ -661,6 +697,7 @@ Latest accepted targeted result:
 | STATUS3 status segment closure | closed locally | `docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md`; closes STATUS1-STATUS2 as the app status segment from controller-held snapshot through app dump proof artifact; no source files changed; full `ctest` 91/91 and `git diff --check` passed | Future status-related work should leave the STATUS prefix and choose a specific surface such as UI, GRAPH, RUNTIME, or PROOF cleanup |
 | UI1 read-only status surface | closed locally | `docs/superpowers/specs/2026-05-26-ui1-read-only-status-surface.md`; `WorkbenchStatusSurface` renders work/source/save/mapping/proof/preview rows from `WorkbenchAppStatusSnapshot`, and `MainComponent` displays them as read-only labels; focused tests, app build, and `git diff --check` passed | UI2 owns app UI/status proof readback; project picker, save UI, canvas node surface, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | UI2 status surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-ui2-status-surface-proof-readback.md`; app proof flag writes `workbench_status_surface_report.json` from the same `WorkbenchStatusSurface` model used by MainComponent labels; focused tests, app build, app proof dump, and `git diff --check` passed | UI3 closes the UI segment |
+| UI3 UI segment closure | closed locally | `docs/superpowers/specs/2026-05-26-ui3-ui-segment-closure.md`; closes UI1-UI2 as the UI segment from controller-backed read-only labels to app proof readback; full `ctest` 93/93 and `git diff --check` passed | Next lane should be selected by feature surface from this master plan |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -670,7 +707,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after UI2 status surface proof readback as of 2026-05-26 11:55 Asia/Taipei on `codex/ui2-status-surface-proof-readback`. Not pushed. Next selected lane is UI3 UI segment closure.
+None after UI3 UI segment closure as of 2026-05-26 11:56 Asia/Taipei on `codex/ui3-ui-segment-closure`. Not pushed. Next feature surface is unselected.
 ```
 
 Previous closure:
@@ -3464,6 +3501,7 @@ raw callback-buffer runtime
 | `2026-05-26-status3-status-segment-closure.md` | STATUS3 closure marker for STATUS1-STATUS2 app status segment | no, unless auditing STATUS segment closure |
 | `2026-05-26-ui1-read-only-status-surface.md` | UI1 read-only status surface closure evidence | no, unless auditing UI1 evidence |
 | `2026-05-26-ui2-status-surface-proof-readback.md` | UI2 status surface proof readback closure evidence | no, unless auditing UI2 evidence |
+| `2026-05-26-ui3-ui-segment-closure.md` | UI3 closure marker for UI1-UI2 UI segment | no, unless auditing UI segment closure |
 
 ## Session Safety
 
@@ -3552,6 +3590,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+UI3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-ui3-ui-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3567,7 +3612,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `UI2 status surface proof readback` on `codex/ui2-status-surface-proof-readback`; next selected lane is UI3 UI segment closure. Do not push unless explicitly requested. UI3 should close UI1-UI2 as the UI segment without adding behavior. Do not add source changes outside the selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `UI3 UI segment closure` on `codex/ui3-ui-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
