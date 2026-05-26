@@ -27,7 +27,8 @@ bool hasStartupProofRequest (const StartupProofOptions& options)
            || options.dumpAPPWorkbenchSessionProof
            || options.dumpProjectCreationProof
            || options.dumpCreatedProjectOpenProof
-           || options.dumpAppSaveProof;
+           || options.dumpAppSaveProof
+           || options.dumpAppStatusProof;
 }
 
 std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& options)
@@ -64,6 +65,7 @@ std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& opti
     addTask (options.dumpProjectCreationProof, StartupProofTaskId::projectCreation, 500);
     addTask (options.dumpCreatedProjectOpenProof, StartupProofTaskId::createdProjectOpen, 500);
     addTask (options.dumpAppSaveProof, StartupProofTaskId::appSave, 500);
+    addTask (options.dumpAppStatusProof, StartupProofTaskId::appStatus, 500);
 
     return tasks;
 }
