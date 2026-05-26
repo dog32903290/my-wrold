@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 02:27 Asia/Taipei.
+Date: 2026-05-26 10:24 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/open1-created-project-workbench-open-proof
+codex/open2-explicit-open-request-status
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-OPEN1 created project workbench open proof (closed locally)
+OPEN2 explicit open request status (closed locally)
+fa068a0 Add OPEN1 created project open proof
 742a87f Close PROJECT segment
 de9eb57 Add PROJECT3 project creation status
 6c83112 Add PROJECT2 project creation proof
@@ -154,20 +155,18 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 02:27 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1 are closed locally and not pushed. Current branch is `codex/open1-created-project-workbench-open-proof`; do not push unless explicitly requested.
+As of 2026-05-26 10:24 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, and OPEN2 are closed locally and not pushed. Current branch is `codex/open2-explicit-open-request-status`; do not push unless explicitly requested.
 
 ```text
-OPEN1 owned files:
+OPEN2 closed-lane files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md
-- source/app/CreatedProjectOpenProofRunner.*
-- source/app/Main.*
-- source/app/StartupProof.*
-- tests/CreatedProjectOpenProofRunnerTests.cpp
-- tests/StartupProofTests.cpp
-- CMakeLists.txt
+- docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md
+- source/app/WorkbenchSessionOpenStatus.*
+- tests/WorkbenchSessionOpenStatusTests.cpp
 ```
-OPEN1 did not add project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
+Existing dirty file not owned by OPEN2 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
+
+OPEN2 did not add project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
 
 Current C4 note:
 
@@ -414,6 +413,7 @@ Latest accepted targeted result:
 | PROJECT3 project creation status integration | closed locally | `docs/superpowers/specs/2026-05-26-project3-project-creation-status-integration.md`; `ProjectCreationProofRunResult` now carries status text, `project_creation_report.json` writes the same text, and `MainComponent::dumpProjectCreationProof()` uses it through the existing proof status adapter; `ctest` 88/88 passed | App UI/dialogs, active-work mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | PROJECT4 project segment closure | closed locally | `docs/superpowers/specs/2026-05-26-project4-project-segment-closure.md`; closes PROJECT1-PROJECT3 as the project creation service/proof/status segment without adding behavior or touching source files | Future project work should leave the PROJECT prefix and choose a fresh surface such as SAVE, OPEN, UI, STATUS, GRAPH, or RUNTIME |
 | OPEN1 created project workbench open proof | closed locally | `docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md`; `CreatedProjectOpenProofRunner` creates a fresh work project, opens it through `openCurrentWorkbenchSession()`, writes `created_project_open_report.json`, and app flag `--dump-created-project-open-proof-and-exit` dumps `debug/created-project-open-proof/created_project_open_report.json`; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
+| OPEN2 explicit open request status | closed locally | `docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md`; `ExplicitWorkbenchOpenRequest` opens a selected `myworld.work.json` through the existing workbench session spine, returns explicit source/status wording, blocks missing explicit manifests without fixture fallback, and leaves current active-work open behavior unchanged; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -423,9 +423,38 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after OPEN1 created project workbench open proof closure as of 2026-05-26 02:27 Asia/Taipei. Not pushed.
+None after OPEN2 explicit open request status closure as of 2026-05-26 10:24 Asia/Taipei. Not pushed.
+```
 
-Latest closure:
+Previous closure:
+OPEN2 explicit open request status closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md
+- source/app/WorkbenchSessionOpenStatus.*
+- tests/WorkbenchSessionOpenStatusTests.cpp
+
+Closed line:
+ExplicitWorkbenchOpenRequest
+-> openExplicitWorkbenchSession()
+-> WorkbenchSessionSnapshot explicit source/status
+-> deterministic statusText
+
+Latest accepted result:
+- Red test failed because `ExplicitWorkbenchOpenRequest` and `openExplicitWorkbenchSession()` did not exist.
+- Follow-up red behavior failed because a missing explicit manifest still fell back to the fixture.
+- `cmake --build build --target my_world_workbench_session_open_status_tests && ./build/my_world_workbench_session_open_status_tests` passed.
+- `cmake --build build --target my-world` passed, with the existing duplicate static-library linker warning.
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-created-project-open-proof-and-exit` passed.
+- `MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-app-workbench-session-proof-and-exit` passed.
+- `debug/created-project-open-proof/created_project_open_report.json` still read back with `ok: true`, `creationStatus: created`, `openStatus: ready`, `workSource: active-work`, `workSourceStatus: active-work-opened`, `documentId: patch.open1-main`, and valid graph IO mapping counts.
+- Stable app workbench proof still wrote active-work opened with empty blocking diagnostics.
+- `ctest --test-dir build --output-on-failure -R "workbench_session_open_status|created_project_open_proof_runner|app_workbench_session_proof_runner"` passed 3/3.
+- `ctest --test-dir build --output-on-failure` passed 89/89.
+- Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` was left unstaged and untouched by OPEN2.
+- `git diff --check` passed before documentation closeout.
+
+Previous closure:
 OPEN1 created project workbench open proof closed locally.
 Evidence:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -3079,20 +3108,23 @@ raw callback-buffer runtime
 | `2026-05-26-project3-project-creation-status-integration.md` | PROJECT3 project creation status integration closure evidence | no, unless auditing PROJECT3 evidence |
 | `2026-05-26-project4-project-segment-closure.md` | PROJECT4 closure marker for PROJECT1-PROJECT3 project creation segment | no, unless auditing PROJECT segment closure |
 | `2026-05-26-open1-created-project-workbench-open-proof.md` | OPEN1 created project workbench open proof closure evidence | no, unless auditing OPEN1 evidence |
+| `2026-05-26-open2-explicit-open-request-status.md` | OPEN2 explicit open request status closure evidence | no, unless auditing OPEN2 evidence |
 
 ## Session Safety
 
-OPEN1 owned files:
+OPEN2 closed-lane files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md
-source/app/CreatedProjectOpenProofRunner.*
-source/app/Main.*
-source/app/StartupProof.*
-tests/CreatedProjectOpenProofRunnerTests.cpp
-tests/StartupProofTests.cpp
-CMakeLists.txt
+docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md
+source/app/WorkbenchSessionOpenStatus.*
+tests/WorkbenchSessionOpenStatusTests.cpp
+```
+
+Existing dirty file not owned by OPEN2:
+
+```text
+tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
 ```
 
 Avoid unrelated files and parked lanes:
@@ -3110,7 +3142,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after OPEN1 created project workbench open proof closure on `codex/open1-created-project-workbench-open-proof`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1 are local-only commits; do not push unless explicitly requested. OPEN1 proves created project -> workbench session open using the existing open spine. Recommended next selected lane is `OPEN2 explicit open request/status` only if a non-proof explicit open API/status should be added; otherwise choose a fresh surface by the next bearing line. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `OPEN2 explicit open request status` closure on `codex/open2-explicit-open-request-status`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, and OPEN2 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by OPEN2 and must not be staged. Recommended next selected lane is OPEN3 open segment closure if the OPEN segment should stop here, or a fresh feature-surface lane chosen from this master plan. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

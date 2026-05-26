@@ -56,6 +56,25 @@ int main()
     expect (activeResult.snapshot.workManifestPath == activeRequest.activeWorkManifestPath.string(),
             "opened active work manifest");
 
+    myworld::ExplicitWorkbenchOpenRequest explicitRequest;
+    explicitRequest.workManifestPath = activeWorkRoot / "myworld.work.json";
+    explicitRequest.candidateRoots = { std::filesystem::current_path() };
+    explicitRequest.saveStatus = "clean";
+    explicitRequest.proofStatus = "explicit-ready";
+    explicitRequest.previewStatus = "preview-ready";
+
+    const auto explicitResult = myworld::openExplicitWorkbenchSession (explicitRequest);
+    expect (explicitResult.ok, explicitResult.error);
+    expect (explicitResult.status == "explicit-opened", "explicit open status");
+    expect (explicitResult.snapshot.workSource == "explicit-work", "explicit work source");
+    expect (explicitResult.snapshot.workSourceStatus == "explicit-work-opened", "explicit source status");
+    expect (explicitResult.snapshot.workManifestPath == explicitRequest.workManifestPath.string(),
+            "explicit opened manifest");
+    expect (explicitResult.snapshot.activeWorkManifestPath.empty(), "explicit open does not claim active manifest");
+    expect (explicitResult.snapshot.documentId == "patch.c2-main", "explicit document id");
+    expect (explicitResult.statusText == "explicit open ready: patch.c2-main source explicit-work-opened mappings 1/1",
+            "explicit status text");
+
     myworld::WorkbenchSessionOpenStatusRequest request;
     request.activeWorkManifestPath = std::filesystem::temp_directory_path()
                                      / "my-world-missing-active-work"
@@ -112,6 +131,19 @@ int main()
     const auto brokenStatusText = myworld::makeWorkbenchSessionStatusText (brokenResult.snapshot);
     expectContains (brokenStatusText, "workbench blocked", "broken status text");
     expectContains (brokenStatusText, "source active-work-blocked", "broken source text");
+
+    myworld::ExplicitWorkbenchOpenRequest missingExplicitRequest;
+    missingExplicitRequest.workManifestPath = std::filesystem::temp_directory_path()
+                                              / "my-world-missing-explicit-work"
+                                              / "myworld.work.json";
+    missingExplicitRequest.candidateRoots = { std::filesystem::current_path() };
+
+    const auto missingExplicit = myworld::openExplicitWorkbenchSession (missingExplicitRequest);
+    expect (! missingExplicit.ok, "missing explicit work should fail");
+    expect (missingExplicit.status == "explicit-open-blocked", "missing explicit status");
+    expect (missingExplicit.snapshot.workSource == "explicit-work", "missing explicit source");
+    expect (missingExplicit.snapshot.workSourceStatus == "explicit-work-blocked", "missing explicit source status");
+    expect (missingExplicit.statusText.find ("explicit open failed:") == 0, "missing explicit status text");
 
     std::filesystem::remove_all (activeWorkRoot);
     std::filesystem::remove_all (brokenWorkRoot);

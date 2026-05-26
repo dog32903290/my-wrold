@@ -4,12 +4,20 @@
 #include "ProofRunSupport.h"
 #include "WorkProjectResolver.h"
 
+#include <system_error>
+
 namespace myworld
 {
 namespace
 {
 constexpr const char* workFixturePath = "fixtures/storage/c2-compound-work/myworld.work.json";
 constexpr const char* mappingFixturePath = "fixtures/graphs/g1_loudness_to_shader_uniform.graph.json";
+
+bool explicitFileExists (const std::filesystem::path& path)
+{
+    std::error_code error;
+    return std::filesystem::is_regular_file (path, error);
+}
 }
 
 WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
@@ -89,6 +97,69 @@ WorkbenchSessionOpenStatusResult openCurrentWorkbenchSession (
     result.ok = result.snapshot.ok;
     result.status = result.ok ? "ready" : "blocked";
     result.error = result.ok ? std::string {} : result.snapshot.message;
+    return result;
+}
+
+ExplicitWorkbenchOpenResult openExplicitWorkbenchSession (
+    const ExplicitWorkbenchOpenRequest& request)
+{
+    ExplicitWorkbenchOpenResult result;
+
+    if (request.workManifestPath.empty())
+    {
+        result.status = "validation-failed";
+        result.error = "work manifest path is required";
+        result.statusText = "explicit open failed: " + result.error;
+        result.snapshot.ok = false;
+        result.snapshot.status = "blocked";
+        result.snapshot.message = result.error;
+        result.snapshot.workSource = "explicit-work";
+        result.snapshot.workSourceStatus = "explicit-work-blocked";
+        return result;
+    }
+
+    if (! explicitFileExists (request.workManifestPath))
+    {
+        result.status = "explicit-open-blocked";
+        result.error = "explicit work manifest does not exist: " + request.workManifestPath.string();
+        result.statusText = "explicit open failed: " + result.error;
+        result.snapshot.ok = false;
+        result.snapshot.status = "blocked";
+        result.snapshot.message = result.error;
+        result.snapshot.workManifestPath = request.workManifestPath.string();
+        result.snapshot.workSource = "explicit-work";
+        result.snapshot.workSourceStatus = "explicit-work-blocked";
+        return result;
+    }
+
+    WorkbenchSessionOpenStatusRequest currentRequest;
+    currentRequest.activeWorkManifestPath = request.workManifestPath;
+    currentRequest.candidateRoots = request.candidateRoots;
+    currentRequest.dirty = request.dirty;
+    currentRequest.saveStatus = request.saveStatus;
+    currentRequest.proofStatus = request.proofStatus;
+    currentRequest.previewStatus = request.previewStatus;
+
+    const auto opened = openCurrentWorkbenchSession (currentRequest);
+    result.ok = opened.ok;
+    result.status = opened.ok ? "explicit-opened" : "explicit-open-blocked";
+    result.error = opened.error;
+    result.snapshot = opened.snapshot;
+    result.snapshot.workSource = "explicit-work";
+    result.snapshot.workSourceStatus = opened.ok ? "explicit-work-opened" : "explicit-work-blocked";
+    result.snapshot.activeWorkManifestPath.clear();
+
+    result.statusText = opened.ok
+                            ? "explicit open ready: "
+                                  + result.snapshot.documentId
+                                  + " source "
+                                  + result.snapshot.workSourceStatus
+                                  + " mappings "
+                                  + std::to_string (result.snapshot.validGraphIOMappingCount)
+                                  + "/"
+                                  + std::to_string (result.snapshot.graphIOMappingCount)
+                            : "explicit open failed: " + result.error;
+
     return result;
 }
 
