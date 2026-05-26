@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 12:41 Asia/Taipei.
+Date: 2026-05-26 12:55 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/canvas3-canvas-segment-closure
+codex/runtime1-read-only-runtime-summary
 ```
 
 Local repo relocation note:
@@ -88,6 +88,8 @@ efce67d Add CANVAS1 read-only canvas surface
 CANVAS2 canvas surface proof readback (closed locally)
 1c39523 Add CANVAS2 canvas surface proof readback
 CANVAS3 canvas segment closure (closed locally)
+28569b9 Close CANVAS segment
+RUNTIME1 read-only runtime summary (closed locally pending commit)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -184,7 +186,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 12:41 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, and CANVAS3 are closed locally and not pushed. Current branch is `codex/canvas3-canvas-segment-closure`; no active lane is selected after CANVAS3. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 12:55 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, and RUNTIME1 are closed locally and not pushed. Current branch is `codex/runtime1-read-only-runtime-summary`; RUNTIME1 owns read-only runtime summary files until commit. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -721,6 +723,50 @@ git diff --check
 passed
 ```
 
+RUNTIME1 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md
+- source/app/WorkbenchRuntimeSurface.h
+- source/app/WorkbenchRuntimeSurface.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchRuntimeSurfaceTests.cpp
+- CMakeLists.txt
+
+RUNTIME1 one-line proof before code:
+
+```text
+WorkbenchSessionSnapshot runtime counts feed a read-only WorkbenchRuntimeSurface and MainComponent runtime labels without executing runtime cook.
+```
+
+RUNTIME1 verification target:
+
+```text
+cmake --build build --target my_world_workbench_runtime_surface_tests my-world
+./build/my_world_workbench_runtime_surface_tests
+ctest --test-dir build --output-on-failure -R "workbench_runtime_surface|workbench_canvas_surface|workbench_graph_surface|workbench_session|workbench_app_controller"
+git diff --check
+```
+
+RUNTIME1 accepted result:
+
+```text
+WorkbenchSessionSnapshot runtime counts
+-> WorkbenchRuntimeSurface rows
+-> MainComponent read-only runtime labels
+```
+
+Verification:
+
+```text
+cmake --build build --target my_world_workbench_runtime_surface_tests my-world
+./build/my_world_workbench_runtime_surface_tests
+ctest --test-dir build --output-on-failure -R "workbench_runtime_surface|workbench_canvas_surface|workbench_graph_surface|workbench_session|workbench_app_controller"
+100% tests passed, 0 tests failed out of 10
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -984,6 +1030,7 @@ Latest accepted targeted result:
 | CANVAS1 read-only canvas surface | closed locally | `docs/superpowers/specs/2026-05-26-canvas1-read-only-canvas-surface.md`; `WorkbenchCanvasSurface` exposes deterministic node bounds and edge route labels from current workbench graph positions; focused tests, app build, and `git diff --check` passed | CANVAS2 owns app canvas surface proof readback |
 | CANVAS2 canvas surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-canvas2-canvas-surface-proof-readback.md`; app proof flag writes `canvas_surface_report.json` from the same `WorkbenchCanvasSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | CANVAS3 closes the CANVAS segment |
 | CANVAS3 canvas segment closure | closed locally | `docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md`; closes CANVAS1-CANVAS2 as the canvas segment from workbench graph positions to app proof readback; full `ctest` 97/97 and `git diff --check` passed | Next feature surface should be selected from this master plan |
+| RUNTIME1 read-only runtime summary | closed locally | `docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md`; `WorkbenchRuntimeSurface` exposes workbench runtime node/edge counts, output, mapping status, readiness, and cook parked status without executing runtime cook; focused tests, app build, and `git diff --check` passed | RUNTIME2 owns app runtime summary proof readback |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -993,7 +1040,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after CANVAS3 canvas segment closure as of 2026-05-26 12:41 Asia/Taipei on `codex/canvas3-canvas-segment-closure`. Not pushed. Next feature surface is unselected.
+RUNTIME1 read-only runtime summary is closed locally as of 2026-05-26 12:55 Asia/Taipei on `codex/runtime1-read-only-runtime-summary`. Not pushed. Proof target passed: current workbench runtime counts feed a read-only runtime surface and MainComponent labels without executing runtime cook.
 ```
 
 Previous closure:
@@ -3794,6 +3841,7 @@ raw callback-buffer runtime
 | `2026-05-26-canvas1-read-only-canvas-surface.md` | CANVAS1 read-only canvas surface closure evidence | no, unless auditing CANVAS1 evidence |
 | `2026-05-26-canvas2-canvas-surface-proof-readback.md` | CANVAS2 canvas surface proof readback closure evidence | no, unless auditing CANVAS2 evidence |
 | `2026-05-26-canvas3-canvas-segment-closure.md` | CANVAS3 closure marker for CANVAS1-CANVAS2 canvas segment | no, unless auditing CANVAS segment closure |
+| `2026-05-26-runtime1-read-only-runtime-summary.md` | RUNTIME1 read-only runtime summary closure evidence | no, unless auditing RUNTIME1 evidence |
 
 ## Session Safety
 
@@ -3966,6 +4014,19 @@ docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md
 ```
 
+RUNTIME1 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md
+source/app/WorkbenchRuntimeSurface.h
+source/app/WorkbenchRuntimeSurface.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchRuntimeSurfaceTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3981,7 +4042,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `CANVAS3 canvas segment closure` on `codex/canvas3-canvas-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. RUNTIME1 is closed locally on `codex/runtime1-read-only-runtime-summary`; next lane is RUNTIME2 runtime summary proof readback after the RUNTIME1 commit. Do not push unless explicitly requested. RUNTIME2 may add an app proof runner, startup proof flag, report JSON, and tests for the existing read-only runtime surface only. Do not add runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
