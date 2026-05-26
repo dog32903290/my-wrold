@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 14:21 Asia/Taipei.
+Date: 2026-05-26 14:25 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/run2-workbench-run-proof-readback
+codex/run3-run-segment-closure
 ```
 
 Local repo relocation note:
@@ -103,7 +103,9 @@ COOK3 cook segment closure (closed locally)
 48dded7 Close COOK segment
 RUN1 workbench headless run (closed locally)
 7d5ea93 Add RUN1 workbench headless run
-RUN2 workbench run proof readback (closed locally; current commit pending)
+RUN2 workbench run proof readback (closed locally)
+40a6325 Add RUN2 workbench run proof readback
+RUN3 run segment closure (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -200,7 +202,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 14:21 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, RUNTIME3, COOK1, COOK2, COOK3, RUN1, and RUN2 are closed locally and not pushed. Current branch is `codex/run2-workbench-run-proof-readback`; RUN2 is the just-finished lane. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 14:25 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, RUNTIME3, COOK1, COOK2, COOK3, RUN1, RUN2, and RUN3 are closed locally and not pushed. Current branch is `codex/run3-run-segment-closure`; no active implementation lane is selected after RUN closure. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 COOK1 closed-lane files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -453,6 +455,42 @@ MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefa
 debug/workbench-run-proof/run_report.json written with ok true
 ctest --test-dir build --output-on-failure -R "workbench_run_proof_runner|startup_proof|workbench_run_surface|headless_render_runtime|workbench_session|workbench_app_controller"
 100% tests passed, 0 tests failed out of 9
+git diff --check
+passed
+```
+
+RUN3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-run3-run-segment-closure.md
+
+RUN3 one-line proof before closure:
+
+```text
+RUN1 workbench headless run
+-> RUN2 workbench run proof readback
+-> RUN3 run segment closure
+```
+
+RUN3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+RUN3 accepted result:
+
+```text
+RUN1 workbench headless run
+-> RUN2 workbench run proof readback
+-> RUN3 run segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 103
 git diff --check
 passed
 ```
@@ -1397,6 +1435,7 @@ Latest accepted targeted result:
 | COOK3 cook segment closure | closed locally | `docs/superpowers/specs/2026-05-26-cook3-cook-segment-closure.md`; closes COOK1-COOK2 as the cook segment from current-session runtime graph summaries to app proof readback; full `ctest` 101/101 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | RUN1 workbench headless run | closed locally | `docs/superpowers/specs/2026-05-26-run1-workbench-headless-run.md`; supported current-session runtime graph summaries now feed `WorkbenchRunSurface`, generate a headless fixture, and run through existing `HeadlessRenderRuntime`; unsupported shader graphs report unsupported instead of fake execution; focused tests, app build, and `git diff --check` passed | RUN2 owns app run proof readback |
 | RUN2 workbench run proof readback | closed locally | `docs/superpowers/specs/2026-05-26-run2-workbench-run-proof-readback.md`; app proof flag dumps `run_report.json` and headless artifacts from the same `runWorkbenchHeadlessRender()` path; focused tests, app proof dump, and focused ctest passed | RUN3 closes the RUN segment |
+| RUN3 run segment closure | closed locally | `docs/superpowers/specs/2026-05-26-run3-run-segment-closure.md`; closes RUN1-RUN2 as the run segment from workbench runtime graph summaries to app proof readback and headless artifacts; full `ctest` 103/103 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -1406,24 +1445,26 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None between RUN2 and RUN3 as of 2026-05-26 14:21 Asia/Taipei on `codex/run2-workbench-run-proof-readback`. Not pushed.
+None after RUN3 closure as of 2026-05-26 14:25 Asia/Taipei on `codex/run3-run-segment-closure`. Not pushed.
 ```
 
 Previous closure:
-RUN2 workbench run proof readback closed locally.
+RUN3 run segment closure closed locally.
 Evidence:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-run2-workbench-run-proof-readback.md
+- docs/superpowers/specs/2026-05-26-run3-run-segment-closure.md
 
 Closed line:
 RUN1 workbench headless run
 -> RUN2 workbench run proof readback
+-> RUN3 run segment closure
 
 Latest accepted result:
-- RUN2 adds `WorkbenchRunProofRunner`, startup flag `--dump-workbench-run-proof-and-exit`, and MainComponent proof adapter.
+- RUN1 and RUN2 are closed locally as the RUN segment.
 - `debug/workbench-run-proof/run_report.json` reads `ok: true`, document `patch.run2-main`, runtime graph `2 nodes/1 edges`, active output `out1`, run order `const1 -> out1`, readiness `ready`, execution `ran`, and empty `error`.
 - Existing unsupported shader.fragment runtime execution remains explicit and parked.
-- Focused build/tests, app proof dump, and focused ctest passed.
+- RUN3 added only closure docs and master plan updates.
+- Full `ctest` 103/103 and `git diff --check` passed.
 
 Previous closure:
 SAVE2 app save proof artifact closed locally.
@@ -4213,6 +4254,7 @@ raw callback-buffer runtime
 | `2026-05-26-cook3-cook-segment-closure.md` | COOK3 closure marker for COOK1-COOK2 cook segment | no, unless auditing COOK segment closure |
 | `2026-05-26-run1-workbench-headless-run.md` | RUN1 workbench headless run closure evidence | no, unless auditing RUN1 evidence |
 | `2026-05-26-run2-workbench-run-proof-readback.md` | RUN2 workbench run proof readback closure evidence | no, unless auditing RUN2 evidence |
+| `2026-05-26-run3-run-segment-closure.md` | RUN3 closure marker for RUN1-RUN2 run segment | no, unless auditing RUN segment closure |
 
 ## Session Safety
 
@@ -4495,6 +4537,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+RUN3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-run3-run-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -4510,7 +4559,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. RUN2 workbench run proof readback is closed locally on `codex/run2-workbench-run-proof-readback`; the next RUN step is RUN3 segment closure. Do not push unless explicitly requested. Do not add full runtime cook scheduler, shader.fragment execution, audio runtime node execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. RUN3 run segment closure is closed locally on `codex/run3-run-segment-closure`; no active implementation lane is selected after RUN closure. Do not push unless explicitly requested. Do not add full runtime cook scheduler, shader.fragment execution, audio runtime node execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
