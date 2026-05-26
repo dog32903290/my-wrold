@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 13:01 Asia/Taipei.
+Date: 2026-05-26 13:03 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/runtime2-runtime-summary-proof-readback
+codex/runtime3-runtime-segment-closure
 ```
 
 Local repo relocation note:
@@ -91,7 +91,9 @@ CANVAS3 canvas segment closure (closed locally)
 28569b9 Close CANVAS segment
 RUNTIME1 read-only runtime summary (closed locally)
 7134deb Add RUNTIME1 read-only runtime summary
-RUNTIME2 runtime summary proof readback (closed locally pending commit)
+RUNTIME2 runtime summary proof readback (closed locally)
+9c5ffa2 Add RUNTIME2 runtime summary proof readback
+RUNTIME3 runtime segment closure (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -188,7 +190,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 13:01 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, and RUNTIME2 are closed locally and not pushed. Current branch is `codex/runtime2-runtime-summary-proof-readback`; RUNTIME2 owns runtime summary proof runner/readback files until commit. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 13:03 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, and RUNTIME3 are closed locally and not pushed. Current branch is `codex/runtime3-runtime-segment-closure`; no active lane is selected after RUNTIME3. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -825,6 +827,40 @@ git diff --check
 passed
 ```
 
+RUNTIME3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-runtime3-runtime-segment-closure.md
+
+RUNTIME3 one-line proof before closure:
+
+```text
+RUNTIME1-RUNTIME2 form a closed runtime segment from workbench runtime counts to app proof readback artifact.
+```
+
+RUNTIME3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+RUNTIME3 accepted result:
+
+```text
+RUNTIME1 read-only runtime summary
+-> RUNTIME2 runtime summary proof readback
+-> RUNTIME3 runtime segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 99
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -1090,6 +1126,7 @@ Latest accepted targeted result:
 | CANVAS3 canvas segment closure | closed locally | `docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md`; closes CANVAS1-CANVAS2 as the canvas segment from workbench graph positions to app proof readback; full `ctest` 97/97 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | RUNTIME1 read-only runtime summary | closed locally | `docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md`; `WorkbenchRuntimeSurface` exposes workbench runtime node/edge counts, output, mapping status, readiness, and cook parked status without executing runtime cook; focused tests, app build, and `git diff --check` passed | RUNTIME2 owns app runtime summary proof readback |
 | RUNTIME2 runtime summary proof readback | closed locally | `docs/superpowers/specs/2026-05-26-runtime2-runtime-summary-proof-readback.md`; app proof flag writes `runtime_surface_report.json` from the same `WorkbenchRuntimeSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | RUNTIME3 closes the RUNTIME segment |
+| RUNTIME3 runtime segment closure | closed locally | `docs/superpowers/specs/2026-05-26-runtime3-runtime-segment-closure.md`; closes RUNTIME1-RUNTIME2 as the runtime segment from workbench runtime counts to app proof readback; full `ctest` 99/99 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -1099,7 +1136,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-RUNTIME2 runtime summary proof readback is closed locally as of 2026-05-26 13:01 Asia/Taipei on `codex/runtime2-runtime-summary-proof-readback`. Not pushed. Proof target passed: app flag dumps `runtime_surface_report.json` from the same `WorkbenchRuntimeSurface` model used by MainComponent labels.
+None after RUNTIME3 runtime segment closure as of 2026-05-26 13:03 Asia/Taipei on `codex/runtime3-runtime-segment-closure`. Not pushed. Next feature surface is unselected.
 ```
 
 Previous closure:
@@ -3902,6 +3939,7 @@ raw callback-buffer runtime
 | `2026-05-26-canvas3-canvas-segment-closure.md` | CANVAS3 closure marker for CANVAS1-CANVAS2 canvas segment | no, unless auditing CANVAS segment closure |
 | `2026-05-26-runtime1-read-only-runtime-summary.md` | RUNTIME1 read-only runtime summary closure evidence | no, unless auditing RUNTIME1 evidence |
 | `2026-05-26-runtime2-runtime-summary-proof-readback.md` | RUNTIME2 runtime summary proof readback closure evidence | no, unless auditing RUNTIME2 evidence |
+| `2026-05-26-runtime3-runtime-segment-closure.md` | RUNTIME3 closure marker for RUNTIME1-RUNTIME2 runtime segment | no, unless auditing RUNTIME segment closure |
 
 ## Session Safety
 
@@ -4104,6 +4142,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+RUNTIME3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-runtime3-runtime-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -4119,7 +4164,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. RUNTIME2 is closed locally on `codex/runtime2-runtime-summary-proof-readback`; next lane is RUNTIME3 runtime segment closure after the RUNTIME2 commit. Do not push unless explicitly requested. RUNTIME3 may update closure docs and run full verification only. Do not add runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `RUNTIME3 runtime segment closure` on `codex/runtime3-runtime-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
