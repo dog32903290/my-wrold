@@ -128,6 +128,12 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
         addAndMakeVisible (label);
     }
 
+    for (auto& label : workbenchGraphLabels)
+    {
+        configureMeterLabel (label, "");
+        addAndMakeVisible (label);
+    }
+
     openWorkbenchSession();
 
     audioStatusLabel.setText ("audio input starting", juce::dontSendNotification);
@@ -363,6 +369,16 @@ void MainComponent::resized()
     workbenchStatusLabels[3].setBounds (workbenchRow.removeFromLeft (150));
     workbenchStatusLabels[4].setBounds (workbenchRow.removeFromLeft (170));
     workbenchStatusLabels[5].setBounds (workbenchRow);
+
+    area.removeFromTop (8);
+
+    auto graphRow = area.removeFromTop (24);
+    workbenchGraphLabels[0].setBounds (graphRow.removeFromLeft (230));
+    workbenchGraphLabels[1].setBounds (graphRow.removeFromLeft (170));
+    workbenchGraphLabels[2].setBounds (graphRow.removeFromLeft (180));
+    workbenchGraphLabels[3].setBounds (graphRow.removeFromLeft (150));
+    workbenchGraphLabels[4].setBounds (graphRow.removeFromLeft (260));
+    workbenchGraphLabels[5].setBounds (graphRow);
 
     area.removeFromTop (8);
 
@@ -764,6 +780,7 @@ CommandResult MainComponent::saveActiveWork (GraphSession& session)
     statusLabel.setText ((result.ok ? "save_work: " : "save_work failed: ") + juce::String (result.message),
                          juce::dontSendNotification);
     updateWorkbenchStatusSurface();
+    updateWorkbenchGraphSurface();
 
     return result;
 }
@@ -821,6 +838,26 @@ void MainComponent::updateWorkbenchStatusSurface()
     }
 }
 
+void MainComponent::updateWorkbenchGraphSurface()
+{
+    const auto surface = makeWorkbenchGraphSurface (workbenchController.currentSession());
+
+    for (std::size_t index = 0; index < workbenchGraphLabels.size(); ++index)
+    {
+        auto& label = workbenchGraphLabels[index];
+
+        if (index >= surface.rows.size())
+        {
+            label.setText ({}, juce::dontSendNotification);
+            continue;
+        }
+
+        const auto& row = surface.rows[index];
+        label.setText (juce::String (row.text), juce::dontSendNotification);
+        label.setColour (juce::Label::textColourId, workbenchStatusToneColour (row.tone));
+    }
+}
+
 void MainComponent::openWorkbenchSession()
 {
     activeWorkPreparation = prepareActiveWorkProjectForOpen();
@@ -843,6 +880,7 @@ void MainComponent::openWorkbenchSession()
     statusLabel.setText (statusText,
                          juce::dontSendNotification);
     updateWorkbenchStatusSurface();
+    updateWorkbenchGraphSurface();
 }
 
 void MainComponent::loadStoredPerformancePreferences()

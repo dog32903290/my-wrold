@@ -26,6 +26,27 @@ struct WorkbenchSessionRequest
 
 struct WorkbenchSessionSnapshot
 {
+    struct GraphNodeSummary
+    {
+        std::string id;
+        std::string type;
+        double x = 0.0;
+        double y = 0.0;
+        bool collapsed = false;
+        int systemUniformCount = 0;
+        int paramCount = 0;
+        int portBindingCount = 0;
+    };
+
+    struct GraphEdgeSummary
+    {
+        std::string id;
+        std::string from;
+        std::string to;
+        std::string dataType;
+        std::string streamKind;
+    };
+
     bool ok = false;
     std::string status;
     std::string message;
@@ -45,6 +66,8 @@ struct WorkbenchSessionSnapshot
     int editorEdgeCount = 0;
     int runtimeNodeCount = 0;
     int runtimeEdgeCount = 0;
+    std::vector<GraphNodeSummary> editorNodes;
+    std::vector<GraphEdgeSummary> editorEdges;
     std::string activeOutputNodeId;
     std::string timelineTransport;
     int graphIOMappingCount = 0;

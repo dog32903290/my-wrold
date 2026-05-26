@@ -8,6 +8,52 @@
 
 namespace myworld
 {
+namespace
+{
+std::vector<WorkbenchSessionSnapshot::GraphNodeSummary> makeNodeSummaries (
+    const std::vector<GraphNode>& nodes)
+{
+    std::vector<WorkbenchSessionSnapshot::GraphNodeSummary> summaries;
+    summaries.reserve (nodes.size());
+
+    for (const auto& node : nodes)
+    {
+        summaries.push_back ({
+            node.id,
+            node.type,
+            node.position.x,
+            node.position.y,
+            node.collapsed,
+            static_cast<int> (node.systemUniforms.size()),
+            static_cast<int> (node.params.size()),
+            static_cast<int> (node.portBindings.size())
+        });
+    }
+
+    return summaries;
+}
+
+std::vector<WorkbenchSessionSnapshot::GraphEdgeSummary> makeEdgeSummaries (
+    const std::vector<GraphEdge>& edges)
+{
+    std::vector<WorkbenchSessionSnapshot::GraphEdgeSummary> summaries;
+    summaries.reserve (edges.size());
+
+    for (const auto& edge : edges)
+    {
+        summaries.push_back ({
+            edge.id,
+            edge.from,
+            edge.to,
+            edge.dataType,
+            edge.streamKind
+        });
+    }
+
+    return summaries;
+}
+}
+
 WorkbenchSessionSnapshot makeWorkbenchSessionSnapshot (const WorkbenchSessionRequest& request)
 {
     WorkbenchSessionSnapshot snapshot;
@@ -28,6 +74,8 @@ WorkbenchSessionSnapshot makeWorkbenchSessionSnapshot (const WorkbenchSessionReq
     snapshot.editorEdgeCount = static_cast<int> (request.document.graph.editorGraph.edges.size());
     snapshot.runtimeNodeCount = static_cast<int> (request.document.graph.runtimeGraph.nodes.size());
     snapshot.runtimeEdgeCount = static_cast<int> (request.document.graph.runtimeGraph.edges.size());
+    snapshot.editorNodes = makeNodeSummaries (request.document.graph.editorGraph.nodes);
+    snapshot.editorEdges = makeEdgeSummaries (request.document.graph.editorGraph.edges);
     snapshot.activeOutputNodeId = activeOutputNodeId (request.document.outputView);
     snapshot.timelineTransport = transportStateToString (request.document.timeline.transportState);
     snapshot.graphIOMappingCount = static_cast<int> (request.graphIOMappings.size());

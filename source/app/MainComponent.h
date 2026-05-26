@@ -9,6 +9,7 @@
 #include "PreferencesPanel.h"
 #include "StartupProof.h"
 #include "WorkbenchAppController.h"
+#include "WorkbenchGraphSurface.h"
 #include "WorkbenchStatusSurface.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -75,6 +76,7 @@ private:
     void quitAfterDelay();
     void setShaderStatus (juce::String message);
     void updateWorkbenchStatusSurface();
+    void updateWorkbenchGraphSurface();
     void openWorkbenchSession();
     void loadStoredPerformancePreferences();
     void saveStoredPerformancePreferences();
@@ -102,6 +104,7 @@ private:
     juce::Label graphLabel;
     juce::Label statusLabel;
     std::array<juce::Label, 6> workbenchStatusLabels;
+    std::array<juce::Label, 6> workbenchGraphLabels;
     juce::Label audioStatusLabel;
     juce::Label rmsLabel;
     juce::Label peakLabel;

@@ -71,6 +71,15 @@ int main()
     expectEqual (snapshot.editorEdgeCount, 3, "editor edge count");
     expectEqual (snapshot.runtimeNodeCount, 5, "runtime node count");
     expectEqual (snapshot.runtimeEdgeCount, 3, "runtime edge count");
+    expectEqual (static_cast<int> (snapshot.editorNodes.size()), 5, "editor node summary count");
+    expectEqual (static_cast<int> (snapshot.editorEdges.size()), 3, "editor edge summary count");
+    expectEqual (snapshot.editorNodes.front().id, "shader1", "first editor node id");
+    expectEqual (snapshot.editorNodes.front().type, "shader.fragment", "first editor node type");
+    expectEqual (snapshot.editorNodes.front().systemUniformCount, 4, "first editor node uniform count");
+    expect (! snapshot.editorNodes.front().collapsed, "first editor node collapsed");
+    expectEqual (snapshot.editorEdges.front().from, "shader1.output", "first editor edge from");
+    expectEqual (snapshot.editorEdges.front().to, "out1.input", "first editor edge to");
+    expectEqual (snapshot.editorEdges.front().dataType, "texture.rgba", "first editor edge data type");
     expectEqual (snapshot.activeOutputNodeId, "out1", "active output");
     expectEqual (snapshot.timelineTransport, "stopped", "timeline transport");
     expectEqual (snapshot.graphIOMappingCount, 1, "mapping count");
