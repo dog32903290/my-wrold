@@ -28,6 +28,7 @@
 #include "ShaderPreviewInputBridge.h"
 #include "WorkbenchCanvasSurfaceProofRunner.h"
 #include "WorkbenchGraphSurfaceProofRunner.h"
+#include "WorkbenchRuntimeSurfaceProofRunner.h"
 #include "WorkbenchStatusSurfaceProofRunner.h"
 
 #include <algorithm>
@@ -366,6 +367,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::workbenchCanvasSurface:
             dumpWorkbenchCanvasSurfaceProof();
+            break;
+        case StartupProofTaskId::workbenchRuntimeSurface:
+            dumpWorkbenchRuntimeSurfaceProof();
             break;
     }
 }
@@ -859,6 +863,31 @@ void MainComponent::dumpWorkbenchCanvasSurfaceProof()
 
     const auto status = result.statusText.empty() ? result.status : result.statusText;
     finishProofDump (juce::String (workbenchCanvasSurfaceProofDisplayName()),
+                     status,
+                     result.error,
+                     directory);
+}
+
+void MainComponent::dumpWorkbenchRuntimeSurfaceProof()
+{
+    const auto directory = proofDumpDirectory (workbenchRuntimeSurfaceProofDirectoryName());
+
+    WorkbenchRuntimeSurfaceProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runWorkbenchRuntimeSurfaceProof (request);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (workbenchRuntimeSurfaceProofDisplayName()),
+                         "failed",
+                         result.statusText,
+                         directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (workbenchRuntimeSurfaceProofDisplayName()),
                      status,
                      result.error,
                      directory);

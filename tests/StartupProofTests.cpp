@@ -34,10 +34,11 @@ int main()
     selected.dumpWorkbenchStatusSurfaceProof = true;
     selected.dumpWorkbenchGraphSurfaceProof = true;
     selected.dumpWorkbenchCanvasSurfaceProof = true;
+    selected.dumpWorkbenchRuntimeSurfaceProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 12, "selected options should create twelve tasks");
+    expect (selectedTasks.size() == 13, "selected options should create thirteen tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -73,6 +74,10 @@ int main()
             "workbench canvas surface task should be selected");
     expect (selectedTasks[11].delayMilliseconds == 500,
             "workbench canvas surface task should keep 500ms startup delay");
+    expect (selectedTasks[12].id == myworld::StartupProofTaskId::workbenchRuntimeSurface,
+            "workbench runtime surface task should be selected");
+    expect (selectedTasks[12].delayMilliseconds == 500,
+            "workbench runtime surface task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -103,9 +108,10 @@ int main()
     all.dumpWorkbenchStatusSurfaceProof = true;
     all.dumpWorkbenchGraphSurfaceProof = true;
     all.dumpWorkbenchCanvasSurfaceProof = true;
+    all.dumpWorkbenchRuntimeSurfaceProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 28, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 29, "all options should create every startup proof task");
 
     return 0;
 }

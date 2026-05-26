@@ -31,7 +31,8 @@ bool hasStartupProofRequest (const StartupProofOptions& options)
            || options.dumpAppStatusProof
            || options.dumpWorkbenchStatusSurfaceProof
            || options.dumpWorkbenchGraphSurfaceProof
-           || options.dumpWorkbenchCanvasSurfaceProof;
+           || options.dumpWorkbenchCanvasSurfaceProof
+           || options.dumpWorkbenchRuntimeSurfaceProof;
 }
 
 std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& options)
@@ -72,6 +73,7 @@ std::vector<StartupProofTask> startupProofTasks (const StartupProofOptions& opti
     addTask (options.dumpWorkbenchStatusSurfaceProof, StartupProofTaskId::workbenchStatusSurface, 500);
     addTask (options.dumpWorkbenchGraphSurfaceProof, StartupProofTaskId::workbenchGraphSurface, 500);
     addTask (options.dumpWorkbenchCanvasSurfaceProof, StartupProofTaskId::workbenchCanvasSurface, 500);
+    addTask (options.dumpWorkbenchRuntimeSurfaceProof, StartupProofTaskId::workbenchRuntimeSurface, 500);
 
     return tasks;
 }

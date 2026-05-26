@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 12:55 Asia/Taipei.
+Date: 2026-05-26 13:01 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/runtime1-read-only-runtime-summary
+codex/runtime2-runtime-summary-proof-readback
 ```
 
 Local repo relocation note:
@@ -89,7 +89,9 @@ CANVAS2 canvas surface proof readback (closed locally)
 1c39523 Add CANVAS2 canvas surface proof readback
 CANVAS3 canvas segment closure (closed locally)
 28569b9 Close CANVAS segment
-RUNTIME1 read-only runtime summary (closed locally pending commit)
+RUNTIME1 read-only runtime summary (closed locally)
+7134deb Add RUNTIME1 read-only runtime summary
+RUNTIME2 runtime summary proof readback (closed locally pending commit)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -186,7 +188,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 12:55 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, and RUNTIME1 are closed locally and not pushed. Current branch is `codex/runtime1-read-only-runtime-summary`; RUNTIME1 owns read-only runtime summary files until commit. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 13:01 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, and RUNTIME2 are closed locally and not pushed. Current branch is `codex/runtime2-runtime-summary-proof-readback`; RUNTIME2 owns runtime summary proof runner/readback files until commit. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -767,6 +769,62 @@ git diff --check
 passed
 ```
 
+RUNTIME2 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-runtime2-runtime-summary-proof-readback.md
+- source/app/WorkbenchRuntimeSurfaceProofRunner.h
+- source/app/WorkbenchRuntimeSurfaceProofRunner.cpp
+- source/app/StartupProof.h
+- source/app/StartupProof.cpp
+- source/app/Main.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchRuntimeSurfaceProofRunnerTests.cpp
+- tests/StartupProofTests.cpp
+- CMakeLists.txt
+
+RUNTIME2 one-line proof before code:
+
+```text
+The app proof flag dumps runtime_surface_report.json from the same WorkbenchRuntimeSurface model used by MainComponent runtime labels.
+```
+
+RUNTIME2 verification target:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_runtime_surface_proof_runner_tests my_world_startup_proof_tests my-world
+./build/my_world_workbench_runtime_surface_proof_runner_tests
+./build/my_world_startup_proof_tests
+MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-workbench-runtime-surface-proof-and-exit
+ctest --test-dir build --output-on-failure -R "workbench_runtime_surface_proof_runner|startup_proof|workbench_runtime_surface|workbench_canvas_surface|workbench_graph_surface|workbench_session|workbench_app_controller"
+git diff --check
+```
+
+RUNTIME2 accepted result:
+
+```text
+WorkbenchAppController current session
+-> WorkbenchRuntimeSurface
+-> WorkbenchRuntimeSurfaceProofRunner
+-> debug/workbench-runtime-surface-proof/runtime_surface_report.json
+```
+
+Verification:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_runtime_surface_proof_runner_tests my_world_startup_proof_tests my-world
+./build/my_world_workbench_runtime_surface_proof_runner_tests
+./build/my_world_startup_proof_tests
+MY_WORLD_PROJECT_DIR=/Users/chenbaiwei/Projects/my-world ./build/my-world_artefacts/我的世界.app/Contents/MacOS/我的世界 --dump-workbench-runtime-surface-proof-and-exit
+debug/workbench-runtime-surface-proof/runtime_surface_report.json written with ok true
+ctest --test-dir build --output-on-failure -R "workbench_runtime_surface_proof_runner|startup_proof|workbench_runtime_surface|workbench_canvas_surface|workbench_graph_surface|workbench_session|workbench_app_controller"
+100% tests passed, 0 tests failed out of 12
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -1031,6 +1089,7 @@ Latest accepted targeted result:
 | CANVAS2 canvas surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-canvas2-canvas-surface-proof-readback.md`; app proof flag writes `canvas_surface_report.json` from the same `WorkbenchCanvasSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | CANVAS3 closes the CANVAS segment |
 | CANVAS3 canvas segment closure | closed locally | `docs/superpowers/specs/2026-05-26-canvas3-canvas-segment-closure.md`; closes CANVAS1-CANVAS2 as the canvas segment from workbench graph positions to app proof readback; full `ctest` 97/97 and `git diff --check` passed | Next feature surface should be selected from this master plan |
 | RUNTIME1 read-only runtime summary | closed locally | `docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md`; `WorkbenchRuntimeSurface` exposes workbench runtime node/edge counts, output, mapping status, readiness, and cook parked status without executing runtime cook; focused tests, app build, and `git diff --check` passed | RUNTIME2 owns app runtime summary proof readback |
+| RUNTIME2 runtime summary proof readback | closed locally | `docs/superpowers/specs/2026-05-26-runtime2-runtime-summary-proof-readback.md`; app proof flag writes `runtime_surface_report.json` from the same `WorkbenchRuntimeSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | RUNTIME3 closes the RUNTIME segment |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -1040,7 +1099,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-RUNTIME1 read-only runtime summary is closed locally as of 2026-05-26 12:55 Asia/Taipei on `codex/runtime1-read-only-runtime-summary`. Not pushed. Proof target passed: current workbench runtime counts feed a read-only runtime surface and MainComponent labels without executing runtime cook.
+RUNTIME2 runtime summary proof readback is closed locally as of 2026-05-26 13:01 Asia/Taipei on `codex/runtime2-runtime-summary-proof-readback`. Not pushed. Proof target passed: app flag dumps `runtime_surface_report.json` from the same `WorkbenchRuntimeSurface` model used by MainComponent labels.
 ```
 
 Previous closure:
@@ -3842,6 +3901,7 @@ raw callback-buffer runtime
 | `2026-05-26-canvas2-canvas-surface-proof-readback.md` | CANVAS2 canvas surface proof readback closure evidence | no, unless auditing CANVAS2 evidence |
 | `2026-05-26-canvas3-canvas-segment-closure.md` | CANVAS3 closure marker for CANVAS1-CANVAS2 canvas segment | no, unless auditing CANVAS segment closure |
 | `2026-05-26-runtime1-read-only-runtime-summary.md` | RUNTIME1 read-only runtime summary closure evidence | no, unless auditing RUNTIME1 evidence |
+| `2026-05-26-runtime2-runtime-summary-proof-readback.md` | RUNTIME2 runtime summary proof readback closure evidence | no, unless auditing RUNTIME2 evidence |
 
 ## Session Safety
 
@@ -4027,6 +4087,23 @@ tests/WorkbenchRuntimeSurfaceTests.cpp
 CMakeLists.txt
 ```
 
+RUNTIME2 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-runtime2-runtime-summary-proof-readback.md
+source/app/WorkbenchRuntimeSurfaceProofRunner.h
+source/app/WorkbenchRuntimeSurfaceProofRunner.cpp
+source/app/StartupProof.h
+source/app/StartupProof.cpp
+source/app/Main.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchRuntimeSurfaceProofRunnerTests.cpp
+tests/StartupProofTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -4042,7 +4119,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. RUNTIME1 is closed locally on `codex/runtime1-read-only-runtime-summary`; next lane is RUNTIME2 runtime summary proof readback after the RUNTIME1 commit. Do not push unless explicitly requested. RUNTIME2 may add an app proof runner, startup proof flag, report JSON, and tests for the existing read-only runtime surface only. Do not add runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. RUNTIME2 is closed locally on `codex/runtime2-runtime-summary-proof-readback`; next lane is RUNTIME3 runtime segment closure after the RUNTIME2 commit. Do not push unless explicitly requested. RUNTIME3 may update closure docs and run full verification only. Do not add runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
