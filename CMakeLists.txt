@@ -1052,6 +1052,33 @@ target_link_libraries(my_world_workbench_graph_surface_tests
 
 add_test(NAME workbench_graph_surface COMMAND my_world_workbench_graph_surface_tests)
 
+add_library(my_world_workbench_canvas_surface
+    source/app/WorkbenchCanvasSurface.cpp
+)
+
+target_include_directories(my_world_workbench_canvas_surface
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+)
+
+target_link_libraries(my_world_workbench_canvas_surface
+    PUBLIC
+        my_world_interaction
+        my_world_workbench_session
+)
+
+add_executable(my_world_workbench_canvas_surface_tests
+    tests/WorkbenchCanvasSurfaceTests.cpp
+)
+
+target_link_libraries(my_world_workbench_canvas_surface_tests
+    PRIVATE
+        my_world_workbench_canvas_surface
+)
+
+add_test(NAME workbench_canvas_surface COMMAND my_world_workbench_canvas_surface_tests)
+
 add_library(my_world_app1_workbench_session_proof_runner
     source/app/APP1WorkbenchSessionProofRunner.cpp
 )
@@ -2279,6 +2306,7 @@ if(MY_WORLD_HAVE_JUCE)
             my_world_app_status_proof_runner
             my_world_workbench_status_surface
             my_world_workbench_graph_surface
+            my_world_workbench_canvas_surface
             my_world_workbench_status_surface_proof_runner
             my_world_workbench_graph_surface_proof_runner
             my_world_c5_module_publish_proof_runner

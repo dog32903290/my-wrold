@@ -9,6 +9,7 @@
 #include "PreferencesPanel.h"
 #include "StartupProof.h"
 #include "WorkbenchAppController.h"
+#include "WorkbenchCanvasSurface.h"
 #include "WorkbenchGraphSurface.h"
 #include "WorkbenchStatusSurface.h"
 
@@ -78,6 +79,7 @@ private:
     void setShaderStatus (juce::String message);
     void updateWorkbenchStatusSurface();
     void updateWorkbenchGraphSurface();
+    void updateWorkbenchCanvasSurface();
     void openWorkbenchSession();
     void loadStoredPerformancePreferences();
     void saveStoredPerformancePreferences();
@@ -106,6 +108,7 @@ private:
     juce::Label statusLabel;
     std::array<juce::Label, 6> workbenchStatusLabels;
     std::array<juce::Label, 6> workbenchGraphLabels;
+    std::array<juce::Label, 6> workbenchCanvasLabels;
     juce::Label audioStatusLabel;
     juce::Label rmsLabel;
     juce::Label peakLabel;
