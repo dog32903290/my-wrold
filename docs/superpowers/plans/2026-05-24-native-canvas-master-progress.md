@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 12:16 Asia/Taipei.
+Date: 2026-05-26 12:17 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/graph2-graph-surface-proof-readback
+codex/graph3-graph-segment-closure
 ```
 
 Local repo relocation note:
@@ -80,6 +80,8 @@ UI3 UI segment closure (closed locally)
 GRAPH1 read-only graph surface (closed locally)
 a8b0548 Add GRAPH1 read-only graph surface
 GRAPH2 graph surface proof readback (active)
+29b77d6 Add GRAPH2 graph surface proof readback
+GRAPH3 graph segment closure (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -176,7 +178,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 12:16 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, and GRAPH2 are closed locally and not pushed. Current branch is `codex/graph2-graph-surface-proof-readback`; do not push unless explicitly requested.
+As of 2026-05-26 12:17 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, and GRAPH3 are closed locally and not pushed. Current branch is `codex/graph3-graph-segment-closure`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -545,6 +547,40 @@ git diff --check
 passed
 ```
 
+GRAPH3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-graph3-graph-segment-closure.md
+
+GRAPH3 one-line proof before closure:
+
+```text
+GRAPH1-GRAPH2 form a closed GRAPH segment from workbench graph summaries to app proof readback artifact.
+```
+
+GRAPH3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+GRAPH3 accepted result:
+
+```text
+GRAPH1 read-only graph surface
+-> GRAPH2 graph surface proof readback
+-> GRAPH3 graph segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 95
+git diff --check
+passed
+```
+
 Current C4 note:
 
 ```text
@@ -804,6 +840,7 @@ Latest accepted targeted result:
 | UI3 UI segment closure | closed locally | `docs/superpowers/specs/2026-05-26-ui3-ui-segment-closure.md`; closes UI1-UI2 as the UI segment from controller-backed read-only labels to app proof readback; full `ctest` 93/93 and `git diff --check` passed | Next lane should be selected by feature surface from this master plan |
 | GRAPH1 read-only graph surface | closed locally | `docs/superpowers/specs/2026-05-26-graph1-read-only-graph-surface.md`; current workbench graph summaries now feed `WorkbenchGraphSurface` and MainComponent read-only graph labels; focused tests, app build, and `git diff --check` passed | GRAPH2 owns app graph surface proof readback |
 | GRAPH2 graph surface proof readback | closed locally | `docs/superpowers/specs/2026-05-26-graph2-graph-surface-proof-readback.md`; app proof flag writes `graph_surface_report.json` from the same `WorkbenchGraphSurface` model used by MainComponent labels; focused tests, app build, app proof dump, and `git diff --check` passed | GRAPH3 closes the GRAPH segment |
+| GRAPH3 graph segment closure | closed locally | `docs/superpowers/specs/2026-05-26-graph3-graph-segment-closure.md`; closes GRAPH1-GRAPH2 as the graph segment from workbench graph summaries to app proof readback; full `ctest` 95/95 and `git diff --check` passed | Next lane should be selected by feature surface from this master plan |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -813,7 +850,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after GRAPH2 graph surface proof readback as of 2026-05-26 12:16 Asia/Taipei on `codex/graph2-graph-surface-proof-readback`. Not pushed. Next selected lane is GRAPH3 graph segment closure.
+None after GRAPH3 graph segment closure as of 2026-05-26 12:17 Asia/Taipei on `codex/graph3-graph-segment-closure`. Not pushed. Next feature surface is unselected.
 ```
 
 Previous closure:
@@ -3610,6 +3647,7 @@ raw callback-buffer runtime
 | `2026-05-26-ui3-ui-segment-closure.md` | UI3 closure marker for UI1-UI2 UI segment | no, unless auditing UI segment closure |
 | `2026-05-26-graph1-read-only-graph-surface.md` | GRAPH1 read-only graph surface closure evidence | no, unless auditing GRAPH1 evidence |
 | `2026-05-26-graph2-graph-surface-proof-readback.md` | GRAPH2 graph surface proof readback closure evidence | no, unless auditing GRAPH2 evidence |
+| `2026-05-26-graph3-graph-segment-closure.md` | GRAPH3 closure marker for GRAPH1-GRAPH2 graph segment | no, unless auditing GRAPH segment closure |
 
 ## Session Safety
 
@@ -3738,6 +3776,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+GRAPH3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-graph3-graph-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3753,7 +3798,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `GRAPH2 graph surface proof readback` on `codex/graph2-graph-surface-proof-readback`; next selected lane is GRAPH3 graph segment closure. Do not push unless explicitly requested. GRAPH3 should close GRAPH1-GRAPH2 without adding behavior. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `GRAPH3 graph segment closure` on `codex/graph3-graph-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
