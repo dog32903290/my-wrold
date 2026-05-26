@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 10:24 Asia/Taipei.
+Date: 2026-05-26 10:33 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/open2-explicit-open-request-status
+codex/open3-open-segment-closure
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-OPEN2 explicit open request status (closed locally)
+OPEN3 open segment closure (closed locally)
+fc0d845 Add OPEN2 explicit open status
 fa068a0 Add OPEN1 created project open proof
 742a87f Close PROJECT segment
 de9eb57 Add PROJECT3 project creation status
@@ -155,18 +156,16 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 10:24 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, and OPEN2 are closed locally and not pushed. Current branch is `codex/open2-explicit-open-request-status`; do not push unless explicitly requested.
+As of 2026-05-26 10:33 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, OPEN2, and OPEN3 are closed locally and not pushed. Current branch is `codex/open3-open-segment-closure`; do not push unless explicitly requested.
 
 ```text
-OPEN2 closed-lane files:
+OPEN3 closed-lane files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-- docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md
-- source/app/WorkbenchSessionOpenStatus.*
-- tests/WorkbenchSessionOpenStatusTests.cpp
+- docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md
 ```
-Existing dirty file not owned by OPEN2 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
+Existing dirty file not owned by OPEN3 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
 
-OPEN2 did not add project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
+OPEN3 did not add behavior, project picker, app UI, active-work environment mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
 
 Current C4 note:
 
@@ -414,6 +413,7 @@ Latest accepted targeted result:
 | PROJECT4 project segment closure | closed locally | `docs/superpowers/specs/2026-05-26-project4-project-segment-closure.md`; closes PROJECT1-PROJECT3 as the project creation service/proof/status segment without adding behavior or touching source files | Future project work should leave the PROJECT prefix and choose a fresh surface such as SAVE, OPEN, UI, STATUS, GRAPH, or RUNTIME |
 | OPEN1 created project workbench open proof | closed locally | `docs/superpowers/specs/2026-05-26-open1-created-project-workbench-open-proof.md`; `CreatedProjectOpenProofRunner` creates a fresh work project, opens it through `openCurrentWorkbenchSession()`, writes `created_project_open_report.json`, and app flag `--dump-created-project-open-proof-and-exit` dumps `debug/created-project-open-proof/created_project_open_report.json`; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | OPEN2 explicit open request status | closed locally | `docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md`; `ExplicitWorkbenchOpenRequest` opens a selected `myworld.work.json` through the existing workbench session spine, returns explicit source/status wording, blocks missing explicit manifests without fixture fallback, and leaves current active-work open behavior unchanged; `ctest` 89/89 passed | Project picker/UI, active-work env mutation, save mutation, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
+| OPEN3 open segment closure | closed locally | `docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md`; closes OPEN1-OPEN2 as the non-UI workbench open segment: created project open proof plus explicit work manifest request/status; no source files changed | Future open-related work should leave the OPEN prefix and choose a specific surface such as SAVE, UI, STATUS, GRAPH, or RUNTIME |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -423,8 +423,25 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after OPEN2 explicit open request status closure as of 2026-05-26 10:24 Asia/Taipei. Not pushed.
+None after OPEN3 open segment closure as of 2026-05-26 10:33 Asia/Taipei. Not pushed.
 ```
+
+Previous closure:
+OPEN3 open segment closure closed locally.
+Evidence:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md
+
+Closed line:
+OPEN1 created project workbench open proof
+-> OPEN2 explicit open request status
+-> OPEN3 open segment closure
+
+Latest accepted result:
+- `git status -sb` started with only existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`, which is not owned by OPEN3.
+- No source files changed.
+- OPEN1 and OPEN2 retain their latest accepted full `ctest` 89/89 evidence.
+- `git diff --check` passed before documentation closeout.
 
 Previous closure:
 OPEN2 explicit open request status closed locally.
@@ -3109,19 +3126,18 @@ raw callback-buffer runtime
 | `2026-05-26-project4-project-segment-closure.md` | PROJECT4 closure marker for PROJECT1-PROJECT3 project creation segment | no, unless auditing PROJECT segment closure |
 | `2026-05-26-open1-created-project-workbench-open-proof.md` | OPEN1 created project workbench open proof closure evidence | no, unless auditing OPEN1 evidence |
 | `2026-05-26-open2-explicit-open-request-status.md` | OPEN2 explicit open request status closure evidence | no, unless auditing OPEN2 evidence |
+| `2026-05-26-open3-open-segment-closure.md` | OPEN3 closure marker for OPEN1-OPEN2 open segment | no, unless auditing OPEN segment closure |
 
 ## Session Safety
 
-OPEN2 closed-lane files:
+OPEN3 closed-lane files:
 
 ```text
 docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
-docs/superpowers/specs/2026-05-26-open2-explicit-open-request-status.md
-source/app/WorkbenchSessionOpenStatus.*
-tests/WorkbenchSessionOpenStatusTests.cpp
+docs/superpowers/specs/2026-05-26-open3-open-segment-closure.md
 ```
 
-Existing dirty file not owned by OPEN2:
+Existing dirty file not owned by OPEN3:
 
 ```text
 tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
@@ -3142,7 +3158,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `OPEN2 explicit open request status` closure on `codex/open2-explicit-open-request-status`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1, and OPEN2 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by OPEN2 and must not be staged. Recommended next selected lane is OPEN3 open segment closure if the OPEN segment should stop here, or a fresh feature-surface lane chosen from this master plan. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `OPEN3 open segment closure` on `codex/open3-open-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, and OPEN1-OPEN3 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by OPEN3 and must not be staged. The OPEN segment is closed; future work should choose a fresh feature-surface lane such as SAVE, UI, STATUS, GRAPH, or RUNTIME. Do not add app UI, active-work mutation, save mutation changes, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
