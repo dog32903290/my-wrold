@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 11:45 Asia/Taipei.
+Date: 2026-05-26 11:58 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/status2-app-status-proof-artifact
+codex/status3-status-segment-closure
 ```
 
 Local repo relocation note:
@@ -71,7 +71,9 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+STATUS3 status segment closure (closed locally)
 STATUS2 app status proof artifact (closed locally)
+7c59fbf Add STATUS2 app status proof
 STATUS1 app status snapshot (closed locally)
 b6ad498 Add STATUS1 app status snapshot
 5d75087 Close SAVE segment
@@ -162,7 +164,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 11:45 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS2 are closed locally and not pushed. Current branch is `codex/status2-app-status-proof-artifact`; do not push unless explicitly requested.
+As of 2026-05-26 11:58 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are closed locally and not pushed. Current branch is `codex/status3-status-segment-closure`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -239,6 +241,40 @@ STATUS2 accepted result:
 
 ```text
 --dump-app-status-proof-and-exit writes debug/app-status-proof/app_status_report.json with ok true, no-session/open/save status text, source active-work-opened, mapping 1/1, and save-ok commit-pending.
+```
+
+STATUS3 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md
+
+STATUS3 one-line proof before closure:
+
+```text
+STATUS1-STATUS2 form a closed status segment from controller-held snapshot to app dump proof artifact.
+```
+
+STATUS3 verification target:
+
+```text
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+STATUS3 accepted result:
+
+```text
+STATUS1 app status snapshot
+-> STATUS2 app status proof artifact
+-> STATUS3 status segment closure
+```
+
+Verification:
+
+```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 91
+git diff --check
+passed
 ```
 
 Current C4 note:
@@ -493,6 +529,7 @@ Latest accepted targeted result:
 | SAVE3 save segment closure | closed locally | `docs/superpowers/specs/2026-05-26-save3-save-segment-closure.md`; closes SAVE1-SAVE2 as the app current-session save segment: controller-held save path plus app save proof artifact; no source files changed | Future save-related work should leave the SAVE prefix and choose a specific surface such as UI, STATUS, GRAPH, or RUNTIME |
 | STATUS1 app status snapshot | closed locally | `docs/superpowers/specs/2026-05-26-status1-app-status-snapshot.md`; `WorkbenchAppController::appStatusSnapshot()` exposes controller-held no-session/open/save status as a stable value snapshot; focused controller tests, app build, focused app/workbench proof tests, and `git diff --check` passed | App status dump artifact is STATUS2; save UI, project picker, active-work mutation, canvas UI, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | STATUS2 app status proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-status2-app-status-proof-artifact.md`; `AppStatusProofRunner` writes `app_status_report.json`, app flag `--dump-app-status-proof-and-exit` dumps `debug/app-status-proof/app_status_report.json`, and focused runner/startup/app proof checks passed | STATUS segment closure is STATUS3; save UI, project picker, active-work mutation, canvas UI, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
+| STATUS3 status segment closure | closed locally | `docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md`; closes STATUS1-STATUS2 as the app status segment from controller-held snapshot through app dump proof artifact; no source files changed; full `ctest` 91/91 and `git diff --check` passed | Future status-related work should leave the STATUS prefix and choose a specific surface such as UI, GRAPH, RUNTIME, or PROOF cleanup |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -502,7 +539,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after STATUS2 app status proof artifact as of 2026-05-26 11:45 Asia/Taipei on `codex/status2-app-status-proof-artifact`. Not pushed. Next selected lane is STATUS3 status segment closure.
+None after STATUS3 status segment closure as of 2026-05-26 11:58 Asia/Taipei on `codex/status3-status-segment-closure`. Not pushed.
 ```
 
 Previous closure:
@@ -3292,6 +3329,7 @@ raw callback-buffer runtime
 | `2026-05-26-save3-save-segment-closure.md` | SAVE3 closure marker for SAVE1-SAVE2 save segment | no, unless auditing SAVE segment closure |
 | `2026-05-26-status1-app-status-snapshot.md` | STATUS1 app status snapshot closure evidence | no, unless auditing STATUS1 evidence |
 | `2026-05-26-status2-app-status-proof-artifact.md` | STATUS2 app status proof artifact closure evidence | no, unless auditing STATUS2 evidence |
+| `2026-05-26-status3-status-segment-closure.md` | STATUS3 closure marker for STATUS1-STATUS2 app status segment | no, unless auditing STATUS segment closure |
 
 ## Session Safety
 
@@ -3335,6 +3373,13 @@ tests/StartupProofTests.cpp
 CMakeLists.txt
 ```
 
+STATUS3 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3350,7 +3395,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `STATUS2 app status proof artifact` on `codex/status2-app-status-proof-artifact`; next selected lane is STATUS3 status segment closure. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS2 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by STATUS2 and must not be staged. STATUS3 should close the status segment without adding behavior. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `STATUS3 status segment closure` on `codex/status3-status-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by STATUS3 and must not be staged. The STATUS segment is closed; future work should choose a fresh feature-surface lane such as UI, GRAPH, RUNTIME, PROOF cleanup, or explicit user-facing project/open/save UI. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 
