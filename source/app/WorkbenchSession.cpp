@@ -76,6 +76,8 @@ WorkbenchSessionSnapshot makeWorkbenchSessionSnapshot (const WorkbenchSessionReq
     snapshot.runtimeEdgeCount = static_cast<int> (request.document.graph.runtimeGraph.edges.size());
     snapshot.editorNodes = makeNodeSummaries (request.document.graph.editorGraph.nodes);
     snapshot.editorEdges = makeEdgeSummaries (request.document.graph.editorGraph.edges);
+    snapshot.runtimeNodes = makeNodeSummaries (request.document.graph.runtimeGraph.nodes);
+    snapshot.runtimeEdges = makeEdgeSummaries (request.document.graph.runtimeGraph.edges);
     snapshot.activeOutputNodeId = activeOutputNodeId (request.document.outputView);
     snapshot.timelineTransport = transportStateToString (request.document.timeline.transportState);
     snapshot.graphIOMappingCount = static_cast<int> (request.graphIOMappings.size());

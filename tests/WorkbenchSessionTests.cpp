@@ -73,6 +73,8 @@ int main()
     expectEqual (snapshot.runtimeEdgeCount, 3, "runtime edge count");
     expectEqual (static_cast<int> (snapshot.editorNodes.size()), 5, "editor node summary count");
     expectEqual (static_cast<int> (snapshot.editorEdges.size()), 3, "editor edge summary count");
+    expectEqual (static_cast<int> (snapshot.runtimeNodes.size()), 5, "runtime node summary count");
+    expectEqual (static_cast<int> (snapshot.runtimeEdges.size()), 3, "runtime edge summary count");
     expectEqual (snapshot.editorNodes.front().id, "shader1", "first editor node id");
     expectEqual (snapshot.editorNodes.front().type, "shader.fragment", "first editor node type");
     expectEqual (snapshot.editorNodes.front().systemUniformCount, 4, "first editor node uniform count");
@@ -80,6 +82,10 @@ int main()
     expectEqual (snapshot.editorEdges.front().from, "shader1.output", "first editor edge from");
     expectEqual (snapshot.editorEdges.front().to, "out1.input", "first editor edge to");
     expectEqual (snapshot.editorEdges.front().dataType, "texture.rgba", "first editor edge data type");
+    expectEqual (snapshot.runtimeNodes.front().id, "shader1", "first runtime node id");
+    expectEqual (snapshot.runtimeNodes.front().type, "shader.fragment", "first runtime node type");
+    expectEqual (snapshot.runtimeEdges.front().from, "shader1.output", "first runtime edge from");
+    expectEqual (snapshot.runtimeEdges.front().to, "out1.input", "first runtime edge to");
     expectEqual (snapshot.activeOutputNodeId, "out1", "active output");
     expectEqual (snapshot.timelineTransport, "stopped", "timeline transport");
     expectEqual (snapshot.graphIOMappingCount, 1, "mapping count");

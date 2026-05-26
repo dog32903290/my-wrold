@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 13:03 Asia/Taipei.
+Date: 2026-05-26 13:29 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/runtime3-runtime-segment-closure
+codex/cook1-read-only-cook-plan
 ```
 
 Local repo relocation note:
@@ -94,6 +94,8 @@ RUNTIME1 read-only runtime summary (closed locally)
 RUNTIME2 runtime summary proof readback (closed locally)
 9c5ffa2 Add RUNTIME2 runtime summary proof readback
 RUNTIME3 runtime segment closure (closed locally)
+65c4f48 Close RUNTIME segment
+COOK1 read-only cook plan (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -190,7 +192,59 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 13:03 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, and RUNTIME3 are closed locally and not pushed. Current branch is `codex/runtime3-runtime-segment-closure`; no active lane is selected after RUNTIME3. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 13:29 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, RUNTIME3, and COOK1 are closed locally and not pushed. Current branch is `codex/cook1-read-only-cook-plan`; no active lane is selected after COOK1. Working tree was clean at lane start. Do not push unless explicitly requested.
+
+COOK1 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-cook1-read-only-cook-plan.md
+- source/app/WorkbenchSession.h
+- source/app/WorkbenchSession.cpp
+- source/app/WorkbenchCookPlanSurface.h
+- source/app/WorkbenchCookPlanSurface.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchSessionTests.cpp
+- tests/WorkbenchCookPlanSurfaceTests.cpp
+- CMakeLists.txt
+
+COOK1 one-line proof before code:
+
+```text
+WorkbenchSessionSnapshot runtimeGraph summaries
+-> WorkbenchCookPlanSurface rows
+-> MainComponent read-only cook labels
+```
+
+COOK1 verification target:
+
+```text
+cmake --build build --target my_world_workbench_cook_plan_surface_tests my_world_workbench_session_tests my-world
+./build/my_world_workbench_cook_plan_surface_tests
+./build/my_world_workbench_session_tests
+ctest --test-dir build --output-on-failure -R "workbench_cook_plan_surface|workbench_runtime_surface|workbench_session|workbench_app_controller"
+git diff --check
+```
+
+COOK1 accepted result:
+
+```text
+WorkbenchSessionSnapshot runtimeGraph summaries
+-> WorkbenchCookPlanSurface deterministic order/readiness rows
+-> MainComponent read-only cook labels
+```
+
+Verification:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_cook_plan_surface_tests my_world_workbench_session_tests my-world
+./build/my_world_workbench_cook_plan_surface_tests
+./build/my_world_workbench_session_tests
+ctest --test-dir build --output-on-failure -R "workbench_cook_plan_surface|workbench_runtime_surface|workbench_session|workbench_app_controller"
+100% tests passed, 0 tests failed out of 8
+git diff --check
+passed
+```
 
 ```text
 SAVE3 closed-lane files:
@@ -1127,6 +1181,7 @@ Latest accepted targeted result:
 | RUNTIME1 read-only runtime summary | closed locally | `docs/superpowers/specs/2026-05-26-runtime1-read-only-runtime-summary.md`; `WorkbenchRuntimeSurface` exposes workbench runtime node/edge counts, output, mapping status, readiness, and cook parked status without executing runtime cook; focused tests, app build, and `git diff --check` passed | RUNTIME2 owns app runtime summary proof readback |
 | RUNTIME2 runtime summary proof readback | closed locally | `docs/superpowers/specs/2026-05-26-runtime2-runtime-summary-proof-readback.md`; app proof flag writes `runtime_surface_report.json` from the same `WorkbenchRuntimeSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | RUNTIME3 closes the RUNTIME segment |
 | RUNTIME3 runtime segment closure | closed locally | `docs/superpowers/specs/2026-05-26-runtime3-runtime-segment-closure.md`; closes RUNTIME1-RUNTIME2 as the runtime segment from workbench runtime counts to app proof readback; full `ctest` 99/99 and `git diff --check` passed | Next feature surface should be selected from this master plan |
+| COOK1 read-only cook plan | closed locally | `docs/superpowers/specs/2026-05-26-cook1-read-only-cook-plan.md`; current session runtime graph summaries now feed `WorkbenchCookPlanSurface` deterministic order/readiness rows and MainComponent read-only cook labels; focused tests, app build, and `git diff --check` passed | COOK2 owns app cook plan proof readback |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -1136,7 +1191,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after RUNTIME3 runtime segment closure as of 2026-05-26 13:03 Asia/Taipei on `codex/runtime3-runtime-segment-closure`. Not pushed. Next feature surface is unselected.
+None after COOK1 read-only cook plan as of 2026-05-26 13:29 Asia/Taipei on `codex/cook1-read-only-cook-plan`. Not pushed. COOK2 cook plan proof readback is the next cook lane if continuing.
 ```
 
 Previous closure:
@@ -3940,6 +3995,7 @@ raw callback-buffer runtime
 | `2026-05-26-runtime1-read-only-runtime-summary.md` | RUNTIME1 read-only runtime summary closure evidence | no, unless auditing RUNTIME1 evidence |
 | `2026-05-26-runtime2-runtime-summary-proof-readback.md` | RUNTIME2 runtime summary proof readback closure evidence | no, unless auditing RUNTIME2 evidence |
 | `2026-05-26-runtime3-runtime-segment-closure.md` | RUNTIME3 closure marker for RUNTIME1-RUNTIME2 runtime segment | no, unless auditing RUNTIME segment closure |
+| `2026-05-26-cook1-read-only-cook-plan.md` | COOK1 read-only cook plan closure evidence | no, unless auditing COOK1 evidence |
 
 ## Session Safety
 
@@ -4149,6 +4205,22 @@ docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-26-runtime3-runtime-segment-closure.md
 ```
 
+COOK1 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-cook1-read-only-cook-plan.md
+source/app/WorkbenchSession.h
+source/app/WorkbenchSession.cpp
+source/app/WorkbenchCookPlanSurface.h
+source/app/WorkbenchCookPlanSurface.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchSessionTests.cpp
+tests/WorkbenchCookPlanSurfaceTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -4164,7 +4236,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `RUNTIME3 runtime segment closure` on `codex/runtime3-runtime-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `COOK1 read-only cook plan` on `codex/cook1-read-only-cook-plan`; COOK2 cook plan proof readback is the next cook lane if continuing. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

@@ -149,6 +149,12 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
         addAndMakeVisible (label);
     }
 
+    for (auto& label : workbenchCookPlanLabels)
+    {
+        configureMeterLabel (label, "");
+        addAndMakeVisible (label);
+    }
+
     openWorkbenchSession();
 
     audioStatusLabel.setText ("audio input starting", juce::dontSendNotification);
@@ -423,6 +429,16 @@ void MainComponent::resized()
     workbenchRuntimeLabels[3].setBounds (runtimeRow.removeFromLeft (150));
     workbenchRuntimeLabels[4].setBounds (runtimeRow.removeFromLeft (170));
     workbenchRuntimeLabels[5].setBounds (runtimeRow);
+
+    area.removeFromTop (8);
+
+    auto cookRow = area.removeFromTop (24);
+    workbenchCookPlanLabels[0].setBounds (cookRow.removeFromLeft (230));
+    workbenchCookPlanLabels[1].setBounds (cookRow.removeFromLeft (220));
+    workbenchCookPlanLabels[2].setBounds (cookRow.removeFromLeft (140));
+    workbenchCookPlanLabels[3].setBounds (cookRow.removeFromLeft (170));
+    workbenchCookPlanLabels[4].setBounds (cookRow.removeFromLeft (170));
+    workbenchCookPlanLabels[5].setBounds (cookRow);
 
     area.removeFromTop (8);
 
@@ -902,6 +918,7 @@ CommandResult MainComponent::saveActiveWork (GraphSession& session)
     updateWorkbenchGraphSurface();
     updateWorkbenchCanvasSurface();
     updateWorkbenchRuntimeSurface();
+    updateWorkbenchCookPlanSurface();
 
     return result;
 }
@@ -1019,6 +1036,26 @@ void MainComponent::updateWorkbenchRuntimeSurface()
     }
 }
 
+void MainComponent::updateWorkbenchCookPlanSurface()
+{
+    const auto surface = makeWorkbenchCookPlanSurface (workbenchController.currentSession());
+
+    for (std::size_t index = 0; index < workbenchCookPlanLabels.size(); ++index)
+    {
+        auto& label = workbenchCookPlanLabels[index];
+
+        if (index >= surface.rows.size())
+        {
+            label.setText ({}, juce::dontSendNotification);
+            continue;
+        }
+
+        const auto& row = surface.rows[index];
+        label.setText (juce::String (row.text), juce::dontSendNotification);
+        label.setColour (juce::Label::textColourId, workbenchStatusToneColour (row.tone));
+    }
+}
+
 void MainComponent::openWorkbenchSession()
 {
     activeWorkPreparation = prepareActiveWorkProjectForOpen();
@@ -1044,6 +1081,7 @@ void MainComponent::openWorkbenchSession()
     updateWorkbenchGraphSurface();
     updateWorkbenchCanvasSurface();
     updateWorkbenchRuntimeSurface();
+    updateWorkbenchCookPlanSurface();
 }
 
 void MainComponent::loadStoredPerformancePreferences()

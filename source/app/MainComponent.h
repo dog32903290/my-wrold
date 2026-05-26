@@ -10,6 +10,7 @@
 #include "StartupProof.h"
 #include "WorkbenchAppController.h"
 #include "WorkbenchCanvasSurface.h"
+#include "WorkbenchCookPlanSurface.h"
 #include "WorkbenchGraphSurface.h"
 #include "WorkbenchRuntimeSurface.h"
 #include "WorkbenchStatusSurface.h"
@@ -84,6 +85,7 @@ private:
     void updateWorkbenchGraphSurface();
     void updateWorkbenchCanvasSurface();
     void updateWorkbenchRuntimeSurface();
+    void updateWorkbenchCookPlanSurface();
     void openWorkbenchSession();
     void loadStoredPerformancePreferences();
     void saveStoredPerformancePreferences();
@@ -114,6 +116,7 @@ private:
     std::array<juce::Label, 6> workbenchGraphLabels;
     std::array<juce::Label, 6> workbenchCanvasLabels;
     std::array<juce::Label, 6> workbenchRuntimeLabels;
+    std::array<juce::Label, 6> workbenchCookPlanLabels;
     juce::Label audioStatusLabel;
     juce::Label rmsLabel;
     juce::Label peakLabel;

@@ -68,6 +68,8 @@ struct WorkbenchSessionSnapshot
     int runtimeEdgeCount = 0;
     std::vector<GraphNodeSummary> editorNodes;
     std::vector<GraphEdgeSummary> editorEdges;
+    std::vector<GraphNodeSummary> runtimeNodes;
+    std::vector<GraphEdgeSummary> runtimeEdges;
     std::string activeOutputNodeId;
     std::string timelineTransport;
     int graphIOMappingCount = 0;
