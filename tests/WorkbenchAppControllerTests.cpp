@@ -44,6 +44,12 @@ int main()
 
     myworld::WorkbenchAppController controller;
 
+    const auto initialStatus = controller.appStatusSnapshot();
+    expect (! initialStatus.ok, "initial app status should be blocked");
+    expect (initialStatus.status == "blocked", "initial app status value");
+    expect (initialStatus.statusText == "workbench blocked: no session", "initial app status text");
+    expect (initialStatus.message == "no current workbench session", "initial app status message");
+
     myworld::WorkbenchAppControllerOpenRequest request;
     request.activeWorkManifestPath = workRoot / "myworld.work.json";
     request.candidateRoots = { std::filesystem::current_path() };
@@ -57,6 +63,17 @@ int main()
     expect (snapshot.workSource == "active-work", "active work source");
     expect (snapshot.documentId == "patch.c2-main", "document id");
     expect (snapshot.graphIOMappingStatus == "valid", "mapping status");
+
+    const auto openedStatus = controller.appStatusSnapshot();
+    expect (openedStatus.ok, openedStatus.message);
+    expect (openedStatus.status == "ready", "opened app status");
+    expect (openedStatus.statusText == controller.statusText(), "opened app status text");
+    expect (openedStatus.workSource == "active-work", "opened app status work source");
+    expect (openedStatus.workSourceStatus == "active-work-opened", "opened app status source status");
+    expect (openedStatus.documentId == "patch.c2-main", "opened app status document id");
+    expect (openedStatus.graphIOMappingStatus == "valid", "opened app status mapping status");
+    expect (openedStatus.validGraphIOMappingCount == snapshot.validGraphIOMappingCount,
+            "opened app status valid mapping count");
 
     expectContains (controller.statusText(), "workbench ready", "controller status");
     expectContains (controller.statusText(),
@@ -74,6 +91,12 @@ int main()
     expect (saved.message == "save-ok commit-pending", "controller save status");
     expect (! saveSession.dirty, "controller save clears dirty graph state");
     expectContains (controller.statusText(), "save_work: save-ok commit-pending", "controller save status text");
+    const auto savedStatus = controller.appStatusSnapshot();
+    expect (savedStatus.ok, savedStatus.message);
+    expect (savedStatus.statusText == "save_work: save-ok commit-pending", "saved app status text");
+    expect (savedStatus.saveStatus == "save-ok commit-pending", "saved app save status");
+    expect (! savedStatus.dirty, "saved app dirty status");
+    expect (savedStatus.documentId == snapshot.documentId, "saved app document id");
 
     const auto proofRequest = controller.makeOpenStatusProofRequest (
         std::filesystem::temp_directory_path() / "my-world-app3-proof");

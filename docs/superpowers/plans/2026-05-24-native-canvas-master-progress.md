@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 10:56 Asia/Taipei.
+Date: 2026-05-26 11:25 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/save3-save-segment-closure
+codex/status1-app-status-snapshot
 ```
 
 Local repo relocation note:
@@ -71,7 +71,8 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
-SAVE3 save segment closure (closed locally)
+STATUS1 app status snapshot (closed locally)
+5d75087 Close SAVE segment
 759723b Add SAVE2 app save proof
 5acc0cf Route save through current workbench session
 d998243 Close OPEN segment
@@ -159,7 +160,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 10:56 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, and SAVE1-SAVE3 are closed locally and not pushed. Current branch is `codex/save3-save-segment-closure`; do not push unless explicitly requested.
+As of 2026-05-26 11:25 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1 are closed locally and not pushed. Current branch is `codex/status1-app-status-snapshot`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -169,6 +170,36 @@ SAVE3 closed-lane files:
 Existing dirty file not owned by SAVE3 remains uncommitted: `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp`. Do not stage or edit it in this lane.
 
 SAVE3 closes the SAVE segment. It did not add behavior, save UI, project picker, active-work environment mutation, new save format, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, or visual polish.
+
+STATUS1 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-status1-app-status-snapshot.md
+- source/app/WorkbenchAppController.h
+- source/app/WorkbenchAppController.cpp
+- tests/WorkbenchAppControllerTests.cpp
+
+STATUS1 one-line proof before code:
+
+```text
+WorkbenchAppController exposes a stable app status snapshot that remains readable before open, after open, and after current-session save.
+```
+
+STATUS1 verification target:
+
+```text
+cmake --build build --target my_world_workbench_app_controller_tests
+./build/my_world_workbench_app_controller_tests
+cmake --build build --target my-world
+ctest --test-dir build --output-on-failure -R "workbench_app_controller|workbench_session_open_status|app_workbench_session_proof_runner|app_save_proof_runner"
+git diff --check
+```
+
+STATUS1 accepted result:
+
+```text
+WorkbenchAppController::appStatusSnapshot()
+reads no-session, open, and save status from the controller-held session/status text.
+```
 
 Current C4 note:
 
@@ -420,6 +451,7 @@ Latest accepted targeted result:
 | SAVE1 current session save status | closed locally | `docs/superpowers/specs/2026-05-26-save1-current-session-save-status.md`; `WorkbenchAppController::saveCurrentSession()` routes existing save action/status through the held `WorkbenchSessionSnapshot.workManifestPath` and existing `saveWork()` command; `MainComponent` delegates save callback to the controller; `ctest` 89/89 passed | Save UI, project picker, active-work environment mutation, new save format, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | SAVE2 app save proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-save2-app-save-proof-artifact.md`; `AppSaveProofRunner` creates a proof work, opens it through `WorkbenchAppController`, saves through `saveCurrentSession()`, writes `app_save_report.json`, and app flag `--dump-app-save-proof-and-exit` dumps `debug/app-save-proof/app_save_report.json`; `ctest` 90/90 passed | Save UI, project picker, active-work environment mutation, new save format, mapping editor, runtime cook, OpenGL backend expansion, Metal, analyzer DSP, and visual polish remain parked |
 | SAVE3 save segment closure | closed locally | `docs/superpowers/specs/2026-05-26-save3-save-segment-closure.md`; closes SAVE1-SAVE2 as the app current-session save segment: controller-held save path plus app save proof artifact; no source files changed | Future save-related work should leave the SAVE prefix and choose a specific surface such as UI, STATUS, GRAPH, or RUNTIME |
+| STATUS1 app status snapshot | closed locally | `docs/superpowers/specs/2026-05-26-status1-app-status-snapshot.md`; `WorkbenchAppController::appStatusSnapshot()` exposes controller-held no-session/open/save status as a stable value snapshot; focused controller tests, app build, focused app/workbench proof tests, and `git diff --check` passed | App status dump artifact is STATUS2; save UI, project picker, active-work mutation, canvas UI, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -429,7 +461,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after SAVE3 save segment closure as of 2026-05-26 10:56 Asia/Taipei. Not pushed.
+None after STATUS1 app status snapshot as of 2026-05-26 11:25 Asia/Taipei on `codex/status1-app-status-snapshot`. Not pushed. Next selected lane is STATUS2 app status dump proof artifact.
 ```
 
 Previous closure:
@@ -3217,6 +3249,7 @@ raw callback-buffer runtime
 | `2026-05-26-save1-current-session-save-status.md` | SAVE1 current session save status closure evidence | no, unless auditing SAVE1 evidence |
 | `2026-05-26-save2-app-save-proof-artifact.md` | SAVE2 app save proof artifact closure evidence | no, unless auditing SAVE2 evidence |
 | `2026-05-26-save3-save-segment-closure.md` | SAVE3 closure marker for SAVE1-SAVE2 save segment | no, unless auditing SAVE segment closure |
+| `2026-05-26-status1-app-status-snapshot.md` | STATUS1 app status snapshot closure evidence | no, unless auditing STATUS1 evidence |
 
 ## Session Safety
 
@@ -3231,6 +3264,16 @@ Existing dirty file not owned by SAVE3:
 
 ```text
 tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
+```
+
+STATUS1 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-status1-app-status-snapshot.md
+source/app/WorkbenchAppController.h
+source/app/WorkbenchAppController.cpp
+tests/WorkbenchAppControllerTests.cpp
 ```
 
 Avoid unrelated files and parked lanes:
@@ -3248,7 +3291,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `SAVE3 save segment closure` on `codex/save3-save-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, and SAVE1-SAVE3 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by SAVE3 and must not be staged. The SAVE segment is closed; future work should choose a fresh feature-surface lane such as UI, STATUS, GRAPH, or RUNTIME. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `STATUS1 app status snapshot` on `codex/status1-app-status-snapshot`; next selected lane is STATUS2 app status dump proof artifact. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by STATUS1 and must not be staged. STATUS2 should add the app dump proof artifact over the STATUS1 snapshot. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

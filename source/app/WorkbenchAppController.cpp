@@ -34,6 +34,37 @@ const WorkbenchSessionSnapshot& WorkbenchAppController::currentSession() const
     return currentSessionSnapshot;
 }
 
+WorkbenchAppStatusSnapshot WorkbenchAppController::appStatusSnapshot() const
+{
+    WorkbenchAppStatusSnapshot status;
+    status.ok = currentSessionSnapshot.ok;
+    status.status = currentSessionSnapshot.status.empty()
+                        ? (currentSessionSnapshot.ok ? "ready" : "blocked")
+                        : currentSessionSnapshot.status;
+    status.message = currentSessionSnapshot.message.empty()
+                         ? (currentSessionSnapshot.ok ? "workbench_session_ready" : "no current workbench session")
+                         : currentSessionSnapshot.message;
+    status.statusText = currentStatusText;
+    status.workManifestPath = currentSessionSnapshot.workManifestPath;
+    status.workSource = currentSessionSnapshot.workSource;
+    status.workSourceStatus = currentSessionSnapshot.workSourceStatus;
+    status.activeWorkManifestPath = currentSessionSnapshot.activeWorkManifestPath;
+    status.graphIOMappingSourcePath = currentSessionSnapshot.graphIOMappingSourcePath;
+    status.documentId = currentSessionSnapshot.documentId;
+    status.documentTitle = currentSessionSnapshot.documentTitle;
+    status.documentVersion = currentSessionSnapshot.documentVersion;
+    status.dirty = currentSessionSnapshot.dirty;
+    status.saveStatus = currentSessionSnapshot.saveStatus;
+    status.proofStatus = currentSessionSnapshot.proofStatus;
+    status.previewStatus = currentSessionSnapshot.previewStatus;
+    status.graphIOMappingCount = currentSessionSnapshot.graphIOMappingCount;
+    status.validGraphIOMappingCount = currentSessionSnapshot.validGraphIOMappingCount;
+    status.graphIOMappingStatus = currentSessionSnapshot.graphIOMappingStatus;
+    status.workDiagnostics = currentSessionSnapshot.workDiagnostics;
+    status.diagnostics = currentSessionSnapshot.diagnostics;
+    return status;
+}
+
 std::string WorkbenchAppController::statusText() const
 {
     return currentStatusText;
