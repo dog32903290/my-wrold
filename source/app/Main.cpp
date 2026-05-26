@@ -46,6 +46,8 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
         "--dump-project-creation-proof-and-exit");
     options.dumpCreatedProjectOpenProof = commandLine.contains (
         "--dump-created-project-open-proof-and-exit");
+    options.dumpAppSaveProof = commandLine.contains (
+        "--dump-app-save-proof-and-exit");
     options.quitAfterStartupDump = hasStartupProofRequest (options);
 
     return options;

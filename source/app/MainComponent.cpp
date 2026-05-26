@@ -3,6 +3,7 @@
 #include "A1AudioProofRunner.h"
 #include "ActiveWorkService.h"
 #include "APP1WorkbenchSessionProofRunner.h"
+#include "AppSaveProofRunner.h"
 #include "AppWorkbenchSessionProofRunner.h"
 #include "AppPaths.h"
 #include "C2StorageProofRunner.h"
@@ -307,6 +308,9 @@ void MainComponent::runStartupProofTask (StartupProofTaskId task)
             break;
         case StartupProofTaskId::createdProjectOpen:
             dumpCreatedProjectOpenProof();
+            break;
+        case StartupProofTaskId::appSave:
+            dumpAppSaveProof();
             break;
     }
 }
@@ -650,6 +654,25 @@ void MainComponent::dumpCreatedProjectOpenProof()
 
     const auto status = result.statusText.empty() ? result.status : result.statusText;
     finishProofDump (juce::String (createdProjectOpenProofDisplayName()), status, result.error, directory);
+}
+
+void MainComponent::dumpAppSaveProof()
+{
+    const auto directory = proofDumpDirectory (appSaveProofDirectoryName());
+
+    AppSaveProofRunRequest request;
+    request.outputDirectory = directory.getFullPathName().toStdString();
+    request.candidateRoots = proofCandidateRoots();
+
+    const auto result = runAppSaveProof (request);
+    if (! result.ok && ! result.statusText.empty())
+    {
+        finishProofDump (juce::String (appSaveProofDisplayName()), "failed", result.statusText, directory);
+        return;
+    }
+
+    const auto status = result.statusText.empty() ? result.status : result.statusText;
+    finishProofDump (juce::String (appSaveProofDisplayName()), status, result.error, directory);
 }
 
 CommandResult MainComponent::saveActiveWork (GraphSession& session)
