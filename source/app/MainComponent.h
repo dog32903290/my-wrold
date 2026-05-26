@@ -70,6 +70,7 @@ private:
     void dumpWorkbenchGraphSurfaceProof();
     void dumpWorkbenchCanvasSurfaceProof();
     void dumpWorkbenchRuntimeSurfaceProof();
+    void dumpWorkbenchCookPlanProof();
     void dumpPVDetectorProof (PVDetectorProofKind kind);
     void scheduleStartupProofs (const StartupProofOptions& options);
     void runStartupProofTask (StartupProofTaskId task);

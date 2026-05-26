@@ -34,7 +34,8 @@ enum class StartupProofTaskId
     workbenchStatusSurface,
     workbenchGraphSurface,
     workbenchCanvasSurface,
-    workbenchRuntimeSurface
+    workbenchRuntimeSurface,
+    workbenchCookPlan
 };
 
 struct StartupProofTask
@@ -74,6 +75,7 @@ struct StartupProofOptions
     bool dumpWorkbenchGraphSurfaceProof = false;
     bool dumpWorkbenchCanvasSurfaceProof = false;
     bool dumpWorkbenchRuntimeSurfaceProof = false;
+    bool dumpWorkbenchCookPlanProof = false;
     bool quitAfterStartupDump = false;
 };
 

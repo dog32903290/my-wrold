@@ -35,10 +35,11 @@ int main()
     selected.dumpWorkbenchGraphSurfaceProof = true;
     selected.dumpWorkbenchCanvasSurfaceProof = true;
     selected.dumpWorkbenchRuntimeSurfaceProof = true;
+    selected.dumpWorkbenchCookPlanProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 13, "selected options should create thirteen tasks");
+    expect (selectedTasks.size() == 14, "selected options should create fourteen tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -78,6 +79,10 @@ int main()
             "workbench runtime surface task should be selected");
     expect (selectedTasks[12].delayMilliseconds == 500,
             "workbench runtime surface task should keep 500ms startup delay");
+    expect (selectedTasks[13].id == myworld::StartupProofTaskId::workbenchCookPlan,
+            "workbench cook plan task should be selected");
+    expect (selectedTasks[13].delayMilliseconds == 500,
+            "workbench cook plan task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -109,9 +114,10 @@ int main()
     all.dumpWorkbenchGraphSurfaceProof = true;
     all.dumpWorkbenchCanvasSurfaceProof = true;
     all.dumpWorkbenchRuntimeSurfaceProof = true;
+    all.dumpWorkbenchCookPlanProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 29, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 30, "all options should create every startup proof task");
 
     return 0;
 }

@@ -58,6 +58,8 @@ StartupProofOptions startupProofOptionsFromCommandLine (const juce::String& comm
         "--dump-workbench-canvas-surface-proof-and-exit");
     options.dumpWorkbenchRuntimeSurfaceProof = commandLine.contains (
         "--dump-workbench-runtime-surface-proof-and-exit");
+    options.dumpWorkbenchCookPlanProof = commandLine.contains (
+        "--dump-workbench-cook-plan-proof-and-exit");
     options.quitAfterStartupDump = hasStartupProofRequest (options);
 
     return options;
