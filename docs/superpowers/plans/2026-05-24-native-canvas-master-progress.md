@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 11:36 Asia/Taipei.
+Date: 2026-05-26 11:48 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/app2-legacy-proof-artifact-test
+codex/ui1-read-only-status-surface
 ```
 
 Local repo relocation note:
@@ -71,7 +71,9 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+UI1 read-only status surface (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
+464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
 d1debc1 Close STATUS segment
 STATUS2 app status proof artifact (closed locally)
@@ -166,7 +168,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 11:36 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are closed locally and not pushed. Current branch is `codex/app2-legacy-proof-artifact-test`; do not push unless explicitly requested.
+As of 2026-05-26 11:48 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, and UI1 are closed locally and not pushed. Current branch is `codex/ui1-read-only-status-surface`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -317,6 +319,37 @@ ctest --test-dir build --output-on-failure
 100% tests passed, 0 tests failed out of 91
 git diff --check
 passed
+```
+
+UI1 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-ui1-read-only-status-surface.md
+- source/app/WorkbenchStatusSurface.h
+- source/app/WorkbenchStatusSurface.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchStatusSurfaceTests.cpp
+- CMakeLists.txt
+
+UI1 one-line proof before code:
+
+```text
+WorkbenchAppStatusSnapshot renders into a read-only visible status surface with work/source/save/mapping/proof/preview rows.
+```
+
+UI1 verification target:
+
+```text
+cmake --build build --target my_world_workbench_status_surface_tests my-world
+./build/my_world_workbench_status_surface_tests
+ctest --test-dir build --output-on-failure -R "workbench_status_surface|workbench_app_controller|app_status_proof_runner"
+git diff --check
+```
+
+UI1 accepted result:
+
+```text
+WorkbenchStatusSurface renders work/source/save/mapping/proof/preview rows from WorkbenchAppStatusSnapshot, and MainComponent displays them as read-only status labels.
 ```
 
 Current C4 note:
@@ -573,6 +606,7 @@ Latest accepted targeted result:
 | STATUS1 app status snapshot | closed locally | `docs/superpowers/specs/2026-05-26-status1-app-status-snapshot.md`; `WorkbenchAppController::appStatusSnapshot()` exposes controller-held no-session/open/save status as a stable value snapshot; focused controller tests, app build, focused app/workbench proof tests, and `git diff --check` passed | App status dump artifact is STATUS2; save UI, project picker, active-work mutation, canvas UI, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | STATUS2 app status proof artifact | closed locally | `docs/superpowers/specs/2026-05-26-status2-app-status-proof-artifact.md`; `AppStatusProofRunner` writes `app_status_report.json`, app flag `--dump-app-status-proof-and-exit` dumps `debug/app-status-proof/app_status_report.json`, and focused runner/startup/app proof checks passed | STATUS segment closure is STATUS3; save UI, project picker, active-work mutation, canvas UI, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | STATUS3 status segment closure | closed locally | `docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md`; closes STATUS1-STATUS2 as the app status segment from controller-held snapshot through app dump proof artifact; no source files changed; full `ctest` 91/91 and `git diff --check` passed | Future status-related work should leave the STATUS prefix and choose a specific surface such as UI, GRAPH, RUNTIME, or PROOF cleanup |
+| UI1 read-only status surface | closed locally | `docs/superpowers/specs/2026-05-26-ui1-read-only-status-surface.md`; `WorkbenchStatusSurface` renders work/source/save/mapping/proof/preview rows from `WorkbenchAppStatusSnapshot`, and `MainComponent` displays them as read-only labels; focused tests, app build, and `git diff --check` passed | UI2 owns app UI/status proof readback; project picker, save UI, canvas node surface, mapping editor, runtime cook, Metal, analyzer DSP, and visual polish remain parked |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -582,7 +616,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after APP2 legacy proof artifact test cleanup as of 2026-05-26 11:36 Asia/Taipei on `codex/app2-legacy-proof-artifact-test`. Not pushed.
+None after UI1 read-only status surface as of 2026-05-26 11:48 Asia/Taipei on `codex/ui1-read-only-status-surface`. Not pushed. Next selected lane is UI2 app UI/status proof readback.
 ```
 
 Previous closure:
@@ -3374,6 +3408,7 @@ raw callback-buffer runtime
 | `2026-05-26-status1-app-status-snapshot.md` | STATUS1 app status snapshot closure evidence | no, unless auditing STATUS1 evidence |
 | `2026-05-26-status2-app-status-proof-artifact.md` | STATUS2 app status proof artifact closure evidence | no, unless auditing STATUS2 evidence |
 | `2026-05-26-status3-status-segment-closure.md` | STATUS3 closure marker for STATUS1-STATUS2 app status segment | no, unless auditing STATUS segment closure |
+| `2026-05-26-ui1-read-only-status-surface.md` | UI1 read-only status surface closure evidence | no, unless auditing UI1 evidence |
 
 ## Session Safety
 
@@ -3432,6 +3467,19 @@ docs/superpowers/specs/2026-05-26-app2-legacy-proof-artifact-test.md
 tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
 ```
 
+UI1 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-ui1-read-only-status-surface.md
+source/app/WorkbenchStatusSurface.h
+source/app/WorkbenchStatusSurface.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchStatusSurfaceTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3447,7 +3495,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `APP2 legacy proof artifact test cleanup` on `codex/app2-legacy-proof-artifact-test`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, and the APP2 legacy proof artifact test cleanup are local-only commits/changes; do not push unless explicitly requested. The previously dirty `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` file is now closed by this cleanup. Future work should choose a fresh feature-surface lane such as UI, GRAPH, RUNTIME, PROOF cleanup, or explicit user-facing project/open/save UI. Do not add source changes, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `UI1 read-only status surface` on `codex/ui1-read-only-status-surface`; next selected lane is UI2 app UI/status proof readback. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, and UI1 are local-only commits/changes; do not push unless explicitly requested. UI2 should prove the visible status surface through an app proof artifact. Do not add source changes outside the selected lane, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

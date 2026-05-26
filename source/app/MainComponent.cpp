@@ -76,6 +76,20 @@ juce::Colour liveIOToneColour (const juce::String& tone)
     return juce::Colour::fromRGB (202, 211, 226);
 }
 
+juce::Colour workbenchStatusToneColour (const std::string& tone)
+{
+    if (tone == "blocked")
+        return juce::Colour::fromRGB (244, 122, 122);
+
+    if (tone == "dirty")
+        return juce::Colour::fromRGB (238, 202, 118);
+
+    if (tone == "ready")
+        return juce::Colour::fromRGB (157, 198, 218);
+
+    return juce::Colour::fromRGB (202, 211, 226);
+}
+
 LiveIORealtimeIndicatorTelemetry makeRealtimeIndicatorTelemetry (
     const AudioRealtimeDeliveryResult& realtime)
 {
@@ -106,6 +120,13 @@ MainComponent::MainComponent (StartupProofOptions startupProofOptions)
     statusLabel.setColour (juce::Label::textColourId, juce::Colour::fromRGB (172, 184, 204));
     statusLabel.setFont (juce::Font (juce::FontOptions (13.0f)));
     addAndMakeVisible (statusLabel);
+
+    for (auto& label : workbenchStatusLabels)
+    {
+        configureMeterLabel (label, "");
+        addAndMakeVisible (label);
+    }
+
     openWorkbenchSession();
 
     audioStatusLabel.setText ("audio input starting", juce::dontSendNotification);
@@ -328,6 +349,16 @@ void MainComponent::resized()
     dumpProofButton.setBounds (header.removeFromRight (112));
     header.removeFromRight (10);
     statusLabel.setBounds (header);
+
+    area.removeFromTop (8);
+
+    auto workbenchRow = area.removeFromTop (24);
+    workbenchStatusLabels[0].setBounds (workbenchRow.removeFromLeft (230));
+    workbenchStatusLabels[1].setBounds (workbenchRow.removeFromLeft (250));
+    workbenchStatusLabels[2].setBounds (workbenchRow.removeFromLeft (250));
+    workbenchStatusLabels[3].setBounds (workbenchRow.removeFromLeft (150));
+    workbenchStatusLabels[4].setBounds (workbenchRow.removeFromLeft (170));
+    workbenchStatusLabels[5].setBounds (workbenchRow);
 
     area.removeFromTop (8);
 
@@ -703,6 +734,7 @@ CommandResult MainComponent::saveActiveWork (GraphSession& session)
     const auto result = workbenchController.saveCurrentSession (session);
     statusLabel.setText ((result.ok ? "save_work: " : "save_work failed: ") + juce::String (result.message),
                          juce::dontSendNotification);
+    updateWorkbenchStatusSurface();
 
     return result;
 }
@@ -740,6 +772,26 @@ void MainComponent::setShaderStatus (juce::String message)
         quitAfterDelay();
 }
 
+void MainComponent::updateWorkbenchStatusSurface()
+{
+    const auto surface = makeWorkbenchStatusSurface (workbenchController.appStatusSnapshot());
+
+    for (std::size_t index = 0; index < workbenchStatusLabels.size(); ++index)
+    {
+        auto& label = workbenchStatusLabels[index];
+
+        if (index >= surface.rows.size())
+        {
+            label.setText ({}, juce::dontSendNotification);
+            continue;
+        }
+
+        const auto& row = surface.rows[index];
+        label.setText (juce::String (row.text), juce::dontSendNotification);
+        label.setColour (juce::Label::textColourId, workbenchStatusToneColour (row.tone));
+    }
+}
+
 void MainComponent::openWorkbenchSession()
 {
     activeWorkPreparation = prepareActiveWorkProjectForOpen();
@@ -761,6 +813,7 @@ void MainComponent::openWorkbenchSession()
 
     statusLabel.setText (statusText,
                          juce::dontSendNotification);
+    updateWorkbenchStatusSurface();
 }
 
 void MainComponent::loadStoredPerformancePreferences()
