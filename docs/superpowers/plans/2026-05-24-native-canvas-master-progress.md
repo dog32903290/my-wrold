@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 13:37 Asia/Taipei.
+Date: 2026-05-26 14:11 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/cook3-cook-segment-closure
+codex/run1-workbench-headless-run
 ```
 
 Local repo relocation note:
@@ -100,6 +100,8 @@ e493d82 Add COOK1 read-only cook plan
 COOK2 cook plan proof readback (closed locally)
 ff7b322 Add COOK2 cook plan proof readback
 COOK3 cook segment closure (closed locally)
+48dded7 Close COOK segment
+RUN1 workbench headless run (closed locally)
 APP2 legacy proof artifact test cleanup (closed locally)
 464df37 Sync APP2 legacy proof artifacts
 STATUS3 status segment closure (closed locally)
@@ -196,7 +198,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 13:37 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, RUNTIME3, COOK1, COOK2, and COOK3 are closed locally and not pushed. Current branch is `codex/cook3-cook-segment-closure`; no active lane is selected after COOK3. Working tree was clean at lane start. Do not push unless explicitly requested.
+As of 2026-05-26 14:11 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, the APP2 legacy proof artifact test cleanup, UI1, UI2, UI3, GRAPH1, GRAPH2, GRAPH3, CANVAS1, CANVAS2, CANVAS3, RUNTIME1, RUNTIME2, RUNTIME3, COOK1, COOK2, COOK3, and RUN1 are closed locally and not pushed. Current branch is `codex/run1-workbench-headless-run`; no active lane is selected after RUN1. Working tree was clean at lane start. Do not push unless explicitly requested.
 
 COOK1 closed-lane files:
 - docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
@@ -339,6 +341,59 @@ Verification:
 ```text
 ctest --test-dir build --output-on-failure
 100% tests passed, 0 tests failed out of 101
+git diff --check
+passed
+```
+
+RUN1 closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-run1-workbench-headless-run.md
+- source/app/WorkbenchSession.h
+- source/app/WorkbenchSession.cpp
+- source/app/WorkbenchRunSurface.h
+- source/app/WorkbenchRunSurface.cpp
+- source/app/MainComponent.h
+- source/app/MainComponent.cpp
+- tests/WorkbenchSessionTests.cpp
+- tests/WorkbenchRunSurfaceTests.cpp
+- CMakeLists.txt
+
+RUN1 one-line proof before code:
+
+```text
+WorkbenchSessionSnapshot runtimeGraph
+-> WorkbenchRunSurface / headless fixture adapter
+-> HeadlessRenderRuntime artifacts
+```
+
+RUN1 verification target:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_run_surface_tests my_world_workbench_session_tests my-world
+./build/my_world_workbench_run_surface_tests
+./build/my_world_workbench_session_tests
+ctest --test-dir build --output-on-failure -R "workbench_run_surface|workbench_cook_plan_surface|workbench_session|workbench_app_controller|headless_render_runtime"
+git diff --check
+```
+
+RUN1 accepted result:
+
+```text
+WorkbenchSessionSnapshot runtimeGraph
+-> WorkbenchRunSurface / headless fixture adapter
+-> HeadlessRenderRuntime artifacts
+```
+
+Verification:
+
+```text
+cmake -S . -B build
+cmake --build build --target my_world_workbench_run_surface_tests my_world_workbench_session_tests my-world
+./build/my_world_workbench_run_surface_tests
+./build/my_world_workbench_session_tests
+ctest --test-dir build --output-on-failure -R "workbench_run_surface|workbench_cook_plan_surface|workbench_session|workbench_app_controller|headless_render_runtime"
+100% tests passed, 0 tests failed out of 9
 git diff --check
 passed
 ```
@@ -1281,6 +1336,7 @@ Latest accepted targeted result:
 | COOK1 read-only cook plan | closed locally | `docs/superpowers/specs/2026-05-26-cook1-read-only-cook-plan.md`; current session runtime graph summaries now feed `WorkbenchCookPlanSurface` deterministic order/readiness rows and MainComponent read-only cook labels; focused tests, app build, and `git diff --check` passed | COOK2 owns app cook plan proof readback |
 | COOK2 cook plan proof readback | closed locally | `docs/superpowers/specs/2026-05-26-cook2-cook-plan-proof-readback.md`; app proof flag dumps `cook_plan_report.json` from the same `WorkbenchCookPlanSurface` model used by MainComponent labels; focused tests, app proof dump, and `git diff --check` passed | COOK3 closes the COOK segment |
 | COOK3 cook segment closure | closed locally | `docs/superpowers/specs/2026-05-26-cook3-cook-segment-closure.md`; closes COOK1-COOK2 as the cook segment from current-session runtime graph summaries to app proof readback; full `ctest` 101/101 and `git diff --check` passed | Next feature surface should be selected from this master plan |
+| RUN1 workbench headless run | closed locally | `docs/superpowers/specs/2026-05-26-run1-workbench-headless-run.md`; supported current-session runtime graph summaries now feed `WorkbenchRunSurface`, generate a headless fixture, and run through existing `HeadlessRenderRuntime`; unsupported shader graphs report unsupported instead of fake execution; focused tests, app build, and `git diff --check` passed | RUN2 owns app run proof readback |
 | TiXL parity | ledgered, not main spine | `docs/superpowers/plans/2026-05-24-tixl-parity-construction-ledger.md` | No active TiXL lane after BUILD1 closure |
 
 ## Active Lane Protocol
@@ -1290,7 +1346,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after COOK3 cook segment closure as of 2026-05-26 13:37 Asia/Taipei on `codex/cook3-cook-segment-closure`. Not pushed. Next feature surface is unselected.
+None after RUN1 workbench headless run as of 2026-05-26 14:11 Asia/Taipei on `codex/run1-workbench-headless-run`. Not pushed. RUN2 app run proof readback is next if continuing.
 ```
 
 Previous closure:
@@ -4097,6 +4153,7 @@ raw callback-buffer runtime
 | `2026-05-26-cook1-read-only-cook-plan.md` | COOK1 read-only cook plan closure evidence | no, unless auditing COOK1 evidence |
 | `2026-05-26-cook2-cook-plan-proof-readback.md` | COOK2 cook plan proof readback closure evidence | no, unless auditing COOK2 evidence |
 | `2026-05-26-cook3-cook-segment-closure.md` | COOK3 closure marker for COOK1-COOK2 cook segment | no, unless auditing COOK segment closure |
+| `2026-05-26-run1-workbench-headless-run.md` | RUN1 workbench headless run closure evidence | no, unless auditing RUN1 evidence |
 
 ## Session Safety
 
@@ -4346,6 +4403,22 @@ docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-26-cook3-cook-segment-closure.md
 ```
 
+RUN1 closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-run1-workbench-headless-run.md
+source/app/WorkbenchSession.h
+source/app/WorkbenchSession.cpp
+source/app/WorkbenchRunSurface.h
+source/app/WorkbenchRunSurface.cpp
+source/app/MainComponent.h
+source/app/MainComponent.cpp
+tests/WorkbenchSessionTests.cpp
+tests/WorkbenchRunSurfaceTests.cpp
+CMakeLists.txt
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -4361,7 +4434,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `COOK3 cook segment closure` on `codex/cook3-cook-segment-closure`; next feature surface is unselected. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, runtime cook, scheduler/cook order execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `RUN1 workbench headless run` on `codex/run1-workbench-headless-run`; RUN2 app run proof readback is next if continuing. Do not push unless explicitly requested. Do not add source changes outside a freshly selected lane, full runtime cook scheduler, shader.fragment execution, audio runtime node execution, node functionality, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph mutation commands, canvas node hit-test/gestures, selection, drag/connect/delete commands, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

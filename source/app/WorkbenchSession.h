@@ -28,6 +28,12 @@ struct WorkbenchSessionSnapshot
 {
     struct GraphNodeSummary
     {
+        struct ParamSummary
+        {
+            std::string id;
+            std::string value;
+        };
+
         std::string id;
         std::string type;
         double x = 0.0;
@@ -36,6 +42,7 @@ struct WorkbenchSessionSnapshot
         int systemUniformCount = 0;
         int paramCount = 0;
         int portBindingCount = 0;
+        std::vector<ParamSummary> params;
     };
 
     struct GraphEdgeSummary

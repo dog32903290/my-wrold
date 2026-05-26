@@ -84,6 +84,9 @@ int main()
     expectEqual (snapshot.editorEdges.front().dataType, "texture.rgba", "first editor edge data type");
     expectEqual (snapshot.runtimeNodes.front().id, "shader1", "first runtime node id");
     expectEqual (snapshot.runtimeNodes.front().type, "shader.fragment", "first runtime node type");
+    expectEqual (static_cast<int> (snapshot.runtimeNodes.front().params.size()),
+                 0,
+                 "first runtime node param summary count");
     expectEqual (snapshot.runtimeEdges.front().from, "shader1.output", "first runtime edge from");
     expectEqual (snapshot.runtimeEdges.front().to, "out1.input", "first runtime edge to");
     expectEqual (snapshot.activeOutputNodeId, "out1", "active output");

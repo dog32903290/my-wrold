@@ -5,6 +5,7 @@
 #include "TimelineState.h"
 
 #include <sstream>
+#include <utility>
 
 namespace myworld
 {
@@ -18,16 +19,20 @@ std::vector<WorkbenchSessionSnapshot::GraphNodeSummary> makeNodeSummaries (
 
     for (const auto& node : nodes)
     {
-        summaries.push_back ({
-            node.id,
-            node.type,
-            node.position.x,
-            node.position.y,
-            node.collapsed,
-            static_cast<int> (node.systemUniforms.size()),
-            static_cast<int> (node.params.size()),
-            static_cast<int> (node.portBindings.size())
-        });
+        WorkbenchSessionSnapshot::GraphNodeSummary summary;
+        summary.id = node.id;
+        summary.type = node.type;
+        summary.x = node.position.x;
+        summary.y = node.position.y;
+        summary.collapsed = node.collapsed;
+        summary.systemUniformCount = static_cast<int> (node.systemUniforms.size());
+        summary.paramCount = static_cast<int> (node.params.size());
+        summary.portBindingCount = static_cast<int> (node.portBindings.size());
+
+        for (const auto& param : node.params)
+            summary.params.push_back ({ param.id, param.value });
+
+        summaries.push_back (std::move (summary));
     }
 
     return summaries;

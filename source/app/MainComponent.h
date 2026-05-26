@@ -13,6 +13,7 @@
 #include "WorkbenchCookPlanSurface.h"
 #include "WorkbenchGraphSurface.h"
 #include "WorkbenchRuntimeSurface.h"
+#include "WorkbenchRunSurface.h"
 #include "WorkbenchStatusSurface.h"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -87,6 +88,7 @@ private:
     void updateWorkbenchCanvasSurface();
     void updateWorkbenchRuntimeSurface();
     void updateWorkbenchCookPlanSurface();
+    void updateWorkbenchRunSurface();
     void openWorkbenchSession();
     void loadStoredPerformancePreferences();
     void saveStoredPerformancePreferences();
@@ -118,6 +120,7 @@ private:
     std::array<juce::Label, 6> workbenchCanvasLabels;
     std::array<juce::Label, 6> workbenchRuntimeLabels;
     std::array<juce::Label, 6> workbenchCookPlanLabels;
+    std::array<juce::Label, 6> workbenchRunLabels;
     juce::Label audioStatusLabel;
     juce::Label rmsLabel;
     juce::Label peakLabel;
