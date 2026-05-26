@@ -49,12 +49,12 @@ Use this gate to prevent visual, Metal, live IO, TiXL parity, cleanup, and AI-wo
 
 ## Current Snapshot
 
-Date: 2026-05-26 11:58 Asia/Taipei.
+Date: 2026-05-26 11:36 Asia/Taipei.
 
 Branch:
 
 ```text
-codex/status3-status-segment-closure
+codex/app2-legacy-proof-artifact-test
 ```
 
 Local repo relocation note:
@@ -71,7 +71,9 @@ docs/superpowers/handoffs/2026-05-24-repo-relocation-note.md
 Latest known commits:
 
 ```text
+APP2 legacy proof artifact test cleanup (closed locally)
 STATUS3 status segment closure (closed locally)
+d1debc1 Close STATUS segment
 STATUS2 app status proof artifact (closed locally)
 7c59fbf Add STATUS2 app status proof
 STATUS1 app status snapshot (closed locally)
@@ -164,7 +166,7 @@ ebeab9f Add R2 headless render runtime
 
 ## Session Safety
 
-As of 2026-05-26 11:58 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are closed locally and not pushed. Current branch is `codex/status3-status-segment-closure`; do not push unless explicitly requested.
+As of 2026-05-26 11:36 Asia/Taipei, APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are closed locally and not pushed. Current branch is `codex/app2-legacy-proof-artifact-test`; do not push unless explicitly requested.
 
 ```text
 SAVE3 closed-lane files:
@@ -271,6 +273,46 @@ STATUS1 app status snapshot
 Verification:
 
 ```text
+ctest --test-dir build --output-on-failure
+100% tests passed, 0 tests failed out of 91
+git diff --check
+passed
+```
+
+APP2 legacy proof artifact test cleanup closed-lane files:
+- docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+- docs/superpowers/specs/2026-05-26-app2-legacy-proof-artifact-test.md
+- tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
+
+APP2 legacy cleanup one-line proof before commit:
+
+```text
+APP2 legacy wrapper test expects the stable app workbench runner's two artifact files.
+```
+
+APP2 legacy cleanup verification target:
+
+```text
+cmake --build build --target my_world_app2_workbench_open_status_proof_runner_tests
+./build/my_world_app2_workbench_open_status_proof_runner_tests
+ctest --test-dir build --output-on-failure -R "app2_workbench_open_status_proof_runner|app_workbench_session_proof_runner"
+ctest --test-dir build --output-on-failure
+git diff --check
+```
+
+APP2 legacy cleanup accepted result:
+
+```text
+tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp now expects both stable wrapper artifacts:
+workbench_open_status_report.json and active_work_preparation_report.json.
+```
+
+Verification:
+
+```text
+cmake --build build --target my_world_app2_workbench_open_status_proof_runner_tests
+./build/my_world_app2_workbench_open_status_proof_runner_tests
+ctest --test-dir build --output-on-failure -R "app2_workbench_open_status_proof_runner|app_workbench_session_proof_runner"
 ctest --test-dir build --output-on-failure
 100% tests passed, 0 tests failed out of 91
 git diff --check
@@ -504,6 +546,7 @@ Latest accepted targeted result:
 | G1 graph IO mapping foundation | closed | `docs/superpowers/specs/2026-05-25-g1-graph-io-mapping-foundation.md`; saved fixture graph loads one `signal.float` source-to-`shader.uniform` target mapping, validates it, generates an existing `LiveIOBus` binding, emits graph IO mapping JSON evidence, and `G1GraphIOMappingProofRunner` writes `graph_io_mapping_report.json`; `ctest` 79/79 passed | Full mapping editor, graph UI node surface, multiple user-authored mappings, broader MIDI/OSC operators, direct realtime send, shader preview live binding expansion, Metal, and analyzer DSP remain parked |
 | APP1 workbench session spine | closed | `docs/superpowers/specs/2026-05-25-app1-workbench-session-spine.md`; work fixture + G1 mapping fixture builds a `WorkbenchSession` snapshot with document, graph counts, dirty/save/proof/preview, output/timeline, and mapping validity evidence; `APP1WorkbenchSessionProofRunner` writes `workbench_session_report.json`; app startup proof command writes `debug/app1-workbench-session-proof/workbench_session_report.json`; `ctest` 81/81 passed | Workbench UI panels, canvas gestures, mapping editor, runtime cook loop, save command integration, AI worker visible task surface, shader preview live-binding expansion, Metal, and visual polish remain parked |
 | APP2 workbench open/status spine | closed locally | `docs/superpowers/specs/2026-05-25-app2-workbench-open-status-spine.md`; app opens and holds `currentWorkbenchSession` from active work if present, otherwise C2 fixture + G1 mapping; `MainComponent` reads snapshot status; app proof writes `debug/app2-workbench-open-status-proof/workbench_open_status_report.json` with `ok: true`; local commit `7b4fb0c` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
+| APP2 legacy proof artifact test cleanup | closed locally | `docs/superpowers/specs/2026-05-26-app2-legacy-proof-artifact-test.md`; took over the stale dirty APP2 legacy wrapper test and aligned it with stable runner artifact count; no source files changed; full `ctest` 91/91 and `git diff --check` passed | Do not reopen APP behavior; removing legacy APP2 compatibility target/test remains parked |
 | APP3 workbench app controller spine | closed locally | `docs/superpowers/specs/2026-05-25-app3-workbench-app-controller-spine.md`; `WorkbenchAppController` owns current session snapshot, status text, and APP2 proof request creation; `MainComponent` reads controller state instead of owning the snapshot directly; local commit `1c2323e` | Node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
 | APP4 active work source truth | closed locally | `docs/superpowers/specs/2026-05-25-app4-active-work-source-truth.md`; workbench session reports `active-work-opened`, `fixture-fallback-active-missing`, or `active-work-blocked`; app dump proof writes `workSourceStatus` and `activeWorkManifestPath`; local commit `7e5b6ca` | Active-work preparation, save mutation, node functionality, canvas UI, mapping editor, runtime cook, OpenGL backend expansion, Metal, and visual polish remain parked |
 | APP5 stable workbench proof alias | closed locally | `docs/superpowers/specs/2026-05-25-app5-stable-workbench-proof-alias.md`; stable `--dump-app-workbench-session-proof-and-exit` writes `debug/app-workbench-session-proof/workbench_open_status_report.json`; legacy APP2 flag remains accepted; local commit `e22713b` | Internal legacy APP2 proof runner names, node functionality, canvas UI, mapping editor, runtime cook, save mutation, OpenGL backend expansion, Metal, and visual polish remain parked |
@@ -539,7 +582,7 @@ Only one lane should be marked `in progress` in this file unless the files are d
 Current active lane:
 
 ```text
-None after STATUS3 status segment closure as of 2026-05-26 11:58 Asia/Taipei on `codex/status3-status-segment-closure`. Not pushed.
+None after APP2 legacy proof artifact test cleanup as of 2026-05-26 11:36 Asia/Taipei on `codex/app2-legacy-proof-artifact-test`. Not pushed.
 ```
 
 Previous closure:
@@ -3304,6 +3347,7 @@ raw callback-buffer runtime
 | `2026-05-25-g1-graph-io-mapping-foundation.md` | G1 graph IO mapping foundation closure evidence | no, unless auditing G1 evidence |
 | `2026-05-25-app1-workbench-session-spine.md` | APP1 workbench session closure evidence | no, unless auditing APP1 evidence |
 | `2026-05-25-app2-workbench-open-status-spine.md` | APP2 workbench open/status closure evidence | no, unless auditing APP2 evidence |
+| `2026-05-26-app2-legacy-proof-artifact-test.md` | APP2 legacy proof artifact test cleanup closure evidence | no, unless auditing this cleanup |
 | `2026-05-25-app3-workbench-app-controller-spine.md` | APP3 workbench app controller closure evidence | no, unless auditing APP3 evidence |
 | `2026-05-25-app4-active-work-source-truth.md` | APP4 active work source truth closure evidence | no, unless auditing APP4 evidence |
 | `2026-05-25-app5-stable-workbench-proof-alias.md` | APP5 stable workbench proof alias closure evidence | no, unless auditing APP5 evidence |
@@ -3340,7 +3384,7 @@ docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-26-save3-save-segment-closure.md
 ```
 
-Existing dirty file not owned by SAVE3:
+Previously dirty file now closed by APP2 legacy cleanup:
 
 ```text
 tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
@@ -3380,6 +3424,14 @@ docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
 docs/superpowers/specs/2026-05-26-status3-status-segment-closure.md
 ```
 
+APP2 legacy cleanup closed-lane files:
+
+```text
+docs/superpowers/plans/2026-05-24-native-canvas-master-progress.md
+docs/superpowers/specs/2026-05-26-app2-legacy-proof-artifact-test.md
+tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp
+```
+
 Avoid unrelated files and parked lanes:
 
 ```text
@@ -3395,7 +3447,7 @@ tests/test_myworld_flow.py
 
 ## Next Handoff Sentence
 
-Open this master plan first. No active lane is selected after `STATUS3 status segment closure` on `codex/status3-status-segment-closure`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, and STATUS1-STATUS3 are local-only commits/changes; do not push unless explicitly requested. Existing dirty file `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` is not owned by STATUS3 and must not be staged. The STATUS segment is closed; future work should choose a fresh feature-surface lane such as UI, GRAPH, RUNTIME, PROOF cleanup, or explicit user-facing project/open/save UI. Do not add save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
+Open this master plan first. No active lane is selected after `APP2 legacy proof artifact test cleanup` on `codex/app2-legacy-proof-artifact-test`. APP1-APP7, WORK1-WORK5, ACTIVE1-ACTIVE3, PROJECT1-PROJECT4, OPEN1-OPEN3, SAVE1-SAVE3, STATUS1-STATUS3, and the APP2 legacy proof artifact test cleanup are local-only commits/changes; do not push unless explicitly requested. The previously dirty `tests/APP2WorkbenchOpenStatusProofRunnerTests.cpp` file is now closed by this cleanup. Future work should choose a fresh feature-surface lane such as UI, GRAPH, RUNTIME, PROOF cleanup, or explicit user-facing project/open/save UI. Do not add source changes, save UI, project picker, active-work mutation, new save format, analyzer DSP, full mapping editor, graph UI node surface, extra MIDI operators, external OSC/UDP UI lifecycle, direct realtime MIDI/OSC send, shader preview live binding expansion, browser polish, Metal, image.blur, interactive node thumbnails, SOP/MAT/POINT, full render export, TiXL runtime work beyond the selected lane, relocation note, flow-runner files, `scripts/`, `tests/test_myworld_flow.py`, or `AGENTS.md`.
 
 ## Next Master-Plan Maintenance
 

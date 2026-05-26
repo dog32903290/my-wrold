@@ -52,7 +52,11 @@ int main()
     expect (result.status == "dumped", "status");
     expect (result.reportPath == outputDirectory / "workbench_open_status_report.json", "report path");
     expect (std::filesystem::exists (result.reportPath), "report exists");
-    expect (result.artifactPaths.size() == 1, "artifact count");
+    const auto preparationReportPath = outputDirectory / "active_work_preparation_report.json";
+    expect (std::filesystem::exists (preparationReportPath), "preparation report exists");
+    expect (result.artifactPaths.size() == 2, "artifact count");
+    expect (result.artifactPaths.at (0) == result.reportPath, "report artifact");
+    expect (result.artifactPaths.at (1) == preparationReportPath, "preparation artifact");
 
     const auto report = readTextFile (result.reportPath);
     expectContains (report, "\"kind\": \"workbenchSessionReport\"", "report kind");
@@ -61,6 +65,11 @@ int main()
     expectContains (report, "\"documentId\": \"patch.c2-main\"", "document id");
     expectContains (report, "\"graphIOMappingCount\": 1", "mapping count");
     expectContains (report, "\"graphIOMappingStatus\": \"valid\"", "mapping status");
+
+    const auto preparationReport = readTextFile (preparationReportPath);
+    expectContains (preparationReport,
+                    "\"kind\": \"activeWorkPreparationReport\"",
+                    "preparation report kind");
 
     std::filesystem::remove_all (outputDirectory);
     std::cout << "app2 workbench open status proof runner ok\n";
