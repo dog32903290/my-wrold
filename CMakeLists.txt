@@ -1608,6 +1608,42 @@ set_tests_properties(workbench_run_surface PROPERTIES
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+add_library(my_world_workbench_run_proof_runner
+    source/app/WorkbenchRunProofRunner.cpp
+)
+
+target_include_directories(my_world_workbench_run_proof_runner
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/core
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/render
+        ${CMAKE_CURRENT_SOURCE_DIR}/source/storage
+)
+
+target_link_libraries(my_world_workbench_run_proof_runner
+    PUBLIC
+        my_world_json
+        my_world_proof_run_support
+        my_world_storage
+        my_world_workbench_app_controller
+        my_world_workbench_run_surface
+)
+
+add_executable(my_world_workbench_run_proof_runner_tests
+    tests/WorkbenchRunProofRunnerTests.cpp
+)
+
+target_link_libraries(my_world_workbench_run_proof_runner_tests
+    PRIVATE
+        my_world_workbench_run_proof_runner
+)
+
+add_test(NAME workbench_run_proof_runner
+         COMMAND my_world_workbench_run_proof_runner_tests)
+set_tests_properties(workbench_run_proof_runner PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(my_world_storage_tests
     tests/StorageContractTests.cpp
 )
@@ -2502,6 +2538,7 @@ if(MY_WORLD_HAVE_JUCE)
             my_world_workbench_canvas_surface_proof_runner
             my_world_workbench_runtime_surface_proof_runner
             my_world_workbench_cook_plan_surface_proof_runner
+            my_world_workbench_run_proof_runner
             my_world_c5_module_publish_proof_runner
             my_world_c6_analyzer_family_proof_runner
             my_world_c6_ai_repair_loop_proof_runner

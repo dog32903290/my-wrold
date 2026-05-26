@@ -36,10 +36,11 @@ int main()
     selected.dumpWorkbenchCanvasSurfaceProof = true;
     selected.dumpWorkbenchRuntimeSurfaceProof = true;
     selected.dumpWorkbenchCookPlanProof = true;
+    selected.dumpWorkbenchRunProof = true;
 
     const auto selectedTasks = myworld::startupProofTasks (selected);
     expect (myworld::hasStartupProofRequest (selected), "selected options should request startup proof");
-    expect (selectedTasks.size() == 14, "selected options should create fourteen tasks");
+    expect (selectedTasks.size() == 15, "selected options should create fifteen tasks");
     expect (selectedTasks[0].id == myworld::StartupProofTaskId::v1Shader, "v1 task should keep first position");
     expect (selectedTasks[0].delayMilliseconds == 750, "v1 task should keep 750ms startup delay");
     expect (selectedTasks[1].id == myworld::StartupProofTaskId::a1Audio, "a1 task should keep second position");
@@ -83,6 +84,10 @@ int main()
             "workbench cook plan task should be selected");
     expect (selectedTasks[13].delayMilliseconds == 500,
             "workbench cook plan task should keep 500ms startup delay");
+    expect (selectedTasks[14].id == myworld::StartupProofTaskId::workbenchRun,
+            "workbench run task should be selected");
+    expect (selectedTasks[14].delayMilliseconds == 500,
+            "workbench run task should keep 500ms startup delay");
 
     myworld::StartupProofOptions all;
     all.dumpV1ShaderProof = true;
@@ -115,9 +120,10 @@ int main()
     all.dumpWorkbenchCanvasSurfaceProof = true;
     all.dumpWorkbenchRuntimeSurfaceProof = true;
     all.dumpWorkbenchCookPlanProof = true;
+    all.dumpWorkbenchRunProof = true;
 
     expect (myworld::hasStartupProofRequest (all), "all options should request startup proof");
-    expect (myworld::startupProofTasks (all).size() == 30, "all options should create every startup proof task");
+    expect (myworld::startupProofTasks (all).size() == 31, "all options should create every startup proof task");
 
     return 0;
 }
